@@ -2,12 +2,14 @@ package com.make.cef.samples.cefsimple;
 
 import cef.capi.CEF;
 import cef.capi.CEF.App;
+import cef.capi.CEF.BrowserProcessHandler;
 import cef.capi.CEF.MainArgs;
 import cef.capi.CEF.Settings;
 import jnr.ffi.LibraryLoader;
 import jnr.ffi.Memory;
 import jnr.ffi.NativeType;
 import jnr.ffi.Pointer;
+import jnr.ffi.Struct;
 
 public class CefJNR {
 //	public static interface Cef {
@@ -51,23 +53,45 @@ public class CefJNR {
 //		  XSetIOErrorHandler(XIOErrorHandlerImpl);
 
 		// Specify Cef global settings here.
-		Settings settings = null;
+		Settings settings = new CEF.Settings();
+//		settings.log_file = new CEF.StringUtf16();
+//		Cef.string
 
-		  // SimpleApp implements application-level callbacks for the browser process.
-		  // It will create the first browser instance in OnContextInitialized() after
-		  // Cef has initialized.
-//		  CefRefPtr<SimpleApp> app(new SimpleApp);
+		// SimpleApp implements application-level callbacks for the browser process.
+		// It will create the first browser instance in OnContextInitialized() after
+		// Cef has initialized.
 
 		App app = new App();
-		app.get_browser_process_handler = null;
+		
+		BrowserProcessHandler browserProcessHandler = new CEF.BrowserProcessHandler();
+		browserProcessHandler.on_context_initialized = new CEF.OnContextInitialized() {
+			@Override
+			public void onContextInitialized(BrowserProcessHandler self) {
+				System.out.println("onContextInitialized");
+			}
+		};
+		
+//		app.get_browser_process_handler = main_args.new Pointer();
+//		jnr.ffi.Pointer allocate = Memory.allocate(CEF.RUNTIME, NativeType.ADDRESS);
+//		app.get_browser_process_handler.set(Struct.getMemory(browserProcessHandler));
+		app.get_browser_process_handler = new CEF.GetBrowserProcessHandler() {
+			@Override
+			public BrowserProcessHandler getBrowserProcessHandler(CEF.App self) {
+				System.out.println("getBrowserProcessHandler");
+				return browserProcessHandler;
+			}
+		};
+		
+//		app.get_browser_process_handler.set(Memory.allocate(CEF.RUNTIME, ));
 		// Initialize Cef for the browser process.
 		CEF.initialize(main_args, settings, app, null);
 
-		  // Run the Cef message loop. This will block until CefQuitMessageLoop() is
-		  // called.
+		// Run the Cef message loop. This will block until CefQuitMessageLoop() is
+		// called.
 		CEF.runMessageLoop();
 
 		// Shut down Cef.
 		CEF.shutdown();
+		System.out.println("Done");
 	}
 }
