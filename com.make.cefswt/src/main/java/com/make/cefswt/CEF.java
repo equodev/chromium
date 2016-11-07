@@ -65,7 +65,7 @@ public class CEF {
      */
     public static final class StringWide extends Struct {
         public Pointer str;
-        public NativeLong length;
+        public UnsignedLong length;
         public Pointer dtor;
         public StringWide() {
           super(RUNTIME);
@@ -88,7 +88,7 @@ public class CEF {
      */
     public static final class StringUtf8 extends Struct {
         public String str;
-        public NativeLong length;
+        public UnsignedLong length;
         public Pointer dtor;
         public StringUtf8() {
           super(RUNTIME);
@@ -111,7 +111,7 @@ public class CEF {
      */
     public static final class StringUtf16 extends Struct {
         public Pointer str;
-        public NativeLong length;
+        public UnsignedLong length;
         public Pointer dtor;
         public StringUtf16() {
           super(RUNTIME);
@@ -443,7 +443,7 @@ public class CEF {
      *   (FFI::Pointer(**CharS)) 
      */
     public static final class MainArgs extends Struct {
-        public int argc;
+        public Signed32 argc;
         public Pointer argv;
         public MainArgs() {
           super(RUNTIME);
@@ -485,14 +485,14 @@ public class CEF {
      *   (Integer) 
      */
     public static final class WindowInfo extends Struct {
-        public int x;
-        public int y;
-        public int width;
-        public int height;
-        public NativeLong parent_window;
-        public int windowless_rendering_enabled;
-        public int transparent_painting_enabled;
-        public NativeLong window;
+        public Unsigned32 x;
+        public Unsigned32 y;
+        public Unsigned32 width;
+        public Unsigned32 height;
+        public UnsignedLong parent_window;
+        public Signed32 windowless_rendering_enabled;
+        public Signed32 transparent_painting_enabled;
+        public UnsignedLong window;
         public WindowInfo() {
           super(RUNTIME);
         }
@@ -746,17 +746,17 @@ public class CEF {
      *   CefRequestContextSettings.accept_language_list value.
      */
     public static final class Settings extends Struct {
-        public NativeLong size;
-        public int single_process;
-        public int no_sandbox;
+        public UnsignedLong size;
+        public Signed32 single_process;
+        public Signed32 no_sandbox;
         public StringUtf16 browser_subprocess_path;
-        public int multi_threaded_message_loop;
-        public int windowless_rendering_enabled;
-        public int command_line_args_disabled;
+        public Signed32 multi_threaded_message_loop;
+        public Signed32 windowless_rendering_enabled;
+        public Signed32 command_line_args_disabled;
         public StringUtf16 cache_path;
         public StringUtf16 user_data_path;
-        public int persist_session_cookies;
-        public int persist_user_preferences;
+        public Signed32 persist_session_cookies;
+        public Signed32 persist_user_preferences;
         public StringUtf16 user_agent;
         public StringUtf16 product_version;
         public StringUtf16 locale;
@@ -765,12 +765,12 @@ public class CEF {
         public StringUtf16 javascript_flags;
         public StringUtf16 resources_dir_path;
         public StringUtf16 locales_dir_path;
-        public int pack_loading_disabled;
-        public int remote_debugging_port;
-        public int uncaught_exception_stack_size;
-        public int context_safety_implementation;
-        public int ignore_certificate_errors;
-        public int background_color;
+        public Signed32 pack_loading_disabled;
+        public Signed32 remote_debugging_port;
+        public Signed32 uncaught_exception_stack_size;
+        public Signed32 context_safety_implementation;
+        public Signed32 ignore_certificate_errors;
+        public Unsigned32 background_color;
         public StringUtf16 accept_language_list;
         public Settings() {
           super(RUNTIME);
@@ -821,11 +821,11 @@ public class CEF {
      *   ignored if |cache_path| matches the CefSettings.cache_path value.
      */
     public static final class RequestContextSettings extends Struct {
-        public NativeLong size;
+        public UnsignedLong size;
         public StringUtf16 cache_path;
-        public int persist_session_cookies;
-        public int persist_user_preferences;
-        public int ignore_certificate_errors;
+        public Signed32 persist_session_cookies;
+        public Signed32 persist_user_preferences;
+        public Signed32 ignore_certificate_errors;
         public StringUtf16 accept_language_list;
         public RequestContextSettings() {
           super(RUNTIME);
@@ -951,18 +951,18 @@ public class CEF {
      *   empty then "en-US,en" will be used.
      */
     public static final class BrowserSettings extends Struct {
-        public NativeLong size;
-        public int windowless_frame_rate;
+        public UnsignedLong size;
+        public Signed32 windowless_frame_rate;
         public StringUtf16 standard_font_family;
         public StringUtf16 fixed_font_family;
         public StringUtf16 serif_font_family;
         public StringUtf16 sans_serif_font_family;
         public StringUtf16 cursive_font_family;
         public StringUtf16 fantasy_font_family;
-        public int default_font_size;
-        public int default_fixed_font_size;
-        public int minimum_font_size;
-        public int minimum_logical_font_size;
+        public Signed32 default_font_size;
+        public Signed32 default_fixed_font_size;
+        public Signed32 minimum_font_size;
+        public Signed32 minimum_logical_font_size;
         public StringUtf16 default_encoding;
         public State remote_fonts;
         public State javascript;
@@ -983,7 +983,7 @@ public class CEF {
         public State databases;
         public State application_cache;
         public State webgl;
-        public int background_color;
+        public Unsigned32 background_color;
         public StringUtf16 accept_language_list;
         public BrowserSettings() {
           super(RUNTIME);
@@ -1108,11 +1108,11 @@ public class CEF {
         public StringUtf16 value;
         public StringUtf16 domain;
         public StringUtf16 path;
-        public int secure;
-        public int httponly;
+        public Signed32 secure;
+        public Signed32 httponly;
         public byte creation;
         public byte last_access;
-        public int has_expires;
+        public Signed32 has_expires;
         public byte expires;
         public Cookie() {
           super(RUNTIME);
@@ -1991,8 +1991,8 @@ public class CEF {
      *   (Integer) 
      */
     public static final class Point extends Struct {
-        public int x;
-        public int y;
+        public Signed32 x;
+        public Signed32 y;
         public Point() {
           super(RUNTIME);
         }
@@ -2015,10 +2015,10 @@ public class CEF {
      *   (Integer) 
      */
     public static final class Rect extends Struct {
-        public int x;
-        public int y;
-        public int width;
-        public int height;
+        public Signed32 x;
+        public Signed32 y;
+        public Signed32 width;
+        public Signed32 height;
         public Rect() {
           super(RUNTIME);
         }
@@ -2037,8 +2037,8 @@ public class CEF {
      *   (Integer) 
      */
     public static final class Size extends Struct {
-        public int width;
-        public int height;
+        public Signed32 width;
+        public Signed32 height;
         public Size() {
           super(RUNTIME);
         }
@@ -2057,8 +2057,8 @@ public class CEF {
      *   (Integer) 
      */
     public static final class Range extends Struct {
-        public int from;
-        public int to;
+        public Signed32 from;
+        public Signed32 to;
         public Range() {
           super(RUNTIME);
         }
@@ -2081,10 +2081,10 @@ public class CEF {
      *   (Integer) 
      */
     public static final class Insets extends Struct {
-        public int top;
-        public int left;
-        public int bottom;
-        public int right;
+        public Signed32 top;
+        public Signed32 left;
+        public Signed32 bottom;
+        public Signed32 right;
         public Insets() {
           super(RUNTIME);
         }
@@ -2104,7 +2104,7 @@ public class CEF {
      */
     public static final class DraggableRegion extends Struct {
         public Rect bounds;
-        public int draggable;
+        public Signed32 draggable;
         public DraggableRegion() {
           super(RUNTIME);
         }
@@ -2323,10 +2323,10 @@ public class CEF {
      *   available surface for rendering popup views.
      */
     public static final class ScreenInfo extends Struct {
-        public float device_scale_factor;
-        public int depth;
-        public int depth_per_component;
-        public int is_monochrome;
+        public Float device_scale_factor;
+        public Signed32 depth;
+        public Signed32 depth_per_component;
+        public Signed32 is_monochrome;
         public Rect rect;
         public Rect available_rect;
         public ScreenInfo() {
@@ -2492,9 +2492,9 @@ public class CEF {
      *   cef_event_flags_t for values.
      */
     public static final class MouseEvent extends Struct {
-        public int x;
-        public int y;
-        public int modifiers;
+        public Signed32 x;
+        public Signed32 y;
+        public Unsigned32 modifiers;
         public MouseEvent() {
           super(RUNTIME);
         }
@@ -2920,13 +2920,13 @@ public class CEF {
      */
     public static final class KeyEvent extends Struct {
         public KeyEventType type;
-        public int modifiers;
-        public int windows_key_code;
-        public int native_key_code;
-        public int is_system_key;
-        public short character;
-        public short unmodified_character;
-        public int focus_on_editable_field;
+        public Unsigned32 modifiers;
+        public Signed32 windows_key_code;
+        public Signed32 native_key_code;
+        public Signed32 is_system_key;
+        public Unsigned16 character;
+        public Unsigned16 unmodified_character;
+        public Signed32 focus_on_editable_field;
         public KeyEvent() {
           super(RUNTIME);
         }
@@ -3151,22 +3151,22 @@ public class CEF {
      *   (FFI::Pointer(StringList)) 
      */
     public static final class PopupFeatures extends Struct {
-        public int x;
-        public int xSet;
-        public int y;
-        public int ySet;
-        public int width;
-        public int widthSet;
-        public int height;
-        public int heightSet;
-        public int menuBarVisible;
-        public int statusBarVisible;
-        public int toolBarVisible;
-        public int locationBarVisible;
-        public int scrollbarsVisible;
-        public int resizable;
-        public int fullscreen;
-        public int dialog;
+        public Signed32 x;
+        public Signed32 xSet;
+        public Signed32 y;
+        public Signed32 ySet;
+        public Signed32 width;
+        public Signed32 widthSet;
+        public Signed32 height;
+        public Signed32 heightSet;
+        public Signed32 menuBarVisible;
+        public Signed32 statusBarVisible;
+        public Signed32 toolBarVisible;
+        public Signed32 locationBarVisible;
+        public Signed32 scrollbarsVisible;
+        public Signed32 resizable;
+        public Signed32 fullscreen;
+        public Signed32 dialog;
         public Pointer additionalFeatures;
         public PopupFeatures() {
           super(RUNTIME);
@@ -3499,13 +3499,13 @@ public class CEF {
      *   (StringUtf16) Human-readable error message.
      */
     public static final class Geoposition extends Struct {
-        public double latitude;
-        public double longitude;
-        public double altitude;
-        public double accuracy;
-        public double altitude_accuracy;
-        public double heading;
-        public double speed;
+        public Double latitude;
+        public Double longitude;
+        public Double altitude;
+        public Double accuracy;
+        public Double altitude_accuracy;
+        public Double heading;
+        public Double speed;
         public byte timestamp;
         public GeopositionErrorCode error_code;
         public StringUtf16 error_message;
@@ -3817,7 +3817,7 @@ public class CEF {
      */
     public static final class CursorInfo extends Struct {
         public Point hotspot;
-        public float image_scale_factor;
+        public Float image_scale_factor;
         public Pointer buffer;
         public Size size;
         public CursorInfo() {
@@ -4109,17 +4109,17 @@ public class CEF {
     public static final class PdfPrintSettings extends Struct {
         public StringUtf16 header_footer_title;
         public StringUtf16 header_footer_url;
-        public int page_width;
-        public int page_height;
-        public double margin_top;
-        public double margin_right;
-        public double margin_bottom;
-        public double margin_left;
+        public Signed32 page_width;
+        public Signed32 page_height;
+        public Double margin_top;
+        public Double margin_right;
+        public Double margin_bottom;
+        public Double margin_left;
         public PdfPrintMarginType margin_type;
-        public int header_footer_enabled;
-        public int selection_only;
-        public int landscape;
-        public int backgrounds_enabled;
+        public Signed32 header_footer_enabled;
+        public Signed32 selection_only;
+        public Signed32 landscape;
+        public Signed32 backgrounds_enabled;
         public PdfPrintSettings() {
           super(RUNTIME);
         }
@@ -4520,15 +4520,15 @@ public class CEF {
      *   of 0 means this view is not resized. Flex values must not be negative.
      */
     public static final class BoxLayoutSettings extends Struct {
-        public int horizontal;
-        public int inside_border_horizontal_spacing;
-        public int inside_border_vertical_spacing;
+        public Signed32 horizontal;
+        public Signed32 inside_border_horizontal_spacing;
+        public Signed32 inside_border_vertical_spacing;
         public Insets inside_border_insets;
-        public int between_child_spacing;
+        public Signed32 between_child_spacing;
         public MainAxisAlignment main_axis_alignment;
         public CrossAxisAlignment cross_axis_alignment;
-        public int minimum_cross_axis_size;
-        public int default_flex;
+        public Signed32 minimum_cross_axis_size;
+        public Signed32 default_flex;
         public BoxLayoutSettings() {
           super(RUNTIME);
         }
@@ -4662,7 +4662,7 @@ public class CEF {
      *   (FFI::Pointer(*)) Returns true (1) if the current reference count is 1.
      */
     public static final class Base extends Struct {
-        public NativeLong size;
+        public UnsignedLong size;
         public Pointer add_ref;
         public Pointer release;
         public Pointer has_one_ref;
@@ -4672,6 +4672,115 @@ public class CEF {
         public Base(jnr.ffi.Runtime runtime) {
           super(runtime);
         }
+    }
+    
+    /**
+     * (Not documented)
+     * 
+     * = Fields:
+     * :base ::
+     *   (Base) Base structure.
+     * :isValid ::
+     *   (FFI::Pointer(*)) Returns true (1) if this object is valid. Do not call any other functions
+     *   if this function returns false (0).
+     * :isReadOnly ::
+     *   (FFI::Pointer(*)) Returns true (1) if the values of this object are read-only. Some APIs may
+     *   expose read-only objects.
+     * :copy ::
+     *   (FFI::Pointer(*)) Returns a writable copy of this object.
+     * :initFromArgv ::
+     *   (FFI::Pointer(*)) Initialize the command line with the specified |argc| and |argv| values.
+     *   The first argument must be the name of the program. This function is only
+     *   supported on non-Windows platforms.
+     * :initFromString ::
+     *   (FFI::Pointer(*)) Initialize the command line with the string returned by calling
+     *   GetCommandLineW(). This function is only supported on Windows.
+     * :reset ::
+     *   (FFI::Pointer(*)) Reset the command-line switches and arguments but leave the program
+     *   component unchanged.
+     * :getArgv ::
+     *   (FFI::Pointer(*)) Retrieve the original command line string as a vector of strings. The argv
+     *   array: { program, ((--|-|/)switch(=value))*, (--), (argument)* }
+     * :getCommandLineString ::
+     *   (FFI::Pointer(*)) The resulting string must be freed by calling cef_string_userfree_free().
+     * :getProgram ::
+     *   (FFI::Pointer(*)) The resulting string must be freed by calling cef_string_userfree_free().
+     * :setProgram ::
+     *   (FFI::Pointer(*)) Set the program part of the command line string (the first item).
+     * :hasSwitches ::
+     *   (FFI::Pointer(*)) Returns true (1) if the command line has switches.
+     * :hasSwitch ::
+     *   (FFI::Pointer(*)) Returns true (1) if the command line contains the given switch.
+     * :getSwitchValue ::
+     *   (FFI::Pointer(*)) The resulting string must be freed by calling cef_string_userfree_free().
+     * :getSwitches ::
+     *   (FFI::Pointer(*)) Returns the map of switch names and values. If a switch has no value an
+     *   NULL string is returned.
+     * :appendSwitch ::
+     *   (FFI::Pointer(*)) Add a switch to the end of the command line. If the switch has no value
+     *   pass an NULL value string.
+     * :appendSwitchWithValue ::
+     *   (FFI::Pointer(*)) Add a switch with the specified value to the end of the command line.
+     * :hasArguments ::
+     *   (FFI::Pointer(*)) True if there are remaining command line arguments.
+     * :getArguments ::
+     *   (FFI::Pointer(*)) Get the remaining command line arguments.
+     * :appendArgument ::
+     *   (FFI::Pointer(*)) Add an argument to the end of the command line.
+     * :prependWrapper ::
+     *   (FFI::Pointer(*)) Insert a command before the current command. Common for debuggers, like
+     *   "valgrind" or "gdb --args".
+     */
+    public static final class CommandLine extends Struct {
+        public Base base;
+        public Pointer is_valid;
+        public Pointer is_read_only;
+        public Pointer copy;
+        public Pointer init_from_argv;
+        public Pointer init_from_string;
+        public Pointer reset;
+        public Pointer get_argv;
+        public Pointer get_command_line_string;
+        public Pointer get_program;
+        public Pointer set_program;
+        public Pointer has_switches;
+        public Pointer has_switch;
+        public Pointer get_switch_value;
+        public Pointer get_switches;
+        public Pointer append_switch;
+        public Pointer append_switch_with_value;
+        public Pointer has_arguments;
+        public Pointer get_arguments;
+        public Pointer append_argument;
+        public Pointer prepend_wrapper;
+        public CommandLine() {
+          super(RUNTIME);
+        }
+        public CommandLine(jnr.ffi.Runtime runtime) {
+          super(runtime);
+        }
+    }
+    
+    /**
+     * (Not documented)
+     * 
+     * @method commandLineCreate()
+     * @return [CommandLine] 
+     * @scope class
+     */
+    public static CommandLine commandLineCreate() {
+        return INSTANCE.commandLineCreate();
+    }
+    
+    /**
+     * (Not documented)
+     * 
+     * @method commandLineGetGlobal()
+     * @return [CommandLine] 
+     * @scope class
+     */
+    public static CommandLine commandLineGetGlobal() {
+        return INSTANCE.commandLineGetGlobal();
     }
     
     /**
@@ -4989,6 +5098,12 @@ public class CEF {
         
         @NativeName("cef_get_xdisplay")
         XDisplay getXdisplay();
+        
+        @NativeName("cef_command_line_create")
+        CommandLine commandLineCreate();
+        
+        @NativeName("cef_command_line_get_global")
+        CommandLine commandLineGetGlobal();
         
         @NativeName("cef_execute_process")
         int executeProcess(MainArgs args, App application, Pointer windowsSandboxInfo);

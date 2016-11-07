@@ -38,34 +38,21 @@ public class CefJNR {
 //		Pointer<CefMainArgs> main_args = Pointer.allocate(CefMainArgs.class);
 		
 		jnr.ffi.Runtime runtime = CEF.RUNTIME;
-        Pointer[] array = new Pointer[args.length];
+        
+        System.out.println("Creating args");
+		MainArgs main_args = new MainArgs();
+		main_args.argc.set(args.length);
+
+		Pointer[] array = new Pointer[args.length];
         for (int i = 0; i < array.length; i++) {
         	array[i] = Memory.allocateDirect(runtime, args[i].length());
             array[i].putString(0, args[i], args[i].length(), Charset.defaultCharset());
         }
-        Pointer memory = Memory.allocateDirect(runtime, (2 * array.length + 1) * runtime.addressSize(), true);
-        memory.put(array.length * runtime.addressSize(), array, 0, array.length);
-        String[] out = memory.getNullTerminatedStringArray(array.length * runtime.addressSize());
-        if (!Arrays.equals(out, args))
-        	throw new RuntimeException("args not equals:" + Arrays.toString(out) + " " + Arrays.toString(args) );
 
-        System.out.println("Creating args");
-		MainArgs main_args = new MainArgs();
-		main_args.argc.set(args.length);
-//		main_args.setArgs(args);
-		main_args.argv.set(memory);
-//		for (int i = 0; i < args.length; i++) {
-//			main_args.argv[i].set(args[i]);
-//		}
-//		main_args.argv = main_args.new Pointer();
-		
-//		jnr.ffi.Pointer argv = Memory.allocate(CEF.RUNTIME, args.);
-//		main_args.argv.set(argv);
-		
-//		main_args.argv.set(Memory.allocate(CEF.RUNTIME, NativeType.ADDRESS));
-		// Cef applications have multiple sub-processes (render, plugin, GPU, etc)
-		// that share the same executable. This function checks the command-line and,
-		// if this is a sub-process, executes the appropriate logic.
+		jnr.ffi.Pointer stringp = Memory.allocateDirect(runtime, array.length * (runtime.addressSize()));
+		stringp.put(0, array, 0, array.length);
+		main_args.argv.set(stringp);
+
 		System.out.println("Calling executeProcess");
 		int exit_code = CEF.executeProcess(main_args, null, null);
 		if (exit_code >= 0) {
@@ -101,13 +88,13 @@ public class CefJNR {
 //		app.get_browser_process_handler = main_args.new Pointer();
 //		jnr.ffi.Pointer allocate = Memory.allocate(CEF.RUNTIME, NativeType.ADDRESS);
 //		app.get_browser_process_handler.set(Struct.getMemory(browserProcessHandler));
-		app.get_browser_process_handler = new CEF.GetBrowserProcessHandler() {
-			@Override
-			public BrowserProcessHandler getBrowserProcessHandler(CEF.App self) {
-				System.out.println("getBrowserProcessHandler");
-				return browserProcessHandler;
-			}
-		};
+//		app.set_browser_process_handler(new CEF.GetBrowserProcessHandler() {
+//			@Override
+//			public BrowserProcessHandler getBrowserProcessHandler(Pointer app) {
+//				System.out.println("getBrowserProcessHandler");
+//				return browserProcessHandler;
+//			}
+//		});
 		System.out.println("Calling initialize");
 //		app.get_browser_process_handler.set(Memory.allocate(CEF.RUNTIME, ));
 		// Initialize Cef for the browser process.
