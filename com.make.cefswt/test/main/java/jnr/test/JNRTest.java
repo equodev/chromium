@@ -36,7 +36,7 @@ public class JNRTest {
 		String fn_callback(StructCallback struct);
 		String fn_callback_args(StructCallback struct, int arg);
 		String fn_base_refs(CEF.Base base);
-		String fn_app_refs(App app);
+		String fn_app_refs(CEF.App app);
 	}
 	
 	public static class Int_struct extends Struct {
@@ -280,10 +280,10 @@ public class JNRTest {
 		
 		CEF.Base base  = new CEF.Base(runtime);
 		base.size.set(55);
-//		assertThat(base.ref).isEqualTo(0);
+		assertThat(base.ref).isEqualTo(0);
 		
 		assertThat(lib.fn_base_refs(base)).isEqualTo("ok");
-//		assertThat(base.ref).isEqualTo(1);
+		assertThat(base.ref).isEqualTo(1);
 	}
 	
 	@Test
@@ -292,13 +292,13 @@ public class JNRTest {
 		Runtime runtime = Runtime.getRuntime(lib);
 
 		App app = new App(runtime);
+		app.base.size.set(22);
 		assertThat(app.base).isNotNull();
-		app.base.size.set(45);
 		assertThat(app.base.add_ref).isNotNull();
-//		assertThat(app.base.ref).isEqualTo(0);
+		assertThat(app.base.ref).isEqualTo(0);
 		
 		assertThat(lib.fn_app_refs(app)).isEqualTo("ok");
-//		assertThat(app.base.ref).isEqualTo(1);
+		assertThat(app.base.ref).isEqualTo(1);
 	}
 	
 	public jnr.ffi.Pointer getStringArrayPointer(Runtime runtime, String[] args) {

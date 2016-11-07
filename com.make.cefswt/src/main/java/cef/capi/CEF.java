@@ -4671,7 +4671,7 @@ public class CEF {
         public Function<AddRefFN> add_ref = function(AddRefFN.class);
         public Function<ReleaseFN> release = function(ReleaseFN.class);
         public Function<HasOneRefFN> has_one_ref = function(HasOneRefFN.class);
-//		public int ref = 0;
+		public int ref = 0;
         public Base() {
           this(RUNTIME);
         }
@@ -4686,62 +4686,61 @@ public class CEF {
 //              printf("FATAL: initialize_cef_base failed, size member not set\n");
 //              exit(1);
 //        	}
-          setFns();
         }
         public Base(Runtime runtime) {
         	super(runtime);
         	setFns();
         }
 		public void setFns() {
-			add_ref.set(new AddRefFN(/*this*/));
-			release.set(new ReleaseFN(/*this*/));
-			has_one_ref.set(new HasOneRefFN(/*this*/));
+			add_ref.set(new AddRefFN(this));
+			release.set(new ReleaseFN(this));
+			has_one_ref.set(new HasOneRefFN(this));
 		}
         
     }
     
     public static class AddRefFN {
-//    	private Base base;
+    	private Base base;
 
-//		public AddRefFN(Base base) {
-//			this.base = base;
-//		}
+		public AddRefFN(Base base) {
+			this.base = base;
+		}
 
 		@Delegate
     	public void addRef(jnr.ffi.Pointer self) {
-//    		base.ref++;
+    		base.ref++;
 			System.out.print("+ ");
-//    		System.out.println(base.ref);
+    		System.out.println(base.ref);
     	}
     }
     public static class ReleaseFN {
-//    	private Base base;
-//
-//		public ReleaseFN(Base base) {
-//			this.base = base;
-//		}
+    	private Base base;
+
+		public ReleaseFN(Base base) {
+			this.base = base;
+		}
 
 		@Delegate
     	public int release(jnr.ffi.Pointer self) {
-//    		base.ref--;
+    		base.ref--;
 			System.out.print("- ");
-//    		System.out.println(base.ref);
+    		System.out.println(base.ref);
     		return 1;
     	}
     }
     public static class HasOneRefFN {
-//    	private Base base;
+    	private Base base;
 
-//		public HasOneRefFN(Base base) {
-//			this.base = base;
-//		}
+		public HasOneRefFN(Base base) {
+			this.base = base;
+		}
 
 		@Delegate
     	public int hasOneRef(jnr.ffi.Pointer self) {
 			System.out.print("= ");
-//    		System.out.println(base.ref);
-//    		return base.ref > 0 ? 1 : 0;
-    		return 1;
+    		System.out.println(base.ref);
+    		return base.ref > 0 ? 1 : 0;
+//    		return 1;
     	}
     }
     public static interface OnContextInitialized {
@@ -4828,18 +4827,19 @@ public class CEF {
      *   function is called on the render process main thread.
      */
     public static final class App extends Struct {
-        public Base base;
+        public Base base = inner(new Base(getRuntime(), this));
 //        public Pointer on_before_command_line_processing;
 //        public Pointer on_register_custom_schemes;
 //        public Pointer get_resource_bundle_handler;
 //        public Function<GetBrowserProcessHandler> get_browser_process_handler = function(GetBrowserProcessHandler.class);
 //        public Pointer get_render_process_handler;
-        public App() {
-          this(RUNTIME);
-        }
+//        public App() {
+//          this(RUNTIME);
+//        }
         public App(jnr.ffi.Runtime runtime) {
           super(runtime);
-          base = inner(new Base(runtime, this));
+          base.setFns();
+//          base = inner(new Base(runtime, this));
 //          base = new Base(runtime, this);
           //base.size.set(Struct.size(this));
         }

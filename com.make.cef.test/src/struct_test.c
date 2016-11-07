@@ -298,7 +298,7 @@ char* fn_app_refs(cef_app_t2* app) {
 	printf("#in fn_app_refs:\n");
 	printf(" app: %i\n", app != NULL);
 	//printf(" app.base: %i\n", app->base);
-	printf(" app.base.size: %ld\n", app->base.size);
+	//printf(" app.base.size: %ld\n", app->base.size);
 	printf(" app.base.add_ref: %i\n", app->base.add_ref != NULL);
 
 	//app->base.add_ref(&app->base);
