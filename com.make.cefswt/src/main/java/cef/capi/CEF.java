@@ -4828,24 +4828,22 @@ public class CEF {
      */
     public static final class App extends Struct {
         public Base base = inner(new Base(getRuntime(), this));
-//        public Pointer on_before_command_line_processing;
-//        public Pointer on_register_custom_schemes;
-//        public Pointer get_resource_bundle_handler;
-//        public Function<GetBrowserProcessHandler> get_browser_process_handler = function(GetBrowserProcessHandler.class);
-//        public Pointer get_render_process_handler;
-//        public App() {
-//          this(RUNTIME);
-//        }
+        public Pointer on_before_command_line_processing;
+        public Pointer on_register_custom_schemes;
+        public Pointer get_resource_bundle_handler;
+        public Function<GetBrowserProcessHandler> get_browser_process_handler = function(GetBrowserProcessHandler.class);
+        public Pointer get_render_process_handler;
+        public App() {
+          this(RUNTIME);
+        }
         public App(jnr.ffi.Runtime runtime) {
           super(runtime);
           base.setFns();
-//          base = inner(new Base(runtime, this));
-//          base = new Base(runtime, this);
           //base.size.set(Struct.size(this));
         }
-//		public void set_browser_process_handler(GetBrowserProcessHandler getBrowserProcessHandler) {
-//			get_browser_process_handler.set(getBrowserProcessHandler);
-//		}
+		public void set_browser_process_handler(GetBrowserProcessHandler getBrowserProcessHandler) {
+			get_browser_process_handler.set(getBrowserProcessHandler);
+		}
     }
     
     /**
