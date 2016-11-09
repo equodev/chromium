@@ -115,15 +115,18 @@ public class CEF {
      *   (FFI::Pointer(*)) 
      */
     public static final class StringUtf16 extends Struct {
-        public Pointer str;
-        public UnsignedLong length;
-        public Pointer dtor;
+        public UTFString str = new UTF8String(100);
+        public UnsignedLong length = new UnsignedLong();
+        public Pointer dtor = new Pointer();
         public StringUtf16() {
           super(RUNTIME);
         }
         public StringUtf16(jnr.ffi.Runtime runtime) {
           super(runtime);
         }
+		public StringUtf16(Runtime runtime, Struct struct) {
+			super(runtime, struct);
+		}
     }
     
     /**
@@ -751,32 +754,32 @@ public class CEF {
      *   CefRequestContextSettings.accept_language_list value.
      */
     public static final class Settings extends Struct {
-        public UnsignedLong size;
-        public Signed32 single_process;
-        public Signed32 no_sandbox;
-        public StringUtf16 browser_subprocess_path;
-        public Signed32 multi_threaded_message_loop;
-        public Signed32 windowless_rendering_enabled;
-        public Signed32 command_line_args_disabled;
-        public StringUtf16 cache_path;
-        public StringUtf16 user_data_path;
-        public Signed32 persist_session_cookies;
-        public Signed32 persist_user_preferences;
-        public StringUtf16 user_agent;
-        public StringUtf16 product_version;
-        public StringUtf16 locale;
-        public StringUtf16 log_file;
-        public LogSeverity log_severity;
-        public StringUtf16 javascript_flags;
-        public StringUtf16 resources_dir_path;
-        public StringUtf16 locales_dir_path;
-        public Signed32 pack_loading_disabled;
-        public Signed32 remote_debugging_port;
-        public Signed32 uncaught_exception_stack_size;
-        public Signed32 context_safety_implementation;
-        public Signed32 ignore_certificate_errors;
-        public Unsigned32 background_color;
-        public StringUtf16 accept_language_list;
+        public UnsignedLong size = new UnsignedLong();
+        public Signed32 single_process = new Signed32();
+        public Signed32 no_sandbox = new Signed32();
+        public StringUtf16 browser_subprocess_path = inner(new StringUtf16(getRuntime(), this));
+        public Signed32 multi_threaded_message_loop = new Signed32();
+        public Signed32 windowless_rendering_enabled = new Signed32();
+        public Signed32 command_line_args_disabled = new Signed32();
+        public StringUtf16 cache_path = inner(new StringUtf16(getRuntime(), this));
+        public StringUtf16 user_data_path = inner(new StringUtf16(getRuntime(), this));
+        public Signed32 persist_session_cookies = new Signed32();
+        public Signed32 persist_user_preferences = new Signed32();
+        public StringUtf16 user_agent = inner(new StringUtf16(getRuntime(), this));
+        public StringUtf16 product_version = inner(new StringUtf16(getRuntime(), this));
+        public StringUtf16 locale = inner(new StringUtf16(getRuntime(), this));
+        public StringUtf16 log_file = inner(new StringUtf16(getRuntime(), this));
+        public Enum<LogSeverity> log_severity = new Enum<>(LogSeverity.class);
+        public StringUtf16 javascript_flags = inner(new StringUtf16(getRuntime(), this));
+        public StringUtf16 resources_dir_path = inner(new StringUtf16(getRuntime(), this));
+        public StringUtf16 locales_dir_path = inner(new StringUtf16(getRuntime(), this));
+        public Signed32 pack_loading_disabled = new Signed32();
+        public Signed32 remote_debugging_port = new Signed32();
+        public Signed32 uncaught_exception_stack_size = new Signed32();
+        public Signed32 context_safety_implementation = new Signed32();
+        public Signed32 ignore_certificate_errors = new Signed32();
+        public Unsigned32 background_color = new Unsigned32();
+        public StringUtf16 accept_language_list = inner(new StringUtf16(getRuntime(), this));
         public Settings() {
           super(RUNTIME);
         }

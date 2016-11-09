@@ -67,6 +67,9 @@ public class CefJNR {
 
 		// Specify Cef global settings here.
 		Settings settings = new CEF.Settings();
+		settings.no_sandbox.set(1);
+//		settings.resources_dir_path.str.set("/home/guille/Downloads/cef_binary_3.2704.1434.gec3e9ed_linux64/Resources");
+//		settings.locales_dir_path.str.set("/home/guille/Downloads/cef_binary_3.2704.1434.gec3e9ed_linux64/Resources/locales");
 //		Settings settings = null;
 //		settings.log_file = new CEF.StringUtf16();
 //		Cef.string
