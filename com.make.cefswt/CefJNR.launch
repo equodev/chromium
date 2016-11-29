@@ -7,8 +7,8 @@
 <listEntry value="1"/>
 </listAttribute>
 <mapAttribute key="org.eclipse.debug.core.environmentVariables">
-<mapEntry key="LD_LIBRARY_PATH" value="${project_loc:/com.make.cefswt}"/>
-<mapEntry key="LD_PRELOAD" value="${project_loc:/com.make.cefswt}/libcef.so"/>
+<mapEntry key="LD_LIBRARY_PATH" value="/home/guille/Downloads/cef_binary_3.2704.1434.gec3e9ed_linux64/Debug"/>
+<mapEntry key="LD_PRELOAD" value="/home/guille/Downloads/cef_binary_3.2704.1434.gec3e9ed_linux64/Debug/libcef.so"/>
 </mapAttribute>
 <stringAttribute key="org.eclipse.jdt.launching.CLASSPATH_PROVIDER" value="org.eclipse.m2e.launchconfig.classpathProvider"/>
 <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="com.make.cef.samples.cefsimple.CefJNR"/>

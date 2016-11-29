@@ -166,16 +166,16 @@ char* fn_settings(const struct _cef_settings_t* settings, void* windows_sandbox_
 	printf("#in fn_settings:\n");
 	printf(" settings: %i\n", settings != NULL);
 
-	/*char *ret = malloc (sizeof (char) * 50);
-	sprintf(ret, "%i:", args->argc);
+	char *ret = malloc (sizeof (char) * 50);
+	sprintf(ret, "ok:%i_%i,%s", settings->single_process, settings->no_sandbox, (char*)settings->log_file.str);
 
-	for (int i = 0; i < args->argc; ++i) {
+	/*for (int i = 0; i < args->argc; ++i) {
 		printf(" argv[%i]: %s\n", i, args->argv[i]);
 		strcat(ret, "_");
 		strcat(ret, args->argv[i]);
 	}*/
 
-	return "ok";
+	return ret;
 }
 
 char* fn_app(cef_app_t* application, void* windows_sandbox_info) {

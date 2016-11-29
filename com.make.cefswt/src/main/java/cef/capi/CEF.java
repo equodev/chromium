@@ -4,11 +4,12 @@ import jnr.ffi.*;
 import jnr.ffi.Runtime;
 import jnr.ffi.annotations.Delegate;
 import jnr.ffi.annotations.In;
+import jnr.ffi.annotations.TypeDefinition;
 import jnr.ffi.util.*;
 import jnr.ffi.mapper.*;
 import java.lang.annotation.*;
 
-import cef.capi.CEF.GetBrowserProcessHandler;
+import cef.capi.CEF.App.OnBeforeCommandLineProcessing;
 
 public class CEF {
     public static CEFInterface INSTANCE = CEFInterface.InstanceCreator.createInstance();
@@ -4750,6 +4751,115 @@ public class CEF {
     	@Delegate
     	public void onContextInitialized(BrowserProcessHandler self);
     }
+
+    /**
+     * (Not documented)
+     * 
+     * = Fields:
+     * :base ::
+     *   (Base) Base structure.
+     * :isValid ::
+     *   (FFI::Pointer(*)) Returns true (1) if this object is valid. Do not call any other functions
+     *   if this function returns false (0).
+     * :isReadOnly ::
+     *   (FFI::Pointer(*)) Returns true (1) if the values of this object are read-only. Some APIs may
+     *   expose read-only objects.
+     * :copy ::
+     *   (FFI::Pointer(*)) Returns a writable copy of this object.
+     * :initFromArgv ::
+     *   (FFI::Pointer(*)) Initialize the command line with the specified |argc| and |argv| values.
+     *   The first argument must be the name of the program. This function is only
+     *   supported on non-Windows platforms.
+     * :initFromString ::
+     *   (FFI::Pointer(*)) Initialize the command line with the string returned by calling
+     *   GetCommandLineW(). This function is only supported on Windows.
+     * :reset ::
+     *   (FFI::Pointer(*)) Reset the command-line switches and arguments but leave the program
+     *   component unchanged.
+     * :getArgv ::
+     *   (FFI::Pointer(*)) Retrieve the original command line string as a vector of strings. The argv
+     *   array: { program, ((--|-|/)switch(=value))*, (--), (argument)* }
+     * :getCommandLineString ::
+     *   (FFI::Pointer(*)) The resulting string must be freed by calling cef_string_userfree_free().
+     * :getProgram ::
+     *   (FFI::Pointer(*)) The resulting string must be freed by calling cef_string_userfree_free().
+     * :setProgram ::
+     *   (FFI::Pointer(*)) Set the program part of the command line string (the first item).
+     * :hasSwitches ::
+     *   (FFI::Pointer(*)) Returns true (1) if the command line has switches.
+     * :hasSwitch ::
+     *   (FFI::Pointer(*)) Returns true (1) if the command line contains the given switch.
+     * :getSwitchValue ::
+     *   (FFI::Pointer(*)) The resulting string must be freed by calling cef_string_userfree_free().
+     * :getSwitches ::
+     *   (FFI::Pointer(*)) Returns the map of switch names and values. If a switch has no value an
+     *   NULL string is returned.
+     * :appendSwitch ::
+     *   (FFI::Pointer(*)) Add a switch to the end of the command line. If the switch has no value
+     *   pass an NULL value string.
+     * :appendSwitchWithValue ::
+     *   (FFI::Pointer(*)) Add a switch with the specified value to the end of the command line.
+     * :hasArguments ::
+     *   (FFI::Pointer(*)) True if there are remaining command line arguments.
+     * :getArguments ::
+     *   (FFI::Pointer(*)) Get the remaining command line arguments.
+     * :appendArgument ::
+     *   (FFI::Pointer(*)) Add an argument to the end of the command line.
+     * :prependWrapper ::
+     *   (FFI::Pointer(*)) Insert a command before the current command. Common for debuggers, like
+     *   "valgrind" or "gdb --args".
+     */
+    public static final class CommandLine extends Struct {
+        public Base base;
+        public Pointer is_valid;
+        public Pointer is_read_only;
+        public Pointer copy;
+        public Pointer init_from_argv;
+        public Pointer init_from_string;
+        public Pointer reset;
+        public Pointer get_argv;
+        public Pointer get_command_line_string;
+        public Pointer get_program;
+        public Pointer set_program;
+        public Pointer has_switches;
+        public Pointer has_switch;
+        public Pointer get_switch_value;
+        public Pointer get_switches;
+        public Pointer append_switch;
+        public Pointer append_switch_with_value;
+        public Pointer has_arguments;
+        public Pointer get_arguments;
+        public Pointer append_argument;
+        public Pointer prepend_wrapper;
+        public CommandLine() {
+          super(RUNTIME);
+        }
+        public CommandLine(jnr.ffi.Runtime runtime) {
+          super(runtime);
+        }
+    }
+    
+    /**
+     * (Not documented)
+     * 
+     * @method commandLineCreate()
+     * @return [CommandLine] 
+     * @scope class
+     */
+    public static CommandLine commandLineCreate() {
+        return INSTANCE.commandLineCreate();
+    }
+    
+    /**
+     * (Not documented)
+     * 
+     * @method commandLineGetGlobal()
+     * @return [CommandLine] 
+     * @scope class
+     */
+    public static CommandLine commandLineGetGlobal() {
+        return INSTANCE.commandLineGetGlobal();
+    }
     
     /**
      * (Not documented)
@@ -4790,11 +4900,6 @@ public class CEF {
         }
     }
     
-    public static interface GetBrowserProcessHandler {
-    	@Delegate
-    	public BrowserProcessHandler getBrowserProcessHandler(Pointer app);
-    }
-    
     /**
      * Implement this structure to provide handler implementations. Methods will be
      * called by the process and/or thread indicated.
@@ -4831,11 +4936,11 @@ public class CEF {
      */
     public static final class App extends Struct {
         public Base base = inner(new Base(getRuntime(), this));
-        public Pointer on_before_command_line_processing;
-        public Pointer on_register_custom_schemes;
-        public Pointer get_resource_bundle_handler;
+        public Function<OnBeforeCommandLineProcessing> on_before_command_line_processing = function(OnBeforeCommandLineProcessing.class);
+        public Function<OnRegisterCustomSchemes> on_register_custom_schemes = function(OnRegisterCustomSchemes.class);
+        public Function<GetResourceBundleHandler> get_resource_bundle_handler = function(GetResourceBundleHandler.class);
         public Function<GetBrowserProcessHandler> get_browser_process_handler = function(GetBrowserProcessHandler.class);
-        public Pointer get_render_process_handler;
+        public Function<GetRenderProcessHandler> get_render_process_handler = function(GetRenderProcessHandler.class);
         public App() {
           this(RUNTIME);
         }
@@ -4846,6 +4951,30 @@ public class CEF {
         }
 		public void set_browser_process_handler(GetBrowserProcessHandler getBrowserProcessHandler) {
 			get_browser_process_handler.set(getBrowserProcessHandler);
+		}
+		public void set_on_before_command_line_processing(OnBeforeCommandLineProcessing onBeforeCommandLineProcessing) {
+			on_before_command_line_processing.set(onBeforeCommandLineProcessing);
+		}
+		
+		public static interface OnBeforeCommandLineProcessing {
+			@Delegate
+			public void onBeforeCommandLineProcessing(jnr.ffi.Pointer app, /*CEF.StringUtf16*/jnr.ffi.Pointer process_type, /*CommandLine*/jnr.ffi.Pointer command_line);
+		}
+		public static interface OnRegisterCustomSchemes {
+			@Delegate
+			public void onRegisterCustomSchemes(jnr.ffi.Pointer app, jnr.ffi.Pointer registrar);
+		}
+		public static interface GetResourceBundleHandler {
+			@Delegate
+			public Pointer getResourceBundleHandler(jnr.ffi.Pointer app);
+		}
+		public static interface GetBrowserProcessHandler {
+			@Delegate
+			public BrowserProcessHandler getBrowserProcessHandler(jnr.ffi.Pointer app);
+		}
+		public static interface GetRenderProcessHandler {
+			@Delegate
+			public Pointer getRenderProcessHandler(jnr.ffi.Pointer app);
 		}
     }
     
@@ -5076,6 +5205,12 @@ public class CEF {
         
         @NativeName("cef_get_xdisplay")
         XDisplay getXdisplay();
+        
+        @NativeName("cef_command_line_create")
+        CommandLine commandLineCreate();
+        
+        @NativeName("cef_command_line_get_global")
+        CommandLine commandLineGetGlobal();
         
         @NativeName("cef_execute_process")
         int executeProcess(MainArgs args, App application, Pointer windowsSandboxInfo);

@@ -6,8 +6,10 @@ import java.util.Arrays;
 import cef.capi.CEF;
 import cef.capi.CEF.App;
 import cef.capi.CEF.BrowserProcessHandler;
+import cef.capi.CEF.CommandLine;
 import cef.capi.CEF.MainArgs;
 import cef.capi.CEF.Settings;
+import cef.capi.CEF.StringUtf16;
 import jnr.ffi.LibraryLoader;
 import jnr.ffi.Memory;
 import jnr.ffi.NativeType;
@@ -67,7 +69,7 @@ public class CefJNR {
 
 		// Specify Cef global settings here.
 		Settings settings = new CEF.Settings();
-		settings.no_sandbox.set(1);
+		settings.no_sandbox.set(0);
 //		settings.resources_dir_path.str.set("/home/guille/Downloads/cef_binary_3.2704.1434.gec3e9ed_linux64/Resources");
 //		settings.locales_dir_path.str.set("/home/guille/Downloads/cef_binary_3.2704.1434.gec3e9ed_linux64/Resources/locales");
 //		Settings settings = null;
@@ -87,17 +89,23 @@ public class CefJNR {
 				System.out.println("onContextInitialized");
 			}
 		};
+		app.set_on_before_command_line_processing(new CEF.App.OnBeforeCommandLineProcessing() {
+			@Override
+			public void onBeforeCommandLineProcessing(Pointer app, Pointer process_type, jnr.ffi.Pointer command_line) {
+				System.out.println("onBeforeCommandLineProcessing");
+			}
+		});
 		
 //		app.get_browser_process_handler = main_args.new Pointer();
 //		jnr.ffi.Pointer allocate = Memory.allocate(CEF.RUNTIME, NativeType.ADDRESS);
 //		app.get_browser_process_handler.set(Struct.getMemory(browserProcessHandler));
-//		app.set_browser_process_handler(new CEF.GetBrowserProcessHandler() {
-//			@Override
-//			public BrowserProcessHandler getBrowserProcessHandler(Pointer app) {
-//				System.out.println("getBrowserProcessHandler");
-//				return browserProcessHandler;
-//			}
-//		});
+		app.set_browser_process_handler(new CEF.App.GetBrowserProcessHandler() {
+			@Override
+			public BrowserProcessHandler getBrowserProcessHandler(Pointer app) {
+				System.out.println("getBrowserProcessHandler");
+				return browserProcessHandler;
+			}
+		});
 		System.out.println("Calling initialize");
 //		app.get_browser_process_handler.set(Memory.allocate(CEF.RUNTIME, ));
 		// Initialize Cef for the browser process.

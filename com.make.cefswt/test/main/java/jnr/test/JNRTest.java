@@ -178,8 +178,12 @@ public class JNRTest {
 		Runtime runtime = Runtime.getRuntime(lib);
 		
 		Settings settings = new Settings(runtime);
+		//settings.single_process.set(0);
+		settings.no_sandbox.set(1);
+		settings.log_file.str.set("cef.log");
+		settings.resources_dir_path.str.set("/resources/");
 		
-		assertThat(lib.fn_settings(settings, null)).isEqualTo("ok");
+		assertThat(lib.fn_settings(settings, null)).isEqualTo("ok:0_1_cef.log_/resources/");
 	}
 	
 	@Test
