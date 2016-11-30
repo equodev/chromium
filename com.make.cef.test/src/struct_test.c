@@ -162,16 +162,22 @@ typedef struct _cef_settings_t {
 } cef_settings_t;
 */
 
-char* fn_cefstring(cef_string_t strValue, char* eq, int length) {
-	printf("#in fn_cefstring:\n");
+char* fn_cefstring8(char* eq, cef_string_utf8_t* fromj) {
+	printf("#in fn_cefstring8:\n");
 	printf(" eq: %s\n", eq);
-	printf(" length: %i\n", length);
-	//printf(" strValue: %s\n", strValue.str);
 
-	//char* s = strValue.str;
-	//char* s = eq;
 	char *ret = malloc (sizeof (char) * 50);
-	sprintf(ret, "ok:%s", eq);
+	sprintf(ret, "ok:%i_%ld_%s", fromj != NULL, fromj->length, fromj->str);
+
+	return ret;
+}
+
+char* fn_cefstring16(char* eq, cef_string_utf16_t* fromj) {
+	printf("#in fn_cefstring16:\n");
+	printf(" eq: %s\n", eq);
+
+	char *ret = malloc (sizeof (char) * 50);
+	sprintf(ret, "ok:%i_%ld_%s", fromj != NULL, fromj->length, fromj->str);
 
 	return ret;
 }

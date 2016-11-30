@@ -13,6 +13,7 @@ import cef.capi.CEF.App;
 import cef.capi.CEF.MainArgs;
 import cef.capi.CEF.Settings;
 import cef.capi.CEF.StringUtf16;
+import cef.capi.CEF.StringUtf8;
 import jnr.ffi.LibraryLoader;
 import jnr.ffi.Memory;
 import jnr.ffi.NativeLong;
@@ -21,6 +22,7 @@ import jnr.ffi.Pointer;
 import jnr.ffi.Runtime;
 import jnr.ffi.Struct;
 import jnr.ffi.annotations.Delegate;
+import jnr.ffi.byref.PointerByReference;
 
 
 public class JNRTest {
@@ -39,7 +41,8 @@ public class JNRTest {
 		String fn_callback_args(StructCallback struct, int arg);
 		String fn_base_refs(CEF.Base base);
 		String fn_app_refs(CEF.App app);
-		String fn_cefstring(CEF.StringUtf16 strValue, String eq, int length);
+		String fn_cefstring8(String eq, CEF.StringUtf8 fromj);
+		String fn_cefstring16(String eq, CEF.StringUtf16 fromj);
 	}
 	
 	public static class Int_struct extends Struct {
@@ -176,20 +179,27 @@ public class JNRTest {
 	}
 	
 	@Test
-	public void test_fn_cefstring() {
+	public void test_fn_cefstring8() {
 		StructLib lib = getLib();
 		Runtime runtime = Runtime.getRuntime(lib);
 		
-		java.lang.String src = "la la";
-		StringUtf16 output = new CEF.StringUtf16(runtime);
-		int ok = CEF.stringAsciiToUtf16(src, new NativeLong(src.length()), output);
-		assertThat(ok).isEqualTo(1);
+		StringUtf8 fromj = new CEF.StringUtf8(runtime);
+		java.lang.String v = "from java";
+		fromj.str.set(v);
+		fromj.length.set(v.length());
+		assertThat(lib.fn_cefstring8(v, fromj)).isEqualTo("ok:1_"+v.length()+"_" + v);
+	}
+	
+	@Test
+	public void test_fn_cefstring16() {
+		StructLib lib = getLib();
+		Runtime runtime = Runtime.getRuntime(lib);
 		
-		java.lang.String eq = "the expected";
-		StringUtf16 cefStr = new CEF.StringUtf16(runtime);
-		cefStr.length.set("lala".length());
-		cefStr.str.set("lala");
-		assertThat(lib.fn_cefstring(cefStr, eq, eq.length())).isEqualTo("ok:" + eq);
+		StringUtf16 fromj = new CEF.StringUtf16(runtime);
+		java.lang.String v = "from java 32";
+		fromj.str.set(v);
+		fromj.length.set(v.length());
+		assertThat(lib.fn_cefstring16(v, fromj)).isEqualTo("ok:1_"+v.length()+"_" + v);
 	}
 	
 	@Test
