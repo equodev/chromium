@@ -12,8 +12,10 @@ import cef.capi.CEF;
 import cef.capi.CEF.App;
 import cef.capi.CEF.MainArgs;
 import cef.capi.CEF.Settings;
+import cef.capi.CEF.StringUtf16;
 import jnr.ffi.LibraryLoader;
 import jnr.ffi.Memory;
+import jnr.ffi.NativeLong;
 import jnr.ffi.ObjectReferenceManager;
 import jnr.ffi.Pointer;
 import jnr.ffi.Runtime;
@@ -37,6 +39,7 @@ public class JNRTest {
 		String fn_callback_args(StructCallback struct, int arg);
 		String fn_base_refs(CEF.Base base);
 		String fn_app_refs(CEF.App app);
+		String fn_cefstring(CEF.StringUtf16 strValue, String eq, int length);
 	}
 	
 	public static class Int_struct extends Struct {
@@ -173,17 +176,37 @@ public class JNRTest {
 	}
 	
 	@Test
+	public void test_fn_cefstring() {
+		StructLib lib = getLib();
+		Runtime runtime = Runtime.getRuntime(lib);
+		
+		java.lang.String src = "la la";
+		StringUtf16 output = new CEF.StringUtf16(runtime);
+		int ok = CEF.stringAsciiToUtf16(src, new NativeLong(src.length()), output);
+		assertThat(ok).isEqualTo(1);
+		
+		java.lang.String eq = "the expected";
+		StringUtf16 cefStr = new CEF.StringUtf16(runtime);
+		cefStr.length.set("lala".length());
+		cefStr.str.set("lala");
+		assertThat(lib.fn_cefstring(cefStr, eq, eq.length())).isEqualTo("ok:" + eq);
+	}
+	
+	@Test
 	public void test_fn_settings() {
 		StructLib lib = getLib();
 		Runtime runtime = Runtime.getRuntime(lib);
 		
 		Settings settings = new Settings(runtime);
-		//settings.single_process.set(0);
-		settings.no_sandbox.set(1);
+		int single = 0;
+//		settings.single_process.set(single);
+		int nosandbox = 1;
+		settings.no_sandbox.set(nosandbox);
 		settings.log_file.str.set("cef.log");
+		settings.log_file.length.set(7);
 		settings.resources_dir_path.str.set("/resources/");
 		
-		assertThat(lib.fn_settings(settings, null)).isEqualTo("ok:0_1_cef.log_/resources/");
+		assertThat(lib.fn_settings(settings, null)).isEqualTo("ok:"+single+"_"+nosandbox+"_cef.log_/resources/");
 	}
 	
 	@Test

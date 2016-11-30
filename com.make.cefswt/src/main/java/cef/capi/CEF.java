@@ -4,6 +4,7 @@ import jnr.ffi.*;
 import jnr.ffi.Runtime;
 import jnr.ffi.annotations.Delegate;
 import jnr.ffi.annotations.In;
+import jnr.ffi.annotations.Out;
 import jnr.ffi.annotations.TypeDefinition;
 import jnr.ffi.util.*;
 import jnr.ffi.mapper.*;

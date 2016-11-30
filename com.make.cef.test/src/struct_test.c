@@ -162,12 +162,26 @@ typedef struct _cef_settings_t {
 } cef_settings_t;
 */
 
+char* fn_cefstring(cef_string_t strValue, char* eq, int length) {
+	printf("#in fn_cefstring:\n");
+	printf(" eq: %s\n", eq);
+	printf(" length: %i\n", length);
+	//printf(" strValue: %s\n", strValue.str);
+
+	//char* s = strValue.str;
+	//char* s = eq;
+	char *ret = malloc (sizeof (char) * 50);
+	sprintf(ret, "ok:%s", eq);
+
+	return ret;
+}
+
 char* fn_settings(const struct _cef_settings_t* settings, void* windows_sandbox_info) {
 	printf("#in fn_settings:\n");
 	printf(" settings: %i\n", settings != NULL);
 
 	char *ret = malloc (sizeof (char) * 50);
-	sprintf(ret, "ok:%i_%i,%s", settings->single_process, settings->no_sandbox, (char*)settings->log_file.str);
+	sprintf(ret, "ok:%i_%i_%i", settings->single_process, settings->no_sandbox, (char*)settings->log_file.str == NULL);
 
 	/*for (int i = 0; i < args->argc; ++i) {
 		printf(" argv[%i]: %s\n", i, args->argv[i]);
