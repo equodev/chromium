@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import cef.capi.CEF;
 import cef.capi.CEF.App;
+import cef.capi.CEF.LogSeverity;
 import cef.capi.CEF.MainArgs;
 import cef.capi.CEF.Settings;
 import cef.capi.CEF.StringUtf16;
@@ -32,6 +33,7 @@ public class JNRTest {
 		String fn_int_int_char_bool_args(int a1, String a2, boolean a3);
 		String fn_int_string_array_args(int argc, String[] argv);
 		String fn_struct_int(Int_struct st);
+		String fn_struct_cefstring(Cefstring_struct st);
 		String fn_struct_string_array(String_array_struct st);
 		String fn_struct_string_array_fixed(String_array_struct_fixed st);
 		String fn_mainargs(MainArgs args, Pointer windows_sandbox_info);
@@ -53,6 +55,16 @@ public class JNRTest {
 		}
 		NumberField a1 = new Signed32();
 		String a2;
+	}
+	
+	public static class Cefstring_struct extends Struct {
+		protected Cefstring_struct(Runtime runtime) {
+			super(runtime);
+		}
+		NumberField a1 = new Signed32();
+		CEF.StringUtf16 a2 = inner(new CEF.StringUtf16(getRuntime(), this));
+		NumberField very_long_field_name = new Signed32();
+		CEF.StringUtf16 very_long_field_name2 = inner(new CEF.StringUtf16(getRuntime(), this));
 	}
 	
 	public static class String_array_struct_fixed extends Struct {
@@ -203,20 +215,41 @@ public class JNRTest {
 	}
 	
 	@Test
-	public void test_fn_settings() {
+	public void test_fn_cefstring_struct() {
 		StructLib lib = getLib();
 		Runtime runtime = Runtime.getRuntime(lib);
 		
-		Settings settings = new Settings(runtime);
+		java.lang.String v = "from java 32";
+		Cefstring_struct st = new Cefstring_struct(runtime);
+		st.a1.set(45);
+		st.a2.str.set(v);
+//		st.a2.length.set(v.length());
+		st.very_long_field_name.set(5);
+		st.very_long_field_name2.str.set("la");
+//		st.very_long_field_name2.length.set(2);
+		
+		assertThat(lib.fn_struct_cefstring(st)).isEqualTo("ok:45 "+v+" 5 la");
+	}
+	
+	@Test
+	public void test_fn_settings() {
+		StructLib lib = getLib();
+		Runtime runtime = Runtime.getRuntime(lib);
+		CEF.Settings settings = new CEF.Settings(runtime);
+		settings.size.set(10);
 		int single = 0;
-//		settings.single_process.set(single);
+		settings.single_process.set(single);
 		int nosandbox = 1;
 		settings.no_sandbox.set(nosandbox);
+		settings.browser_subprocess_path.str.set("java");
 		settings.log_file.str.set("cef.log");
 		settings.log_file.length.set(7);
 		settings.resources_dir_path.str.set("/resources/");
+		settings.resources_dir_path.length.set("/resources/".length());
+		settings.remote_debugging_port.set(80);
+		settings.log_severity.set(LogSeverity.LOGSEVERITY_VERBOSE);
 		
-		assertThat(lib.fn_settings(settings, null)).isEqualTo("ok:"+single+"_"+nosandbox+"_cef.log_/resources/");
+		assertThat(lib.fn_settings(settings, null)).isEqualTo("ok:"+single+"_"+nosandbox+"_java_cef.log_/resources/_80_1");
 	}
 	
 	@Test

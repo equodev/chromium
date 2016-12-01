@@ -131,36 +131,6 @@ char* fn_mainargs(const struct _cef_main_args_t* args, void* windows_sandbox_inf
 
 	return ret;
 }
-/*
-typedef struct _cef_settings_t {
-  size_t size;
-  int single_process;
-  int no_sandbox;
-  cef_string_t browser_subprocess_path;
-  int multi_threaded_message_loop;
-  int windowless_rendering_enabled;
-  int command_line_args_disabled;
-  cef_string_t cache_path;
-  cef_string_t user_data_path;
-  int persist_session_cookies;
-  int persist_user_preferences;
-  cef_string_t user_agent;
-  cef_string_t product_version;
-  cef_string_t locale;
-  cef_string_t log_file;
-  cef_log_severity_t log_severity;
-  cef_string_t javascript_flags;
-  cef_string_t resources_dir_path;
-  cef_string_t locales_dir_path;
-  int pack_loading_disabled;
-  int remote_debugging_port;
-  int uncaught_exception_stack_size;
-  int context_safety_implementation;
-  int ignore_certificate_errors;
-  cef_color_t background_color;
-  cef_string_t accept_language_list;
-} cef_settings_t;
-*/
 
 char* fn_cefstring8(char* eq, cef_string_utf8_t* fromj) {
 	printf("#in fn_cefstring8:\n");
@@ -182,12 +152,69 @@ char* fn_cefstring16(char* eq, cef_string_utf16_t* fromj) {
 	return ret;
 }
 
+typedef struct _settings_t {
+  size_t size;
+  int single_process;
+  int no_sandbox;
+  cef_string_t browser_subprocess_path;
+  int multi_threaded_message_loop;
+  int windowless_rendering_enabled;
+  int command_line_args_disabled;
+  cef_string_t cache_path;
+  cef_string_t user_data_path;
+  int persist_session_cookies;
+  int persist_user_preferences;
+  cef_string_t user_agent;
+  cef_string_t product_version;
+  cef_string_t locale;
+  cef_string_t log_file;
+  //cef_log_severity_t log_severity;
+  cef_string_t javascript_flags;
+  cef_string_t resources_dir_path;
+  cef_string_t locales_dir_path;
+  int pack_loading_disabled;
+  int remote_debugging_port;
+  int uncaught_exception_stack_size;
+  int context_safety_implementation;
+  int ignore_certificate_errors;
+  //cef_color_t background_color;
+  cef_string_t accept_language_list;
+} settings_t;
+
+
+typedef struct _cefstring_struct {
+	int a1;
+	cef_string_utf16_t a2;
+	int very_long_field_name;
+	cef_string_utf16_t very_long_field_name2;
+} cefstring_struct;
+
+char* fn_struct_cefstring(const struct _cefstring_struct* st) {
+	printf("#in fn_cefstring_struct:\n");
+	printf(" a1: %i\n", st->a1);
+	printf(" a2: %s\n", st->a2.str);
+	printf(" a3: %i\n", st->very_long_field_name);
+	printf(" a3: %s\n", st->very_long_field_name2.str);
+
+	char *ret = malloc (sizeof (char) * 250);
+	sprintf(ret, "ok:%i %s %i %s", st->a1, st->a2.str, st->very_long_field_name, st->very_long_field_name2.str);
+
+	return ret;
+}
+
 char* fn_settings(const struct _cef_settings_t* settings, void* windows_sandbox_info) {
 	printf("#in fn_settings:\n");
 	printf(" settings: %i\n", settings != NULL);
+	printf(" browser_subprocess_path: %s\n", settings->browser_subprocess_path.str);
 
-	char *ret = malloc (sizeof (char) * 50);
-	sprintf(ret, "ok:%i_%i_%i", settings->single_process, settings->no_sandbox, (char*)settings->log_file.str == NULL);
+	char *ret = malloc (sizeof (char) * 250);
+	//sprintf(ret, "ok:%i_%i_%s %s", settings->single_process, settings->no_sandbox, settings->browser_subprocess_path /*settings->log_file.str*/, settings->resources_dir_path);
+	sprintf(ret, "ok:%i_%i_%s_%s_%s_%i_%i", settings->single_process, settings->no_sandbox,
+			settings->browser_subprocess_path.str,
+			settings->log_file.str,
+			settings->resources_dir_path.str,
+			settings->remote_debugging_port,
+			settings->log_severity);
 
 	/*for (int i = 0; i < args->argc; ++i) {
 		printf(" argv[%i]: %s\n", i, args->argv[i]);
