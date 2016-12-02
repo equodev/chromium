@@ -11,6 +11,7 @@ import jnr.ffi.byref.PointerByReference;
 import jnr.ffi.util.*;
 import jnr.ffi.mapper.*;
 import java.lang.annotation.*;
+import java.nio.charset.Charset;
 
 import cef.capi.CEF.App.OnBeforeCommandLineProcessing;
 
@@ -131,7 +132,13 @@ public class CEF {
 		public StringUtf16(Runtime runtime, Struct struct) {
 			super(runtime, struct);
 		}
+		public void set(java.lang.String v) {
+			str.set(v);
+			length.set(v.length());
+		}
     }
+    
+    static Charset UTF16 = Charset.forName("UTF-16");
     
     /**
      * (Not documented)
@@ -174,9 +181,9 @@ public class CEF {
      * @return [Integer] 
      * @scope class
      */
-    public static int stringUtf16Set(Pointer src, NativeLong srcLen, StringUtf16 output, int copy) {
-        return INSTANCE.stringUtf16Set(src, srcLen, output, copy);
-    }
+//    public static int stringUtf16Set(Pointer src, NativeLong srcLen, StringUtf16 output, int copy) {
+//        return INSTANCE.stringUtf16Set(src, srcLen, output, copy);
+//    }
     
     /**
      * (Not documented)
@@ -319,9 +326,9 @@ public class CEF {
      * @return [Integer] 
      * @scope class
      */
-    public static int stringUtf8ToUtf16(String src, NativeLong srcLen, StringUtf16 output) {
-        return INSTANCE.stringUtf8ToUtf16(src, srcLen, output);
-    }
+//    public static int stringUtf8ToUtf16(String src, NativeLong srcLen, StringUtf16 output) {
+//        return INSTANCE.stringUtf8ToUtf16(src, srcLen, output);
+//    }
     
     /**
      * (Not documented)
@@ -394,9 +401,9 @@ public class CEF {
      * @return [StringUtf16] 
      * @scope class
      */
-    public static StringUtf16 stringUserfreeUtf16Alloc() {
-        return INSTANCE.stringUserfreeUtf16Alloc();
-    }
+//    public static StringUtf16 stringUserfreeUtf16Alloc() {
+//        return INSTANCE.stringUserfreeUtf16Alloc();
+//    }
     
     /**
      * (Not documented)
@@ -4750,10 +4757,6 @@ public class CEF {
 //    		return 1;
     	}
     }
-    public static interface OnContextInitialized {
-    	@Delegate
-    	public void onContextInitialized(BrowserProcessHandler self);
-    }
 
     /**
      * (Not documented)
@@ -4890,17 +4893,39 @@ public class CEF {
      *   provided then printing will not be supported on the Linux platform.
      */
     public static final class BrowserProcessHandler extends Struct {
-        public Base base;
-        public OnContextInitialized on_context_initialized;
-        public Pointer on_before_child_process_launch;
-        public Pointer on_render_process_thread_created;
-        public Pointer get_print_handler;
+    	public Base base = inner(new Base(getRuntime(), this));
+        public Function<OnContextInitialized> on_context_initialized = function(OnContextInitialized.class);
+        public Function<OnBeforeChildProcessLaunch> on_before_child_process_launch = function(OnBeforeChildProcessLaunch.class);
+        public Function<OnRenderProcessThreadCreated> on_render_process_thread_created = function(OnRenderProcessThreadCreated.class);
+        public Function<GetPrintHandler> get_print_handler = function(GetPrintHandler.class);
         public BrowserProcessHandler() {
           super(RUNTIME);
         }
         public BrowserProcessHandler(jnr.ffi.Runtime runtime) {
           super(runtime);
+          base.setFns();
         }
+        
+        public static interface OnContextInitialized {
+        	@Delegate
+        	public void onContextInitialized(jnr.ffi.Pointer self);
+        }
+        public static interface OnBeforeChildProcessLaunch {
+        	@Delegate
+        	public void onBeforeChildProcessLaunch(jnr.ffi.Pointer self, CommandLine command_line);
+        }
+        public static interface OnRenderProcessThreadCreated {
+        	@Delegate
+        	public void onRenderProcessThreadCreated(jnr.ffi.Pointer self, jnr.ffi.Pointer extra_info);
+        }
+        public static interface GetPrintHandler {
+        	@Delegate
+        	public jnr.ffi.Pointer getPrintHandler(jnr.ffi.Pointer self);
+        }
+        
+		public void set_on_context_initialized(OnContextInitialized onContextInitialized) {
+			on_context_initialized.set(onContextInitialized);
+		}
     }
     
     /**
@@ -5144,7 +5169,7 @@ public class CEF {
         int stringUtf8Set(String src, NativeLong srcLen, StringUtf8 output, int copy);
         
         @NativeName("cef_string_utf16_set")
-        int stringUtf16Set(Pointer src, NativeLong srcLen, StringUtf16 output, int copy);
+        int stringUtf16Set(String src, int srcLen, Pointer output, int copy);
         
         @NativeName("cef_string_wide_clear")
         void stringWideClear(StringWide str);
@@ -5177,7 +5202,7 @@ public class CEF {
         int stringUtf16ToWide(Pointer src, NativeLong srcLen, StringWide output);
         
         @NativeName("cef_string_utf8_to_utf16")
-        int stringUtf8ToUtf16(String src, NativeLong srcLen, StringUtf16 output);
+        int stringUtf8ToUtf16(String src, NativeLong srcLen, Pointer output);
         
         @NativeName("cef_string_utf16_to_utf8")
         int stringUtf16ToUtf8(Pointer src, NativeLong srcLen, StringUtf8 output);
@@ -5195,7 +5220,7 @@ public class CEF {
         StringUtf8 stringUserfreeUtf8Alloc();
         
         @NativeName("cef_string_userfree_utf16_alloc")
-        StringUtf16 stringUserfreeUtf16Alloc();
+        Pointer stringUserfreeUtf16Alloc();
         
         @NativeName("cef_string_userfree_wide_free")
         void stringUserfreeWideFree(StringWide str);
