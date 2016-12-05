@@ -3,8 +3,6 @@ package cef.capi;
 import jnr.ffi.*;
 import jnr.ffi.util.*;
 import jnr.ffi.mapper.*;
-import jnr.ffi.mapper.FromNativeConverter.FromNative;
-import jnr.ffi.provider.converters.StructByReferenceFromNativeConverter;
 import jnr.ffi.annotations.*;
 import java.lang.annotation.*;
 import java.nio.ByteBuffer;
@@ -4833,7 +4831,7 @@ public class CEF {
         public Function<InitFromString> initFromString = function(InitFromString.class);
         public static interface InitFromString {
             @Delegate
-            void invoke(jnr.ffi.Pointer commandLine, StringUtf16 stringUtf16);
+            void invoke(jnr.ffi.Pointer commandLine, jnr.ffi.Pointer stringUtf16);
         }
         public void setInitFromString(InitFromString callback) {
             initFromString.set(callback);
@@ -4878,7 +4876,7 @@ public class CEF {
         public Function<SetProgram> setProgram = function(SetProgram.class);
         public static interface SetProgram {
             @Delegate
-            void invoke(jnr.ffi.Pointer commandLine, StringUtf16 stringUtf16);
+            void invoke(jnr.ffi.Pointer commandLine, jnr.ffi.Pointer stringUtf16);
         }
         public void setSetProgram(SetProgram callback) {
             setProgram.set(callback);
@@ -4896,7 +4894,7 @@ public class CEF {
         public Function<HasSwitch> hasSwitch = function(HasSwitch.class);
         public static interface HasSwitch {
             @Delegate
-            int invoke(jnr.ffi.Pointer commandLine, StringUtf16 stringUtf16);
+            int invoke(jnr.ffi.Pointer commandLine, jnr.ffi.Pointer stringUtf16);
         }
         public void setHasSwitch(HasSwitch callback) {
             hasSwitch.set(callback);
@@ -4905,7 +4903,7 @@ public class CEF {
         public Function<GetSwitchValue> getSwitchValue = function(GetSwitchValue.class);
         public static interface GetSwitchValue {
             @Delegate
-            StringUtf16 invoke(jnr.ffi.Pointer commandLine, StringUtf16 stringUtf16);
+            StringUtf16 invoke(jnr.ffi.Pointer commandLine, jnr.ffi.Pointer stringUtf16);
         }
         public void setGetSwitchValue(GetSwitchValue callback) {
             getSwitchValue.set(callback);
@@ -4923,7 +4921,7 @@ public class CEF {
         public Function<AppendSwitch> appendSwitch = function(AppendSwitch.class);
         public static interface AppendSwitch {
             @Delegate
-            void invoke(jnr.ffi.Pointer commandLine, StringUtf16 stringUtf16);
+            void invoke(jnr.ffi.Pointer commandLine, jnr.ffi.Pointer stringUtf16);
         }
         public void setAppendSwitch(AppendSwitch callback) {
             appendSwitch.set(callback);
@@ -4932,7 +4930,7 @@ public class CEF {
         public Function<AppendSwitchWithValue> appendSwitchWithValue = function(AppendSwitchWithValue.class);
         public static interface AppendSwitchWithValue {
             @Delegate
-            void invoke(jnr.ffi.Pointer commandLine, StringUtf16 stringUtf16_1, StringUtf16 stringUtf16_2);
+            void invoke(jnr.ffi.Pointer commandLine, jnr.ffi.Pointer stringUtf16_1, jnr.ffi.Pointer stringUtf16_2);
         }
         public void setAppendSwitchWithValue(AppendSwitchWithValue callback) {
             appendSwitchWithValue.set(callback);
@@ -4959,7 +4957,7 @@ public class CEF {
         public Function<AppendArgument> appendArgument = function(AppendArgument.class);
         public static interface AppendArgument {
             @Delegate
-            void invoke(jnr.ffi.Pointer commandLine, StringUtf16 stringUtf16);
+            void invoke(jnr.ffi.Pointer commandLine, jnr.ffi.Pointer stringUtf16);
         }
         public void setAppendArgument(AppendArgument callback) {
             appendArgument.set(callback);
@@ -4968,7 +4966,7 @@ public class CEF {
         public Function<PrependWrapper> prependWrapper = function(PrependWrapper.class);
         public static interface PrependWrapper {
             @Delegate
-            void invoke(jnr.ffi.Pointer commandLine, StringUtf16 stringUtf16);
+            void invoke(jnr.ffi.Pointer commandLine, jnr.ffi.Pointer stringUtf16);
         }
         public void setPrependWrapper(PrependWrapper callback) {
             prependWrapper.set(callback);
@@ -5040,7 +5038,7 @@ public class CEF {
         public Function<OnBeforeChildProcessLaunch> onBeforeChildProcessLaunch = function(OnBeforeChildProcessLaunch.class);
         public static interface OnBeforeChildProcessLaunch {
             @Delegate
-            void invoke(jnr.ffi.Pointer browserProcessHandler, CommandLine commandLine);
+            void invoke(jnr.ffi.Pointer browserProcessHandler, jnr.ffi.Pointer commandLine);
         }
         public void setOnBeforeChildProcessLaunch(OnBeforeChildProcessLaunch callback) {
             onBeforeChildProcessLaunch.set(callback);
@@ -5108,7 +5106,7 @@ public class CEF {
         public Function<OnBeforeCommandLineProcessing> onBeforeCommandLineProcessing = function(OnBeforeCommandLineProcessing.class);
         public static interface OnBeforeCommandLineProcessing {
             @Delegate
-            void invoke(jnr.ffi.Pointer app, StringUtf16 stringUtf16, CommandLine commandLine);
+            void invoke(jnr.ffi.Pointer app, jnr.ffi.Pointer stringUtf16, jnr.ffi.Pointer commandLine);
         }
         public void setOnBeforeCommandLineProcessing(OnBeforeCommandLineProcessing callback) {
             onBeforeCommandLineProcessing.set(callback);
@@ -5309,9 +5307,6 @@ public class CEF {
                   .option(LibraryOption.FunctionMapper, new NativeNameAnnotationFunctionMapper())
                   .map(StringUtf8.class, new InnerStructByReferenceToNativeConverter())
                   .map(StringUtf16.class, new InnerStructByReferenceToNativeConverter())
-//                  .map(StringUtf16.class, StructByReferenceFromNativeConverter.getInstance(StringUtf16.class, null))
-                  .mapper(new TypeMapper.Builder().map(StringUtf16.class, StructByReferenceFromNativeConverter.getInstance(StringUtf16.class, null)).build())
-//                  .option(LibraryOption., value)
                   .load("cef");
                 RUNTIME = jnr.ffi.Runtime.getRuntime(lib);
                 return lib;

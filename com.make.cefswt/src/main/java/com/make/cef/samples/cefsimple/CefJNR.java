@@ -90,8 +90,9 @@ public class CefJNR {
 		
 		Settings settings = new CEF.Settings(runtime);
 		settings.size.set(Struct.size(settings));
-		settings.resourcesDirPath.set("/home/guille/Downloads/cef_binary_3.2704.1434.gec3e9ed_linux64/Resources");
-		settings.localesDirPath.set("/home/guille/Downloads/cef_binary_3.2704.1434.gec3e9ed_linux64/Resources/locales");
+		String cef = "cef_binary_3.2883.1539.gd7f087e_linux64";
+		settings.resourcesDirPath.set(System.getProperty("user.home") + File.separator + "Downloads/"+cef +"/Resources");
+		settings.localesDirPath.set(System.getProperty("user.home") + File.separator + "Downloads/"+cef+"/Resources/locales");
 		settings.browserSubprocessPath.set(subprocessPath);
 		settings.logFile.set(System.getProperty("user.dir") + File.separator + "ceflog.log" );
 		settings.logSeverity.set(LogSeverity.LOGSEVERITY_VERBOSE);
@@ -128,28 +129,20 @@ public class CefJNR {
 //			            &browserSettings, NULL);
 			}
 		});
+		browserProcessHandler.base.size.set(Struct.size(browserProcessHandler));
+		
 		app.setOnBeforeCommandLineProcessing(new CEF.App.OnBeforeCommandLineProcessing() {
-//			@Override
-//			public void invoke(Pointer app, jnr.ffi.Pointer process_type, jnr.ffi.Pointer command_line) {
-//				System.out.println("- onBeforeCommandLineProcessing");
-//			}
-
 			@Override
-			public void invoke(Pointer app, StringUtf16 stringUtf16, CommandLine commandLine) {
+			public void invoke(Pointer app, Pointer stringUtf16, Pointer commandLine) {
 				System.out.println("- onBeforeCommandLineProcessing");
 			}
 		});
 		
 		app.setGetBrowserProcessHandler(new CEF.App.GetBrowserProcessHandler() {
-//			@Override
-//			public BrowserProcessHandler getBrowserProcessHandler(Pointer app) {
-//				System.out.println("- getBrowserProcessHandler");
-//				return browserProcessHandler;
-//			}
 			@Override
 			public BrowserProcessHandler invoke(Pointer app) {
 				System.out.println("- getBrowserProcessHandler");
-				return null;
+				return browserProcessHandler;
 			}
 		});
 		return app;
@@ -161,7 +154,7 @@ public class CefJNR {
 
 		Pointer[] array = new Pointer[args.length + 1];
         for (int i = 0; i < array.length; i++) {
-        	String argv = (i == 0) ? "cef" : args[i];
+        	String argv = (i == 0) ? "cef" : args[i-1];
 			array[i] = Memory.allocateDirect(runtime, argv.length());
             array[i].putString(0, argv, argv.length(), Charset.defaultCharset());
         }

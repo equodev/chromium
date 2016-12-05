@@ -7,11 +7,11 @@
 <listEntry value="1"/>
 </listAttribute>
 <mapAttribute key="org.eclipse.debug.core.environmentVariables">
-<mapEntry key="LD_LIBRARY_PATH" value="/home/guille/Downloads/cef_binary_3.2704.1434.gec3e9ed_linux64/Debug"/>
-<mapEntry key="LD_PRELOAD" value="/home/guille/Downloads/cef_binary_3.2704.1434.gec3e9ed_linux64/Debug/libcef.so"/>
+<mapEntry key="LD_LIBRARY_PATH" value="${env_var:HOME}/Downloads/cef_binary_3.2883.1539.gd7f087e_linux64/Release"/>
+<mapEntry key="LD_PRELOAD" value="${env_var:HOME}/Downloads/cef_binary_3.2883.1539.gd7f087e_linux64/Release/libcef.so"/>
 </mapAttribute>
 <stringAttribute key="org.eclipse.jdt.launching.CLASSPATH_PROVIDER" value="org.eclipse.m2e.launchconfig.classpathProvider"/>
-<stringAttribute key="org.eclipse.jdt.launching.JRE_CONTAINER" value="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/java-8-oracle-jre"/>
+<stringAttribute key="org.eclipse.jdt.launching.JRE_CONTAINER" value="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jre"/>
 <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="com.make.cef.samples.cefsimple.CefJNR"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="com.make.cefswt"/>
 <stringAttribute key="org.eclipse.jdt.launching.SOURCE_PATH_PROVIDER" value="org.eclipse.m2e.launchconfig.sourcepathProvider"/>
