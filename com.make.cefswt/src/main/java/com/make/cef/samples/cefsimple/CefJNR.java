@@ -4,21 +4,23 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
 import cef.capi.CEF;
 import cef.capi.CEF.App;
 import cef.capi.CEF.BrowserProcessHandler;
+import cef.capi.CEF.CommandLine;
 import cef.capi.CEF.LogSeverity;
 import cef.capi.CEF.MainArgs;
 import cef.capi.CEF.Settings;
+import cef.capi.CEF.StringUtf16;
 import jnr.ffi.Memory;
 import jnr.ffi.Pointer;
 import jnr.ffi.Struct;
 
 public class CefJNR {
+	static jnr.ffi.Runtime runtime = CEF.RUNTIME;
 //	public static interface Cef {
 //		int cef_version_info(int entry);
 //		
@@ -41,8 +43,6 @@ public class CefJNR {
 		
 //		Pointer<CefMainArgs> main_args = Pointer.allocate(CefMainArgs.class);
 		
-		jnr.ffi.Runtime runtime = CEF.RUNTIME;
-        
         System.out.println("Creating args");
         System.out.println(Arrays.toString(args));
 
@@ -90,70 +90,80 @@ public class CefJNR {
 		
 		Settings settings = new CEF.Settings(runtime);
 		settings.size.set(Struct.size(settings));
-		settings.resources_dir_path.set("/home/guille/Downloads/cef_binary_3.2704.1434.gec3e9ed_linux64/Resources");
-		settings.locales_dir_path.set("/home/guille/Downloads/cef_binary_3.2704.1434.gec3e9ed_linux64/Resources/locales");
-		settings.browser_subprocess_path.set(subprocessPath);
-		settings.log_file.set(System.getProperty("user.dir") + File.separator + "ceflog.log" );
-		settings.log_severity.set(LogSeverity.LOGSEVERITY_VERBOSE);
-		settings.no_sandbox.set(1);
+		settings.resourcesDirPath.set("/home/guille/Downloads/cef_binary_3.2704.1434.gec3e9ed_linux64/Resources");
+		settings.localesDirPath.set("/home/guille/Downloads/cef_binary_3.2704.1434.gec3e9ed_linux64/Resources/locales");
+		settings.browserSubprocessPath.set(subprocessPath);
+		settings.logFile.set(System.getProperty("user.dir") + File.separator + "ceflog.log" );
+		settings.logSeverity.set(LogSeverity.LOGSEVERITY_VERBOSE);
+		settings.noSandbox.set(1);
 //		settings.command_line_args_disabled.set(0);
 //		settings.single_process.set(0);
 		return settings;
 	}
 
 	public static App createApp() {
-		App app = new App();
+		App app = new App(runtime);
 		
-		BrowserProcessHandler browserProcessHandler = new CEF.BrowserProcessHandler();
-		browserProcessHandler.set_on_context_initialized(new CEF.BrowserProcessHandler.OnContextInitialized() {
+		BrowserProcessHandler browserProcessHandler = new CEF.BrowserProcessHandler(runtime);
+		browserProcessHandler.setOnContextInitialized(new CEF.BrowserProcessHandler.OnContextInitialized() {
 			@Override
-			public void onContextInitialized(Pointer self) {
+			public void invoke(Pointer self) {
 				System.out.println("- onContextInitialized");
 				
 				// Browser settings.
 				// It is mandatory to set the "size" member.
-				CEF.BrowserSettings browserSettings = new CEF.BrowserSettings();
-			    browserSettings.size = sizeof(cef_browser_settings_t);
+				CEF.BrowserSettings browserSettings = new CEF.BrowserSettings(runtime);
+			    browserSettings.size.set(Struct.size(browserSettings));
 			    
 			    // Client handler and its callbacks.
 			    // cef_client_t structure must be filled. It must implement
 			    // reference counting. You cannot pass a structure 
 			    // initialized with zeroes.
-			    cef_client_t client = {};
-			    initialize_client_handler(&client);
+//			    cef_client_t client = {};
+//			    initialize_client_handler(&client);
 
 			    // Create browser.
-			    printf("cef_browser_host_create_browser\n");
-			    cef_browser_host_create_browser(&windowInfo, &client, &cefUrl,
-			            &browserSettings, NULL);
-
+			    System.out.println("cef_browser_host_create_browser\n");
+//			    cef_browser_host_create_browser(&windowInfo, &client, &cefUrl,
+//			            &browserSettings, NULL);
 			}
 		});
-		app.set_on_before_command_line_processing(new CEF.App.OnBeforeCommandLineProcessing() {
+		app.setOnBeforeCommandLineProcessing(new CEF.App.OnBeforeCommandLineProcessing() {
+//			@Override
+//			public void invoke(Pointer app, jnr.ffi.Pointer process_type, jnr.ffi.Pointer command_line) {
+//				System.out.println("- onBeforeCommandLineProcessing");
+//			}
+
 			@Override
-			public void onBeforeCommandLineProcessing(Pointer app, Pointer process_type, jnr.ffi.Pointer command_line) {
+			public void invoke(Pointer app, StringUtf16 stringUtf16, CommandLine commandLine) {
 				System.out.println("- onBeforeCommandLineProcessing");
 			}
 		});
 		
-		app.set_browser_process_handler(new CEF.App.GetBrowserProcessHandler() {
+		app.setGetBrowserProcessHandler(new CEF.App.GetBrowserProcessHandler() {
+//			@Override
+//			public BrowserProcessHandler getBrowserProcessHandler(Pointer app) {
+//				System.out.println("- getBrowserProcessHandler");
+//				return browserProcessHandler;
+//			}
 			@Override
-			public BrowserProcessHandler getBrowserProcessHandler(Pointer app) {
+			public BrowserProcessHandler invoke(Pointer app) {
 				System.out.println("- getBrowserProcessHandler");
-				return browserProcessHandler;
+				return null;
 			}
 		});
 		return app;
 	}
 
 	public static MainArgs createMainArgs(String[] args, jnr.ffi.Runtime runtime) {
-		MainArgs main_args = new MainArgs();
-		main_args.argc.set(args.length);
+		MainArgs main_args = new MainArgs(runtime);
+		main_args.argc.set(args.length + 1);
 
-		Pointer[] array = new Pointer[args.length];
+		Pointer[] array = new Pointer[args.length + 1];
         for (int i = 0; i < array.length; i++) {
-        	array[i] = Memory.allocateDirect(runtime, args[i].length());
-            array[i].putString(0, args[i], args[i].length(), Charset.defaultCharset());
+        	String argv = (i == 0) ? "cef" : args[i];
+			array[i] = Memory.allocateDirect(runtime, argv.length());
+            array[i].putString(0, argv, argv.length(), Charset.defaultCharset());
         }
 
 		jnr.ffi.Pointer stringp = Memory.allocateDirect(runtime, array.length * (runtime.addressSize()));

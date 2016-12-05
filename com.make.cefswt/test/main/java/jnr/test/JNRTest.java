@@ -69,9 +69,9 @@ public class JNRTest {
 			super(runtime);
 		}
 		NumberField a1 = new Signed32();
-		CEF.StringUtf16 a2 = inner(new CEF.StringUtf16(getRuntime(), this));
+		CEF.StringUtf16 a2 = inner(new CEF.StringUtf16(getRuntime()));
 		NumberField very_long_field_name = new Signed32();
-		CEF.StringUtf16 very_long_field_name2 = inner(new CEF.StringUtf16(getRuntime(), this));
+		CEF.StringUtf16 very_long_field_name2 = inner(new CEF.StringUtf16(getRuntime()));
 	}
 	
 	public static class String_array_struct_fixed extends Struct {
@@ -216,8 +216,8 @@ public class JNRTest {
 		
 		StringUtf16 fromj = new CEF.StringUtf16(runtime);
 		java.lang.String v = "from java 32";
-//		fromj.str.set(v);
-		fromj.length.set(v.length());
+		fromj.set(v);
+//		fromj.length.set(v.length());
 		assertThat(lib.fn_cefstring16(v, fromj)).isEqualTo("ok:1_"+v.length()+"_" + v);
 	}
 	
@@ -229,10 +229,10 @@ public class JNRTest {
 		java.lang.String v = "from java 32";
 		Cefstring_struct st = new Cefstring_struct(runtime);
 		st.a1.set(45);
-//		st.a2.str.set(v);
+		st.a2.set(v);
 //		st.a2.length.set(v.length());
 		st.very_long_field_name.set(5);
-//		st.very_long_field_name2.str.set("la");
+		st.very_long_field_name2.set("la");
 //		st.very_long_field_name2.length.set(2);
 		
 		assertThat(lib.fn_struct_cefstring(st)).isEqualTo("ok:45 "+v+" 5 la");
@@ -282,18 +282,18 @@ public class JNRTest {
 		CEF.Settings settings = new CEF.Settings(runtime);
 		settings.size.set(10);
 		int single = 0;
-		settings.single_process.set(single);
+		settings.singleProcess.set(single);
 		int nosandbox = 1;
-		settings.no_sandbox.set(nosandbox);
-//		settings.browser_subprocess_path.str.set("java");
-//		settings.log_file.str.set("cef.log");
-		settings.log_file.length.set(7);
-//		settings.resources_dir_path.str.set("/resources/");
-		settings.resources_dir_path.length.set("/resources/".length());
-		settings.remote_debugging_port.set(80);
-		settings.log_severity.set(LogSeverity.LOGSEVERITY_VERBOSE);
+		settings.noSandbox.set(nosandbox);
+		settings.browserSubprocessPath.set("java");
+		settings.logFile.set("cef.log");
+		settings.logFile.length.set(7);
+		settings.resourcesDirPath.set("/resources/");
+//		settings.resourcesDirPath.length.set("/resources/".length());
+		settings.remoteDebuggingPort.set(80);
+		settings.logSeverity.set(LogSeverity.LOGSEVERITY_VERBOSE);
 		
-		assertThat(lib.fn_settings(settings, null)).isEqualTo("ok:"+Struct.size(settings)+":"+Struct.size(settings.browser_subprocess_path)+":"
+		assertThat(lib.fn_settings(settings, null)).isEqualTo("ok:"+Struct.size(settings)+":"+Struct.size(settings.browserSubprocessPath)+":"
 				+single+"_"+nosandbox+"_java_cef.log_/resources/_80_1");
 	}
 	
@@ -409,7 +409,7 @@ public class JNRTest {
 		App app = new App(runtime);
 		app.base.size.set(22);
 		assertThat(app.base).isNotNull();
-		assertThat(app.base.add_ref).isNotNull();
+		assertThat(app.base.addRef).isNotNull();
 		assertThat(app.base.ref).isEqualTo(0);
 		
 		assertThat(lib.fn_app_refs(app)).isEqualTo("ok");
