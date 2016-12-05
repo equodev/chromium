@@ -7,7 +7,7 @@
 <listEntry value="1"/>
 </listAttribute>
 <mapAttribute key="org.eclipse.debug.core.environmentVariables">
-<mapEntry key="LD_LIBRARY_PATH" value="${project_loc:/com.make.cef.test}/Debug"/>
+<mapEntry key="LD_LIBRARY_PATH" value="${project_loc:/com.make.cef.test}/Debug:/home/guille/Downloads/cef_binary_3.2704.1434.gec3e9ed_linux64/Debug"/>
 </mapAttribute>
 <stringAttribute key="org.eclipse.jdt.junit.CONTAINER" value=""/>
 <booleanAttribute key="org.eclipse.jdt.junit.KEEPRUNNING_ATTR" value="false"/>

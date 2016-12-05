@@ -11,8 +11,8 @@
 <mapEntry key="LD_PRELOAD" value="/home/guille/Downloads/cef_binary_3.2704.1434.gec3e9ed_linux64/Debug/libcef.so"/>
 </mapAttribute>
 <stringAttribute key="org.eclipse.jdt.launching.CLASSPATH_PROVIDER" value="org.eclipse.m2e.launchconfig.classpathProvider"/>
+<stringAttribute key="org.eclipse.jdt.launching.JRE_CONTAINER" value="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/java-8-oracle-jre"/>
 <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="com.make.cef.samples.cefsimple.CefJNR"/>
-<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="cefswt --log-level=0 --enable-logging=stderr --v=1 --resources-dir-path=/home/guille/Downloads/cef_binary_3.2704.1434.gec3e9ed_linux64/Resources --locales-dir-path=/home/guille/Downloads/cef_binary_3.2704.1434.gec3e9ed_linux64/Resources/locales"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="com.make.cefswt"/>
 <stringAttribute key="org.eclipse.jdt.launching.SOURCE_PATH_PROVIDER" value="org.eclipse.m2e.launchconfig.sourcepathProvider"/>
 <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-verbose:jni=true"/>

@@ -134,7 +134,7 @@ char* fn_mainargs(const struct _cef_main_args_t* args, void* windows_sandbox_inf
 
 char* fn_cefstring8(char* eq, cef_string_utf8_t* fromj) {
 	printf("#in fn_cefstring8:\n");
-	printf(" eq: %s\n", eq);
+	printf(" eq: %s: %s\n", eq, fromj->str);
 
 	char *ret = malloc (sizeof (char) * 50);
 	sprintf(ret, "ok:%i_%ld_%s", fromj != NULL, fromj->length, fromj->str);
@@ -202,14 +202,60 @@ char* fn_struct_cefstring(const struct _cefstring_struct* st) {
 	return ret;
 }
 
-char* fn_settings(const struct _cef_settings_t* settings, void* windows_sandbox_info) {
+void string_utf8_dtor(char* str) {
+	printf("WTF string_utf8_dtor\n");
+  //delete [] str;
+}
+
+int cef_string_utf8_set(const char* src, size_t src_len,
+                                   cef_string_utf8_t* output, int copy) {
+  //cef_string_utf8_clear(output);
+  if (copy) {
+    if (src && src_len > 0) {
+      //output->str = new char[src_len+1];
+      output->str = malloc (sizeof (char) * src_len+1);
+      if (!output->str)
+        return 0;
+
+      memcpy(output->str, src, src_len * sizeof(char));
+      output->str[src_len] = 0;
+      output->length = src_len;
+      output->dtor = string_utf8_dtor;
+    }
+  } else {
+    output->str = src;
+    output->length = src_len;
+    output->dtor = NULL;
+  }
+  return 1;
+}
+
+char* fn_setstring(char* str, cef_string_utf8_t* output) {
+	printf("#in fn_setstring\n");
+	printf("#in fn_setstring: %li: %s : %li : %p\n", strlen(str), str, sizeof(*output), output);
+
+	printf("#   %i:%s\n", output->length, output->str);
+
+	cef_string_utf8_set(str, strlen(str), output, 1);
+	return output->str;
+}
+
+char* fn_settings(struct _cef_settings_t* settings, void* windows_sandbox_info) {
 	printf("#in fn_settings:\n");
 	printf(" settings: %i\n", settings != NULL);
 	printf(" browser_subprocess_path: %s\n", settings->browser_subprocess_path.str);
+	printf(" size: %li\n", sizeof(*settings));
+
+	cef_settings_t set = {};
+	set.resources_dir_path.str = "asd";
+
+	settings->resources_dir_path.str = "from c";
+	//cef_string_utf16_set(src, src_len, output, copy)
 
 	char *ret = malloc (sizeof (char) * 250);
 	//sprintf(ret, "ok:%i_%i_%s %s", settings->single_process, settings->no_sandbox, settings->browser_subprocess_path /*settings->log_file.str*/, settings->resources_dir_path);
-	sprintf(ret, "ok:%i_%i_%s_%s_%s_%i_%i", settings->single_process, settings->no_sandbox,
+	sprintf(ret, "ok:%li:%li:%i_%i_%s_%s_%s_%i_%i", sizeof(set), sizeof(set.resources_dir_path),
+			settings->single_process, settings->no_sandbox,
 			settings->browser_subprocess_path.str,
 			settings->log_file.str,
 			settings->resources_dir_path.str,

@@ -15,6 +15,7 @@ import cef.capi.CEF.MainArgs;
 import cef.capi.CEF.Settings;
 import cef.capi.CEF.StringUtf16;
 import cef.capi.CEF.StringUtf8;
+import jnr.ffi.InnerStructByReferenceToNativeConverter;
 import jnr.ffi.LibraryLoader;
 import jnr.ffi.Memory;
 import jnr.ffi.NativeLong;
@@ -23,6 +24,11 @@ import jnr.ffi.Pointer;
 import jnr.ffi.Runtime;
 import jnr.ffi.Struct;
 import jnr.ffi.annotations.Delegate;
+import jnr.ffi.annotations.Direct;
+import jnr.ffi.annotations.In;
+import jnr.ffi.annotations.Out;
+import jnr.ffi.annotations.Pinned;
+import jnr.ffi.annotations.Transient;
 import jnr.ffi.byref.PointerByReference;
 
 
@@ -45,6 +51,7 @@ public class JNRTest {
 		String fn_app_refs(CEF.App app);
 		String fn_cefstring8(String eq, CEF.StringUtf8 fromj);
 		String fn_cefstring16(String eq, CEF.StringUtf16 fromj);
+		String fn_setstring(String val, CEF.StringUtf8 output);
 	}
 	
 	public static class Int_struct extends Struct {
@@ -209,7 +216,7 @@ public class JNRTest {
 		
 		StringUtf16 fromj = new CEF.StringUtf16(runtime);
 		java.lang.String v = "from java 32";
-		fromj.str.set(v);
+//		fromj.str.set(v);
 		fromj.length.set(v.length());
 		assertThat(lib.fn_cefstring16(v, fromj)).isEqualTo("ok:1_"+v.length()+"_" + v);
 	}
@@ -222,13 +229,50 @@ public class JNRTest {
 		java.lang.String v = "from java 32";
 		Cefstring_struct st = new Cefstring_struct(runtime);
 		st.a1.set(45);
-		st.a2.str.set(v);
+//		st.a2.str.set(v);
 //		st.a2.length.set(v.length());
 		st.very_long_field_name.set(5);
-		st.very_long_field_name2.str.set("la");
+//		st.very_long_field_name2.str.set("la");
 //		st.very_long_field_name2.length.set(2);
 		
 		assertThat(lib.fn_struct_cefstring(st)).isEqualTo("ok:45 "+v+" 5 la");
+	}
+	
+	public static class UTF8Struct extends Struct {
+		public Signed8 i = new Signed8();
+		public StringUtf8 utf8 = inner(new StringUtf8(getRuntime())); 
+		
+		public UTF8Struct(Runtime runtime) {
+			super(runtime);
+		}
+	}
+	
+	@Test
+	public void test_fn_setstring() {
+		StructLib lib = getLib();
+		Runtime runtime = Runtime.getRuntime(lib);
+		
+		java.lang.String v = "from java!!";
+		StringUtf8 output = new StringUtf8(runtime);
+		output.str.set("ka");
+		output.length.set(2);
+		
+		java.lang.String call = lib.fn_setstring(v, output);
+		assertThat(output.length.get()).isEqualTo(v.length());
+		assertThat(output.str.get()).isEqualTo(v);
+		assertThat(call).isEqualTo(v);
+		
+		UTF8Struct st = new UTF8Struct(runtime);
+		st.i.set(87L);
+		st.utf8.length.set(5);
+		st.utf8.str.set("abcde");
+//		st.i.set(12);
+		
+		output = st.utf8;
+		call = lib.fn_setstring(v, st.utf8);
+		assertThat(output.length.get()).isEqualTo(v.length());
+		assertThat(output.str.get()).isEqualTo(v);
+		assertThat(call).isEqualTo(v);
 	}
 	
 	@Test
@@ -241,15 +285,16 @@ public class JNRTest {
 		settings.single_process.set(single);
 		int nosandbox = 1;
 		settings.no_sandbox.set(nosandbox);
-		settings.browser_subprocess_path.str.set("java");
-		settings.log_file.str.set("cef.log");
+//		settings.browser_subprocess_path.str.set("java");
+//		settings.log_file.str.set("cef.log");
 		settings.log_file.length.set(7);
-		settings.resources_dir_path.str.set("/resources/");
+//		settings.resources_dir_path.str.set("/resources/");
 		settings.resources_dir_path.length.set("/resources/".length());
 		settings.remote_debugging_port.set(80);
 		settings.log_severity.set(LogSeverity.LOGSEVERITY_VERBOSE);
 		
-		assertThat(lib.fn_settings(settings, null)).isEqualTo("ok:"+single+"_"+nosandbox+"_java_cef.log_/resources/_80_1");
+		assertThat(lib.fn_settings(settings, null)).isEqualTo("ok:"+Struct.size(settings)+":"+Struct.size(settings.browser_subprocess_path)+":"
+				+single+"_"+nosandbox+"_java_cef.log_/resources/_80_1");
 	}
 	
 	@Test
@@ -386,6 +431,9 @@ public class JNRTest {
 	}
 	
 	private StructLib getLib() {
-		return LibraryLoader.create(StructLib.class).load("jnr.test");
+		return LibraryLoader.create(StructLib.class)
+				.map(StringUtf8.class, new InnerStructByReferenceToNativeConverter())
+				.map(StringUtf16.class, new InnerStructByReferenceToNativeConverter())
+				.load("jnr.test");
 	}
 }
