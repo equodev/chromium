@@ -4647,7 +4647,7 @@ public class CEF {
      */
     public static final class Base extends Struct {
         public UnsignedLong size = new UnsignedLong();
-//		public int ref = 0;
+		public int ref = 0;
 
         public Function<AddRef> addRef = function(AddRef.class);
         public static interface AddRef {
@@ -4697,9 +4697,9 @@ public class CEF {
 
 		@Override
     	public void invoke(jnr.ffi.Pointer self) {
-//    		base.ref++;
+    		base.ref++;
 			System.out.print("+ ");
-//    		System.out.println(base.ref);
+    		System.out.println(base.ref);
     	}
     }
     public static class ReleaseFN implements Base.Release {
@@ -4711,9 +4711,9 @@ public class CEF {
 
 		@Override
     	public int invoke(jnr.ffi.Pointer self) {
-//    		base.ref--;
+    		base.ref--;
 			System.out.print("- ");
-//    		System.out.println(base.ref);
+    		System.out.println(base.ref);
     		return 1;
     	}
     }
@@ -4727,9 +4727,9 @@ public class CEF {
 		@Override
     	public int invoke(jnr.ffi.Pointer self) {
 			System.out.print("= ");
-//    		System.out.println(base.ref);
-//    		return base.ref > 0 ? 1 : 0;
-    		return 1;
+    		System.out.println(base.ref);
+    		return base.ref > 0 ? 1 : 0;
+//    		return 1;
     	}
     }
 
@@ -6393,7 +6393,7 @@ public class CEF {
         public Function<GetBrowserProcessHandler> getBrowserProcessHandler = function(GetBrowserProcessHandler.class);
         public static interface GetBrowserProcessHandler {
             @Delegate
-            jnr.ffi.Pointer invoke(jnr.ffi.Pointer app);
+            BrowserProcessHandler invoke(jnr.ffi.Pointer app);
         }
         public void setGetBrowserProcessHandler(GetBrowserProcessHandler callback) {
             getBrowserProcessHandler.set(callback);

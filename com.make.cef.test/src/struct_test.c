@@ -274,7 +274,16 @@ char* fn_settings(struct _cef_settings_t* settings, void* windows_sandbox_info) 
 char* fn_app(cef_app_t* application, void* windows_sandbox_info) {
 	printf("#in fn_app:\n");
 	printf(" application: %i\n", application != NULL);
+	printf(" hand: %i\n", application->get_browser_process_handler != NULL);
 
+	if (application->get_browser_process_handler != NULL) {
+		printf("calling get_browser_process_handler c > java");
+		cef_browser_process_handler_t* bph = application->get_browser_process_handler(application);
+		if (bph != NULL) {
+			return "ok";
+		}
+		return "no cef_browser_process_handler_t returned";
+	}
 	/*char *ret = malloc (sizeof (char) * 50);
 	sprintf(ret, "%i:", args->argc);
 
@@ -284,7 +293,7 @@ char* fn_app(cef_app_t* application, void* windows_sandbox_info) {
 		strcat(ret, args->argv[i]);
 	}*/
 
-	return "ok";
+	return "nok";
 }
 
 typedef struct _struct_callback {

@@ -6,6 +6,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import cef.capi.CEF;
 import cef.capi.CEF.App;
@@ -125,37 +127,36 @@ public class CefJNR {
 		app.setOnBeforeCommandLineProcessing((Pointer self, Pointer stringUtf16, Pointer commandLine) ->
 			DEBUG_CALLBACK("- onBeforeCommandLineProcessing")
 		);
-		app.setOnRegisterCustomSchemes((app1, schemeRegistrar_1) -> DEBUG_CALLBACK("on_register_custom_schemes"));
-		app.setGetResourceBundleHandler(app1 -> /*DEBUG_CALLBACK("get_resource_bundle_handler")*/null);
+//		app.setOnRegisterCustomSchemes((app1, schemeRegistrar_1) -> DEBUG_CALLBACK("on_register_custom_schemes"));
+//		app.setGetResourceBundleHandler(app1 -> /*DEBUG_CALLBACK("get_resource_bundle_handler")*/null);
 		app.setGetBrowserProcessHandler(app1 -> {
 			System.out.println("- getBrowserProcessHandler");
-			return mem;
-//			return null;
+			return browserProcessHandler;
 		});
-		app.setGetRenderProcessHandler(app1 -> DEBUG_CALLBACK("get_render_process_handler"));
+//		app.setGetRenderProcessHandler(app1 -> DEBUG_CALLBACK("get_render_process_handler"));
 		return app;
 	}
 
 	protected static void initializeClientHandler(Client client) {
 	    System.out.println("initialize_client_handler");
 	    // callbacks
-	    client.setGetContextMenuHandler((c) -> DEBUG_CALLBACK("get_context_menu_handler"));
-	    client.setGetDialogHandler((c) -> DEBUG_CALLBACK("get_dialog_handler"));
-	    client.setGetDisplayHandler((c) -> DEBUG_CALLBACK("get_display_handler"));
-	    client.setGetDownloadHandler((c) -> DEBUG_CALLBACK("get_download_handler"));
-	    client.setGetDragHandler((c) -> DEBUG_CALLBACK("get_drag_handler"));
-	    client.setGetFocusHandler((c) -> DEBUG_CALLBACK("get_focus_handler"));
-	    client.setGetGeolocationHandler((c) -> DEBUG_CALLBACK("get_geolocation_handler"));
-	    client.setGetJsdialogHandler((c) -> DEBUG_CALLBACK("get_jsdialog_handler"));
-	    client.setGetKeyboardHandler((c) -> DEBUG_CALLBACK("get_keyboard_handler"));
-	    client.setGetLifeSpanHandler((c) -> DEBUG_CALLBACK("get_life_span_handler"));
-	    client.setGetLoadHandler((c) -> DEBUG_CALLBACK("get_load_handler"));
-	    client.setGetRenderHandler((c) -> DEBUG_CALLBACK("get_render_handler"));
-	    client.setGetRequestHandler((c) -> DEBUG_CALLBACK("get_request_handler"));
-	    client.setOnProcessMessageReceived((c, browser_1, processId_2, processMessage_3) -> {
-	    	DEBUG_CALLBACK("on_process_message_received"); 
-	    	return 0;
-	    });
+//	    client.setGetContextMenuHandler((c) -> DEBUG_CALLBACK("get_context_menu_handler"));
+//	    client.setGetDialogHandler((c) -> DEBUG_CALLBACK("get_dialog_handler"));
+//	    client.setGetDisplayHandler((c) -> DEBUG_CALLBACK("get_display_handler"));
+//	    client.setGetDownloadHandler((c) -> DEBUG_CALLBACK("get_download_handler"));
+//	    client.setGetDragHandler((c) -> DEBUG_CALLBACK("get_drag_handler"));
+//	    client.setGetFocusHandler((c) -> DEBUG_CALLBACK("get_focus_handler"));
+//	    client.setGetGeolocationHandler((c) -> DEBUG_CALLBACK("get_geolocation_handler"));
+//	    client.setGetJsdialogHandler((c) -> DEBUG_CALLBACK("get_jsdialog_handler"));
+//	    client.setGetKeyboardHandler((c) -> DEBUG_CALLBACK("get_keyboard_handler"));
+//	    client.setGetLifeSpanHandler((c) -> DEBUG_CALLBACK("get_life_span_handler"));
+//	    client.setGetLoadHandler((c) -> DEBUG_CALLBACK("get_load_handler"));
+//	    client.setGetRenderHandler((c) -> DEBUG_CALLBACK("get_render_handler"));
+//	    client.setGetRequestHandler((c) -> DEBUG_CALLBACK("get_request_handler"));
+//	    client.setOnProcessMessageReceived((c, browser_1, processId_2, processMessage_3) -> {
+//	    	DEBUG_CALLBACK("on_process_message_received"); 
+//	    	return 0;
+//	    });
 	}
 
 	public static void createBrowser() {
@@ -191,6 +192,8 @@ public class CefJNR {
 	}
 
 	public static MainArgs createMainArgs(String[] args, jnr.ffi.Runtime runtime) {
+		List<String> argsList = Arrays.asList(args);
+		
 		MainArgs main_args = new MainArgs(runtime);
 		main_args.argc.set(args.length + 1);
 

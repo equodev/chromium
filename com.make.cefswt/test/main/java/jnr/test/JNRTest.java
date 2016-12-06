@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import cef.capi.CEF;
 import cef.capi.CEF.App;
+import cef.capi.CEF.BrowserProcessHandler;
 import cef.capi.CEF.LogSeverity;
 import cef.capi.CEF.MainArgs;
 import cef.capi.CEF.Settings;
@@ -30,6 +31,7 @@ import jnr.ffi.annotations.Out;
 import jnr.ffi.annotations.Pinned;
 import jnr.ffi.annotations.Transient;
 import jnr.ffi.byref.PointerByReference;
+import jnr.ffi.provider.ParameterFlags;
 
 
 public class JNRTest {
@@ -304,6 +306,15 @@ public class JNRTest {
 		
 		App app = new App(runtime);
 		
+		BrowserProcessHandler bph = new CEF.BrowserProcessHandler(runtime);
+		
+		app.setGetBrowserProcessHandler(p -> {
+			System.out.println("in setGetBrowserProcessHandler");
+			return bph;
+			//return Struct.getMemory(bph, ParameterFlags.DIRECT);
+		});
+		
+		System.out.println("first call to c");
 		assertThat(lib.fn_app(app, null)).isEqualTo("ok");
 	}
 	
