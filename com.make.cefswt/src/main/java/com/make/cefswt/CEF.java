@@ -4648,282 +4648,6 @@ public class CEF {
      * = Fields:
      * :base ::
      *   (Base) Base structure.
-     * :isValid ::
-     *   (Function(IsValid)) Returns true (1) if this object is valid. Do not call any other functions
-     *   if this function returns false (0).
-     * :isReadOnly ::
-     *   (Function(IsReadOnly)) Returns true (1) if the values of this object are read-only. Some APIs may
-     *   expose read-only objects.
-     * :copy ::
-     *   (Function(Copy)) Returns a writable copy of this object.
-     * :initFromArgv ::
-     *   (Function(InitFromArgv)) Initialize the command line with the specified |argc| and |argv| values.
-     *   The first argument must be the name of the program. This function is only
-     *   supported on non-Windows platforms.
-     * :initFromString ::
-     *   (Function(InitFromString)) Initialize the command line with the string returned by calling
-     *   GetCommandLineW(). This function is only supported on Windows.
-     * :reset ::
-     *   (Function(Reset)) Reset the command-line switches and arguments but leave the program
-     *   component unchanged.
-     * :getArgv ::
-     *   (Function(GetArgv)) Retrieve the original command line string as a vector of strings. The argv
-     *   array: { program, ((--|-|/)switch(=value))*, (--), (argument)* }
-     * :getCommandLineString ::
-     *   (Function(GetCommandLineString)) The resulting string must be freed by calling cef_string_userfree_free().
-     * :getProgram ::
-     *   (Function(GetProgram)) The resulting string must be freed by calling cef_string_userfree_free().
-     * :setProgram ::
-     *   (Function(SetProgram)) Set the program part of the command line string (the first item).
-     * :hasSwitches ::
-     *   (Function(HasSwitches)) Returns true (1) if the command line has switches.
-     * :hasSwitch ::
-     *   (Function(HasSwitch)) Returns true (1) if the command line contains the given switch.
-     * :getSwitchValue ::
-     *   (Function(GetSwitchValue)) The resulting string must be freed by calling cef_string_userfree_free().
-     * :getSwitches ::
-     *   (Function(GetSwitches)) Returns the map of switch names and values. If a switch has no value an
-     *   NULL string is returned.
-     * :appendSwitch ::
-     *   (Function(AppendSwitch)) Add a switch to the end of the command line. If the switch has no value
-     *   pass an NULL value string.
-     * :appendSwitchWithValue ::
-     *   (Function(AppendSwitchWithValue)) Add a switch with the specified value to the end of the command line.
-     * :hasArguments ::
-     *   (Function(HasArguments)) True if there are remaining command line arguments.
-     * :getArguments ::
-     *   (Function(GetArguments)) Get the remaining command line arguments.
-     * :appendArgument ::
-     *   (Function(AppendArgument)) Add an argument to the end of the command line.
-     * :prependWrapper ::
-     *   (Function(PrependWrapper)) Insert a command before the current command. Common for debuggers, like
-     *   "valgrind" or "gdb --args".
-     */
-    public static final class CommandLine extends Struct {
-        public Base base = inner(new Base(getRuntime()));
-        public Function<IsValid> isValid = function(IsValid.class);
-        public static interface IsValid {
-            @Delegate
-            int invoke(jnr.ffi.Pointer line);
-        }
-        public void setIsValid(IsValid callback) {
-            isValid.set(callback);
-        }
-        
-        public Function<IsReadOnly> isReadOnly = function(IsReadOnly.class);
-        public static interface IsReadOnly {
-            @Delegate
-            int invoke(jnr.ffi.Pointer line);
-        }
-        public void setIsReadOnly(IsReadOnly callback) {
-            isReadOnly.set(callback);
-        }
-        
-        public Function<Copy> copy = function(Copy.class);
-        public static interface Copy {
-            @Delegate
-            jnr.ffi.Pointer invoke(jnr.ffi.Pointer line);
-        }
-        public void setCopy(Copy callback) {
-            copy.set(callback);
-        }
-        
-        public Function<InitFromArgv> initFromArgv = function(InitFromArgv.class);
-        public static interface InitFromArgv {
-            @Delegate
-            void invoke(jnr.ffi.Pointer line, int int1, jnr.ffi.Pointer s2);
-        }
-        public void setInitFromArgv(InitFromArgv callback) {
-            initFromArgv.set(callback);
-        }
-        
-        public Function<InitFromString> initFromString = function(InitFromString.class);
-        public static interface InitFromString {
-            @Delegate
-            void invoke(jnr.ffi.Pointer line, jnr.ffi.Pointer utf161);
-        }
-        public void setInitFromString(InitFromString callback) {
-            initFromString.set(callback);
-        }
-        
-        public Function<Reset> reset = function(Reset.class);
-        public static interface Reset {
-            @Delegate
-            void invoke(jnr.ffi.Pointer line);
-        }
-        public void setReset(Reset callback) {
-            reset.set(callback);
-        }
-        
-        public Function<GetArgv> getArgv = function(GetArgv.class);
-        public static interface GetArgv {
-            @Delegate
-            void invoke(jnr.ffi.Pointer line, jnr.ffi.Pointer void1);
-        }
-        public void setGetArgv(GetArgv callback) {
-            getArgv.set(callback);
-        }
-        
-        public Function<GetCommandLineString> getCommandLineString = function(GetCommandLineString.class);
-        public static interface GetCommandLineString {
-            @Delegate
-            StringUtf16 invoke(jnr.ffi.Pointer line);
-        }
-        public void setGetCommandLineString(GetCommandLineString callback) {
-            getCommandLineString.set(callback);
-        }
-        
-        public Function<GetProgram> getProgram = function(GetProgram.class);
-        public static interface GetProgram {
-            @Delegate
-            StringUtf16 invoke(jnr.ffi.Pointer line);
-        }
-        public void setGetProgram(GetProgram callback) {
-            getProgram.set(callback);
-        }
-        
-        public Function<SetProgram> setProgram = function(SetProgram.class);
-        public static interface SetProgram {
-            @Delegate
-            void invoke(jnr.ffi.Pointer line, jnr.ffi.Pointer utf161);
-        }
-        public void setSetProgram(SetProgram callback) {
-            setProgram.set(callback);
-        }
-        
-        public Function<HasSwitches> hasSwitches = function(HasSwitches.class);
-        public static interface HasSwitches {
-            @Delegate
-            int invoke(jnr.ffi.Pointer line);
-        }
-        public void setHasSwitches(HasSwitches callback) {
-            hasSwitches.set(callback);
-        }
-        
-        public Function<HasSwitch> hasSwitch = function(HasSwitch.class);
-        public static interface HasSwitch {
-            @Delegate
-            int invoke(jnr.ffi.Pointer line, jnr.ffi.Pointer utf161);
-        }
-        public void setHasSwitch(HasSwitch callback) {
-            hasSwitch.set(callback);
-        }
-        
-        public Function<GetSwitchValue> getSwitchValue = function(GetSwitchValue.class);
-        public static interface GetSwitchValue {
-            @Delegate
-            StringUtf16 invoke(jnr.ffi.Pointer line, jnr.ffi.Pointer utf161);
-        }
-        public void setGetSwitchValue(GetSwitchValue callback) {
-            getSwitchValue.set(callback);
-        }
-        
-        public Function<GetSwitches> getSwitches = function(GetSwitches.class);
-        public static interface GetSwitches {
-            @Delegate
-            void invoke(jnr.ffi.Pointer line, jnr.ffi.Pointer void1);
-        }
-        public void setGetSwitches(GetSwitches callback) {
-            getSwitches.set(callback);
-        }
-        
-        public Function<AppendSwitch> appendSwitch = function(AppendSwitch.class);
-        public static interface AppendSwitch {
-            @Delegate
-            void invoke(jnr.ffi.Pointer line, jnr.ffi.Pointer utf161);
-        }
-        public void setAppendSwitch(AppendSwitch callback) {
-            appendSwitch.set(callback);
-        }
-        
-        public Function<AppendSwitchWithValue> appendSwitchWithValue = function(AppendSwitchWithValue.class);
-        public static interface AppendSwitchWithValue {
-            @Delegate
-            void invoke(jnr.ffi.Pointer line, jnr.ffi.Pointer utf161, jnr.ffi.Pointer utf162);
-        }
-        public void setAppendSwitchWithValue(AppendSwitchWithValue callback) {
-            appendSwitchWithValue.set(callback);
-        }
-        
-        public Function<HasArguments> hasArguments = function(HasArguments.class);
-        public static interface HasArguments {
-            @Delegate
-            int invoke(jnr.ffi.Pointer line);
-        }
-        public void setHasArguments(HasArguments callback) {
-            hasArguments.set(callback);
-        }
-        
-        public Function<GetArguments> getArguments = function(GetArguments.class);
-        public static interface GetArguments {
-            @Delegate
-            void invoke(jnr.ffi.Pointer line, jnr.ffi.Pointer void1);
-        }
-        public void setGetArguments(GetArguments callback) {
-            getArguments.set(callback);
-        }
-        
-        public Function<AppendArgument> appendArgument = function(AppendArgument.class);
-        public static interface AppendArgument {
-            @Delegate
-            void invoke(jnr.ffi.Pointer line, jnr.ffi.Pointer utf161);
-        }
-        public void setAppendArgument(AppendArgument callback) {
-            appendArgument.set(callback);
-        }
-        
-        public Function<PrependWrapper> prependWrapper = function(PrependWrapper.class);
-        public static interface PrependWrapper {
-            @Delegate
-            void invoke(jnr.ffi.Pointer line, jnr.ffi.Pointer utf161);
-        }
-        public void setPrependWrapper(PrependWrapper callback) {
-            prependWrapper.set(callback);
-        }
-        
-        public CommandLine(jnr.ffi.Runtime runtime) {
-          super(runtime);
-        }
-    }
-    
-    /**
-     * (Not documented)
-     * 
-     * @method commandLineCreate()
-     * @return [CommandLine] 
-     * @scope class
-     */
-    public static CommandLine commandLineCreate() {
-        return INSTANCE.commandLineCreate();
-    }
-    
-    /**
-     * (Not documented)
-     * 
-     * @method commandLineGetGlobal()
-     * @return [CommandLine] 
-     * @scope class
-     */
-    public static CommandLine commandLineGetGlobal() {
-        return INSTANCE.commandLineGetGlobal();
-    }
-    
-    /**
-     * (Not documented)
-     */
-    public static final class Client extends Struct {
-        // hidden structure
-        public Client(jnr.ffi.Runtime runtime) {
-          super(runtime);
-        }
-    }
-    
-    /**
-     * (Not documented)
-     * 
-     * = Fields:
-     * :base ::
-     *   (Base) Base structure.
      * :getHost ::
      *   (Function(GetHost)) Returns the browser host object. This function can only be called in the
      *   browser process.
@@ -4975,7 +4699,7 @@ public class CEF {
         public Function<GetHost> getHost = function(GetHost.class);
         public static interface GetHost {
             @Delegate
-            jnr.ffi.Pointer invoke(jnr.ffi.Pointer browser);
+            BrowserHost invoke(jnr.ffi.Pointer browser);
         }
         public void setGetHost(GetHost callback) {
             getHost.set(callback);
@@ -5065,7 +4789,7 @@ public class CEF {
         public Function<IsSame> isSame = function(IsSame.class);
         public static interface IsSame {
             @Delegate
-            int invoke(jnr.ffi.Pointer browser, jnr.ffi.Pointer browser1);
+            int invoke(jnr.ffi.Pointer browser, jnr.ffi.Pointer browser_1);
         }
         public void setIsSame(IsSame callback) {
             isSame.set(callback);
@@ -5110,7 +4834,7 @@ public class CEF {
         public Function<GetFrameByident> getFrameByident = function(GetFrameByident.class);
         public static interface GetFrameByident {
             @Delegate
-            jnr.ffi.Pointer invoke(jnr.ffi.Pointer browser, long long1);
+            jnr.ffi.Pointer invoke(jnr.ffi.Pointer browser, long long_1);
         }
         public void setGetFrameByident(GetFrameByident callback) {
             getFrameByident.set(callback);
@@ -5119,7 +4843,7 @@ public class CEF {
         public Function<GetFrame> getFrame = function(GetFrame.class);
         public static interface GetFrame {
             @Delegate
-            jnr.ffi.Pointer invoke(jnr.ffi.Pointer browser, jnr.ffi.Pointer utf161);
+            jnr.ffi.Pointer invoke(jnr.ffi.Pointer browser, jnr.ffi.Pointer stringUtf16_1);
         }
         public void setGetFrame(GetFrame callback) {
             getFrame.set(callback);
@@ -5137,7 +4861,7 @@ public class CEF {
         public Function<GetFrameIdentifiers> getFrameIdentifiers = function(GetFrameIdentifiers.class);
         public static interface GetFrameIdentifiers {
             @Delegate
-            void invoke(jnr.ffi.Pointer browser, jnr.ffi.Pointer uLong1, jnr.ffi.Pointer long2);
+            void invoke(jnr.ffi.Pointer browser, jnr.ffi.Pointer uLong_1, jnr.ffi.Pointer long_2);
         }
         public void setGetFrameIdentifiers(GetFrameIdentifiers callback) {
             getFrameIdentifiers.set(callback);
@@ -5146,7 +4870,7 @@ public class CEF {
         public Function<GetFrameNames> getFrameNames = function(GetFrameNames.class);
         public static interface GetFrameNames {
             @Delegate
-            void invoke(jnr.ffi.Pointer browser, jnr.ffi.Pointer void1);
+            void invoke(jnr.ffi.Pointer browser, jnr.ffi.Pointer void_1);
         }
         public void setGetFrameNames(GetFrameNames callback) {
             getFrameNames.set(callback);
@@ -5155,7 +4879,7 @@ public class CEF {
         public Function<SendProcessMessage> sendProcessMessage = function(SendProcessMessage.class);
         public static interface SendProcessMessage {
             @Delegate
-            int invoke(jnr.ffi.Pointer browser, ProcessId id1, jnr.ffi.Pointer message2);
+            int invoke(jnr.ffi.Pointer browser, ProcessId processId_1, jnr.ffi.Pointer processMessage_2);
         }
         public void setSendProcessMessage(SendProcessMessage callback) {
             sendProcessMessage.set(callback);
@@ -5184,7 +4908,7 @@ public class CEF {
         public Function<OnFileDialogDismissed> onFileDialogDismissed = function(OnFileDialogDismissed.class);
         public static interface OnFileDialogDismissed {
             @Delegate
-            void invoke(jnr.ffi.Pointer callback, int int1, jnr.ffi.Pointer void2);
+            void invoke(jnr.ffi.Pointer runFileDialogCallback, int int_1, jnr.ffi.Pointer void_2);
         }
         public void setOnFileDialogDismissed(OnFileDialogDismissed callback) {
             onFileDialogDismissed.set(callback);
@@ -5213,7 +4937,7 @@ public class CEF {
         public Function<Visit> visit = function(Visit.class);
         public static interface Visit {
             @Delegate
-            int invoke(jnr.ffi.Pointer visitor, jnr.ffi.Pointer entry1, int int2, int int3, int int4);
+            int invoke(jnr.ffi.Pointer navigationEntryVisitor, jnr.ffi.Pointer navigationEntry_1, int int_2, int int_3, int int_4);
         }
         public void setVisit(Visit callback) {
             visit.set(callback);
@@ -5240,7 +4964,7 @@ public class CEF {
         public Function<OnPdfPrintFinished> onPdfPrintFinished = function(OnPdfPrintFinished.class);
         public static interface OnPdfPrintFinished {
             @Delegate
-            void invoke(jnr.ffi.Pointer callback, jnr.ffi.Pointer utf161, int int2);
+            void invoke(jnr.ffi.Pointer pdfPrintCallback, jnr.ffi.Pointer stringUtf16_1, int int_2);
         }
         public void setOnPdfPrintFinished(OnPdfPrintFinished callback) {
             onPdfPrintFinished.set(callback);
@@ -5268,7 +4992,7 @@ public class CEF {
         public Function<OnDownloadImageFinished> onDownloadImageFinished = function(OnDownloadImageFinished.class);
         public static interface OnDownloadImageFinished {
             @Delegate
-            void invoke(jnr.ffi.Pointer callback, jnr.ffi.Pointer utf161, int int2, jnr.ffi.Pointer image3);
+            void invoke(jnr.ffi.Pointer downloadImageCallback, jnr.ffi.Pointer stringUtf16_1, int int_2, jnr.ffi.Pointer image_3);
         }
         public void setOnDownloadImageFinished(OnDownloadImageFinished callback) {
             onDownloadImageFinished.set(callback);
@@ -5499,7 +5223,7 @@ public class CEF {
         public Function<GetBrowser> getBrowser = function(GetBrowser.class);
         public static interface GetBrowser {
             @Delegate
-            Browser invoke(jnr.ffi.Pointer host);
+            Browser invoke(jnr.ffi.Pointer browserHost);
         }
         public void setGetBrowser(GetBrowser callback) {
             getBrowser.set(callback);
@@ -5508,7 +5232,7 @@ public class CEF {
         public Function<CloseBrowser> closeBrowser = function(CloseBrowser.class);
         public static interface CloseBrowser {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, int int1);
+            void invoke(jnr.ffi.Pointer browserHost, int int_1);
         }
         public void setCloseBrowser(CloseBrowser callback) {
             closeBrowser.set(callback);
@@ -5517,7 +5241,7 @@ public class CEF {
         public Function<TryCloseBrowser> tryCloseBrowser = function(TryCloseBrowser.class);
         public static interface TryCloseBrowser {
             @Delegate
-            int invoke(jnr.ffi.Pointer host);
+            int invoke(jnr.ffi.Pointer browserHost);
         }
         public void setTryCloseBrowser(TryCloseBrowser callback) {
             tryCloseBrowser.set(callback);
@@ -5526,7 +5250,7 @@ public class CEF {
         public Function<SetFocus> setFocus = function(SetFocus.class);
         public static interface SetFocus {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, int int1);
+            void invoke(jnr.ffi.Pointer browserHost, int int_1);
         }
         public void setSetFocus(SetFocus callback) {
             setFocus.set(callback);
@@ -5535,7 +5259,7 @@ public class CEF {
         public Function<GetWindowHandle> getWindowHandle = function(GetWindowHandle.class);
         public static interface GetWindowHandle {
             @Delegate
-            long invoke(jnr.ffi.Pointer host);
+            long invoke(jnr.ffi.Pointer browserHost);
         }
         public void setGetWindowHandle(GetWindowHandle callback) {
             getWindowHandle.set(callback);
@@ -5544,7 +5268,7 @@ public class CEF {
         public Function<GetOpenerWindowHandle> getOpenerWindowHandle = function(GetOpenerWindowHandle.class);
         public static interface GetOpenerWindowHandle {
             @Delegate
-            long invoke(jnr.ffi.Pointer host);
+            long invoke(jnr.ffi.Pointer browserHost);
         }
         public void setGetOpenerWindowHandle(GetOpenerWindowHandle callback) {
             getOpenerWindowHandle.set(callback);
@@ -5553,7 +5277,7 @@ public class CEF {
         public Function<HasView> hasView = function(HasView.class);
         public static interface HasView {
             @Delegate
-            int invoke(jnr.ffi.Pointer host);
+            int invoke(jnr.ffi.Pointer browserHost);
         }
         public void setHasView(HasView callback) {
             hasView.set(callback);
@@ -5562,7 +5286,7 @@ public class CEF {
         public Function<GetClient> getClient = function(GetClient.class);
         public static interface GetClient {
             @Delegate
-            Client invoke(jnr.ffi.Pointer host);
+            Client invoke(jnr.ffi.Pointer browserHost);
         }
         public void setGetClient(GetClient callback) {
             getClient.set(callback);
@@ -5571,7 +5295,7 @@ public class CEF {
         public Function<GetRequestContext> getRequestContext = function(GetRequestContext.class);
         public static interface GetRequestContext {
             @Delegate
-            jnr.ffi.Pointer invoke(jnr.ffi.Pointer host);
+            jnr.ffi.Pointer invoke(jnr.ffi.Pointer browserHost);
         }
         public void setGetRequestContext(GetRequestContext callback) {
             getRequestContext.set(callback);
@@ -5580,7 +5304,7 @@ public class CEF {
         public Function<GetZoomLevel> getZoomLevel = function(GetZoomLevel.class);
         public static interface GetZoomLevel {
             @Delegate
-            double invoke(jnr.ffi.Pointer host);
+            double invoke(jnr.ffi.Pointer browserHost);
         }
         public void setGetZoomLevel(GetZoomLevel callback) {
             getZoomLevel.set(callback);
@@ -5589,7 +5313,7 @@ public class CEF {
         public Function<SetZoomLevel> setZoomLevel = function(SetZoomLevel.class);
         public static interface SetZoomLevel {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, double double1);
+            void invoke(jnr.ffi.Pointer browserHost, double double_1);
         }
         public void setSetZoomLevel(SetZoomLevel callback) {
             setZoomLevel.set(callback);
@@ -5598,7 +5322,7 @@ public class CEF {
         public Function<RunFileDialog> runFileDialog = function(RunFileDialog.class);
         public static interface RunFileDialog {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, FileDialogMode mode1, jnr.ffi.Pointer utf162, jnr.ffi.Pointer utf163, jnr.ffi.Pointer void4, int int5, jnr.ffi.Pointer callback6);
+            void invoke(jnr.ffi.Pointer browserHost, FileDialogMode fileDialogMode_1, jnr.ffi.Pointer stringUtf16_2, jnr.ffi.Pointer stringUtf16_3, jnr.ffi.Pointer void_4, int int_5, jnr.ffi.Pointer runFileDialogCallback_6);
         }
         public void setRunFileDialog(RunFileDialog callback) {
             runFileDialog.set(callback);
@@ -5607,7 +5331,7 @@ public class CEF {
         public Function<StartDownload> startDownload = function(StartDownload.class);
         public static interface StartDownload {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, jnr.ffi.Pointer utf161);
+            void invoke(jnr.ffi.Pointer browserHost, jnr.ffi.Pointer stringUtf16_1);
         }
         public void setStartDownload(StartDownload callback) {
             startDownload.set(callback);
@@ -5616,7 +5340,7 @@ public class CEF {
         public Function<DownloadImage> downloadImage = function(DownloadImage.class);
         public static interface DownloadImage {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, jnr.ffi.Pointer utf161, int int2, int u_int3, int int4, jnr.ffi.Pointer callback5);
+            void invoke(jnr.ffi.Pointer browserHost, jnr.ffi.Pointer stringUtf16_1, int int_2, int u_int_3, int int_4, jnr.ffi.Pointer downloadImageCallback_5);
         }
         public void setDownloadImage(DownloadImage callback) {
             downloadImage.set(callback);
@@ -5625,7 +5349,7 @@ public class CEF {
         public Function<Print> print = function(Print.class);
         public static interface Print {
             @Delegate
-            void invoke(jnr.ffi.Pointer host);
+            void invoke(jnr.ffi.Pointer browserHost);
         }
         public void setPrint(Print callback) {
             print.set(callback);
@@ -5634,7 +5358,7 @@ public class CEF {
         public Function<PrintToPdf> printToPdf = function(PrintToPdf.class);
         public static interface PrintToPdf {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, jnr.ffi.Pointer utf161, jnr.ffi.Pointer settings2, jnr.ffi.Pointer callback3);
+            void invoke(jnr.ffi.Pointer browserHost, jnr.ffi.Pointer stringUtf16_1, jnr.ffi.Pointer pdfPrintSettings_2, jnr.ffi.Pointer pdfPrintCallback_3);
         }
         public void setPrintToPdf(PrintToPdf callback) {
             printToPdf.set(callback);
@@ -5643,7 +5367,7 @@ public class CEF {
         public Function<Find> find = function(Find.class);
         public static interface Find {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, int int1, jnr.ffi.Pointer utf162, int int3, int int4, int int5);
+            void invoke(jnr.ffi.Pointer browserHost, int int_1, jnr.ffi.Pointer stringUtf16_2, int int_3, int int_4, int int_5);
         }
         public void setFind(Find callback) {
             find.set(callback);
@@ -5652,7 +5376,7 @@ public class CEF {
         public Function<StopFinding> stopFinding = function(StopFinding.class);
         public static interface StopFinding {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, int int1);
+            void invoke(jnr.ffi.Pointer browserHost, int int_1);
         }
         public void setStopFinding(StopFinding callback) {
             stopFinding.set(callback);
@@ -5661,7 +5385,7 @@ public class CEF {
         public Function<ShowDevTools> showDevTools = function(ShowDevTools.class);
         public static interface ShowDevTools {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, jnr.ffi.Pointer info1, jnr.ffi.Pointer client2, jnr.ffi.Pointer settings3, jnr.ffi.Pointer point4);
+            void invoke(jnr.ffi.Pointer browserHost, jnr.ffi.Pointer windowInfo_1, jnr.ffi.Pointer client_2, jnr.ffi.Pointer browserSettings_3, jnr.ffi.Pointer point_4);
         }
         public void setShowDevTools(ShowDevTools callback) {
             showDevTools.set(callback);
@@ -5670,7 +5394,7 @@ public class CEF {
         public Function<CloseDevTools> closeDevTools = function(CloseDevTools.class);
         public static interface CloseDevTools {
             @Delegate
-            void invoke(jnr.ffi.Pointer host);
+            void invoke(jnr.ffi.Pointer browserHost);
         }
         public void setCloseDevTools(CloseDevTools callback) {
             closeDevTools.set(callback);
@@ -5679,7 +5403,7 @@ public class CEF {
         public Function<HasDevTools> hasDevTools = function(HasDevTools.class);
         public static interface HasDevTools {
             @Delegate
-            int invoke(jnr.ffi.Pointer host);
+            int invoke(jnr.ffi.Pointer browserHost);
         }
         public void setHasDevTools(HasDevTools callback) {
             hasDevTools.set(callback);
@@ -5688,7 +5412,7 @@ public class CEF {
         public Function<GetNavigationEntries> getNavigationEntries = function(GetNavigationEntries.class);
         public static interface GetNavigationEntries {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, jnr.ffi.Pointer visitor1, int int2);
+            void invoke(jnr.ffi.Pointer browserHost, jnr.ffi.Pointer navigationEntryVisitor_1, int int_2);
         }
         public void setGetNavigationEntries(GetNavigationEntries callback) {
             getNavigationEntries.set(callback);
@@ -5697,7 +5421,7 @@ public class CEF {
         public Function<SetMouseCursorChangeDisabled> setMouseCursorChangeDisabled = function(SetMouseCursorChangeDisabled.class);
         public static interface SetMouseCursorChangeDisabled {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, int int1);
+            void invoke(jnr.ffi.Pointer browserHost, int int_1);
         }
         public void setSetMouseCursorChangeDisabled(SetMouseCursorChangeDisabled callback) {
             setMouseCursorChangeDisabled.set(callback);
@@ -5706,7 +5430,7 @@ public class CEF {
         public Function<IsMouseCursorChangeDisabled> isMouseCursorChangeDisabled = function(IsMouseCursorChangeDisabled.class);
         public static interface IsMouseCursorChangeDisabled {
             @Delegate
-            int invoke(jnr.ffi.Pointer host);
+            int invoke(jnr.ffi.Pointer browserHost);
         }
         public void setIsMouseCursorChangeDisabled(IsMouseCursorChangeDisabled callback) {
             isMouseCursorChangeDisabled.set(callback);
@@ -5715,7 +5439,7 @@ public class CEF {
         public Function<ReplaceMisspelling> replaceMisspelling = function(ReplaceMisspelling.class);
         public static interface ReplaceMisspelling {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, jnr.ffi.Pointer utf161);
+            void invoke(jnr.ffi.Pointer browserHost, jnr.ffi.Pointer stringUtf16_1);
         }
         public void setReplaceMisspelling(ReplaceMisspelling callback) {
             replaceMisspelling.set(callback);
@@ -5724,7 +5448,7 @@ public class CEF {
         public Function<AddWordToDictionary> addWordToDictionary = function(AddWordToDictionary.class);
         public static interface AddWordToDictionary {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, jnr.ffi.Pointer utf161);
+            void invoke(jnr.ffi.Pointer browserHost, jnr.ffi.Pointer stringUtf16_1);
         }
         public void setAddWordToDictionary(AddWordToDictionary callback) {
             addWordToDictionary.set(callback);
@@ -5733,7 +5457,7 @@ public class CEF {
         public Function<IsWindowRenderingDisabled> isWindowRenderingDisabled = function(IsWindowRenderingDisabled.class);
         public static interface IsWindowRenderingDisabled {
             @Delegate
-            int invoke(jnr.ffi.Pointer host);
+            int invoke(jnr.ffi.Pointer browserHost);
         }
         public void setIsWindowRenderingDisabled(IsWindowRenderingDisabled callback) {
             isWindowRenderingDisabled.set(callback);
@@ -5742,7 +5466,7 @@ public class CEF {
         public Function<WasResized> wasResized = function(WasResized.class);
         public static interface WasResized {
             @Delegate
-            void invoke(jnr.ffi.Pointer host);
+            void invoke(jnr.ffi.Pointer browserHost);
         }
         public void setWasResized(WasResized callback) {
             wasResized.set(callback);
@@ -5751,7 +5475,7 @@ public class CEF {
         public Function<WasHidden> wasHidden = function(WasHidden.class);
         public static interface WasHidden {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, int int1);
+            void invoke(jnr.ffi.Pointer browserHost, int int_1);
         }
         public void setWasHidden(WasHidden callback) {
             wasHidden.set(callback);
@@ -5760,7 +5484,7 @@ public class CEF {
         public Function<NotifyScreenInfoChanged> notifyScreenInfoChanged = function(NotifyScreenInfoChanged.class);
         public static interface NotifyScreenInfoChanged {
             @Delegate
-            void invoke(jnr.ffi.Pointer host);
+            void invoke(jnr.ffi.Pointer browserHost);
         }
         public void setNotifyScreenInfoChanged(NotifyScreenInfoChanged callback) {
             notifyScreenInfoChanged.set(callback);
@@ -5769,7 +5493,7 @@ public class CEF {
         public Function<Invalidate> invalidate = function(Invalidate.class);
         public static interface Invalidate {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, PaintElementType type1);
+            void invoke(jnr.ffi.Pointer browserHost, PaintElementType paintElementType_1);
         }
         public void setInvalidate(Invalidate callback) {
             invalidate.set(callback);
@@ -5778,7 +5502,7 @@ public class CEF {
         public Function<SendKeyEvent> sendKeyEvent = function(SendKeyEvent.class);
         public static interface SendKeyEvent {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, jnr.ffi.Pointer event1);
+            void invoke(jnr.ffi.Pointer browserHost, jnr.ffi.Pointer keyEvent_1);
         }
         public void setSendKeyEvent(SendKeyEvent callback) {
             sendKeyEvent.set(callback);
@@ -5787,7 +5511,7 @@ public class CEF {
         public Function<SendMouseClickEvent> sendMouseClickEvent = function(SendMouseClickEvent.class);
         public static interface SendMouseClickEvent {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, jnr.ffi.Pointer event1, MouseButtonType type2, int int3, int int4);
+            void invoke(jnr.ffi.Pointer browserHost, jnr.ffi.Pointer mouseEvent_1, MouseButtonType mouseButtonType_2, int int_3, int int_4);
         }
         public void setSendMouseClickEvent(SendMouseClickEvent callback) {
             sendMouseClickEvent.set(callback);
@@ -5796,7 +5520,7 @@ public class CEF {
         public Function<SendMouseMoveEvent> sendMouseMoveEvent = function(SendMouseMoveEvent.class);
         public static interface SendMouseMoveEvent {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, jnr.ffi.Pointer event1, int int2);
+            void invoke(jnr.ffi.Pointer browserHost, jnr.ffi.Pointer mouseEvent_1, int int_2);
         }
         public void setSendMouseMoveEvent(SendMouseMoveEvent callback) {
             sendMouseMoveEvent.set(callback);
@@ -5805,7 +5529,7 @@ public class CEF {
         public Function<SendMouseWheelEvent> sendMouseWheelEvent = function(SendMouseWheelEvent.class);
         public static interface SendMouseWheelEvent {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, jnr.ffi.Pointer event1, int int2, int int3);
+            void invoke(jnr.ffi.Pointer browserHost, jnr.ffi.Pointer mouseEvent_1, int int_2, int int_3);
         }
         public void setSendMouseWheelEvent(SendMouseWheelEvent callback) {
             sendMouseWheelEvent.set(callback);
@@ -5814,7 +5538,7 @@ public class CEF {
         public Function<SendFocusEvent> sendFocusEvent = function(SendFocusEvent.class);
         public static interface SendFocusEvent {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, int int1);
+            void invoke(jnr.ffi.Pointer browserHost, int int_1);
         }
         public void setSendFocusEvent(SendFocusEvent callback) {
             sendFocusEvent.set(callback);
@@ -5823,7 +5547,7 @@ public class CEF {
         public Function<SendCaptureLostEvent> sendCaptureLostEvent = function(SendCaptureLostEvent.class);
         public static interface SendCaptureLostEvent {
             @Delegate
-            void invoke(jnr.ffi.Pointer host);
+            void invoke(jnr.ffi.Pointer browserHost);
         }
         public void setSendCaptureLostEvent(SendCaptureLostEvent callback) {
             sendCaptureLostEvent.set(callback);
@@ -5832,7 +5556,7 @@ public class CEF {
         public Function<NotifyMoveOrResizeStarted> notifyMoveOrResizeStarted = function(NotifyMoveOrResizeStarted.class);
         public static interface NotifyMoveOrResizeStarted {
             @Delegate
-            void invoke(jnr.ffi.Pointer host);
+            void invoke(jnr.ffi.Pointer browserHost);
         }
         public void setNotifyMoveOrResizeStarted(NotifyMoveOrResizeStarted callback) {
             notifyMoveOrResizeStarted.set(callback);
@@ -5841,7 +5565,7 @@ public class CEF {
         public Function<GetWindowlessFrameRate> getWindowlessFrameRate = function(GetWindowlessFrameRate.class);
         public static interface GetWindowlessFrameRate {
             @Delegate
-            int invoke(jnr.ffi.Pointer host);
+            int invoke(jnr.ffi.Pointer browserHost);
         }
         public void setGetWindowlessFrameRate(GetWindowlessFrameRate callback) {
             getWindowlessFrameRate.set(callback);
@@ -5850,7 +5574,7 @@ public class CEF {
         public Function<SetWindowlessFrameRate> setWindowlessFrameRate = function(SetWindowlessFrameRate.class);
         public static interface SetWindowlessFrameRate {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, int int1);
+            void invoke(jnr.ffi.Pointer browserHost, int int_1);
         }
         public void setSetWindowlessFrameRate(SetWindowlessFrameRate callback) {
             setWindowlessFrameRate.set(callback);
@@ -5859,7 +5583,7 @@ public class CEF {
         public Function<GetNstextInputContext> getNstextInputContext = function(GetNstextInputContext.class);
         public static interface GetNstextInputContext {
             @Delegate
-            jnr.ffi.Pointer invoke(jnr.ffi.Pointer host);
+            jnr.ffi.Pointer invoke(jnr.ffi.Pointer browserHost);
         }
         public void setGetNstextInputContext(GetNstextInputContext callback) {
             getNstextInputContext.set(callback);
@@ -5868,7 +5592,7 @@ public class CEF {
         public Function<HandleKeyEventBeforeTextInputClient> handleKeyEventBeforeTextInputClient = function(HandleKeyEventBeforeTextInputClient.class);
         public static interface HandleKeyEventBeforeTextInputClient {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, jnr.ffi.Pointer event1);
+            void invoke(jnr.ffi.Pointer browserHost, jnr.ffi.Pointer xEvent_1);
         }
         public void setHandleKeyEventBeforeTextInputClient(HandleKeyEventBeforeTextInputClient callback) {
             handleKeyEventBeforeTextInputClient.set(callback);
@@ -5877,7 +5601,7 @@ public class CEF {
         public Function<HandleKeyEventAfterTextInputClient> handleKeyEventAfterTextInputClient = function(HandleKeyEventAfterTextInputClient.class);
         public static interface HandleKeyEventAfterTextInputClient {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, jnr.ffi.Pointer event1);
+            void invoke(jnr.ffi.Pointer browserHost, jnr.ffi.Pointer xEvent_1);
         }
         public void setHandleKeyEventAfterTextInputClient(HandleKeyEventAfterTextInputClient callback) {
             handleKeyEventAfterTextInputClient.set(callback);
@@ -5886,7 +5610,7 @@ public class CEF {
         public Function<DragTargetDragEnter> dragTargetDragEnter = function(DragTargetDragEnter.class);
         public static interface DragTargetDragEnter {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, jnr.ffi.Pointer data1, jnr.ffi.Pointer event2, DragOperationsMask mask3);
+            void invoke(jnr.ffi.Pointer browserHost, jnr.ffi.Pointer dragData_1, jnr.ffi.Pointer mouseEvent_2, DragOperationsMask dragOperationsMask_3);
         }
         public void setDragTargetDragEnter(DragTargetDragEnter callback) {
             dragTargetDragEnter.set(callback);
@@ -5895,7 +5619,7 @@ public class CEF {
         public Function<DragTargetDragOver> dragTargetDragOver = function(DragTargetDragOver.class);
         public static interface DragTargetDragOver {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, jnr.ffi.Pointer event1, DragOperationsMask mask2);
+            void invoke(jnr.ffi.Pointer browserHost, jnr.ffi.Pointer mouseEvent_1, DragOperationsMask dragOperationsMask_2);
         }
         public void setDragTargetDragOver(DragTargetDragOver callback) {
             dragTargetDragOver.set(callback);
@@ -5904,7 +5628,7 @@ public class CEF {
         public Function<DragTargetDragLeave> dragTargetDragLeave = function(DragTargetDragLeave.class);
         public static interface DragTargetDragLeave {
             @Delegate
-            void invoke(jnr.ffi.Pointer host);
+            void invoke(jnr.ffi.Pointer browserHost);
         }
         public void setDragTargetDragLeave(DragTargetDragLeave callback) {
             dragTargetDragLeave.set(callback);
@@ -5913,7 +5637,7 @@ public class CEF {
         public Function<DragTargetDrop> dragTargetDrop = function(DragTargetDrop.class);
         public static interface DragTargetDrop {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, jnr.ffi.Pointer event1);
+            void invoke(jnr.ffi.Pointer browserHost, jnr.ffi.Pointer mouseEvent_1);
         }
         public void setDragTargetDrop(DragTargetDrop callback) {
             dragTargetDrop.set(callback);
@@ -5922,7 +5646,7 @@ public class CEF {
         public Function<DragSourceEndedAt> dragSourceEndedAt = function(DragSourceEndedAt.class);
         public static interface DragSourceEndedAt {
             @Delegate
-            void invoke(jnr.ffi.Pointer host, int int1, int int2, DragOperationsMask mask3);
+            void invoke(jnr.ffi.Pointer browserHost, int int_1, int int_2, DragOperationsMask dragOperationsMask_3);
         }
         public void setDragSourceEndedAt(DragSourceEndedAt callback) {
             dragSourceEndedAt.set(callback);
@@ -5931,7 +5655,7 @@ public class CEF {
         public Function<DragSourceSystemDragEnded> dragSourceSystemDragEnded = function(DragSourceSystemDragEnded.class);
         public static interface DragSourceSystemDragEnded {
             @Delegate
-            void invoke(jnr.ffi.Pointer host);
+            void invoke(jnr.ffi.Pointer browserHost);
         }
         public void setDragSourceSystemDragEnded(DragSourceSystemDragEnded callback) {
             dragSourceSystemDragEnded.set(callback);
@@ -5947,7 +5671,7 @@ public class CEF {
      * 
      * @method browserHostCreateBrowser(windowInfo, client, url, settings, requestContext)
      * @param [WindowInfo] windowInfo 
-     * @param [Client] client 
+     * @param [FFI::Pointer(*Client)] client 
      * @param [StringUtf16] url 
      * @param [BrowserSettings] settings 
      * @param [FFI::Pointer(*RequestContext)] requestContext 
@@ -5963,7 +5687,7 @@ public class CEF {
      * 
      * @method browserHostCreateBrowserSync(windowInfo, client, url, settings, requestContext)
      * @param [WindowInfo] windowInfo 
-     * @param [Client] client 
+     * @param [FFI::Pointer(*Client)] client 
      * @param [StringUtf16] url 
      * @param [BrowserSettings] settings 
      * @param [FFI::Pointer(*RequestContext)] requestContext 
@@ -5972,6 +5696,458 @@ public class CEF {
      */
     public static Browser browserHostCreateBrowserSync(WindowInfo windowInfo, Client client, StringUtf16 url, BrowserSettings settings, jnr.ffi.Pointer requestContext) {
         return INSTANCE.browserHostCreateBrowserSync(windowInfo, client, url, settings, requestContext);
+    }
+    
+    /**
+     * (Not documented)
+     * 
+     * = Fields:
+     * :base ::
+     *   (Base) Base structure.
+     * :getContextMenuHandler ::
+     *   (Function(GetContextMenuHandler)) Return the handler for context menus. If no handler is provided the default
+     *   implementation will be used.
+     * :getDialogHandler ::
+     *   (Function(GetDialogHandler)) Return the handler for dialogs. If no handler is provided the default
+     *   implementation will be used.
+     * :getDisplayHandler ::
+     *   (Function(GetDisplayHandler)) Return the handler for browser display state events.
+     * :getDownloadHandler ::
+     *   (Function(GetDownloadHandler)) Return the handler for download events. If no handler is returned downloads
+     *   will not be allowed.
+     * :getDragHandler ::
+     *   (Function(GetDragHandler)) Return the handler for drag events.
+     * :getFindHandler ::
+     *   (Function(GetFindHandler)) Return the handler for find result events.
+     * :getFocusHandler ::
+     *   (Function(GetFocusHandler)) Return the handler for focus events.
+     * :getGeolocationHandler ::
+     *   (Function(GetGeolocationHandler)) Return the handler for geolocation permissions requests. If no handler is
+     *   provided geolocation access will be denied by default.
+     * :getJsdialogHandler ::
+     *   (Function(GetJsdialogHandler)) Return the handler for JavaScript dialogs. If no handler is provided the
+     *   default implementation will be used.
+     * :getKeyboardHandler ::
+     *   (Function(GetKeyboardHandler)) Return the handler for keyboard events.
+     * :getLifeSpanHandler ::
+     *   (Function(GetLifeSpanHandler)) Return the handler for browser life span events.
+     * :getLoadHandler ::
+     *   (Function(GetLoadHandler)) Return the handler for browser load status events.
+     * :getRenderHandler ::
+     *   (Function(GetRenderHandler)) Return the handler for off-screen rendering events.
+     * :getRequestHandler ::
+     *   (Function(GetRequestHandler)) Return the handler for browser request events.
+     * :onProcessMessageReceived ::
+     *   (Function(OnProcessMessageReceived)) Called when a new message is received from a different process. Return true
+     *   (1) if the message was handled or false (0) otherwise. Do not keep a
+     *   reference to or attempt to access the message outside of this callback.
+     */
+    public static final class Client extends Struct {
+        public Base base = inner(new Base(getRuntime()));
+        public Function<GetContextMenuHandler> getContextMenuHandler = function(GetContextMenuHandler.class);
+        public static interface GetContextMenuHandler {
+            @Delegate
+            jnr.ffi.Pointer invoke(jnr.ffi.Pointer client);
+        }
+        public void setGetContextMenuHandler(GetContextMenuHandler callback) {
+            getContextMenuHandler.set(callback);
+        }
+        
+        public Function<GetDialogHandler> getDialogHandler = function(GetDialogHandler.class);
+        public static interface GetDialogHandler {
+            @Delegate
+            jnr.ffi.Pointer invoke(jnr.ffi.Pointer client);
+        }
+        public void setGetDialogHandler(GetDialogHandler callback) {
+            getDialogHandler.set(callback);
+        }
+        
+        public Function<GetDisplayHandler> getDisplayHandler = function(GetDisplayHandler.class);
+        public static interface GetDisplayHandler {
+            @Delegate
+            jnr.ffi.Pointer invoke(jnr.ffi.Pointer client);
+        }
+        public void setGetDisplayHandler(GetDisplayHandler callback) {
+            getDisplayHandler.set(callback);
+        }
+        
+        public Function<GetDownloadHandler> getDownloadHandler = function(GetDownloadHandler.class);
+        public static interface GetDownloadHandler {
+            @Delegate
+            jnr.ffi.Pointer invoke(jnr.ffi.Pointer client);
+        }
+        public void setGetDownloadHandler(GetDownloadHandler callback) {
+            getDownloadHandler.set(callback);
+        }
+        
+        public Function<GetDragHandler> getDragHandler = function(GetDragHandler.class);
+        public static interface GetDragHandler {
+            @Delegate
+            jnr.ffi.Pointer invoke(jnr.ffi.Pointer client);
+        }
+        public void setGetDragHandler(GetDragHandler callback) {
+            getDragHandler.set(callback);
+        }
+        
+        public Function<GetFindHandler> getFindHandler = function(GetFindHandler.class);
+        public static interface GetFindHandler {
+            @Delegate
+            jnr.ffi.Pointer invoke(jnr.ffi.Pointer client);
+        }
+        public void setGetFindHandler(GetFindHandler callback) {
+            getFindHandler.set(callback);
+        }
+        
+        public Function<GetFocusHandler> getFocusHandler = function(GetFocusHandler.class);
+        public static interface GetFocusHandler {
+            @Delegate
+            jnr.ffi.Pointer invoke(jnr.ffi.Pointer client);
+        }
+        public void setGetFocusHandler(GetFocusHandler callback) {
+            getFocusHandler.set(callback);
+        }
+        
+        public Function<GetGeolocationHandler> getGeolocationHandler = function(GetGeolocationHandler.class);
+        public static interface GetGeolocationHandler {
+            @Delegate
+            jnr.ffi.Pointer invoke(jnr.ffi.Pointer client);
+        }
+        public void setGetGeolocationHandler(GetGeolocationHandler callback) {
+            getGeolocationHandler.set(callback);
+        }
+        
+        public Function<GetJsdialogHandler> getJsdialogHandler = function(GetJsdialogHandler.class);
+        public static interface GetJsdialogHandler {
+            @Delegate
+            jnr.ffi.Pointer invoke(jnr.ffi.Pointer client);
+        }
+        public void setGetJsdialogHandler(GetJsdialogHandler callback) {
+            getJsdialogHandler.set(callback);
+        }
+        
+        public Function<GetKeyboardHandler> getKeyboardHandler = function(GetKeyboardHandler.class);
+        public static interface GetKeyboardHandler {
+            @Delegate
+            jnr.ffi.Pointer invoke(jnr.ffi.Pointer client);
+        }
+        public void setGetKeyboardHandler(GetKeyboardHandler callback) {
+            getKeyboardHandler.set(callback);
+        }
+        
+        public Function<GetLifeSpanHandler> getLifeSpanHandler = function(GetLifeSpanHandler.class);
+        public static interface GetLifeSpanHandler {
+            @Delegate
+            jnr.ffi.Pointer invoke(jnr.ffi.Pointer client);
+        }
+        public void setGetLifeSpanHandler(GetLifeSpanHandler callback) {
+            getLifeSpanHandler.set(callback);
+        }
+        
+        public Function<GetLoadHandler> getLoadHandler = function(GetLoadHandler.class);
+        public static interface GetLoadHandler {
+            @Delegate
+            jnr.ffi.Pointer invoke(jnr.ffi.Pointer client);
+        }
+        public void setGetLoadHandler(GetLoadHandler callback) {
+            getLoadHandler.set(callback);
+        }
+        
+        public Function<GetRenderHandler> getRenderHandler = function(GetRenderHandler.class);
+        public static interface GetRenderHandler {
+            @Delegate
+            jnr.ffi.Pointer invoke(jnr.ffi.Pointer client);
+        }
+        public void setGetRenderHandler(GetRenderHandler callback) {
+            getRenderHandler.set(callback);
+        }
+        
+        public Function<GetRequestHandler> getRequestHandler = function(GetRequestHandler.class);
+        public static interface GetRequestHandler {
+            @Delegate
+            jnr.ffi.Pointer invoke(jnr.ffi.Pointer client);
+        }
+        public void setGetRequestHandler(GetRequestHandler callback) {
+            getRequestHandler.set(callback);
+        }
+        
+        public Function<OnProcessMessageReceived> onProcessMessageReceived = function(OnProcessMessageReceived.class);
+        public static interface OnProcessMessageReceived {
+            @Delegate
+            int invoke(jnr.ffi.Pointer client, jnr.ffi.Pointer browser_1, ProcessId processId_2, jnr.ffi.Pointer processMessage_3);
+        }
+        public void setOnProcessMessageReceived(OnProcessMessageReceived callback) {
+            onProcessMessageReceived.set(callback);
+        }
+        
+        public Client(jnr.ffi.Runtime runtime) {
+          super(runtime);
+        }
+    }
+    
+    /**
+     * (Not documented)
+     * 
+     * = Fields:
+     * :base ::
+     *   (Base) Base structure.
+     * :isValid ::
+     *   (Function(IsValid)) Returns true (1) if this object is valid. Do not call any other functions
+     *   if this function returns false (0).
+     * :isReadOnly ::
+     *   (Function(IsReadOnly)) Returns true (1) if the values of this object are read-only. Some APIs may
+     *   expose read-only objects.
+     * :copy ::
+     *   (Function(Copy)) Returns a writable copy of this object.
+     * :initFromArgv ::
+     *   (Function(InitFromArgv)) Initialize the command line with the specified |argc| and |argv| values.
+     *   The first argument must be the name of the program. This function is only
+     *   supported on non-Windows platforms.
+     * :initFromString ::
+     *   (Function(InitFromString)) Initialize the command line with the string returned by calling
+     *   GetCommandLineW(). This function is only supported on Windows.
+     * :reset ::
+     *   (Function(Reset)) Reset the command-line switches and arguments but leave the program
+     *   component unchanged.
+     * :getArgv ::
+     *   (Function(GetArgv)) Retrieve the original command line string as a vector of strings. The argv
+     *   array: { program, ((--|-|/)switch(=value))*, (--), (argument)* }
+     * :getCommandLineString ::
+     *   (Function(GetCommandLineString)) The resulting string must be freed by calling cef_string_userfree_free().
+     * :getProgram ::
+     *   (Function(GetProgram)) The resulting string must be freed by calling cef_string_userfree_free().
+     * :setProgram ::
+     *   (Function(SetProgram)) Set the program part of the command line string (the first item).
+     * :hasSwitches ::
+     *   (Function(HasSwitches)) Returns true (1) if the command line has switches.
+     * :hasSwitch ::
+     *   (Function(HasSwitch)) Returns true (1) if the command line contains the given switch.
+     * :getSwitchValue ::
+     *   (Function(GetSwitchValue)) The resulting string must be freed by calling cef_string_userfree_free().
+     * :getSwitches ::
+     *   (Function(GetSwitches)) Returns the map of switch names and values. If a switch has no value an
+     *   NULL string is returned.
+     * :appendSwitch ::
+     *   (Function(AppendSwitch)) Add a switch to the end of the command line. If the switch has no value
+     *   pass an NULL value string.
+     * :appendSwitchWithValue ::
+     *   (Function(AppendSwitchWithValue)) Add a switch with the specified value to the end of the command line.
+     * :hasArguments ::
+     *   (Function(HasArguments)) True if there are remaining command line arguments.
+     * :getArguments ::
+     *   (Function(GetArguments)) Get the remaining command line arguments.
+     * :appendArgument ::
+     *   (Function(AppendArgument)) Add an argument to the end of the command line.
+     * :prependWrapper ::
+     *   (Function(PrependWrapper)) Insert a command before the current command. Common for debuggers, like
+     *   "valgrind" or "gdb --args".
+     */
+    public static final class CommandLine extends Struct {
+        public Base base = inner(new Base(getRuntime()));
+        public Function<IsValid> isValid = function(IsValid.class);
+        public static interface IsValid {
+            @Delegate
+            int invoke(jnr.ffi.Pointer commandLine);
+        }
+        public void setIsValid(IsValid callback) {
+            isValid.set(callback);
+        }
+        
+        public Function<IsReadOnly> isReadOnly = function(IsReadOnly.class);
+        public static interface IsReadOnly {
+            @Delegate
+            int invoke(jnr.ffi.Pointer commandLine);
+        }
+        public void setIsReadOnly(IsReadOnly callback) {
+            isReadOnly.set(callback);
+        }
+        
+        public Function<Copy> copy = function(Copy.class);
+        public static interface Copy {
+            @Delegate
+            jnr.ffi.Pointer invoke(jnr.ffi.Pointer commandLine);
+        }
+        public void setCopy(Copy callback) {
+            copy.set(callback);
+        }
+        
+        public Function<InitFromArgv> initFromArgv = function(InitFromArgv.class);
+        public static interface InitFromArgv {
+            @Delegate
+            void invoke(jnr.ffi.Pointer commandLine, int int_1, jnr.ffi.Pointer charS_2);
+        }
+        public void setInitFromArgv(InitFromArgv callback) {
+            initFromArgv.set(callback);
+        }
+        
+        public Function<InitFromString> initFromString = function(InitFromString.class);
+        public static interface InitFromString {
+            @Delegate
+            void invoke(jnr.ffi.Pointer commandLine, jnr.ffi.Pointer stringUtf16_1);
+        }
+        public void setInitFromString(InitFromString callback) {
+            initFromString.set(callback);
+        }
+        
+        public Function<Reset> reset = function(Reset.class);
+        public static interface Reset {
+            @Delegate
+            void invoke(jnr.ffi.Pointer commandLine);
+        }
+        public void setReset(Reset callback) {
+            reset.set(callback);
+        }
+        
+        public Function<GetArgv> getArgv = function(GetArgv.class);
+        public static interface GetArgv {
+            @Delegate
+            void invoke(jnr.ffi.Pointer commandLine, jnr.ffi.Pointer void_1);
+        }
+        public void setGetArgv(GetArgv callback) {
+            getArgv.set(callback);
+        }
+        
+        public Function<GetCommandLineString> getCommandLineString = function(GetCommandLineString.class);
+        public static interface GetCommandLineString {
+            @Delegate
+            StringUtf16 invoke(jnr.ffi.Pointer commandLine);
+        }
+        public void setGetCommandLineString(GetCommandLineString callback) {
+            getCommandLineString.set(callback);
+        }
+        
+        public Function<GetProgram> getProgram = function(GetProgram.class);
+        public static interface GetProgram {
+            @Delegate
+            StringUtf16 invoke(jnr.ffi.Pointer commandLine);
+        }
+        public void setGetProgram(GetProgram callback) {
+            getProgram.set(callback);
+        }
+        
+        public Function<SetProgram> setProgram = function(SetProgram.class);
+        public static interface SetProgram {
+            @Delegate
+            void invoke(jnr.ffi.Pointer commandLine, jnr.ffi.Pointer stringUtf16_1);
+        }
+        public void setSetProgram(SetProgram callback) {
+            setProgram.set(callback);
+        }
+        
+        public Function<HasSwitches> hasSwitches = function(HasSwitches.class);
+        public static interface HasSwitches {
+            @Delegate
+            int invoke(jnr.ffi.Pointer commandLine);
+        }
+        public void setHasSwitches(HasSwitches callback) {
+            hasSwitches.set(callback);
+        }
+        
+        public Function<HasSwitch> hasSwitch = function(HasSwitch.class);
+        public static interface HasSwitch {
+            @Delegate
+            int invoke(jnr.ffi.Pointer commandLine, jnr.ffi.Pointer stringUtf16_1);
+        }
+        public void setHasSwitch(HasSwitch callback) {
+            hasSwitch.set(callback);
+        }
+        
+        public Function<GetSwitchValue> getSwitchValue = function(GetSwitchValue.class);
+        public static interface GetSwitchValue {
+            @Delegate
+            StringUtf16 invoke(jnr.ffi.Pointer commandLine, jnr.ffi.Pointer stringUtf16_1);
+        }
+        public void setGetSwitchValue(GetSwitchValue callback) {
+            getSwitchValue.set(callback);
+        }
+        
+        public Function<GetSwitches> getSwitches = function(GetSwitches.class);
+        public static interface GetSwitches {
+            @Delegate
+            void invoke(jnr.ffi.Pointer commandLine, jnr.ffi.Pointer void_1);
+        }
+        public void setGetSwitches(GetSwitches callback) {
+            getSwitches.set(callback);
+        }
+        
+        public Function<AppendSwitch> appendSwitch = function(AppendSwitch.class);
+        public static interface AppendSwitch {
+            @Delegate
+            void invoke(jnr.ffi.Pointer commandLine, jnr.ffi.Pointer stringUtf16_1);
+        }
+        public void setAppendSwitch(AppendSwitch callback) {
+            appendSwitch.set(callback);
+        }
+        
+        public Function<AppendSwitchWithValue> appendSwitchWithValue = function(AppendSwitchWithValue.class);
+        public static interface AppendSwitchWithValue {
+            @Delegate
+            void invoke(jnr.ffi.Pointer commandLine, jnr.ffi.Pointer stringUtf16_1, jnr.ffi.Pointer stringUtf16_2);
+        }
+        public void setAppendSwitchWithValue(AppendSwitchWithValue callback) {
+            appendSwitchWithValue.set(callback);
+        }
+        
+        public Function<HasArguments> hasArguments = function(HasArguments.class);
+        public static interface HasArguments {
+            @Delegate
+            int invoke(jnr.ffi.Pointer commandLine);
+        }
+        public void setHasArguments(HasArguments callback) {
+            hasArguments.set(callback);
+        }
+        
+        public Function<GetArguments> getArguments = function(GetArguments.class);
+        public static interface GetArguments {
+            @Delegate
+            void invoke(jnr.ffi.Pointer commandLine, jnr.ffi.Pointer void_1);
+        }
+        public void setGetArguments(GetArguments callback) {
+            getArguments.set(callback);
+        }
+        
+        public Function<AppendArgument> appendArgument = function(AppendArgument.class);
+        public static interface AppendArgument {
+            @Delegate
+            void invoke(jnr.ffi.Pointer commandLine, jnr.ffi.Pointer stringUtf16_1);
+        }
+        public void setAppendArgument(AppendArgument callback) {
+            appendArgument.set(callback);
+        }
+        
+        public Function<PrependWrapper> prependWrapper = function(PrependWrapper.class);
+        public static interface PrependWrapper {
+            @Delegate
+            void invoke(jnr.ffi.Pointer commandLine, jnr.ffi.Pointer stringUtf16_1);
+        }
+        public void setPrependWrapper(PrependWrapper callback) {
+            prependWrapper.set(callback);
+        }
+        
+        public CommandLine(jnr.ffi.Runtime runtime) {
+          super(runtime);
+        }
+    }
+    
+    /**
+     * (Not documented)
+     * 
+     * @method commandLineCreate()
+     * @return [CommandLine] 
+     * @scope class
+     */
+    public static CommandLine commandLineCreate() {
+        return INSTANCE.commandLineCreate();
+    }
+    
+    /**
+     * (Not documented)
+     * 
+     * @method commandLineGetGlobal()
+     * @return [CommandLine] 
+     * @scope class
+     */
+    public static CommandLine commandLineGetGlobal() {
+        return INSTANCE.commandLineGetGlobal();
     }
     
     /**
@@ -6004,7 +6180,7 @@ public class CEF {
         public Function<OnContextInitialized> onContextInitialized = function(OnContextInitialized.class);
         public static interface OnContextInitialized {
             @Delegate
-            void invoke(jnr.ffi.Pointer handler);
+            void invoke(jnr.ffi.Pointer browserProcessHandler);
         }
         public void setOnContextInitialized(OnContextInitialized callback) {
             onContextInitialized.set(callback);
@@ -6013,7 +6189,7 @@ public class CEF {
         public Function<OnBeforeChildProcessLaunch> onBeforeChildProcessLaunch = function(OnBeforeChildProcessLaunch.class);
         public static interface OnBeforeChildProcessLaunch {
             @Delegate
-            void invoke(jnr.ffi.Pointer handler, jnr.ffi.Pointer line1);
+            void invoke(jnr.ffi.Pointer browserProcessHandler, jnr.ffi.Pointer commandLine_1);
         }
         public void setOnBeforeChildProcessLaunch(OnBeforeChildProcessLaunch callback) {
             onBeforeChildProcessLaunch.set(callback);
@@ -6022,7 +6198,7 @@ public class CEF {
         public Function<OnRenderProcessThreadCreated> onRenderProcessThreadCreated = function(OnRenderProcessThreadCreated.class);
         public static interface OnRenderProcessThreadCreated {
             @Delegate
-            void invoke(jnr.ffi.Pointer handler, jnr.ffi.Pointer value1);
+            void invoke(jnr.ffi.Pointer browserProcessHandler, jnr.ffi.Pointer listValue_1);
         }
         public void setOnRenderProcessThreadCreated(OnRenderProcessThreadCreated callback) {
             onRenderProcessThreadCreated.set(callback);
@@ -6031,7 +6207,7 @@ public class CEF {
         public Function<GetPrintHandler> getPrintHandler = function(GetPrintHandler.class);
         public static interface GetPrintHandler {
             @Delegate
-            jnr.ffi.Pointer invoke(jnr.ffi.Pointer handler);
+            jnr.ffi.Pointer invoke(jnr.ffi.Pointer browserProcessHandler);
         }
         public void setGetPrintHandler(GetPrintHandler callback) {
             getPrintHandler.set(callback);
@@ -6081,7 +6257,7 @@ public class CEF {
         public Function<OnBeforeCommandLineProcessing> onBeforeCommandLineProcessing = function(OnBeforeCommandLineProcessing.class);
         public static interface OnBeforeCommandLineProcessing {
             @Delegate
-            void invoke(jnr.ffi.Pointer app, jnr.ffi.Pointer utf161, jnr.ffi.Pointer line2);
+            void invoke(jnr.ffi.Pointer app, jnr.ffi.Pointer stringUtf16_1, jnr.ffi.Pointer commandLine_2);
         }
         public void setOnBeforeCommandLineProcessing(OnBeforeCommandLineProcessing callback) {
             onBeforeCommandLineProcessing.set(callback);
@@ -6090,7 +6266,7 @@ public class CEF {
         public Function<OnRegisterCustomSchemes> onRegisterCustomSchemes = function(OnRegisterCustomSchemes.class);
         public static interface OnRegisterCustomSchemes {
             @Delegate
-            void invoke(jnr.ffi.Pointer app, jnr.ffi.Pointer registrar1);
+            void invoke(jnr.ffi.Pointer app, jnr.ffi.Pointer schemeRegistrar_1);
         }
         public void setOnRegisterCustomSchemes(OnRegisterCustomSchemes callback) {
             onRegisterCustomSchemes.set(callback);
@@ -6356,17 +6532,17 @@ public class CEF {
         @NativeName("cef_get_xdisplay")
         XDisplay getXdisplay();
         
-        @NativeName("cef_command_line_create")
-        CommandLine commandLineCreate();
-        
-        @NativeName("cef_command_line_get_global")
-        CommandLine commandLineGetGlobal();
-        
         @NativeName("cef_browser_host_create_browser")
         int browserHostCreateBrowser(WindowInfo windowInfo, Client client, StringUtf16 url, BrowserSettings settings, jnr.ffi.Pointer requestContext);
         
         @NativeName("cef_browser_host_create_browser_sync")
         Browser browserHostCreateBrowserSync(WindowInfo windowInfo, Client client, StringUtf16 url, BrowserSettings settings, jnr.ffi.Pointer requestContext);
+        
+        @NativeName("cef_command_line_create")
+        CommandLine commandLineCreate();
+        
+        @NativeName("cef_command_line_get_global")
+        CommandLine commandLineGetGlobal();
         
         @NativeName("cef_execute_process")
         int executeProcess(MainArgs args, App application, jnr.ffi.Pointer windowsSandboxInfo);

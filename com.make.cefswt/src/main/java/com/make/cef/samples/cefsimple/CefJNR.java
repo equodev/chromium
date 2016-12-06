@@ -10,14 +10,17 @@ import java.util.Arrays;
 import cef.capi.CEF;
 import cef.capi.CEF.App;
 import cef.capi.CEF.BrowserProcessHandler;
+import cef.capi.CEF.Client;
 import cef.capi.CEF.CommandLine;
 import cef.capi.CEF.LogSeverity;
 import cef.capi.CEF.MainArgs;
+import cef.capi.CEF.ProcessId;
 import cef.capi.CEF.Settings;
 import cef.capi.CEF.StringUtf16;
 import jnr.ffi.Memory;
 import jnr.ffi.Pointer;
 import jnr.ffi.Struct;
+import jnr.ffi.provider.ParameterFlags;
 
 public class CefJNR {
 	static jnr.ffi.Runtime runtime = CEF.RUNTIME;
@@ -55,7 +58,7 @@ public class CefJNR {
 
 		System.out.println("Calling executeProcess");
 		int exit_code = CEF.executeProcess(main_args, app, null);
-		if (exit_code >= 0) {
+		if (exit_code > 0) {
 			// The sub-process has completed so return here.
 			throw new RuntimeException(exit_code + "");
 		}
@@ -73,6 +76,8 @@ public class CefJNR {
 		if (sucess != 1)
 			throw new RuntimeException("initialize failed: " +sucess);
 
+//		createBrowser();
+		
 		System.out.println("Calling runMessageLoop");
 		// Run the Cef message loop. This will block until CefQuitMessageLoop() is
 		// called.
@@ -102,50 +107,87 @@ public class CefJNR {
 		return settings;
 	}
 
+	static BrowserProcessHandler browserProcessHandler = new CEF.BrowserProcessHandler(runtime);
+	
 	public static App createApp() {
-		App app = new App(runtime);
-		
-		BrowserProcessHandler browserProcessHandler = new CEF.BrowserProcessHandler(runtime);
+		Pointer mem = Struct.getMemory(browserProcessHandler, ParameterFlags.DIRECT);
 		browserProcessHandler.setOnContextInitialized(new CEF.BrowserProcessHandler.OnContextInitialized() {
 			@Override
 			public void invoke(Pointer self) {
 				System.out.println("- onContextInitialized");
 				
-				// Browser settings.
-				// It is mandatory to set the "size" member.
-				CEF.BrowserSettings browserSettings = new CEF.BrowserSettings(runtime);
-			    browserSettings.size.set(Struct.size(browserSettings));
-			    
-			    // Client handler and its callbacks.
-			    // cef_client_t structure must be filled. It must implement
-			    // reference counting. You cannot pass a structure 
-			    // initialized with zeroes.
-//			    cef_client_t client = {};
-//			    initialize_client_handler(&client);
+			    createBrowser();
+			}
+		});
+//		browserProcessHandler.base.size.set(Struct.size(browserProcessHandler));
 
-			    // Create browser.
-			    System.out.println("cef_browser_host_create_browser\n");
-//			    cef_browser_host_create_browser(&windowInfo, &client, &cefUrl,
-//			            &browserSettings, NULL);
-			}
+		App app = new App(runtime);
+		app.setOnBeforeCommandLineProcessing((Pointer self, Pointer stringUtf16, Pointer commandLine) ->
+			DEBUG_CALLBACK("- onBeforeCommandLineProcessing")
+		);
+		app.setOnRegisterCustomSchemes((app1, schemeRegistrar_1) -> DEBUG_CALLBACK("on_register_custom_schemes"));
+		app.setGetResourceBundleHandler(app1 -> /*DEBUG_CALLBACK("get_resource_bundle_handler")*/null);
+		app.setGetBrowserProcessHandler(app1 -> {
+			System.out.println("- getBrowserProcessHandler");
+			return mem;
+//			return null;
 		});
-		browserProcessHandler.base.size.set(Struct.size(browserProcessHandler));
-		
-		app.setOnBeforeCommandLineProcessing(new CEF.App.OnBeforeCommandLineProcessing() {
-			@Override
-			public void invoke(Pointer app, Pointer stringUtf16, Pointer commandLine) {
-				System.out.println("- onBeforeCommandLineProcessing");
-			}
-		});
-		
-		app.setGetBrowserProcessHandler(new CEF.App.GetBrowserProcessHandler() {
-			@Override
-			public BrowserProcessHandler invoke(Pointer app) {
-				System.out.println("- getBrowserProcessHandler");
-				return browserProcessHandler;
-			}
-		});
+		app.setGetRenderProcessHandler(app1 -> DEBUG_CALLBACK("get_render_process_handler"));
 		return app;
+	}
+
+	protected static void initializeClientHandler(Client client) {
+	    System.out.println("initialize_client_handler");
+	    // callbacks
+	    client.setGetContextMenuHandler((c) -> DEBUG_CALLBACK("get_context_menu_handler"));
+	    client.setGetDialogHandler((c) -> DEBUG_CALLBACK("get_dialog_handler"));
+	    client.setGetDisplayHandler((c) -> DEBUG_CALLBACK("get_display_handler"));
+	    client.setGetDownloadHandler((c) -> DEBUG_CALLBACK("get_download_handler"));
+	    client.setGetDragHandler((c) -> DEBUG_CALLBACK("get_drag_handler"));
+	    client.setGetFocusHandler((c) -> DEBUG_CALLBACK("get_focus_handler"));
+	    client.setGetGeolocationHandler((c) -> DEBUG_CALLBACK("get_geolocation_handler"));
+	    client.setGetJsdialogHandler((c) -> DEBUG_CALLBACK("get_jsdialog_handler"));
+	    client.setGetKeyboardHandler((c) -> DEBUG_CALLBACK("get_keyboard_handler"));
+	    client.setGetLifeSpanHandler((c) -> DEBUG_CALLBACK("get_life_span_handler"));
+	    client.setGetLoadHandler((c) -> DEBUG_CALLBACK("get_load_handler"));
+	    client.setGetRenderHandler((c) -> DEBUG_CALLBACK("get_render_handler"));
+	    client.setGetRequestHandler((c) -> DEBUG_CALLBACK("get_request_handler"));
+	    client.setOnProcessMessageReceived((c, browser_1, processId_2, processMessage_3) -> {
+	    	DEBUG_CALLBACK("on_process_message_received"); 
+	    	return 0;
+	    });
+	}
+
+	public static void createBrowser() {
+			// Create GTK window. You can pass a NULL handle 
+			// to CEF and then it will create a window of its own.
+	//			    initialize_gtk();
+	//			    GtkWidget* hwnd = create_gtk_window("cefcapi example", 1024, 768);
+			CEF.WindowInfo windowInfo = new CEF.WindowInfo(runtime);
+	//			    windowInfo.parent_widget = hwnd;
+	
+			// Browser settings.
+			// It is mandatory to set the "size" member.
+			CEF.BrowserSettings browserSettings = new CEF.BrowserSettings(runtime);
+			browserSettings.size.set(Struct.size(browserSettings));
+			// Client handler and its callbacks.
+			// cef_client_t structure must be filled. It must implement
+			// reference counting. You cannot pass a structure 
+			// initialized with zeroes.
+			Client client = new CEF.Client(runtime);
+			initializeClientHandler(client);
+	
+			StringUtf16 url = new CEF.StringUtf16(runtime);
+			url.set("http://google.com");
+			// Create browser.
+			System.out.println("Calling cef_browser_host_create_browser");
+			if (CEF.browserHostCreateBrowser(windowInfo, client, url, browserSettings, null) != 1)
+				throw new RuntimeException("Failed calling browserHostCreateBrowser");
+		}
+
+	private static jnr.ffi.Pointer DEBUG_CALLBACK(String log) {
+		System.out.println(log);
+		return null;
 	}
 
 	public static MainArgs createMainArgs(String[] args, jnr.ffi.Runtime runtime) {
