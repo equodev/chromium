@@ -3,6 +3,7 @@ package cef.capi;
 import jnr.ffi.*;
 import jnr.ffi.util.*;
 import jnr.ffi.mapper.*;
+import jnr.ffi.provider.ParameterFlags;
 import jnr.ffi.annotations.*;
 import java.lang.annotation.*;
 import java.nio.ByteBuffer;
@@ -6322,6 +6323,8 @@ public class CEF {
         
         public BrowserProcessHandler(jnr.ffi.Runtime runtime) {
           super(runtime);
+          // this is required to return struct in callback
+          getMemory(this, ParameterFlags.DIRECT);
           base.setFns();
           base.size.set(Struct.size(this));
         }

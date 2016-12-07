@@ -307,11 +307,9 @@ public class JNRTest {
 		App app = new App(runtime);
 		
 		BrowserProcessHandler bph = new CEF.BrowserProcessHandler(runtime);
-		
 		app.setGetBrowserProcessHandler(p -> {
 			System.out.println("in setGetBrowserProcessHandler");
 			return bph;
-			//return Struct.getMemory(bph, ParameterFlags.DIRECT);
 		});
 		
 		System.out.println("first call to c");
