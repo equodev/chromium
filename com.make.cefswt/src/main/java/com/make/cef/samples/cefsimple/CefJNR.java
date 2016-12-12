@@ -69,12 +69,12 @@ public class CefJNR {
 		App app = createApp();
 
 		System.out.println("1ACTIVE THREADS: " + Thread.activeCount());
-		System.out.println("Calling executeProcess");
-		int exit_code = CEF.executeProcess(main_args, null, null);
-		if (exit_code > 0) {
-			// The sub-process has completed so return here.
-			throw new RuntimeException(exit_code + "");
-		}
+//		System.out.println("Calling executeProcess");
+//		int exit_code = CEF.executeProcess(main_args, null, null);
+//		if (exit_code > 0) {
+//			// The sub-process has completed so return here.
+//			throw new RuntimeException(exit_code + "");
+//		}
 		
 		XLib xlib = X11.getLib();
 		xlib.XSetErrorHandler((d, e) -> {
@@ -115,7 +115,9 @@ public class CefJNR {
 	public static Settings createSettings(jnr.ffi.Runtime runtime) {
 		System.out.println("2ACTIVE THREADS: " + Thread.activeCount());
 		// Specify Cef global settings here.
-		String subprocessPath = prepareLauncher();
+//		String subprocessPath = prepareLauncher();
+		String subprocessPath =  System.getProperty("user.dir") + File.separator + "cefgo";
+		System.out.println(subprocessPath);
 		
 		Settings settings = new CEF.Settings(runtime);
 		settings.size.set(Struct.size(settings));
@@ -124,7 +126,7 @@ public class CefJNR {
 		settings.localesDirPath.set(System.getProperty("user.home") + File.separator + "Downloads/"+cef+"/Resources/locales");
 		settings.browserSubprocessPath.set(subprocessPath);
 		settings.logFile.set(System.getProperty("user.dir") + File.separator + "ceflog.log" );
-		settings.logSeverity.set(LogSeverity.LOGSEVERITY_INFO);
+		settings.logSeverity.set(LogSeverity.LOGSEVERITY_VERBOSE);
 		settings.noSandbox.set(1);
 //		settings.command_line_args_disabled.set(0);
 //		settings.singleProcess.set(1);
@@ -191,31 +193,31 @@ public class CefJNR {
 	protected static void initializeClientHandler(Client client) {
 	    System.out.println("initialize_client_handler");
 	    // callbacks
-//	    client.setGetContextMenuHandler((c) -> DEBUG_CALLBACK("get_context_menu_handler"));
-//	    client.setGetDialogHandler((c) -> DEBUG_CALLBACK("get_dialog_handler"));
-//	    client.setGetDisplayHandler((c) -> DEBUG_CALLBACK("get_display_handler"));
-//	    client.setGetDownloadHandler((c) -> DEBUG_CALLBACK("get_download_handler"));
-//	    client.setGetDragHandler((c) -> DEBUG_CALLBACK("get_drag_handler"));
-//	    client.setGetFocusHandler((c) -> DEBUG_CALLBACK("get_focus_handler"));
-//	    client.setGetGeolocationHandler((c) -> DEBUG_CALLBACK("get_geolocation_handler"));
-//	    client.setGetJsdialogHandler((c) -> DEBUG_CALLBACK("get_jsdialog_handler"));
-//	    client.setGetKeyboardHandler((c) -> DEBUG_CALLBACK("get_keyboard_handler"));
-//	    client.setGetLifeSpanHandler((c) -> DEBUG_CALLBACK("get_life_span_handler"));
-//	    client.setGetLoadHandler((c) -> DEBUG_CALLBACK("get_load_handler"));
-//	    client.setGetRenderHandler((c) -> DEBUG_CALLBACK("get_render_handler"));
-//	    client.setGetRequestHandler((c) -> DEBUG_CALLBACK("get_request_handler"));
-//	    client.setOnProcessMessageReceived((c, browser_1, processId_2, processMessage_3) -> {
-//	    	DEBUG_CALLBACK("on_process_message_received"); 
-//	    	return 0;
-//	    });
+	    client.setGetContextMenuHandler((c) -> DEBUG_CALLBACK("get_context_menu_handler"));
+	    client.setGetDialogHandler((c) -> DEBUG_CALLBACK("get_dialog_handler"));
+	    client.setGetDisplayHandler((c) -> DEBUG_CALLBACK("get_display_handler"));
+	    client.setGetDownloadHandler((c) -> DEBUG_CALLBACK("get_download_handler"));
+	    client.setGetDragHandler((c) -> DEBUG_CALLBACK("get_drag_handler"));
+	    client.setGetFocusHandler((c) -> DEBUG_CALLBACK("get_focus_handler"));
+	    client.setGetGeolocationHandler((c) -> DEBUG_CALLBACK("get_geolocation_handler"));
+	    client.setGetJsdialogHandler((c) -> DEBUG_CALLBACK("get_jsdialog_handler"));
+	    client.setGetKeyboardHandler((c) -> DEBUG_CALLBACK("get_keyboard_handler"));
+	    client.setGetLifeSpanHandler((c) -> DEBUG_CALLBACK("get_life_span_handler"));
+	    client.setGetLoadHandler((c) -> DEBUG_CALLBACK("get_load_handler"));
+	    client.setGetRenderHandler((c) -> DEBUG_CALLBACK("get_render_handler"));
+	    client.setGetRequestHandler((c) -> DEBUG_CALLBACK("get_request_handler"));
+	    client.setOnProcessMessageReceived((c, browser_1, processId_2, processMessage_3) -> {
+	    	DEBUG_CALLBACK("on_process_message_received"); 
+	    	return 0;
+	    });
 	}
 
 	public static MainArgs createMainArgs(String[] args, jnr.ffi.Runtime runtime) {
         System.out.println("Creating args");
 
 		List<String> argsList = new ArrayList<>(Arrays.asList(args));
-		argsList.add(0, "cefswt");
-		argsList.add("--disable-namespace-sandbox");
+//		argsList.add(0, "cefswt");
+//		argsList.add("--disable-namespace-sandbox");
 //		argsList.add("--disable-gpu");
 		System.out.println(argsList);
 		
