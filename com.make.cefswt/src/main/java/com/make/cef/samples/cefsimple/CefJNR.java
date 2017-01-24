@@ -13,6 +13,7 @@ import java.util.List;
 import cef.capi.CEF;
 import cef.capi.CEF.App;
 import cef.capi.CEF.BrowserProcessHandler;
+import cef.capi.CEF.BrowserSettings;
 import cef.capi.CEF.Client;
 import cef.capi.CEF.CommandLine;
 import cef.capi.CEF.LogSeverity;
@@ -20,6 +21,7 @@ import cef.capi.CEF.MainArgs;
 import cef.capi.CEF.ProcessId;
 import cef.capi.CEF.Settings;
 import cef.capi.CEF.StringUtf16;
+import cef.capi.CEF.WindowInfo;
 import jnr.ffi.Memory;
 import jnr.ffi.Pointer;
 import jnr.ffi.Struct;
@@ -34,6 +36,13 @@ public class CefJNR {
 	}*/
 	
 	static jnr.ffi.Runtime runtime = CEF.RUNTIME;
+private static BrowserProcessHandler browserProcessHandler;
+private static App app;
+private static WindowInfo windowInfo;
+private static Client client;
+private static BrowserSettings browserSettings;
+private static StringUtf16 url;
+private static Settings settings;
 //	public static interface Cef {
 //		int cef_version_info(int entry);
 //		
@@ -66,7 +75,7 @@ public class CefJNR {
 		// SimpleApp implements application-level callbacks for the browser process.
 		// It will create the first browser instance in OnContextInitialized() after
 		// Cef has initialized.
-		App app = createApp();
+		app = createApp();
 
 		System.out.println("1ACTIVE THREADS: " + Thread.activeCount());
 //		System.out.println("Calling executeProcess");
@@ -91,7 +100,7 @@ public class CefJNR {
 //		  XSetErrorHandler(XErrorHandlerImpl);
 //		  XSetIOErrorHandler(XIOErrorHandlerImpl);
 		
-		Settings settings = createSettings(runtime);
+		settings = createSettings(runtime);
 
 		System.out.println("Calling initialize");
 		// Initialize Cef for the browser process.
@@ -116,7 +125,8 @@ public class CefJNR {
 		System.out.println("2ACTIVE THREADS: " + Thread.activeCount());
 		// Specify Cef global settings here.
 //		String subprocessPath = prepareLauncher();
-		String subprocessPath =  System.getProperty("user.dir") + File.separator + "cefgo";
+//		String subprocessPath =  System.getProperty("user.dir") + File.separator + "cefgo";
+		String subprocessPath =  System.getProperty("user.dir") + File.separator + "cefrust";
 		System.out.println(subprocessPath);
 		
 		Settings settings = new CEF.Settings(runtime);
@@ -129,15 +139,15 @@ public class CefJNR {
 		settings.logSeverity.set(LogSeverity.LOGSEVERITY_VERBOSE);
 		settings.noSandbox.set(1);
 //		settings.command_line_args_disabled.set(0);
-//		settings.singleProcess.set(1);
+		settings.singleProcess.set(1);
 		return settings;
 	}
 
 	public static App createApp() {
-		BrowserProcessHandler browserProcessHandler = new CEF.BrowserProcessHandler(runtime);
+		browserProcessHandler = new CEF.BrowserProcessHandler(runtime);
 		browserProcessHandler.setOnContextInitialized(new CEF.BrowserProcessHandler.OnContextInitialized() {
 			@Override
-			public void invoke(Pointer self) {
+			public synchronized void invoke(Pointer self) {
 				System.out.println("- onContextInitialized");
 				System.out.println("3ACTIVE THREADS: " + Thread.activeCount());
 				createBrowser();
@@ -155,9 +165,11 @@ public class CefJNR {
 //		app.setOnRegisterCustomSchemes((app1, schemeRegistrar_1) -> DEBUG_CALLBACK("on_register_custom_schemes"));
 //		app.setGetResourceBundleHandler(app1 -> /*DEBUG_CALLBACK("get_resource_bundle_handler")*/null);
 		app.setGetBrowserProcessHandler(app1 -> {
+			synchronized (app) {
 			System.out.println("- getBrowserProcessHandler");
 			System.out.println("4ACTIVE THREADS: " + Thread.activeCount());
 			return browserProcessHandler;
+			}
 		});
 //		app.setGetRenderProcessHandler(app1 -> DEBUG_CALLBACK("get_render_process_handler"));
 		return app;
@@ -168,21 +180,21 @@ public class CefJNR {
 		// to CEF and then it will create a window of its own.
 //			    initialize_gtk();
 //			    GtkWidget* hwnd = create_gtk_window("cefcapi example", 1024, 768);
-		CEF.WindowInfo windowInfo = new CEF.WindowInfo(runtime);
+		windowInfo = new CEF.WindowInfo(runtime);
 //			    windowInfo.parent_widget = hwnd;
 
 		// Browser settings.
 		// It is mandatory to set the "size" member.
-		CEF.BrowserSettings browserSettings = new CEF.BrowserSettings(runtime);
+		browserSettings = new CEF.BrowserSettings(runtime);
 		browserSettings.size.set(Struct.size(browserSettings));
 		// Client handler and its callbacks.
 		// cef_client_t structure must be filled. It must implement
 		// reference counting. You cannot pass a structure 
 		// initialized with zeroes.
-		Client client = new CEF.Client(runtime);
+		client = new CEF.Client(runtime);
 		initializeClientHandler(client);
 
-		StringUtf16 url = new CEF.StringUtf16(runtime);
+		url = new CEF.StringUtf16(runtime);
 		url.set("http://google.com");
 		// Create browser.
 		System.out.println("Calling cef_browser_host_create_browser");
