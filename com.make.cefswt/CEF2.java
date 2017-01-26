@@ -3,12 +3,8 @@ package cef.capi;
 import jnr.ffi.*;
 import jnr.ffi.util.*;
 import jnr.ffi.mapper.*;
-import jnr.ffi.provider.ParameterFlags;
 import jnr.ffi.annotations.*;
 import java.lang.annotation.*;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.Charset;
 
 public class CEF {
     public static CEFInterface INSTANCE = CEFInterface.InstanceCreator.createInstance();
@@ -90,8 +86,8 @@ public class CEF {
      * :dtor ::
      *   (Function(Dtor)) 
      */
-    public static final class StringUtf8 extends InnerStruct {
-        public UTF8StringRef str = new UTF8StringRef(100);
+    public static final class StringUtf8 extends Struct {
+        public UTF8StringRef str = new UTF8StringRef();
         public UnsignedLong length = new UnsignedLong();
         public Function<Dtor> dtor = function(Dtor.class);
         public static interface Dtor {
@@ -118,7 +114,7 @@ public class CEF {
      * :dtor ::
      *   (Function(Dtor)) 
      */
-    public static final class StringUtf16 extends InnerStruct {
+    public static final class StringUtf16 extends Struct {
         public Pointer str = new Pointer();
         public UnsignedLong length = new UnsignedLong();
         public Function<Dtor> dtor = function(Dtor.class);
@@ -133,41 +129,7 @@ public class CEF {
         public StringUtf16(jnr.ffi.Runtime runtime) {
           super(runtime);
         }
-		public void set(java.lang.String v) {
-//			str.set(v);
-//			length.set(v.length());
-			if (INSTANCE.stringUtf8ToUtf16(v, v.length(), this) != 1)
-				throw new RuntimeException("Could not set StringUtf16");
-		}
-		
-		public class UTF16StringRef extends UTFStringRef {
-
-			public UTF16StringRef(int length) {
-				super(length, UTF16);
-			}
-			
-			public java.lang.String getUtf() {
-				System.err.println("getUtf");
-				
-				jnr.ffi.Pointer memory = getStringMemory();
-				byte[] bytes = new byte[length];
-				memory.get(0, bytes, 0, length);
-
-				// find the null terminator first
-				int nullPos = bytes.length;
-				for (int i = 0; i < nullPos; i += 2) {
-					if (bytes[i] == 0 && bytes[i + 1] == 0) {
-						nullPos = i;
-						break;
-					}
-				}
-				CharBuffer res = charset.decode(ByteBuffer.wrap(bytes, 0, nullPos));
-				return res.toString();
-			}
-		}
     }
-    
-    static Charset UTF16 = Charset.forName("UTF-16");
     
     /**
      * (Not documented)
@@ -1932,9 +1894,9 @@ public class CEF {
         TT_CHAIN_START_FLAG(268435456),
         TT_CHAIN_END_FLAG(536870912),
         TT_CLIENT_REDIRECT_FLAG(1073741824),
-//        TT_SERVER_REDIRECT_FLAG(2147483648),
-//        TT_IS_REDIRECT_MASK(3221225472),
-//        TT_QUALIFIER_MASK(4294967040)
+        TT_SERVER_REDIRECT_FLAG(2147483648),
+        TT_IS_REDIRECT_MASK(3221225472),
+        TT_QUALIFIER_MASK(4294967040)
         ;
         
         private int nativeInt;
@@ -4929,8 +4891,6 @@ public class CEF {
      */
     public static final class Base extends Struct {
         public UnsignedLong size = new UnsignedLong();
-		public int ref = 0;
-
         public Function<AddRef> addRef = function(AddRef.class);
         public static interface AddRef {
             @Delegate
@@ -4960,67 +4920,9 @@ public class CEF {
         
         public Base(jnr.ffi.Runtime runtime) {
           super(runtime);
-//          setFns();
         }
-        
-		private void setFns() {
-			setAddRef(new AddRefFN(this));
-			setRelease(new ReleaseFN(this));
-			setHasOneRef(new HasOneRefFN(this));
-		}
-
-		public void setSize(Struct client) {
-			int sizeof = Struct.size(client);
-			System.out.println("J:SIZEOF:" + client.getClass().getSimpleName() + ":" + sizeof);
-			this.size.set(sizeof);
-		}
     }
     
-    public static class AddRefFN implements Base.AddRef {
-    	private Base base;
-
-		public AddRefFN(Base base) {
-			this.base = base;
-		}
-
-		@Override
-    	public void invoke(jnr.ffi.Pointer self) {
-    		base.ref++;
-			System.out.print("+ ");
-    		System.out.println(base.ref);
-    	}
-    }
-    public static class ReleaseFN implements Base.Release {
-    	private Base base;
-
-    	public ReleaseFN(Base base) {
-			this.base = base;
-		}
-
-		@Override
-    	public int invoke(jnr.ffi.Pointer self) {
-    		base.ref--;
-			System.out.print("- ");
-    		System.out.println(base.ref);
-    		return 1;
-    	}
-    }
-    public static class HasOneRefFN implements Base.HasOneRef {
-    	private Base base;
-
-		public HasOneRefFN(Base base) {
-			this.base = base;
-		}
-
-		@Override
-    	public int invoke(jnr.ffi.Pointer self) {
-			System.out.print("= ");
-    		System.out.println(base.ref);
-    		return base.ref > 0 ? 1 : 0;
-//    		return 1;
-    	}
-    }
-
     /**
      * (Not documented)
      * 
@@ -5266,8 +5168,6 @@ public class CEF {
         
         public Browser(jnr.ffi.Runtime runtime) {
           super(runtime);
-          base.setFns();
-          base.setSize(this);
         }
     }
     
@@ -5297,8 +5197,6 @@ public class CEF {
         
         public RunFileDialogCallback(jnr.ffi.Runtime runtime) {
           super(runtime);
-          base.setFns();
-          base.setSize(this);
         }
     }
     
@@ -5328,8 +5226,6 @@ public class CEF {
         
         public NavigationEntryVisitor(jnr.ffi.Runtime runtime) {
           super(runtime);
-          base.setFns();
-          base.setSize(this);
         }
     }
     
@@ -5357,8 +5253,6 @@ public class CEF {
         
         public PdfPrintCallback(jnr.ffi.Runtime runtime) {
           super(runtime);
-          base.setFns();
-          base.setSize(this);
         }
     }
     
@@ -5387,8 +5281,6 @@ public class CEF {
         
         public DownloadImageCallback(jnr.ffi.Runtime runtime) {
           super(runtime);
-          base.setFns();
-          base.setSize(this);
         }
     }
     
@@ -6105,8 +5997,6 @@ public class CEF {
         
         public BrowserHost(jnr.ffi.Runtime runtime) {
           super(runtime);
-          base.setFns();
-          base.setSize(this);
         }
     }
     
@@ -6191,9 +6081,6 @@ public class CEF {
         
         public FocusHandler(jnr.ffi.Runtime runtime) {
           super(runtime);
-          directMemotyForStructReturn(this);
-          base.setFns();
-          base.setSize(this);
         }
     }
     
@@ -6380,8 +6267,6 @@ public class CEF {
         
         public Client(jnr.ffi.Runtime runtime) {
           super(runtime);
-          base.setFns();
-          base.setSize(this);
         }
     }
     
@@ -6626,8 +6511,6 @@ public class CEF {
         
         public CommandLine(jnr.ffi.Runtime runtime) {
           super(runtime);
-          base.setFns();
-          base.setSize(this);
         }
     }
     
@@ -6739,9 +6622,6 @@ public class CEF {
         
         public BrowserProcessHandler(jnr.ffi.Runtime runtime) {
           super(runtime);
-          directMemotyForStructReturn(this);
-          base.setFns();
-          base.setSize(this);
         }
     }
     
@@ -6828,8 +6708,6 @@ public class CEF {
         
         public App(jnr.ffi.Runtime runtime) {
           super(runtime);
-          base.setFns();
-          base.setSize(this);
         }
     }
     
@@ -6966,12 +6844,7 @@ public class CEF {
     }
     
     
-    static void directMemotyForStructReturn(Struct struct) {
-		// this is required to return struct in callback
-        Struct.getMemory(struct, ParameterFlags.DIRECT);
-	}
-
-	public interface CEFInterface {
+    public interface CEFInterface {
         
         @Retention(RetentionPolicy.RUNTIME)
         @Target(ElementType.METHOD)
@@ -6995,8 +6868,6 @@ public class CEF {
             private static CEFInterface createInstance() {
                 CEFInterface lib = LibraryLoader.create(CEFInterface.class)
                   .option(LibraryOption.FunctionMapper, new NativeNameAnnotationFunctionMapper())
-                  .map(StringUtf8.class, new InnerStructByReferenceToNativeConverter())
-                  .map(StringUtf16.class, new InnerStructByReferenceToNativeConverter())
                   .load("cef");
                 RUNTIME = jnr.ffi.Runtime.getRuntime(lib);
                 return lib;

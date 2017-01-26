@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Cefswt
+Bundle-SymbolicName: com.make.cefswt
+Bundle-Version: 1.0.0.qualifier
+Export-Package: cef.capi

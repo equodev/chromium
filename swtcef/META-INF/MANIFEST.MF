@@ -3,4 +3,5 @@ Bundle-ManifestVersion: 2
 Bundle-Name: swtcef
 Bundle-SymbolicName: swtcef
 Bundle-Version: 1.0.0.qualifier
-Require-Bundle: org.eclipse.swt
+Require-Bundle: org.eclipse.swt,
+ com.make.cefswt;bundle-version="1.0.0"

@@ -29,29 +29,40 @@ public class App {
         shell.setLayout(grid);
         
      // Shell can be used as container
-        Label label = new Label(shell, SWT.BORDER);
-        label.setText("This is a label:");
-        label.setToolTipText("This is the tooltip of this label");
+        Text label = new Text(shell, SWT.BORDER);
+//        label.setText("This is a text:");
+        label.setToolTipText("to test focus");
         
         Button button = new Button(shell, SWT.PUSH);
         button.setText("Create Chrome");
         button.addSelectionListener(new SelectionAdapter() {
         	@Override
         	public void widgetSelected(SelectionEvent e) {
-        		final Chromium c = new Chromium(shell, SWT.NONE);
+        		Chromium c = new Chromium(shell, SWT.NONE);
 //        		Composite c = new Composite(shell, SWT.NONE);
 //        		c.setBackground(display.getSystemColor(SWT.COLOR_BLUE));
         		GridData layoutData = new GridData(SWT.FILL, SWT.FILL, true, true);
-				c.setLayoutData(layoutData);
-				
-				final Button close = new Button(shell, SWT.PUSH);
-				close.setText("Close");
-				close.addSelectionListener(new SelectionAdapter() {
+        		c.setLayoutData(layoutData);
+        		
+        		final Button close = new Button(shell, SWT.PUSH);
+        		close.setText("Close");
+        		close.addSelectionListener(new SelectionAdapter() {
+        			@Override
+        			public void widgetSelected(SelectionEvent e) {
+        				c.dispose();
+        				close.dispose();
+        				shell.layout();
+        			}
+        		});
+        		
+        		Text url = new Text(shell, SWT.BORDER);
+        		url.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false));
+				final Button ok = new Button(shell, SWT.PUSH);
+				ok.setText("Go");
+				ok.addSelectionListener(new SelectionAdapter() {
 					@Override
 					public void widgetSelected(SelectionEvent e) {
-						c.dispose();
-						close.dispose();
-						shell.layout();
+						c.setUrl(url.getText());
 					}
 				});
 				
@@ -71,5 +82,6 @@ public class App {
                 display.sleep();
         }
         display.dispose();
+        System.err.println("Exit OK");
     }
 }

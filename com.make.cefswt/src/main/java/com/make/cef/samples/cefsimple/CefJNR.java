@@ -210,7 +210,7 @@ private static Settings settings;
 	    client.setGetDisplayHandler((c) -> DEBUG_CALLBACK("get_display_handler"));
 	    client.setGetDownloadHandler((c) -> DEBUG_CALLBACK("get_download_handler"));
 	    client.setGetDragHandler((c) -> DEBUG_CALLBACK("get_drag_handler"));
-	    client.setGetFocusHandler((c) -> DEBUG_CALLBACK("get_focus_handler"));
+	    //client.setGetFocusHandler((c) -> DEBUG_CALLBACK("get_focus_handler"));
 	    client.setGetGeolocationHandler((c) -> DEBUG_CALLBACK("get_geolocation_handler"));
 	    client.setGetJsdialogHandler((c) -> DEBUG_CALLBACK("get_jsdialog_handler"));
 	    client.setGetKeyboardHandler((c) -> DEBUG_CALLBACK("get_keyboard_handler"));
