@@ -1,13 +1,16 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Cefswt
-Bundle-SymbolicName: com.make.cefswt
-Bundle-Version: 1.0.0.qualifier
-Export-Package: cef.capi
-Require-Bundle: com.github.jnr.ffi;bundle-version="2.1.3";visibility:=reexport,
+Bundle-Name: Chromium SWT Control
+Bundle-SymbolicName: com.make.cef;singleton:=true
+Bundle-Version: 0.8.0.qualifier
+Require-Bundle: org.eclipse.swt,
+ com.github.jnr.ffi;bundle-version="2.1.3";visibility:=reexport,
  com.github.jnr.jffi;bundle-version="1.2.14";visibility:=reexport,
- jnr.x86asm;bundle-version="1.0.2";visibility:=reexport,
  org.objectweb.asm.analysis;bundle-version="5.0.3";visibility:=reexport,
  org.objectweb.asm.commons;bundle-version="5.0.3";visibility:=reexport,
  org.objectweb.asm.tree;bundle-version="5.0.3";visibility:=reexport,
  org.objectweb.asm.util;bundle-version="5.0.3";visibility:=reexport
+Export-Package: cef.capi,
+ com.make.swtcef
+Bundle-Vendor: Make Technology
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8

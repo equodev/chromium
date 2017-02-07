@@ -1,0 +1,51 @@
+plugins {
+//    id "java"
+    id "com.athaydes.osgi-run" version "1.5.4"
+    id "com.diffplug.gradle.swt.nativedeps" version "3.7.0"
+}
+
+
+allprojects {
+    apply plugin: 'java'
+	group 'com.make'
+	version '0.8'
+    repositories {
+        mavenCentral()
+    }
+	sourceSets {
+	    main {
+	        java {
+	            srcDirs = ['src']
+	        }
+	        resources {
+	        	srcDirs = ['.']
+	        	//exclude '**'
+	        	include 'plugin.xml'
+	        }
+	    }
+	}
+	jar {
+	    manifest {
+	        def manif = "META-INF/MANIFEST.MF"
+	        from file(manif)
+	    }
+	}
+}
+
+
+dependencies {
+    compile project(':com.make.cef')
+    compile group: 'org.eclipse.platform', name: 'org.eclipse.equinox.app', version: '1.3.400'
+    compile group: 'org.eclipse.platform', name: 'org.eclipse.osgi', version: '3.11.2'
+//    osgiRuntime group: 'org.apache.felix', name: 'org.apache.felix.configadmin', version: '1.8.8'
+}
+
+runOsgi {
+    configSettings = 'equinox'
+    osgiMain = EQUINOX
+    programArgs = '-consoleLog -application com.make.cef.sample.osgi.GUIApp'
+    javaArgs = '-Declipse.ignoreApp=false'
+    bundles += project
+    config += [ 'osgi.clean': true ]
+    excludedBundles = [ 'org.eclipse.osgi.*' ]
+}
