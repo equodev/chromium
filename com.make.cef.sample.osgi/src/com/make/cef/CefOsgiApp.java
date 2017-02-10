@@ -1,5 +1,9 @@
 package com.make.cef;
 
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
 import org.eclipse.swt.SWT;
@@ -16,6 +20,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
@@ -32,14 +37,15 @@ public class CefOsgiApp implements IApplication {
 	public static void main(String[] args) {
         final Display display = Display.getDefault();
         
-        Shell shell = display.getActiveShell();
-		if (shell == null) {
-			shell = new Shell();
+        //Shell shell = display.getActiveShell();
+		//if (shell == null) {
+		//	shell = new Shell();
 			// place it off so it's not visible
-			shell.setLocation(0, 10000);
-		}
+		//	shell.setLocation(0, 10000);
+		//}
 
-        shell = new Shell(display);
+        Shell shell = new Shell(display);
+
         shell.setLayout(new FillLayout());
 //        Composite composite = new Composite(shell, SWT.NONE);
         SashForm composite = new SashForm(shell, SWT.HORIZONTAL);
@@ -74,7 +80,7 @@ public class CefOsgiApp implements IApplication {
         		createBrowser(left);
         	}
 		});
-        
+
         shell.open();
 
         createBrowser(left);

@@ -44,7 +44,7 @@ runOsgi {
     configSettings = 'equinox'
     osgiMain = EQUINOX
     programArgs = '-consoleLog -application com.make.cef.sample.osgi.GUIApp'
-    javaArgs = '-Declipse.ignoreApp=false'
+    javaArgs = '-Declipse.ignoreApp=false -XstartOnFirstThread'
     bundles += project
     config += [ 'osgi.clean': true ]
     excludedBundles = [ 'org.eclipse.osgi.*' ]
