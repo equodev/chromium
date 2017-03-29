@@ -6993,11 +6993,13 @@ public class CEF {
         
         static class InstanceCreator {
             private static CEFInterface createInstance() {
+                boolean isWin = System.getProperty("os.name").toLowerCase().contains("win");
+
                 CEFInterface lib = LibraryLoader.create(CEFInterface.class)
                   .option(LibraryOption.FunctionMapper, new NativeNameAnnotationFunctionMapper())
                   .map(StringUtf8.class, new InnerStructByReferenceToNativeConverter())
                   .map(StringUtf16.class, new InnerStructByReferenceToNativeConverter())
-                  .load("cef");
+                  .load(isWin ? "libcef" : "cef");
                 RUNTIME = jnr.ffi.Runtime.getRuntime(lib);
                 return lib;
             }

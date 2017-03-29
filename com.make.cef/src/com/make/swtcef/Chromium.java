@@ -164,7 +164,9 @@ public class Chromium extends Composite {
 					DEBUG_CALLBACK("GetBrowserProcessHandler");
 					return browserProcessHandler;
 				});
-				appP = lib.init(app);
+				String cefrustPath = System.getProperty("cefrust.path", "");
+				System.out.println("cefrust.path: " + cefrustPath);
+				appP = lib.init(app, cefrustPath);
 			}
 			//browsers++;
 		}
@@ -434,13 +436,11 @@ public class Chromium extends Composite {
 	}
 
 	public static interface Lib {
-		Pointer init(CEF.App app);
+		Pointer init(CEF.App app, String cefrustPath);
 
 		Pointer create_browser(long hwnd, String url, CEF.Client clientHandler);
 
 		void do_message_loop_work();
-
-		Pointer create_browser(long hwnd, String url);
 
 		void load_url(Pointer browser, String url);
 
