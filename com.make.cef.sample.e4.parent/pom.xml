@@ -1,0 +1,69 @@
+<project>
+ <modelVersion>4.0.0</modelVersion>
+ <groupId>com.make</groupId>
+ <artifactId>com.make.cef.sample.e4.parent</artifactId>
+ <version>1.0.0-SNAPSHOT</version>
+ <packaging>pom</packaging>
+
+ <properties>
+  <tycho.version>1.0.0</tycho.version>
+  <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  <repo.url>http://download.eclipse.org/releases/neon</repo.url>
+ </properties>
+
+ <repositories>
+  <repository>
+   <id>neon</id>
+   <url>${repo.url}</url>
+   <layout>p2</layout>
+  </repository>
+  <repository>
+   <id>make</id>
+   <url>http://maketechnology.github.io/p2plugins</url>
+   <layout>p2</layout>
+  </repository>
+ </repositories>
+
+ <modules>
+  <module>../com.make.cef</module>
+  <module>../com.make.cef.sample.e4</module>
+  <module>../com.make.cef.sample.e4.rcp</module>
+ </modules>
+
+ <build>
+  <plugins>
+   <plugin>
+    <groupId>org.eclipse.tycho</groupId>
+    <artifactId>tycho-maven-plugin</artifactId>
+    <version>${tycho.version}</version>
+    <extensions>true</extensions>
+   </plugin>
+
+   <plugin>
+    <groupId>org.eclipse.tycho</groupId>
+    <artifactId>target-platform-configuration</artifactId>
+    <version>${tycho.version}</version>
+    <configuration>
+     <environments>
+      <environment>
+       <os>win32</os>
+       <ws>win32</ws>
+       <arch>x86_64</arch>
+      </environment>
+      <!--environment>
+       <os>linux</os>
+       <ws>gtk</ws>
+       <arch>x86_64</arch>
+      </environment>
+      <environment>
+       <os>macosx</os>
+       <ws>cocoa</ws>
+       <arch>x86_64</arch>
+      </environment-->
+     </environments>
+    </configuration>
+   </plugin>
+  </plugins>
+ </build>
+</project>
+

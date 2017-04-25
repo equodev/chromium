@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Chromium SWT Control
 Bundle-SymbolicName: com.make.cef;singleton:=true
-Bundle-Version: 0.8.0.qualifier
+Bundle-Version: 1.0.0.qualifier
 Require-Bundle: org.eclipse.swt,
  com.github.jnr.ffi;bundle-version="2.1.3";visibility:=reexport,
  com.github.jnr.jffi;bundle-version="1.2.14";visibility:=reexport,

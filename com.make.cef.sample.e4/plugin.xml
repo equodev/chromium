@@ -6,7 +6,7 @@
          id="product"
          point="org.eclipse.core.runtime.products">
       <product
-            name="com.make.cef.sample.e4"
+            name="cef_rcp"
             application="org.eclipse.e4.ui.workbench.swt.E4Application">
          <property
                name="applicationCSS"

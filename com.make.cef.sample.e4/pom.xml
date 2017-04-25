@@ -1,0 +1,15 @@
+<project>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.make</groupId>
+    <artifactId>com.make.cef.sample.e4</artifactId>
+    <packaging>eclipse-plugin</packaging>
+
+    <parent>
+        <groupId>com.make</groupId>
+        <artifactId>com.make.cef.sample.e4.parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../com.make.cef.sample.e4.parent</relativePath>
+    </parent>
+
+</project>
+

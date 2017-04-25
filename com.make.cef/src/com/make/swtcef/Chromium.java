@@ -129,7 +129,7 @@ public class Chromium extends Composite {
 					cefInitilized.complete(true);
 				});
 				Runnable runnable = () -> { 
-					if (display.getActiveShell() != getShell()) {
+					if (display.isDisposed() || isDisposed() || display.getActiveShell() != getShell()) {
 //						System.err.println("Ignore do_message_loop_work due inactive shell");
 						return;
 					}
@@ -222,9 +222,9 @@ public class Chromium extends Composite {
 			DEBUG_CALLBACK("CALLBACK OnSetFocus " + focusSource_2);
 			if (!isFocusControl()) {
 				System.out.println("Disallowing focus to SWT canvas");
-				// removeFocusListener(focusListener);
-				// setFocus();
-				// addFocusListener(focusListener);
+				removeFocusListener(focusListener);
+				setFocus();
+				addFocusListener(focusListener);
 				return 1;
 			}
 			System.out.println("Allowing focus to SWT canvas");
