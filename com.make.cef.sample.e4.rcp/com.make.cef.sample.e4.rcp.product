@@ -9,7 +9,6 @@
    <launcherArgs>
       <programArgs>-clearPersistedState
       </programArgs>
-      <vmArgs>-Dcefrust.path=C:\Users\guille\Documents\ws\cefrust\target\debug</vmArgs>
       <vmArgsMac>-XstartOnFirstThread -Dorg.eclipse.swt.internal.carbon.smallFonts
       </vmArgsMac>
    </launcherArgs>
@@ -22,6 +21,7 @@
    <plugins>
       <plugin id="com.ibm.icu"/>
       <plugin id="com.make.cef"/>
+      <plugin id="com.make.cef.windows.x86_64" fragment="true"/>
       <plugin id="com.make.cef.sample.e4"/>
       <plugin id="com.github.jnr.ffi"/>
       <plugin id="com.github.jnr.jffi"/>

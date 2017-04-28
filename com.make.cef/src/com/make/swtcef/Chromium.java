@@ -35,6 +35,7 @@ import cef.capi.CEF.BrowserProcessHandler;
 import cef.capi.CEF.Client;
 import cef.capi.CEF.FocusHandler;
 import cef.capi.CEF.FocusSource;
+import com.make.swtcef.internal.NativeExpander;
 import jnr.ffi.LibraryLoader;
 import jnr.ffi.NativeType;
 import jnr.ffi.Pointer;
@@ -50,6 +51,7 @@ import jnr.ffi.provider.jffi.NativeRuntime;
 public class Chromium extends Composite {
 
 	private static Lib lib;
+	private static String cefrustPath;
 	private static Pointer appP;
 	private static AtomicInteger browsers = new AtomicInteger(0);
 
@@ -163,8 +165,7 @@ public class Chromium extends Composite {
 				app.setGetBrowserProcessHandler(appPtr -> {
 					DEBUG_CALLBACK("GetBrowserProcessHandler");
 					return browserProcessHandler;
-				});
-				String cefrustPath = System.getProperty("cefrust.path", "");
+				});;
 				System.out.println("cefrust.path: " + cefrustPath);
 				appP = lib.init(app, cefrustPath);
 			}
@@ -396,7 +397,15 @@ public class Chromium extends Composite {
 	private static Lib loadLib() {
 		fixJNRClosureClassLoader();
 
-		Lib libc = LibraryLoader.create(Lib.class).failImmediately().load("cefrustlib");
+		cefrustPath = System.getProperty("cefswt.path", "");
+		if (cefrustPath.trim().isEmpty()) {
+			cefrustPath = NativeExpander.expand();
+		}
+
+		Lib libc = LibraryLoader.create(Lib.class)
+			.failImmediately()
+			.search(cefrustPath)
+			.load("cefrustlib");
 
 		java.lang.Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 			@Override

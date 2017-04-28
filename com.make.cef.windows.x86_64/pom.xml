@@ -1,7 +1,7 @@
 <project>
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.make</groupId>
-    <artifactId>com.make.cef.sample.e4</artifactId>
+    <artifactId>com.make.cef.windows.x86_64</artifactId>
     <packaging>eclipse-plugin</packaging>
 
     <parent>
@@ -11,4 +11,3 @@
     </parent>
 
 </project>
-

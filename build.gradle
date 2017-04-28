@@ -1,0 +1,95 @@
+plugins {
+	id "com.google.osdetector" version "1.4.0"
+	id "de.undercouch.download" version "3.2.0"
+}
+
+ext.buildType = 'release'
+ext.cefVersion = '3.2785.1486.g8c4ba9f'
+
+import de.undercouch.gradle.tasks.download.Download
+
+def cefFile() {
+	def variant = (buildType == 'release') ? 'client' : 'minimal'
+	"cef_binary_${cefVersion}_${osdetector.os}64_${variant}"
+}
+
+task getCef(type: Download) {
+	src "http://opensource.spotify.com/cefbuilds/${cefFile()}.tar.bz2"
+    dest buildDir
+    onlyIfNewer true
+}
+
+task unzip(dependsOn: getCef, type: Copy) {
+    from tarTree("${buildDir}/${cefFile()}.tar.bz2")
+    into buildDir
+}
+
+task getCefAndUnzip(dependsOn: unzip, type: Copy) {
+    from "${buildDir}/${cefFile()}"
+    into "../cefrust/cef_${osdetector.os}"
+}
+
+task buildCefRustExe(type: Exec) {
+	workingDir '../cefrust'
+	commandLine 'cargo', 'build', "--${buildType}"
+}
+
+task buildCefRustLib(type: Exec) {
+	workingDir '../cefrust/cefrustlib'
+	commandLine 'cargo', 'build', "--${buildType}"
+}
+
+ext.fragmentDir = "com.make.cef.${osdetector.os}.${osdetector.arch}/${osdetector.os}-${osdetector.arch}"
+
+task copyCefRust(type: Copy) {
+    from("../cefrust/cefrustlib/target/${buildType}") {
+        include 'cefrustlib*'
+    }
+    from("../cefrust/target/${buildType}") {
+        include 'cefrust_subp*'
+    }
+    into fragmentDir
+}
+
+task copyCef(dependsOn: getCefAndUnzip, type: Copy) {
+    from("../cefrust/cef_${osdetector.os}/${buildType.capitalize()}") {
+        exclude '*.lib'
+        include 'locales/**'
+        include '*.pak'
+        include '*.dll'
+        include '*.bin'
+        include '*.dat'
+    }
+    into fragmentDir
+}
+
+task copyNatives(dependsOn: [copyCef, copyCefRust]) {
+
+}
+
+task writeProps(dependsOn: copyNatives, type: WriteProperties) {
+    copyNatives.finalizedBy writeProps
+    def props = new HashMap()
+    props.put('cefVersion', cefVersion)
+    doFirst {
+        def parent = file(fragmentDir).toPath()
+        def output = fileTree(dir: fragmentDir, exclude: 'files.properties').files
+        output.collect { it.toPath() }.each { props.put(it.fileName.toString(), it.subpath(parent.nameCount-1, it.nameCount).toString().replace("\\", "/")) }
+        properties props
+    }
+    //properties props
+    outputFile new File(copyCef.destinationDir, 'files.properties')
+}
+
+task buildSampleOsgi(type: GradleBuild) {
+    dir = 'com.make.cef.sample.osgi'
+    tasks = ['build', 'cleanOsgiRuntime', 'createOsgiRuntime']
+}
+
+task buildSampleE4(type: Exec) {
+    commandLine 'cmd', '/C', 'mvnw verify -P sample', (gradle.startParameter.isOffline() ? '-o' : '')
+}
+
+task buildP2Repo(type: Exec) {
+    commandLine 'cmd', '/C', 'mvnw verify', (gradle.startParameter.isOffline() ? '-o' : '')
+}

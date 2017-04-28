@@ -2,14 +2,12 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.make</groupId>
     <artifactId>com.make.cef</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
     <packaging>eclipse-plugin</packaging>
 
     <parent>
         <groupId>com.make</groupId>
-        <artifactId>com.make.cef.sample.e4.parent</artifactId>
+        <artifactId>com.make.cef.parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
-        <relativePath>../com.make.cef.sample.e4.parent</relativePath>
     </parent>
 
 <!-- 	<dependencies> -->

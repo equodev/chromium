@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="com.make.cef.feature"
+      label="CEF (Chromium) based SWT Browser"
+      version="1.0.0.qualifier"
+      provider-name="Make Technology">
+
+   <description>
+      CEF (Chromium) based SWT Browser
+   </description>
+
+   <copyright>
+      Copyright (c) 2017 Make Technology
+   </copyright>
+
+   <license url="%licenseURL">
+   </license>
+
+   <plugin
+         id="com.make.cef"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="com.make.cef.windows.x86_64"
+         os="win32"
+         arch="x86_64"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         fragment="true"
+         unpack="false"/>
+
+</feature>

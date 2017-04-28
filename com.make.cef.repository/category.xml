@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature url="features/com.make.cef.feature_1.0.0.qualifier.jar" id="com.make.cef.feature" version="1.0.0.qualifier">
+      <category name="com.make.cef"/>
+   </feature>
+   <category-def name="com.make.cef" label="CEF SWT">
+      <description>
+         CEF (Chromium) based SWT Browser
+      </description>
+   </category-def>
+</site>
