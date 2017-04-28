@@ -102,9 +102,9 @@ task buildSampleE4(type: Exec) {
 
 task buildP2Repo(type: Exec) {
     if (System.getProperty('os.name').toLowerCase().contains('windows')) {
-        commandLine 'cmd', '/C', 'mvnw verify', (gradle.startParameter.isOffline() ? '-o' : '')
+        commandLine 'cmd', '/C', 'mvnw verify', (gradle.startParameter.isOffline() ? '-o' : '-U')
     } else {
         executable './mvnw'
-        args 'verify', (gradle.startParameter.isOffline() ? '-o' : '')
+        args 'verify', (gradle.startParameter.isOffline() ? '-o' : '-U')
     }
 }
