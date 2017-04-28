@@ -29,21 +29,25 @@ task getCefAndUnzip(dependsOn: unzip, type: Copy) {
     into "../cefrust/cef_${osdetector.os}"
 }
 
-task buildCefRustExe(type: Exec) {
+task buildCefRustExe(dependsOn: getCefAndUnzip, type: Exec) {
 	workingDir '../cefrust'
 	commandLine 'cargo', 'build', "--${buildType}"
 }
 
-task buildCefRustLib(type: Exec) {
+task buildCefRustLib(dependsOn: getCefAndUnzip, type: Exec) {
 	workingDir '../cefrust/cefrustlib'
 	commandLine 'cargo', 'build', "--${buildType}"
+}
+
+task buildCefRust(dependsOn: [buildCefRustExe, buildCefRustLib]) {
+
 }
 
 ext.fragmentDir = "com.make.cef.${osdetector.os}.${osdetector.arch}/${osdetector.os}-${osdetector.arch}"
 
 task copyCefRust(type: Copy) {
     from("../cefrust/cefrustlib/target/${buildType}") {
-        include 'cefrustlib*'
+        include '*cefrustlib*'
     }
     from("../cefrust/target/${buildType}") {
         include 'cefrust_subp*'
@@ -57,6 +61,7 @@ task copyCef(dependsOn: getCefAndUnzip, type: Copy) {
         include 'locales/**'
         include '*.pak'
         include '*.dll'
+        include '*.so'
         include '*.bin'
         include '*.dat'
     }
