@@ -27,6 +27,8 @@
  <modules>
   <module>com.make.cef</module>
   <module>com.make.cef.windows.x86_64</module>
+  <module>com.make.cef.linux.x86_64</module>
+  <module>com.make.cef.osx.x86_64</module>
   <module>com.make.cef.feature</module>
   <module>com.make.cef.repository</module>
  </modules>

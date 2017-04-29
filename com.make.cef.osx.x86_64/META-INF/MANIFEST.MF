@@ -1,9 +1,9 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: CEF SWT Win x86_64
+Bundle-Name: CEF SWT MacOS x86_64
 Bundle-Vendor: Make Technology
-Bundle-SymbolicName: com.make.cef.windows.x86_64;singleton:=true
+Bundle-SymbolicName: com.make.cef.osx.x86_64;singleton:=true
 Bundle-Version: 1.0.0.qualifier
 Fragment-Host: com.make.cef
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
-Eclipse-PlatformFilter: (& (osgi.os=win32) (osgi.arch=x86_64))
+Eclipse-PlatformFilter: (& (osgi.os=macosx) (osgi.arch=x86_64))
