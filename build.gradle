@@ -5,9 +5,18 @@ plugins {
 
 import de.undercouch.gradle.tasks.download.Download
 
+// To download and copy cef natives for different OS, i.e.:
+// ./gradlew copyCef -Pos=linux
+
+ext.targetos = hasProperty('os') ? os : osdetector.os
+ext.fragmentDir = "com.make.cef.${targetos}.${osdetector.arch}/${targetos}-${osdetector.arch}"
+ext.cefDir = "../cefrust/cef_${targetos}"
+
+println targetos
+
 def cefFile() {
 	def variant = (buildType == 'release') ? 'client' : 'minimal'
-	"cef_binary_${cefVersion}_${osdetector.os}64_${variant}"
+	"cef_binary_${cefVersion}_${targetos}64_${variant}"
 }
 
 task getCef(type: Download) {
@@ -23,7 +32,7 @@ task unzip(dependsOn: getCef, type: Copy) {
 
 task getCefAndUnzip(dependsOn: unzip, type: Copy) {
     from "${buildDir}/${cefFile()}"
-    into "../cefrust/cef_${osdetector.os}"
+    into cefDir
 }
 
 task buildCefRustExe(dependsOn: getCefAndUnzip, type: Exec) {
@@ -40,8 +49,6 @@ task buildCefRust(dependsOn: [buildCefRustExe, buildCefRustLib]) {
 
 }
 
-ext.fragmentDir = "com.make.cef.${osdetector.os}.${osdetector.arch}/${osdetector.os}-${osdetector.arch}"
-
 task copyCefRust(type: Copy) {
     from("../cefrust/cefrustlib/target/${buildType}") {
         include '*cefrustlib*'
@@ -53,7 +60,7 @@ task copyCefRust(type: Copy) {
 }
 
 task copyCef(dependsOn: getCefAndUnzip, type: Copy) {
-    from("../cefrust/cef_${osdetector.os}/${buildType.capitalize()}") {
+    from("${cefDir}/${buildType.capitalize()}") {
         exclude '*.lib'
         include 'locales/**'
         include '*.pak'
@@ -66,7 +73,7 @@ task copyCef(dependsOn: getCefAndUnzip, type: Copy) {
 }
 
 task stripSymbols(type: Exec) {
-	if ('linux' == osdetector.os) {
+	if ('linux' == osdetector.os && 'linux' == targetos) {
 		copyCef.finalizedBy stripSymbols
 	}
 	workingDir fragmentDir
