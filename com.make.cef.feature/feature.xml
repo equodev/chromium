@@ -27,6 +27,7 @@
    <plugin
          id="com.make.cef.windows.x86_64"
          os="win32"
+         ws="win32"
          arch="x86_64"
          download-size="0"
          install-size="0"
@@ -37,6 +38,7 @@
    <plugin
          id="com.make.cef.linux.x86_64"
          os="linux"
+         ws="gtk"
          arch="x86_64"
          download-size="0"
          install-size="0"
@@ -47,11 +49,41 @@
    <plugin
          id="com.make.cef.osx.x86_64"
          os="macosx"
+         ws="cocoa"
          arch="x86_64"
          download-size="0"
          install-size="0"
          version="0.0.0"
          fragment="true"
+         unpack="false"/>
+
+   <plugin
+         id="com.github.jnr.ffi"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="com.github.jnr.jffi"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="com.github.jnr.jffi.native"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         fragment="true"
+         unpack="false"/>
+
+   <plugin
+         id="com.github.jnr.x86asm"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
          unpack="false"/>
 
 </feature>

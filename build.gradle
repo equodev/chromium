@@ -3,9 +3,6 @@ plugins {
 	id "de.undercouch.download" version "3.2.0"
 }
 
-ext.buildType = 'release'
-ext.cefVersion = '3.2785.1486.g8c4ba9f'
-
 import de.undercouch.gradle.tasks.download.Download
 
 def cefFile() {
@@ -68,8 +65,16 @@ task copyCef(dependsOn: getCefAndUnzip, type: Copy) {
     into fragmentDir
 }
 
-task copyNatives(dependsOn: [copyCef, copyCefRust]) {
+task stripSymbols(type: Exec) {
+	if ('linux' == osdetector.os) {
+		copyCef.finalizedBy stripSymbols
+	}
+	workingDir fragmentDir
+	commandLine 'strip', 'libcef.so'
+}
 
+task copyNatives(dependsOn: [copyCef, copyCefRust]) {
+	buildCefRust.finalizedBy copyNatives
 }
 
 task writeProps(dependsOn: copyNatives, type: WriteProperties) {
@@ -92,19 +97,19 @@ task buildSampleOsgi(type: GradleBuild) {
 }
 
 task buildSampleE4(type: Exec) {
-    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
-        commandLine 'cmd', '/C', 'mvnw verify -P sample', (gradle.startParameter.isOffline() ? '-o' : '')
+    if ('windows' == osdetector.os) {
+        commandLine 'cmd', '/C', 'mvnw verify -P sample', (gradle.startParameter.isOffline() ? '-o' : '-U')
     } else {
         executable './mvnw'
-        args 'verify', '-P', 'sample', (gradle.startParameter.isOffline() ? '-o' : '')
+        args 'verify', '-P', 'sample', (gradle.startParameter.isOffline() ? '-o' : '-U')
     }
 }
 
 task buildP2Repo(type: Exec) {
-    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
-        commandLine 'cmd', '/C', 'mvnw verify', (gradle.startParameter.isOffline() ? '-o' : '-U')
+    if ('windows' == osdetector.os) {
+        commandLine 'cmd', '/C', 'mvnw verify -P p2', (gradle.startParameter.isOffline() ? '-o' : '-U')
     } else {
         executable './mvnw'
-        args 'verify', (gradle.startParameter.isOffline() ? '-o' : '-U')
+        args 'verify', '-P', 'p2', (gradle.startParameter.isOffline() ? '-o' : '-U')
     }
 }

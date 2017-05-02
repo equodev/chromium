@@ -9,6 +9,8 @@
    <launcherArgs>
       <programArgs>-clearPersistedState
       </programArgs>
+      <programArgsLin>--launcher.GTK_version 2
+      </programArgsLin>
       <vmArgsMac>-XstartOnFirstThread -Dorg.eclipse.swt.internal.carbon.smallFonts
       </vmArgsMac>
    </launcherArgs>
@@ -22,6 +24,8 @@
       <plugin id="com.ibm.icu"/>
       <plugin id="com.make.cef"/>
       <plugin id="com.make.cef.windows.x86_64" fragment="true"/>
+      <plugin id="com.make.cef.linux.x86_64" fragment="true"/>
+      <plugin id="com.make.cef.osx.x86_64" fragment="true"/>
       <plugin id="com.make.cef.sample.e4"/>
       <plugin id="com.github.jnr.ffi"/>
       <plugin id="com.github.jnr.jffi"/>

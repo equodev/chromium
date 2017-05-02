@@ -1,18 +1,18 @@
 package com.make.swtcef.internal;
 
-import java.util.Properties;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.nio.file.Paths;
-import java.nio.file.Path;
-import java.nio.file.Files;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
-import java.io.File;
-import java.io.IOException;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.Properties;
+
+import org.eclipse.swt.internal.Platform;
 
 public class NativeExpander {
 	public static String expand() {
@@ -41,7 +41,7 @@ public class NativeExpander {
 				cefPath = Files.createDirectories(cefPath);
 				for (String propName : props.stringPropertyNames()) {
 					String filePath = props.getProperty(propName);
-					System.out.println(propName + ":" + filePath);
+//					System.out.println(propName + ":" + filePath);
 					if (!"cefVersion".equals(propName)) {
 						InputStream is = NativeExpander.class.getResourceAsStream("/" + filePath);
 						if (is == null) {
@@ -50,6 +50,7 @@ public class NativeExpander {
 						copy(cefPath, filePath, is);
 					}
 				}
+				System.out.println("Expanded CEF natives to " + cefPath);
 			}
 			return cefPath.resolve(bundleFolder).toString();
 		} catch (IOException e) {
@@ -66,7 +67,7 @@ public class NativeExpander {
 			Files.createDirectories(pathFile.getParent());
 			File ex = pathFile.toFile();
 			//ex.createNewFile();
-			System.out.println("Copying file to " + ex);
+//			System.out.println("Copying file to " + ex);
 			os = new FileOutputStream(ex);
 			ReadableByteChannel srcChannel = Channels.newChannel(is);
 
@@ -76,6 +77,9 @@ public class NativeExpander {
 			}
 
 			os.close();
+			if (pathFile.endsWith("cefrust_subp")) {
+				chmod ("755", ex.toString());
+			}
 			os = null;
 		} finally {
 			if (os != null) {
@@ -83,5 +87,12 @@ public class NativeExpander {
 			}
 			is.close();
 		}
+	}
+	
+	static void chmod(String permision, String path) {
+		if (Platform.PLATFORM.equals ("win32")) return; //$NON-NLS-1$
+		try {
+			Runtime.getRuntime ().exec (new String []{"chmod", permision, path}).waitFor(); //$NON-NLS-1$
+		} catch (Throwable e) {}
 	}
 }

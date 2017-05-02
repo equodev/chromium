@@ -1,5 +1,6 @@
 package com.make.swtcef;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
@@ -23,6 +24,7 @@ import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
+import org.eclipse.swt.internal.Platform;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -402,6 +404,13 @@ public class Chromium extends Composite {
 			cefrustPath = NativeExpander.expand();
 		}
 
+//		System.out.println("LOADCEF: " + cefrustPath + "/" + "libcef.so");
+//		System.setProperty("java.library.path", cefrustPath + File.pathSeparator + System.getProperty("java.library.path", ""));
+//		System.out.println("JAVA_LIBRARY_PATH: " + System.getProperty("java.library.path", ""));
+		if (Platform.PLATFORM.equals ("gtk")) {
+			System.load(cefrustPath + "/" + "libcef.so");
+		}
+		
 		Lib libc = LibraryLoader.create(Lib.class)
 			.failImmediately()
 			.search(cefrustPath)
