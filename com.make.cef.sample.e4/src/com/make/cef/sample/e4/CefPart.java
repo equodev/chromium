@@ -38,6 +38,7 @@ public class CefPart {
 		browser = new Chromium(composite, SWT.NONE);
 //		browser = new Chromium(parent, SWT.NONE);
 		browser.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		browser.setUrl("http://www.google.com");
 	}
 	
 	
