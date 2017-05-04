@@ -18,7 +18,6 @@ cef.linux:
     - ./gradlew copyCef -Pos=linux --no-daemon
   artifacts:
     paths:
-    - build/
     - com.make.cef.linux.x86_64/linux-x86_64
 
 cef.windows:
@@ -27,7 +26,6 @@ cef.windows:
     - ./gradlew copyCef -Pos=windows --no-daemon
   artifacts:
     paths:
-    - build/
     - com.make.cef.windows.x86_64/windows-x86_64
 
 cef.osx:
@@ -36,8 +34,7 @@ cef.osx:
     - ./gradlew copyCef -Pos=osx --no-daemon
   artifacts:
     paths:
-    - build/
-    - com.make.cef.osx.x86_64/osx-x86_64 --no-daemon
+    - com.make.cef.osx.x86_64/osx-x86_64
 
 build.p2:
   stage: build

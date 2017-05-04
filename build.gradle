@@ -106,18 +106,18 @@ task buildSampleOsgi(type: GradleBuild) {
 
 task buildSampleE4(type: Exec) {
     if ('windows' == osdetector.os) {
-        commandLine 'cmd', '/C', 'mvnw verify -P sample', (gradle.startParameter.isOffline() ? '-o' : '-U')
+        commandLine 'cmd', '/C', 'mvnw -B verify -P sample', (gradle.startParameter.isOffline() ? '-o' : '-U')
     } else {
         executable './mvnw'
-        args 'verify', '-P', 'sample', (gradle.startParameter.isOffline() ? '-o' : '-U')
+        args '-B', 'verify', '-P', 'sample', (gradle.startParameter.isOffline() ? '-o' : '-U')
     }
 }
 
 task buildP2Repo(type: Exec) {
     if ('windows' == osdetector.os) {
-        commandLine 'cmd', '/C', 'mvnw verify -P p2', (gradle.startParameter.isOffline() ? '-o' : '-U')
+        commandLine 'cmd', '/C', 'mvnw -B verify -P p2', (gradle.startParameter.isOffline() ? '-o' : '-U')
     } else {
         executable './mvnw'
-        args 'verify', '-P', 'p2', (gradle.startParameter.isOffline() ? '-o' : '-U')
+        args '-B', 'verify', '-P', 'p2', (gradle.startParameter.isOffline() ? '-o' : '-U')
     }
 }
