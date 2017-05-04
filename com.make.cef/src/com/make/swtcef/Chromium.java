@@ -179,7 +179,8 @@ public class Chromium extends Composite {
 //		hwnd = embeddedHandle;
 		DEBUG_CALLBACK("HWND1: " + hwnd);
 		// String url = "http://www.lanacion.com.ar";
-		String url = "http://www.google.com";
+//		String url = "http://www.google.com";
+		String url = "about:blank";
 		// String url = "http://www.keyboardtester.com/tester.html";
 
 		addDisposeListener(new DisposeListener() {
