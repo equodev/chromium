@@ -12,6 +12,8 @@ cache:
 
 cef.linux:
   stage: get
+  before_script:
+    - apk add --no-cache binutils
   script:
     - ./gradlew copyCef -Pos=linux --no-daemon
   artifacts:
@@ -31,7 +33,7 @@ cef.windows:
 cef.osx:
   stage: get
   script:
-    - ./gradlew copyCef -Pos=osx
+    - ./gradlew copyCef -Pos=osx --no-daemon
   artifacts:
     paths:
     - build/

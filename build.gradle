@@ -16,7 +16,8 @@ println targetos
 
 def cefFile() {
 	def variant = (buildType == 'release') ? 'client' : 'minimal'
-	"cef_binary_${cefVersion}_${targetos}64_${variant}"
+	def osname = (targetos == 'osx') ? 'macosx' : targetos
+	"cef_binary_${cefVersion}_${osname}64_${variant}"
 }
 
 task getCef(type: Download) {
