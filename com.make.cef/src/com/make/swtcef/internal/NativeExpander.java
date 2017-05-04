@@ -12,8 +12,6 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Properties;
 
-import org.eclipse.swt.internal.Platform;
-
 public class NativeExpander {
 	public static String expand() {
 		Properties props = new Properties();
@@ -90,9 +88,11 @@ public class NativeExpander {
 	}
 	
 	static void chmod(String permision, String path) {
-		if (Platform.PLATFORM.equals ("win32")) return; //$NON-NLS-1$
+		if (System.getProperty("os.name").toLowerCase().contains("windows")) return; //$NON-NLS-1$
 		try {
 			Runtime.getRuntime ().exec (new String []{"chmod", permision, path}).waitFor(); //$NON-NLS-1$
-		} catch (Throwable e) {}
+		} catch (Throwable e) {
+			e.printStackTrace();
+		}
 	}
 }

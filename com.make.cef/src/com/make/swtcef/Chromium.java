@@ -24,7 +24,6 @@ import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
-import org.eclipse.swt.internal.Platform;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -407,7 +406,7 @@ public class Chromium extends Composite {
 //		System.out.println("LOADCEF: " + cefrustPath + "/" + "libcef.so");
 //		System.setProperty("java.library.path", cefrustPath + File.pathSeparator + System.getProperty("java.library.path", ""));
 //		System.out.println("JAVA_LIBRARY_PATH: " + System.getProperty("java.library.path", ""));
-		if (Platform.PLATFORM.equals ("gtk")) {
+		if (System.getProperty("os.name").toLowerCase().contains("linux")) {
 			System.load(cefrustPath + "/" + "libcef.so");
 		}
 		
