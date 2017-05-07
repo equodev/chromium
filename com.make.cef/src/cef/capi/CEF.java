@@ -6994,12 +6994,20 @@ public class CEF {
         static class InstanceCreator {
             private static CEFInterface createInstance() {
                 boolean isWin = System.getProperty("os.name").toLowerCase().contains("win");
+                boolean isMac = System.getProperty("os.name").toLowerCase().contains("mac");
+                String toLoad = "cef";
+                if (isWin)
+                    toLoad = "libcef";
+                if (isMac) {
+                    String cefrustPath = System.getProperty("cefswt.path", "");
+                    toLoad = cefrustPath + "/Chromium Embedded Framework.framework/Chromium Embedded Framework";
+                }
 
                 CEFInterface lib = LibraryLoader.create(CEFInterface.class)
                   .option(LibraryOption.FunctionMapper, new NativeNameAnnotationFunctionMapper())
                   .map(StringUtf8.class, new InnerStructByReferenceToNativeConverter())
                   .map(StringUtf16.class, new InnerStructByReferenceToNativeConverter())
-                  .load(isWin ? "libcef" : "cef");
+                  .load(toLoad);
                 RUNTIME = jnr.ffi.Runtime.getRuntime(lib);
                 return lib;
             }

@@ -15,9 +15,9 @@ ext.cefDir = "../cefrust/cef_${targetos}"
 println targetos
 
 def cefFile() {
-	def variant = (buildType == 'release') ? 'client' : 'minimal'
+	def variant = (buildType == 'release') ? '_minimal' : ''
 	def osname = (targetos == 'osx') ? 'macosx' : targetos
-	"cef_binary_${cefVersion}_${osname}64_${variant}"
+	"cef_binary_${cefVersion}_${osname}64${variant}"
 }
 
 task getCef(type: Download) {
@@ -41,6 +41,11 @@ task buildCefRustExe(dependsOn: getCefAndUnzip, type: Exec) {
 	commandLine 'cargo', 'build', "--${buildType}"
 }
 
+task genCefRustBinding(dependsOn: getCefAndUnzip, type: Exec) {
+    workingDir '../cefrust'
+    commandLine 'cargo', 'build', "--${buildType}", "--features", "gen"
+}
+
 task buildCefRustLib(dependsOn: getCefAndUnzip, type: Exec) {
 	workingDir '../cefrust/cefrustlib'
 	commandLine 'cargo', 'build', "--${buildType}"
@@ -51,23 +56,48 @@ task buildCefRust(dependsOn: [buildCefRustExe, buildCefRustLib]) {
 }
 
 task copyCefRust(type: Copy) {
+    into fragmentDir
+    if ('osx' == targetos) {
+        into("cefrust_subp.app/Contents/") {
+            from("../cefrust/") {
+                include 'PkgInfo'
+            }
+        }
+        into("cefrust_subp.app/Contents/") {
+            from("../cefrust/") {
+                include 'Info_subp.plist'
+            }
+            rename { 'Info.plist' }
+        }
+        into("cefrust_subp.app/Contents/MacOS/") {
+            from("../cefrust/target/${buildType}") {
+                include 'cefrust_subp*'
+            }
+        }         
+    } else {
+        into() {
+            from("../cefrust/target/${buildType}") {
+                include 'cefrust_subp*'
+            }
+        } 
+    }
     from("../cefrust/cefrustlib/target/${buildType}") {
         include '*cefrustlib*'
     }
-    from("../cefrust/target/${buildType}") {
-        include 'cefrust_subp*'
-    }
-    into fragmentDir
 }
 
 task copyCef(dependsOn: getCefAndUnzip, type: Copy) {
     from("${cefDir}/${buildType.capitalize()}") {
         exclude '*.lib'
-        include 'locales/**'
-        include '*.pak'
         include '*.dll'
         include '*.so'
         include '*.bin'
+        include 'Chromium Embedded Framework.framework/**'
+        include 'widevinecdmadapter.plugin'
+    }
+    from("${cefDir}/${buildType.capitalize()}/Resources") {
+        include 'locales/**'
+        include '*.pak'
         include '*.dat'
     }
     into fragmentDir
@@ -81,6 +111,24 @@ task stripSymbols(type: Exec) {
 	commandLine 'strip', 'libcef.so'
 }
 
+task fixLibFrameworkLink(type: Exec) {
+    workingDir "${fragmentDir}/cefrust_subp.app/Contents/MacOS/"
+    executable 'install_name_tool'
+    args '-change', "@rpath/Frameworks/Chromium Embedded Framework.framework/Chromium Embedded Framework", "@loader_path/../../../Chromium Embedded Framework.framework/Chromium Embedded Framework", "cefrust_subp"
+}
+
+task fixExeFrameworkLink(type: Exec) {
+    workingDir fragmentDir
+    executable 'install_name_tool'
+    args '-change', "@rpath/Frameworks/Chromium Embedded Framework.framework/Chromium Embedded Framework", "@loader_path/Chromium Embedded Framework.framework/Chromium Embedded Framework", "libcefrustlib.dylib"
+}
+
+task fixFrameworkLink(dependsOn: [fixLibFrameworkLink, fixExeFrameworkLink]) {
+    if ('osx' == osdetector.os && 'osx' == targetos) {
+        copyCefRust.finalizedBy fixFrameworkLink
+    }
+}
+
 task copyNatives(dependsOn: [copyCef, copyCefRust]) {
 	buildCefRust.finalizedBy copyNatives
 }
@@ -92,10 +140,11 @@ task writeProps(dependsOn: copyNatives, type: WriteProperties) {
     doFirst {
         def parent = file(fragmentDir).toPath()
         def output = fileTree(dir: fragmentDir, exclude: 'files.properties').files
-        output.collect { it.toPath() }.each { props.put(it.fileName.toString(), it.subpath(parent.nameCount-1, it.nameCount).toString().replace("\\", "/")) }
+        output.collect { it.toPath() }.each { props.put(it.getParent().fileName.toString() +"/"+ it.fileName.toString(), it.subpath(parent.nameCount-1, it.nameCount).toString().replace("\\", "/")) }
         properties props
     }
     //properties props
+    comment 'auto generated'
     outputFile new File(copyCef.destinationDir, 'files.properties')
 }
 

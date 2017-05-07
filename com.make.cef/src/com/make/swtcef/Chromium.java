@@ -133,14 +133,14 @@ public class Chromium extends Composite {
 				});
 				Runnable runnable = () -> { 
 					if (display.isDisposed() || isDisposed() || display.getActiveShell() != getShell()) {
-//						System.err.println("Ignore do_message_loop_work due inactive shell");
+						System.err.println("Ignore do_message_loop_work due inactive shell");
 						return;
 					}
 					if (browsers.get() > 0) lib.do_message_loop_work();
 				};
 				browserProcessHandler.setOnScheduleMessagePumpWork((browserProcessHandler, delay) -> {
 //					synchronized (browserProcessHandler) {
-//					DEBUG_CALLBACK("OnScheduleMessagePumpWork " + delay);
+					DEBUG_CALLBACK("OnScheduleMessagePumpWork " + delay);
 					if (display.isDisposed())
 						return;
 					if (delay <= 0) {
@@ -402,13 +402,20 @@ public class Chromium extends Composite {
 		cefrustPath = System.getProperty("cefswt.path", "");
 		if (cefrustPath.trim().isEmpty()) {
 			cefrustPath = NativeExpander.expand();
+			System.setProperty("cefswt.path", cefrustPath);
 		}
 
 //		System.out.println("LOADCEF: " + cefrustPath + "/" + "libcef.so");
-//		System.setProperty("java.library.path", cefrustPath + File.pathSeparator + System.getProperty("java.library.path", ""));
-//		System.out.println("JAVA_LIBRARY_PATH: " + System.getProperty("java.library.path", ""));
+		System.setProperty("java.library.path", cefrustPath + File.pathSeparator + System.getProperty("java.library.path", ""));
+		System.out.println("JAVA_LIBRARY_PATH: " + System.getProperty("java.library.path", ""));
+		
+		System.out.println(System.getProperty("os.name"));
 		if (System.getProperty("os.name").toLowerCase().contains("linux")) {
+			// TODO remove and follow same mac approach, loading with full path on CEF.java
 			System.load(cefrustPath + "/" + "libcef.so");
+		}
+		else if (System.getProperty("os.name").toLowerCase().contains("mac")) {
+			//System.load(cefrustPath + "/" + "Chromium Embedded Framework.framework/Chromium Embedded Framework");
 		}
 		
 		Lib libc = LibraryLoader.create(Lib.class)
