@@ -15,14 +15,9 @@
  */
 package com.make.swtcef.internal;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,15 +34,8 @@ class Detector {
     public static final String DETECTED_RELEASE_LIKE_PREFIX = DETECTED_RELEASE + ".like.";
 
     private static final String UNKNOWN = "unknown";
-    private static final String LINUX_ID_PREFIX = "ID=";
-    private static final String LINUX_ID_LIKE_PREFIX = "ID_LIKE=";
-    private static final String LINUX_VERSION_ID_PREFIX = "VERSION_ID=";
-    private static final String[] LINUX_OS_RELEASE_FILES = {"/etc/os-release", "/usr/lib/os-release"};
-    private static final String REDHAT_RELEASE_FILE = "/etc/redhat-release";
-    private static final String[] DEFAULT_REDHAT_VARIANTS = {"rhel", "fedora"};
 
     private static final Pattern VERSION_REGEX = Pattern.compile("((\\d+)\\.(\\d+)).*");
-    private static final Pattern REDHAT_MAJOR_VERSION_REGEX = Pattern.compile("(\\d+)");
 
     public void detect(Properties props, List<String> classifierWithLikes) {
         final Properties allProps = new Properties(System.getProperties());

@@ -75,10 +75,8 @@ task copyCefRust(type: Copy) {
             }
         }         
     } else {
-        into() {
-            from("../cefrust/target/${buildType}") {
-                include 'cefrust_subp*'
-            }
+        from("../cefrust/target/${buildType}") {
+            include 'cefrust_subp*'
         } 
     }
     from("../cefrust/cefrustlib/target/${buildType}") {
@@ -95,7 +93,7 @@ task copyCef(dependsOn: getCefAndUnzip, type: Copy) {
         include 'Chromium Embedded Framework.framework/**'
         include 'widevinecdmadapter.plugin'
     }
-    from("${cefDir}/${buildType.capitalize()}/Resources") {
+    from("${cefDir}/Resources") {
         include 'locales/**'
         include '*.pak'
         include '*.dat'

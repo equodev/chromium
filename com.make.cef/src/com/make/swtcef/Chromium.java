@@ -1,14 +1,8 @@
 package com.make.swtcef;
 
-import java.io.File;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.swt.SWT;
@@ -18,34 +12,21 @@ import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
-import org.eclipse.swt.events.KeyEvent;
-import org.eclipse.swt.events.KeyListener;
-import org.eclipse.swt.events.MouseEvent;
-import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
-import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Widget;
+
+import com.make.swtcef.internal.NativeExpander;
 
 import cef.capi.CEF;
 import cef.capi.CEF.App;
 import cef.capi.CEF.BrowserProcessHandler;
 import cef.capi.CEF.Client;
 import cef.capi.CEF.FocusHandler;
-import cef.capi.CEF.FocusSource;
-import com.make.swtcef.internal.NativeExpander;
 import jnr.ffi.LibraryLoader;
-import jnr.ffi.NativeType;
 import jnr.ffi.Pointer;
-import jnr.ffi.Runtime;
-import jnr.ffi.Struct;
-import jnr.ffi.TypeAlias;
-import jnr.ffi.annotations.Direct;
-import jnr.ffi.annotations.Out;
-import jnr.ffi.annotations.Pinned;
 import jnr.ffi.provider.ClosureManager;
 import jnr.ffi.provider.jffi.NativeRuntime;
 
@@ -61,6 +42,7 @@ public class Chromium extends Composite {
 	private CEF.FocusHandler focusHandler;
 	private CEF.Client clientHandler;
 	private FocusListener focusListener;
+	private String url;
 	private static CompletableFuture<Boolean> cefInitilized;
 //private ScheduledFuture<?> pumpTask;
 	private static App app;
@@ -140,7 +122,7 @@ public class Chromium extends Composite {
 				};
 				browserProcessHandler.setOnScheduleMessagePumpWork((browserProcessHandler, delay) -> {
 //					synchronized (browserProcessHandler) {
-					DEBUG_CALLBACK("OnScheduleMessagePumpWork " + delay);
+//					DEBUG_CALLBACK("OnScheduleMessagePumpWork " + delay);
 					if (display.isDisposed())
 						return;
 					if (delay <= 0) {
@@ -180,7 +162,7 @@ public class Chromium extends Composite {
 		DEBUG_CALLBACK("HWND1: " + hwnd);
 		// String url = "http://www.lanacion.com.ar";
 //		String url = "http://www.google.com";
-		String url = "about:blank";
+		String url = (this.url != null) ? this.url : "about:blank";
 		// String url = "http://www.keyboardtester.com/tester.html";
 
 		addDisposeListener(new DisposeListener() {
@@ -294,8 +276,10 @@ public class Chromium extends Composite {
 	
 	public void setUrl(String url) {
 		if (!isDisposed() && browser != null) {
+			DEBUG_CALLBACK("setUrl: " + url);
 			lib.load_url(browser, url);
 		}
+		this.url = url;
 	}
 
 	// single loop for all browsers
@@ -406,13 +390,12 @@ public class Chromium extends Composite {
 		}
 
 //		System.out.println("LOADCEF: " + cefrustPath + "/" + "libcef.so");
-		System.setProperty("java.library.path", cefrustPath + File.pathSeparator + System.getProperty("java.library.path", ""));
+		//System.setProperty("java.library.path", cefrustPath + File.pathSeparator + System.getProperty("java.library.path", ""));
 		System.out.println("JAVA_LIBRARY_PATH: " + System.getProperty("java.library.path", ""));
 		
 		System.out.println(System.getProperty("os.name"));
 		if (System.getProperty("os.name").toLowerCase().contains("linux")) {
-			// TODO remove and follow same mac approach, loading with full path on CEF.java
-			System.load(cefrustPath + "/" + "libcef.so");
+//			System.load(cefrustPath + "/" + "libcef.so");
 		}
 		else if (System.getProperty("os.name").toLowerCase().contains("mac")) {
 			//System.load(cefrustPath + "/" + "Chromium Embedded Framework.framework/Chromium Embedded Framework");
@@ -421,6 +404,7 @@ public class Chromium extends Composite {
 		Lib libc = LibraryLoader.create(Lib.class)
 			.failImmediately()
 			.search(cefrustPath)
+			.library("cef")
 			.load("cefrustlib");
 
 		java.lang.Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
