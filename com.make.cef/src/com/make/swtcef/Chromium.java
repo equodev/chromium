@@ -181,12 +181,21 @@ public class Chromium extends Composite {
 		if (isMac()) {
 			try {
 				Field field = Control.class.getDeclaredField("view");
+				field.setAccessible(true);
 				Object nsview = field.get(control);
 				
 				Class<?> idClass = Class.forName("org.eclipse.swt.internal.cocoa.id");
 				Field idField = idClass.getField("id");
 
 				hwnd = idField.getLong(nsview);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		} else if (isWindows()) {
+			try {
+				Field field = Control.class.getDeclaredField("handle");
+				field.setAccessible(true);
+				hwnd = (long) field.get(control);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
