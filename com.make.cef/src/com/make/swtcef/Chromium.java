@@ -1,7 +1,6 @@
 package com.make.swtcef;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -18,6 +17,7 @@ import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Widget;
 
 import com.make.swtcef.internal.NativeExpander;
 
@@ -192,7 +192,7 @@ public class Chromium extends Composite {
 			}
 		} else {
 			try {
-				Field field = Control.class.getDeclaredField("handle");
+				Field field = Widget.class.getDeclaredField("handle");
 				field.setAccessible(true);
 				hwnd = (long) field.get(control);
 			} catch (Exception e) {
