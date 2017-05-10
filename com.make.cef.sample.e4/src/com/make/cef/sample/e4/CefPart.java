@@ -9,6 +9,8 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.*;
+import org.eclipse.swt.events.*;
 
 import com.make.swtcef.Chromium;
 
@@ -28,15 +30,25 @@ public class CefPart {
 //		parent.setLayout(new FillLayout());
 		
 		Composite composite = new Composite(parent, SWT.NONE);
-		composite.setLayout(new GridLayout());
+		composite.setLayout(new GridLayout(2, false));
 		
-		Text text = new Text(composite, SWT.BORDER | SWT.SEARCH);
+		final Text text = new Text(composite, SWT.BORDER | SWT.SEARCH);
 		text.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		
+		final Button ok = new Button(composite, SWT.PUSH);
+		ok.setText("Go");
+
 		browser = new Chromium(composite, SWT.NONE);
 //		browser = new Chromium(parent, SWT.NONE);
-		browser.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-		browser.setUrl("http://www.google.com");
+		browser.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
+		browser.setUrl("about:gpu");
+
+		ok.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				browser.setUrl(text.getText());
+			}
+		});
 	}
 	
 	
