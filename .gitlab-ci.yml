@@ -65,3 +65,4 @@ pages:
   when: always
   only:
   - master
+  - "3029"
