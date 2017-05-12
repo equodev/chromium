@@ -37,8 +37,11 @@ task getCefAndUnzip(dependsOn: unzip, type: Copy) {
 }
 
 task buildCefRustExe(dependsOn: getCefAndUnzip, type: Exec) {
-	workingDir '../cefrust'
-	commandLine 'cargo', 'build', "--${buildType}"
+    if ('windows' == osdetector.os) {
+        environment("RUSTFLAGS", "-C link-arg=/SUBSYSTEM:WINDOWS -C link-arg=/ENTRY:mainCRTStartup");
+	}
+    workingDir '../cefrust'
+	commandLine 'cargo', 'build', "--bin", "cefrust_subp", "--${buildType}"
 }
 
 task genCefRustBinding(dependsOn: getCefAndUnzip, type: Exec) {
