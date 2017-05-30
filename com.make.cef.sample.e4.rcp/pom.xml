@@ -34,6 +34,9 @@
             <products>
                 <product>
                     <id>cef_rcp</id>
+                    <rootFolders>
+                        <macosx>cef_rcp.app</macosx>
+                    </rootFolders>
                 </product>
             </products>
         </configuration>

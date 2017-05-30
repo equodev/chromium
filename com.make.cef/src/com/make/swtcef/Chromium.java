@@ -1,14 +1,8 @@
 package com.make.swtcef;
 
-import java.io.File;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.swt.SWT;
@@ -18,39 +12,29 @@ import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
-import org.eclipse.swt.events.KeyEvent;
-import org.eclipse.swt.events.KeyListener;
-import org.eclipse.swt.events.MouseEvent;
-import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
-import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Widget;
+
+import com.make.swtcef.internal.NativeExpander;
 
 import cef.capi.CEF;
 import cef.capi.CEF.App;
 import cef.capi.CEF.BrowserProcessHandler;
 import cef.capi.CEF.Client;
 import cef.capi.CEF.FocusHandler;
-import cef.capi.CEF.FocusSource;
-import com.make.swtcef.internal.NativeExpander;
 import jnr.ffi.LibraryLoader;
-import jnr.ffi.NativeType;
 import jnr.ffi.Pointer;
-import jnr.ffi.Runtime;
-import jnr.ffi.Struct;
-import jnr.ffi.TypeAlias;
-import jnr.ffi.annotations.Direct;
-import jnr.ffi.annotations.Out;
-import jnr.ffi.annotations.Pinned;
 import jnr.ffi.provider.ClosureManager;
 import jnr.ffi.provider.jffi.NativeRuntime;
 
 public class Chromium extends Composite {
 
+	private static String OS = System.getProperty("os.name").toLowerCase();
+    
 	private static Lib lib;
 	private static String cefrustPath;
 	private static Pointer appP;
@@ -61,18 +45,31 @@ public class Chromium extends Composite {
 	private CEF.FocusHandler focusHandler;
 	private CEF.Client clientHandler;
 	private FocusListener focusListener;
+	private String url;
 	private static CompletableFuture<Boolean> cefInitilized;
 //private ScheduledFuture<?> pumpTask;
 	private static App app;
 	private static BrowserProcessHandler browserProcessHandler;
 
+    public static boolean isWindows() {
+        return (OS.indexOf("win") >= 0);
+    }
+
+    public static boolean isMac() {
+        return (OS.indexOf("mac") >= 0);
+    }
+
+    public static boolean isUnix() {
+        return (OS.indexOf("nix") >= 0 || OS.indexOf("nux") >= 0 || OS.indexOf("aix") > 0 );
+    }
+
 	static {
 		lib = loadLib();
 	}
 
-	static final String NO_INPUT_METHOD = "org.eclipse.swt.internal.gtk.noInputMethod"; //$NON-NLS-1$
+	//static final String NO_INPUT_METHOD = "org.eclipse.swt.internal.gtk.noInputMethod"; //$NON-NLS-1$
 	
-	static Composite checkParent(Composite parent) {
+	/*static Composite checkParent(Composite parent) {
 		if (parent != null && !parent.isDisposed ()) {
 			Display display = parent.getDisplay ();
 			if (display != null) {
@@ -82,11 +79,11 @@ public class Chromium extends Composite {
 			}
 		}
 		return parent;
-	}
+	}*/
 	
 	public Chromium(Composite parent, int style) {
-//		super(checkParent(parent), SWT.NONE);
-		super(checkParent(parent), SWT.NO_BACKGROUND | SWT. NO_FOCUS | SWT.NO_MERGE_PAINTS | SWT.NO_REDRAW_RESIZE);
+//		super(/*checkParent(*/parent/*)*/, SWT.NONE);
+		super(parent, SWT.NO_BACKGROUND | SWT. NO_FOCUS | SWT.NO_MERGE_PAINTS | SWT.NO_REDRAW_RESIZE);
 //		super(checkParent(parent), SWT.EMBEDDED);
 		
 //		parent.getDisplay ().setData (NO_INPUT_METHOD, null);
@@ -111,7 +108,12 @@ public class Chromium extends Composite {
 				removePaintListener(this);
 //				getDisplay().timerExec(2000, () -> {
 					initCEF(getDisplay());
-					cefInitilized.thenRun(() -> createBrowser());
+					DEBUG_CALLBACK("initCef Done");
+					cefInitilized.thenRun(() -> { 
+						DEBUG_CALLBACK("cefInitilized Future CALLBACK");	
+						getDisplay().asyncExec(() -> createBrowser());
+					});
+					DEBUG_CALLBACK("paintControl Done");
 //				});
 			}
 		});
@@ -133,7 +135,7 @@ public class Chromium extends Composite {
 				});
 				Runnable runnable = () -> { 
 					if (display.isDisposed() || isDisposed() || display.getActiveShell() != getShell()) {
-//						System.err.println("Ignore do_message_loop_work due inactive shell");
+						//System.err.println("Ignore do_message_loop_work due inactive shell");
 						return;
 					}
 					if (browsers.get() > 0) lib.do_message_loop_work();
@@ -173,14 +175,49 @@ public class Chromium extends Composite {
 			//browsers++;
 		}
 	}
+
+	private long getHandle(Composite control) {
+		long hwnd = 0;
+		if (isMac()) {
+			try {
+				Field field = Control.class.getDeclaredField("view");
+				field.setAccessible(true);
+				Object nsview = field.get(control);
+				
+				Class<?> idClass = Class.forName("org.eclipse.swt.internal.cocoa.id");
+				Field idField = idClass.getField("id");
+
+				hwnd = idField.getLong(nsview);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		} else if (isWindows()) {
+			try {
+				Field field = Control.class.getDeclaredField("handle");
+				field.setAccessible(true);
+				hwnd = (long) field.get(control);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		} else {
+			try {
+				Field field = Widget.class.getDeclaredField("handle");
+				field.setAccessible(true);
+				hwnd = (long) field.get(control);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return hwnd;
+	}
 	
 	private void createBrowser() {
-		hwnd = handle;
+		hwnd = getHandle(this);
 //		hwnd = embeddedHandle;
 		DEBUG_CALLBACK("HWND1: " + hwnd);
 		// String url = "http://www.lanacion.com.ar";
 //		String url = "http://www.google.com";
-		String url = "about:blank";
+		String url = (this.url != null) ? this.url : "about:blank";
 		// String url = "http://www.keyboardtester.com/tester.html";
 
 		addDisposeListener(new DisposeListener() {
@@ -294,8 +331,10 @@ public class Chromium extends Composite {
 	
 	public void setUrl(String url) {
 		if (!isDisposed() && browser != null) {
+			DEBUG_CALLBACK("setUrl: " + url);
 			lib.load_url(browser, url);
 		}
+		this.url = url;
 	}
 
 	// single loop for all browsers
@@ -328,7 +367,7 @@ public class Chromium extends Composite {
 		client.setGetDownloadHandler((c) -> DEBUG_CALLBACK("get_download_handler"));
 		client.setGetDragHandler((c) -> DEBUG_CALLBACK("get_drag_handler"));
 		client.setGetFocusHandler((c) -> {
-			DEBUG_CALLBACK("get_drag_handler");
+			DEBUG_CALLBACK("get_focus_handler");
 			return null;
 		});
 		client.setGetGeolocationHandler((c) -> DEBUG_CALLBACK("get_geolocation_handler"));
@@ -364,7 +403,7 @@ public class Chromium extends Composite {
 	protected void browserFocus(boolean set) {
 		DEBUG_CALLBACK("cef focus: " + set);
 		if (!isDisposed() && browser != null) {
-			long parent = (Display.getDefault().getActiveShell() == null) ? 0 : getParent().handle;
+			long parent = (Display.getDefault().getActiveShell() == null) ? 0 : getHandle(getParent());
 			if (getDisplay().getActiveShell() != getShell()) {
 //				System.err.println("Ignore do_message_loop_work due inactive shell");
 				return;
@@ -402,16 +441,17 @@ public class Chromium extends Composite {
 		cefrustPath = System.getProperty("cefswt.path", "");
 		if (cefrustPath.trim().isEmpty()) {
 			cefrustPath = NativeExpander.expand();
+			System.setProperty("cefswt.path", cefrustPath);
 		}
 
 //		System.out.println("LOADCEF: " + cefrustPath + "/" + "libcef.so");
-//		System.setProperty("java.library.path", cefrustPath + File.pathSeparator + System.getProperty("java.library.path", ""));
-//		System.out.println("JAVA_LIBRARY_PATH: " + System.getProperty("java.library.path", ""));
-		if (System.getProperty("os.name").toLowerCase().contains("linux")) {
-			System.load(cefrustPath + "/" + "libcef.so");
-		}
+		//System.setProperty("java.library.path", cefrustPath + File.pathSeparator + System.getProperty("java.library.path", ""));
+		//System.out.println("JAVA_LIBRARY_PATH: " + System.getProperty("java.library.path", ""));
 		
-		Lib libc = LibraryLoader.create(Lib.class)
+		LibraryLoader<Lib> loader = LibraryLoader.create(Lib.class);
+		if (isUnix() && !isMac())
+			loader.library("cef");
+		Lib libc = loader
 			.failImmediately()
 			.search(cefrustPath)
 			.load("cefrustlib");

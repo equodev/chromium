@@ -473,6 +473,34 @@ public class CEF {
     /**
      * (Not documented)
      * 
+     * @method stringUtf16ToLower(src, srcLen, output)
+     * @param [FFI::Pointer(*Char16)] src 
+     * @param [Integer] srcLen 
+     * @param [StringUtf16] output 
+     * @return [Integer] 
+     * @scope class
+     */
+    public static int stringUtf16ToLower(jnr.ffi.Pointer src, long srcLen, StringUtf16 output) {
+        return INSTANCE.stringUtf16ToLower(src, srcLen, output);
+    }
+    
+    /**
+     * (Not documented)
+     * 
+     * @method stringUtf16ToUpper(src, srcLen, output)
+     * @param [FFI::Pointer(*Char16)] src 
+     * @param [Integer] srcLen 
+     * @param [StringUtf16] output 
+     * @return [Integer] 
+     * @scope class
+     */
+    public static int stringUtf16ToUpper(jnr.ffi.Pointer src, long srcLen, StringUtf16 output) {
+        return INSTANCE.stringUtf16ToUpper(src, srcLen, output);
+    }
+    
+    /**
+     * (Not documented)
+     * 
      * @method getXdisplay()
      * @return [XDisplay] 
      * @scope class
@@ -639,9 +667,17 @@ public class CEF {
      *   configurable using the "no-sandbox" command-line switch.
      * :browserSubprocessPath ::
      *   (StringUtf16) The path to a separate executable that will be launched for sub-processes.
-     *   By default the browser process executable is used. See the comments on
-     *   CefExecuteProcess() for details. Also configurable using the
-     *   "browser-subprocess-path" command-line switch.
+     *   If this value is empty on Windows or Linux then the main process executable
+     *   will be used. If this value is empty on macOS then a helper executable must
+     *   exist at "Contents/Frameworks/<app> Helper.app/Contents/MacOS/<app> Helper"
+     *   in the top-level app bundle. See the comments on CefExecuteProcess() for
+     *   details. Also configurable using the "browser-subprocess-path" command-line
+     *   switch.
+     * :frameworkDirPath ::
+     *   (StringUtf16) The path to the CEF framework directory on macOS. If this value is empty
+     *   then the framework must exist at "Contents/Frameworks/Chromium Embedded
+     *   Framework.framework" in the top-level app bundle. Also configurable using
+     *   the "framework-dir-path" command-line switch.
      * :multiThreadedMessageLoop ::
      *   (Integer) Set to true (1) to have the browser process message loop run in a separate
      *   thread. If false (0) than the CefDoMessageLoopWork() function must be
@@ -811,6 +847,7 @@ public class CEF {
         public Signed32 singleProcess = new Signed32();
         public Signed32 noSandbox = new Signed32();
         public StringUtf16 browserSubprocessPath = inner(new StringUtf16(getRuntime()));
+        public StringUtf16 frameworkDirPath = inner(new StringUtf16(getRuntime()));
         public Signed32 multiThreadedMessageLoop = new Signed32();
         public Signed32 externalMessagePump = new Signed32();
         public Signed32 windowlessRenderingEnabled = new Signed32();
@@ -960,9 +997,6 @@ public class CEF {
      *   execCommand("paste"). The |javascript_access_clipboard| setting must also
      *   be enabled. Also configurable using the "disable-javascript-dom-paste"
      *   command-line switch.
-     * :caretBrowsing ::
-     *   (Symbol from _enum_State_) Controls whether the caret position will be drawn. Also configurable using
-     *   the "enable-caret-browsing" command-line switch.
      * :plugins ::
      *   (Symbol from _enum_State_) Controls whether any plugins will be loaded. Also configurable using the
      *   "disable-plugins" command-line switch.
@@ -1036,7 +1070,6 @@ public class CEF {
         public Enum<State> javascriptCloseWindows = new Enum<>(State.class);
         public Enum<State> javascriptAccessClipboard = new Enum<>(State.class);
         public Enum<State> javascriptDomPaste = new Enum<>(State.class);
-        public Enum<State> caretBrowsing = new Enum<>(State.class);
         public Enum<State> plugins = new Enum<>(State.class);
         public Enum<State> universalAccessFromFileUrls = new Enum<>(State.class);
         public Enum<State> fileAccessFromFileUrls = new Enum<>(State.class);
@@ -3285,8 +3318,6 @@ public class CEF {
      *   (Integer) 
      * :dialog ::
      *   (Integer) 
-     * :additionalFeatures ::
-     *   (FFI::Pointer(StringList)) 
      */
     public static final class PopupFeatures extends Struct {
         public Signed32 x = new Signed32();
@@ -3305,7 +3336,6 @@ public class CEF {
         public Signed32 resizable = new Signed32();
         public Signed32 fullscreen = new Signed32();
         public Signed32 dialog = new Signed32();
-        public Pointer additionalFeatures = new Pointer();
         public PopupFeatures(jnr.ffi.Runtime runtime) {
           super(runtime);
         }
@@ -4213,6 +4243,10 @@ public class CEF {
      *   equal to zero then the default paper size (A4) will be used.
      * :pageHeight ::
      *   (Integer) 
+     * :scaleFactor ::
+     *   (Integer) The percentage to scale the PDF by before printing (e.g. 50 is 50%).
+     *   If this value is less than or equal to zero the default value of 100
+     *   will be used.
      * :marginTop ::
      *   (Float) Margins in millimeters. Only used if |margin_type| is set to
      *   PDF_PRINT_MARGIN_CUSTOM.
@@ -4240,6 +4274,7 @@ public class CEF {
         public StringUtf16 headerFooterUrl = inner(new StringUtf16(getRuntime()));
         public Signed32 pageWidth = new Signed32();
         public Signed32 pageHeight = new Signed32();
+        public Signed32 scaleFactor = new Signed32();
         public Double marginTop = new Double();
         public Double marginRight = new Double();
         public Double marginBottom = new Double();
@@ -4771,6 +4806,53 @@ public class CEF {
     /**
      * (Not documented)
      * 
+     * <em>This entry is only for documentation and no real method. The FFI::Enum can be accessed via #enum_type(:MenuColorType).</em>
+     * 
+     * === Options:
+     * TEXT ::
+     *   
+     * TEXT_HOVERED ::
+     *   
+     * TEXT_ACCELERATOR ::
+     *   
+     * TEXT_ACCELERATOR_HOVERED ::
+     *   
+     * BACKGROUND ::
+     *   
+     * BACKGROUND_HOVERED ::
+     *   
+     * COUNT ::
+     *   
+     * 
+     * @method _enum_MenuColorType_
+     * @return [Symbol]
+     * @scope class
+     */
+    public enum MenuColorType implements EnumMapper.IntegerEnum {
+        TEXT(0),
+        TEXT_HOVERED(1),
+        TEXT_ACCELERATOR(2),
+        TEXT_ACCELERATOR_HOVERED(3),
+        BACKGROUND(4),
+        BACKGROUND_HOVERED(5),
+        COUNT(6)
+        ;
+        
+        private int nativeInt;
+        
+        private MenuColorType(int nativeInt) {
+            this.nativeInt = nativeInt;
+        }
+        
+        @Override
+        public int intValue() {
+            return nativeInt;
+        }
+    }
+    
+    /**
+     * (Not documented)
+     * 
      * <em>This entry is only for documentation and no real method. The FFI::Enum can be accessed via #enum_type(:SslVersion).</em>
      * 
      * === Options:
@@ -4927,14 +5009,14 @@ public class CEF {
      * :hasOneRef ::
      *   (Function(HasOneRef)) Returns true (1) if the current reference count is 1.
      */
-    public static final class Base extends Struct {
+    public static final class BaseRefCounted extends Struct {
         public UnsignedLong size = new UnsignedLong();
 		public int ref = 0;
 
         public Function<AddRef> addRef = function(AddRef.class);
         public static interface AddRef {
             @Delegate
-            void invoke(jnr.ffi.Pointer base);
+            void invoke(jnr.ffi.Pointer baseRefCounted);
         }
         public void setAddRef(AddRef callback) {
             addRef.set(callback);
@@ -4943,7 +5025,7 @@ public class CEF {
         public Function<Release> release = function(Release.class);
         public static interface Release {
             @Delegate
-            int invoke(jnr.ffi.Pointer base);
+            int invoke(jnr.ffi.Pointer baseRefCounted);
         }
         public void setRelease(Release callback) {
             release.set(callback);
@@ -4952,13 +5034,13 @@ public class CEF {
         public Function<HasOneRef> hasOneRef = function(HasOneRef.class);
         public static interface HasOneRef {
             @Delegate
-            int invoke(jnr.ffi.Pointer base);
+            int invoke(jnr.ffi.Pointer baseRefCounted);
         }
         public void setHasOneRef(HasOneRef callback) {
             hasOneRef.set(callback);
         }
         
-        public Base(jnr.ffi.Runtime runtime) {
+        public BaseRefCounted(jnr.ffi.Runtime runtime) {
           super(runtime);
 //          setFns();
         }
@@ -4976,10 +5058,10 @@ public class CEF {
 		}
     }
     
-    public static class AddRefFN implements Base.AddRef {
-    	private Base base;
+    public static class AddRefFN implements BaseRefCounted.AddRef {
+    	private BaseRefCounted base;
 
-		public AddRefFN(Base base) {
+		public AddRefFN(BaseRefCounted base) {
 			this.base = base;
 		}
 
@@ -4990,10 +5072,10 @@ public class CEF {
     		System.out.println(base.ref);
     	}
     }
-    public static class ReleaseFN implements Base.Release {
-    	private Base base;
+    public static class ReleaseFN implements BaseRefCounted.Release {
+    	private BaseRefCounted base;
 
-    	public ReleaseFN(Base base) {
+    	public ReleaseFN(BaseRefCounted base) {
 			this.base = base;
 		}
 
@@ -5005,10 +5087,10 @@ public class CEF {
     		return 1;
     	}
     }
-    public static class HasOneRefFN implements Base.HasOneRef {
-    	private Base base;
+    public static class HasOneRefFN implements BaseRefCounted.HasOneRef {
+    	private BaseRefCounted base;
 
-		public HasOneRefFN(Base base) {
+		public HasOneRefFN(BaseRefCounted base) {
 			this.base = base;
 		}
 
@@ -5025,8 +5107,33 @@ public class CEF {
      * (Not documented)
      * 
      * = Fields:
+     * :size ::
+     *   (Integer) Size of the data structure.
+     * :del ::
+     *   (Function(Del)) Called to delete this object. May be NULL if the object is not owned.
+     */
+    public static final class BaseScoped extends Struct {
+        public UnsignedLong size = new UnsignedLong();
+        public Function<Del> del = function(Del.class);
+        public static interface Del {
+            @Delegate
+            void invoke(jnr.ffi.Pointer baseScoped);
+        }
+        public void setDel(Del callback) {
+            del.set(callback);
+        }
+        
+        public BaseScoped(jnr.ffi.Runtime runtime) {
+          super(runtime);
+        }
+    }
+    
+    /**
+     * (Not documented)
+     * 
+     * = Fields:
      * :base ::
-     *   (Base) Base structure.
+     *   (BaseRefCounted) Base structure.
      * :getHost ::
      *   (Function(GetHost)) Returns the browser host object. This function can only be called in the
      *   browser process.
@@ -5074,7 +5181,7 @@ public class CEF {
      *   message was sent successfully.
      */
     public static final class Browser extends Struct {
-        public Base base = inner(new Base(getRuntime()));
+        public BaseRefCounted base = inner(new BaseRefCounted(getRuntime()));
         public Function<GetHost> getHost = function(GetHost.class);
         public static interface GetHost {
             @Delegate
@@ -5276,7 +5383,7 @@ public class CEF {
      * 
      * = Fields:
      * :base ::
-     *   (Base) Base structure.
+     *   (BaseRefCounted) Base structure.
      * :onFileDialogDismissed ::
      *   (Function(OnFileDialogDismissed)) Called asynchronously after the file dialog is dismissed.
      *   |selected_accept_filter| is the 0-based index of the value selected from
@@ -5285,7 +5392,7 @@ public class CEF {
      *   dialog mode. If the selection was cancelled |file_paths| will be NULL.
      */
     public static final class RunFileDialogCallback extends Struct {
-        public Base base = inner(new Base(getRuntime()));
+        public BaseRefCounted base = inner(new BaseRefCounted(getRuntime()));
         public Function<OnFileDialogDismissed> onFileDialogDismissed = function(OnFileDialogDismissed.class);
         public static interface OnFileDialogDismissed {
             @Delegate
@@ -5307,7 +5414,7 @@ public class CEF {
      * 
      * = Fields:
      * :base ::
-     *   (Base) Base structure.
+     *   (BaseRefCounted) Base structure.
      * :visit ::
      *   (Function(Visit)) Method that will be executed. Do not keep a reference to |entry| outside of
      *   this callback. Return true (1) to continue visiting entries or false (0) to
@@ -5316,7 +5423,7 @@ public class CEF {
      *   the total number of entries.
      */
     public static final class NavigationEntryVisitor extends Struct {
-        public Base base = inner(new Base(getRuntime()));
+        public BaseRefCounted base = inner(new BaseRefCounted(getRuntime()));
         public Function<Visit> visit = function(Visit.class);
         public static interface Visit {
             @Delegate
@@ -5338,14 +5445,14 @@ public class CEF {
      * 
      * = Fields:
      * :base ::
-     *   (Base) Base structure.
+     *   (BaseRefCounted) Base structure.
      * :onPdfPrintFinished ::
      *   (Function(OnPdfPrintFinished)) Method that will be executed when the PDF printing has completed. |path| is
      *   the output path. |ok| will be true (1) if the printing completed
      *   successfully or false (0) otherwise.
      */
     public static final class PdfPrintCallback extends Struct {
-        public Base base = inner(new Base(getRuntime()));
+        public BaseRefCounted base = inner(new BaseRefCounted(getRuntime()));
         public Function<OnPdfPrintFinished> onPdfPrintFinished = function(OnPdfPrintFinished.class);
         public static interface OnPdfPrintFinished {
             @Delegate
@@ -5367,7 +5474,7 @@ public class CEF {
      * 
      * = Fields:
      * :base ::
-     *   (Base) Base structure.
+     *   (BaseRefCounted) Base structure.
      * :onDownloadImageFinished ::
      *   (Function(OnDownloadImageFinished)) Method that will be executed when the image download has completed.
      *   |image_url| is the URL that was downloaded and |http_status_code| is the
@@ -5375,7 +5482,7 @@ public class CEF {
      *   multiple scale factors, or NULL if the download failed.
      */
     public static final class DownloadImageCallback extends Struct {
-        public Base base = inner(new Base(getRuntime()));
+        public BaseRefCounted base = inner(new BaseRefCounted(getRuntime()));
         public Function<OnDownloadImageFinished> onDownloadImageFinished = function(OnDownloadImageFinished.class);
         public static interface OnDownloadImageFinished {
             @Delegate
@@ -5397,7 +5504,7 @@ public class CEF {
      * 
      * = Fields:
      * :base ::
-     *   (Base) Base structure.
+     *   (BaseRefCounted) Base structure.
      * :getBrowser ::
      *   (Function(GetBrowser)) Returns the hosted browser object.
      * :closeBrowser ::
@@ -5643,7 +5750,7 @@ public class CEF {
      *   function can only be called on the UI thread.
      */
     public static final class BrowserHost extends Struct {
-        public Base base = inner(new Base(getRuntime()));
+        public BaseRefCounted base = inner(new BaseRefCounted(getRuntime()));
         public Function<GetBrowser> getBrowser = function(GetBrowser.class);
         public static interface GetBrowser {
             @Delegate
@@ -6147,7 +6254,7 @@ public class CEF {
      * 
      * = Fields:
      * :base ::
-     *   (Base) Base structure.
+     *   (BaseRefCounted) Base structure.
      * :onTakeFocus ::
      *   (Function(OnTakeFocus)) Called when the browser component is about to loose focus. For instance, if
      *   focus was on the last HTML element and the user pressed the TAB key. |next|
@@ -6161,7 +6268,7 @@ public class CEF {
      *   (Function(OnGotFocus)) Called when the browser component has received focus.
      */
     public static final class FocusHandler extends Struct {
-        public Base base = inner(new Base(getRuntime()));
+        public BaseRefCounted base = inner(new BaseRefCounted(getRuntime()));
         public Function<OnTakeFocus> onTakeFocus = function(OnTakeFocus.class);
         public static interface OnTakeFocus {
             @Delegate
@@ -6202,7 +6309,7 @@ public class CEF {
      * 
      * = Fields:
      * :base ::
-     *   (Base) Base structure.
+     *   (BaseRefCounted) Base structure.
      * :getContextMenuHandler ::
      *   (Function(GetContextMenuHandler)) Return the handler for context menus. If no handler is provided the default
      *   implementation will be used.
@@ -6242,7 +6349,7 @@ public class CEF {
      *   reference to or attempt to access the message outside of this callback.
      */
     public static final class Client extends Struct {
-        public Base base = inner(new Base(getRuntime()));
+        public BaseRefCounted base = inner(new BaseRefCounted(getRuntime()));
         public Function<GetContextMenuHandler> getContextMenuHandler = function(GetContextMenuHandler.class);
         public static interface GetContextMenuHandler {
             @Delegate
@@ -6390,7 +6497,7 @@ public class CEF {
      * 
      * = Fields:
      * :base ::
-     *   (Base) Base structure.
+     *   (BaseRefCounted) Base structure.
      * :isValid ::
      *   (Function(IsValid)) Returns true (1) if this object is valid. Do not call any other functions
      *   if this function returns false (0).
@@ -6443,7 +6550,7 @@ public class CEF {
      *   "valgrind" or "gdb --args".
      */
     public static final class CommandLine extends Struct {
-        public Base base = inner(new Base(getRuntime()));
+        public BaseRefCounted base = inner(new BaseRefCounted(getRuntime()));
         public Function<IsValid> isValid = function(IsValid.class);
         public static interface IsValid {
             @Delegate
@@ -6658,7 +6765,7 @@ public class CEF {
      * 
      * = Fields:
      * :base ::
-     *   (Base) Base structure.
+     *   (BaseRefCounted) Base structure.
      * :onContextInitialized ::
      *   (Function(OnContextInitialized)) Called on the browser process UI thread immediately after the CEF context
      *   has been initialized.
@@ -6691,7 +6798,7 @@ public class CEF {
      *   cancelled.
      */
     public static final class BrowserProcessHandler extends Struct {
-        public Base base = inner(new Base(getRuntime()));
+        public BaseRefCounted base = inner(new BaseRefCounted(getRuntime()));
         public Function<OnContextInitialized> onContextInitialized = function(OnContextInitialized.class);
         public static interface OnContextInitialized {
             @Delegate
@@ -6751,7 +6858,7 @@ public class CEF {
      * 
      * = Fields:
      * :base ::
-     *   (Base) Base structure.
+     *   (BaseRefCounted) Base structure.
      * :onBeforeCommandLineProcessing ::
      *   (Function(OnBeforeCommandLineProcessing)) Provides an opportunity to view and/or modify command-line arguments before
      *   processing by CEF and Chromium. The |process_type| value will be NULL for
@@ -6780,7 +6887,7 @@ public class CEF {
      *   function is called on the render process main thread.
      */
     public static final class App extends Struct {
-        public Base base = inner(new Base(getRuntime()));
+        public BaseRefCounted base = inner(new BaseRefCounted(getRuntime()));
         public Function<OnBeforeCommandLineProcessing> onBeforeCommandLineProcessing = function(OnBeforeCommandLineProcessing.class);
         public static interface OnBeforeCommandLineProcessing {
             @Delegate
@@ -6994,12 +7101,22 @@ public class CEF {
         static class InstanceCreator {
             private static CEFInterface createInstance() {
                 boolean isWin = System.getProperty("os.name").toLowerCase().contains("win");
+                boolean isMac = System.getProperty("os.name").toLowerCase().contains("mac");
+                String toLoad = "cef";
+                String cefrustPath = System.getProperty("cefswt.path", "");
+                if (isWin) {
+                    toLoad = "libcef";
+            	} else if (isMac) {
+                    toLoad = cefrustPath + "/Chromium Embedded Framework.framework/Chromium Embedded Framework";
+                } else {
+                	toLoad = cefrustPath + "/libcef.so";
+                }
 
                 CEFInterface lib = LibraryLoader.create(CEFInterface.class)
                   .option(LibraryOption.FunctionMapper, new NativeNameAnnotationFunctionMapper())
                   .map(StringUtf8.class, new InnerStructByReferenceToNativeConverter())
                   .map(StringUtf16.class, new InnerStructByReferenceToNativeConverter())
-                  .load(isWin ? "libcef" : "cef");
+                  .load(toLoad);
                 RUNTIME = jnr.ffi.Runtime.getRuntime(lib);
                 return lib;
             }
@@ -7073,6 +7190,12 @@ public class CEF {
         
         @NativeName("cef_string_userfree_utf16_free")
         void stringUserfreeUtf16Free(StringUtf16 str);
+        
+        @NativeName("cef_string_utf16_to_lower")
+        int stringUtf16ToLower(jnr.ffi.Pointer src, long srcLen, StringUtf16 output);
+        
+        @NativeName("cef_string_utf16_to_upper")
+        int stringUtf16ToUpper(jnr.ffi.Pointer src, long srcLen, StringUtf16 output);
         
         @NativeName("cef_get_xdisplay")
         XDisplay getXdisplay();
