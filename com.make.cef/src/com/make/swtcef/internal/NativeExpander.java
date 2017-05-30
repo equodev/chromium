@@ -49,6 +49,11 @@ public class NativeExpander {
 					}
 				}
 				System.out.println("Expanded CEF natives to " + cefPath);
+		
+				String java_home = System.getProperty("java.home");
+				if(isWindows7() && (java_home != null) && (!java_home.isEmpty())){
+					fixWin7Dll(cefPath + "\\" + bundleFolder);
+				}
 			}
 			return cefPath.resolve(bundleFolder).toString();
 		} catch (IOException e) {
@@ -56,7 +61,26 @@ public class NativeExpander {
 		}
 		return "";
 	}
+	
+	private static boolean isWindows7(){
+		return (System.getProperty("os.name").equalsIgnoreCase("Windows 7"));
+	}
 
+	private static void fixWin7Dll(String cefrustPath){
+		File f = new File(System.getProperty("java.home"));
+		f = new File(f, "bin");
+		f = new File(f, "msvcr120.dll");
+		if(f.exists()){
+			Path source = Paths.get(f.getAbsolutePath());
+			Path target = Paths.get(cefrustPath + "\\" + "msvcr120.dll");
+			try {
+				Files.copy(source, target);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}	
+		}
+	}
+	
 	private static void copy(Path cefPath, String filePath, InputStream is) throws IOException {
 		FileOutputStream os = null;
 
