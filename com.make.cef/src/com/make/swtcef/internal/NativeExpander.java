@@ -13,6 +13,9 @@ import java.util.Collections;
 import java.util.Properties;
 
 public class NativeExpander {
+	
+	private static final String JAVA_HOME = System.getProperty("java.home");
+	
 	public static String expand() {
 		Properties props = new Properties();
 		new Detector().detect(props, Collections.<String>emptyList());
@@ -50,9 +53,12 @@ public class NativeExpander {
 				}
 				System.out.println("Expanded CEF natives to " + cefPath);
 		
-				String java_home = System.getProperty("java.home");
-				if(isWindows7() && (java_home != null) && (!java_home.isEmpty())){
+				if(isWindows7() && (JAVA_HOME != null) && (!JAVA_HOME.isEmpty())){
 					fixWin7Dll(cefPath + "\\" + bundleFolder);
+				}
+				
+				if(System.getProperty(Detector.DETECTED_NAME).contains("linux")){
+					fixLinux(cefPath + System.getProperty("file.separator") + bundleFolder);
 				}
 			}
 			return cefPath.resolve(bundleFolder).toString();
@@ -62,12 +68,38 @@ public class NativeExpander {
 		return "";
 	}
 	
+	private static void fixLinux(String cefrustPath){
+		String targetPath = JAVA_HOME + System.getProperty("file.separator") + "bin";
+		File targetFile = new File(targetPath);
+		if(targetFile.exists() && targetFile.canWrite()){
+			copyPasteFileTo("icudtl.dat", cefrustPath, targetPath);
+			copyPasteFileTo("natives_blob.bin", cefrustPath, targetPath);
+		}
+	}
+
+	private static void copyPasteFileTo(String fileName, String sourcePath, String targetPath){
+		String originalFilePath = sourcePath + System.getProperty("file.separator") + fileName;
+		File file = new File(originalFilePath);
+		if(file.exists()){
+			Path source = Paths.get(file.getAbsolutePath());
+			Path target = Paths.get(targetPath + System.getProperty("file.separator") + fileName);
+			try {
+				Files.copy(source, target);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}	
+		}
+	}
+	
+	
+	
+	
 	private static boolean isWindows7(){
 		return (System.getProperty("os.name").equalsIgnoreCase("Windows 7"));
 	}
 
 	private static void fixWin7Dll(String cefrustPath){
-		File f = new File(System.getProperty("java.home"));
+		File f = new File(JAVA_HOME);
 		f = new File(f, "bin");
 		f = new File(f, "msvcr120.dll");
 		if(f.exists()){
