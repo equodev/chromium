@@ -9,19 +9,22 @@ import de.undercouch.gradle.tasks.download.Download
 // ./gradlew copyCef -Pos=linux
 
 ext.targetos = hasProperty('os') ? os : osdetector.os
-ext.fragmentDir = "com.make.cef.${targetos}.${osdetector.arch}/${targetos}-${osdetector.arch}"
+ext.targetarch = hasProperty('arch') ? arch : osdetector.arch
+ext.fragmentDir = "com.make.cef.${targetos}.${targetarch}/${targetos}-${targetarch}"
 ext.cefDir = "../cefrust/cef_${targetos}"
 
 println targetos
+println targetarch
 
 def cefFile() {
 	def variant = (buildType == 'release') ? '_minimal' : ''
 	def osname = (targetos == 'osx') ? 'macosx' : targetos
-	"cef_binary_${cefVersion}_${osname}64${variant}"
+	targetarch = (targetarch == 'x86') ? '32' : '64'
+	"cef_binary_${cefVersion}_${osname}${targetarch}${variant}"
 }
 
 task getCef(type: Download) {
-	src "http://opensource.spotify.com/cefbuilds/${cefFile()}.tar.bz2"
+	src "http://opensource.spotify.com/cefbuilds/${cefFile()}.tar.bz2"	
     dest buildDir
     onlyIfNewer true
 }
@@ -156,7 +159,7 @@ task buildSampleOsgi(type: GradleBuild) {
 
 task buildSampleE4(type: Exec) {
     if ('windows' == osdetector.os) {
-        commandLine 'cmd', '/C', 'mvnw -B verify -P sample', (gradle.startParameter.isOffline() ? '-o' : '-U')
+        commandLine 'cmd', '/C', 'mvnw -B clean verify -P sample', (gradle.startParameter.isOffline() ? '-o' : '-U')
     } else {
         executable './mvnw'
         args '-B', 'verify', '-P', 'sample', (gradle.startParameter.isOffline() ? '-o' : '-U')
@@ -170,4 +173,11 @@ task buildP2Repo(type: Exec) {
         executable './mvnw'
         args '-B', 'verify', '-P', 'p2', (gradle.startParameter.isOffline() ? '-o' : '-U')
     }
+}
+
+task copy(type: Copy) {
+   description 'Copies the resource directory to the target directory.'
+   from 'resources'
+   into 'target'
+   include('**/*.txt', '**/*.xml', '**/*.properties')
 }
