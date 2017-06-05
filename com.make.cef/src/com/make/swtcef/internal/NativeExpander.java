@@ -69,14 +69,18 @@ public class NativeExpander {
 	}
 	
 	private static void fixLinux(String cefrustPath){
-		copyPasteFileTo("icudtl.dat", cefrustPath, JAVA_HOME + System.getProperty("file.separator") + "bin");
-		copyPasteFileTo("natives_blob.bin", cefrustPath, JAVA_HOME + System.getProperty("file.separator") + "bin");
+		String targetPath = JAVA_HOME + System.getProperty("file.separator") + "bin";
+		File targetFile = new File(targetPath);
+		if(targetFile.exists() && targetFile.canWrite()){
+			copyPasteFileTo("icudtl.dat", cefrustPath, targetPath);
+			copyPasteFileTo("natives_blob.bin", cefrustPath, targetPath);
+		}
 	}
-	
+
 	private static void copyPasteFileTo(String fileName, String sourcePath, String targetPath){
 		String originalFilePath = sourcePath + System.getProperty("file.separator") + fileName;
 		File file = new File(originalFilePath);
-		if(file.exists() && file.canWrite()){
+		if(file.exists()){
 			Path source = Paths.get(file.getAbsolutePath());
 			Path target = Paths.get(targetPath + System.getProperty("file.separator") + fileName);
 			try {
@@ -85,7 +89,6 @@ public class NativeExpander {
 				e.printStackTrace();
 			}	
 		}
-		System.out.println("----------------");
 	}
 	
 	
