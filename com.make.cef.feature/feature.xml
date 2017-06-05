@@ -34,12 +34,34 @@
          version="0.0.0"
          fragment="true"
          unpack="false"/>
+		 
+	<plugin
+         id="com.make.cef.windows.x86"
+         os="win32"
+         ws="win32"
+         arch="x86_64"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         fragment="true"
+         unpack="false"/>
 
    <plugin
          id="com.make.cef.linux.x86_64"
          os="linux"
          ws="gtk"
          arch="x86_64"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         fragment="true"
+         unpack="false"/>
+		 
+	<plugin
+         id="com.make.cef.linux.x86"
+         os="linux"
+         ws="gtk"
+         arch="x32"
          download-size="0"
          install-size="0"
          version="0.0.0"

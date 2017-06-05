@@ -1,0 +1,3 @@
+windows-x86/*
+!windows-x86/*cefrust*
+!windows-x86/files.properties

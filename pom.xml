@@ -27,7 +27,9 @@
 	<modules>
 		<module>com.make.cef</module>
 		<module>com.make.cef.windows.x86_64</module>
+		<module>com.make.cef.windows.x86</module>
 		<module>com.make.cef.linux.x86_64</module>
+		<module>com.make.cef.linux.x86</module>
 		<module>com.make.cef.osx.x86_64</module>
 	</modules>
 
@@ -60,9 +62,19 @@
 							<arch>x86_64</arch>
 						</environment>
 						<environment>
+							<os>linux</os>
+							<ws>gtk</ws>
+							<arch>x86</arch>
+						</environment>
+						<environment>
 							<os>win32</os>
 							<ws>win32</ws>
 							<arch>x86_64</arch>
+						</environment>
+						<environment>
+							<os>win32</os>
+							<ws>win32</ws>
+							<arch>x86</arch>
 						</environment>
 						<environment>
 							<os>macosx</os>
