@@ -45,6 +45,15 @@ build.p2:
     paths:
     - com.make.cef.repository/target/repository
     
+build.sanpleE4:
+  stage: build
+  script:
+    - ./gradlew buildSampleE4 --no-daemon
+  artifacts:
+    name: ${CI_JOB_NAME}_${CI_PIPELINE_ID}
+    paths:
+    - com.make.cef.sample.e4.rcp/target/products/*.zip
+
 pages:
   image: alpine:3.5
   stage: deploy
