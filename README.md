@@ -4,7 +4,7 @@ A SWT widget embedding a cross platform **Chromium** Browser. It works on Window
 
 This new widget allows to develop modern web UIs inside a Java SWT or an Eclipse RCP application. It can be easily embedded in an Eclipse view, using the same API that is used with the other SWT browsers. 
 
-No more custom code for each platform, no more specific libraries installation for Linux, no more problems in Windows with IE, no more platform-dependant and browser-specific problems at all. This is a truly cross platform SWT Browser that runs seamlessly in all operating systems.
+No more custom code for each platform, no more installations of specific libraries for Linux, no more problems in Windows with IE, no more platform-dependant and browser-specific issues at all. This is a truly cross platform SWT Browser that runs seamlessly in all operating systems.
 
 It is based on and uses the CEF Framework (https://bitbucket.org/chromiumembedded/cef).
 
