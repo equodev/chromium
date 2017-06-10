@@ -28,4 +28,4 @@ We (**Make Technology**, http://www.wemaketechnology.com/) have agreed with the 
 
 ## Donations
 
-We need funding to complete this work and the **Eclipse Foundation** is accepting donations to make it happen as part of Eclipse and with the EPL. If you think your company is interested in and can help, please contact us (guillez at gmail, ned.twigg at diffplug.com, mikael.barbero at eclipse-foundation.org).
+We need funding to complete this work and the **Eclipse Foundation** is accepting donations to make it happen as part of Eclipse and with the EPL. If you think your company is interested in and can help, please contact us (guillez@gmail.com).
