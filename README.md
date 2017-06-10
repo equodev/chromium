@@ -15,8 +15,10 @@ For the time being you can get a sample application ready to run. Get the zip fo
 - [Download](https://github.com/maketechnology/cefswt/releases/download/v0.1-alpha/cef_rcp-win32.x86_64.zip) Demo for Windows
 - [Download](https://github.com/maketechnology/cefswt/releases/download/v0.1-alpha/cef_rcp-macosx.x86_64.zip) Demo for Mac
 - [Download](https://github.com/maketechnology/cefswt/releases/download/v0.1-alpha/cef_rcp-linux.x86_64.zip) Demo for Linux
-  - ⚠️ On Linux, your first launch will fail due to a bug on CEF. You can workaround this by copying `icudtl.dat`, `natives_blob.bin` and `snapshot_blob.bin` from `~/.swtcef/3.3029.1611.g44e39a8/linux-x86_64`folder to the `jre/bin` folder (e.g.: `/usr/lib/jvm/java-8-oracle/jre/bin/`). Those files should be siblings of the java executable file.
-  - This [link](https://bitbucket.org/chromiumembedded/cef/issues/1936/override-paths-dir_exe-dir_module-on-linux) describes the issue in more detail. There are also two PRs opened that require some effort to be merged and solve the problem.
+ 
+	- ⚠️ On Linux, your first launch will fail due to a bug on CEF. You can workaround this by copying `icudtl.dat`, `natives_blob.bin` and `snapshot_blob.bin` from `~/.swtcef/3.3029.1611.g44e39a8/linux-x86_64`folder to the `jre/bin` folder (e.g.: `/usr/lib/jvm/java-8-oracle/jre/bin/`). Those files should be siblings of the java executable file.
+
+	- This [link](https://bitbucket.org/chromiumembedded/cef/issues/1936/override-paths-dir_exe-dir_module-on-linux) describes the issue in more detail. There are also two PRs opened that require some effort to be merged and solve the problem.
 
 ## Status and Plan
 
