@@ -1,6 +1,6 @@
 # Chromium for SWT
 
-This is a SWT widget embedding **Chromium** Browser for Win Mac and Linux.
+This is a SWT widget embedding **Chromium** Browser for Windows, Mac OS and Linux.
 
 It uses CEF Framework (https://bitbucket.org/chromiumembedded/cef)
 
@@ -17,8 +17,8 @@ For now you can get a sample application ready to run. Get the zip for your plat
 
 For now it just display a URL, but we a have a plan to flesh out the full SWT Browser API, including javascript support.
 
-We (*Make Technology*, http://www.wemaketechnology.com/) have agreed to do all this work and contribute it to the Eclipse Foundation under the EPL, but we need your support!
+We (**Make Technology**, http://www.wemaketechnology.com/) have agreed to do all this work and contribute it to the **Eclipse Foundation** under the EPL, but we need your support!
 
 ## Donations
 
-We need funding to complete this work and *Eclipse Foundation* is accepting donations to make it happen as part of Eclipse and EPL. If you think your company is interested and can help, contact us (guillez at gmail) and we will put you in contact with _Eclipse Foundation_.
+We need funding to complete this work and **Eclipse Foundation** is accepting donations to make it happen as part of Eclipse and EPL. If you think your company is interested and can help, contact us (guillez at gmail) and we will put you in contact with _Eclipse Foundation_.
