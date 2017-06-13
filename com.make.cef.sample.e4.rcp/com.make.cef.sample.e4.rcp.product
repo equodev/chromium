@@ -24,6 +24,7 @@
       <plugin id="com.ibm.icu"/>
       <plugin id="com.make.cef"/>
       <plugin id="com.make.cef.windows.x86_64" fragment="true"/>
+	  <plugin id="com.make.cef.windows.x86" fragment="true"/>
       <plugin id="com.make.cef.linux.x86_64" fragment="true"/>
       <plugin id="com.make.cef.osx.x86_64" fragment="true"/>
       <plugin id="com.make.cef.sample.e4"/>

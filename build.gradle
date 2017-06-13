@@ -11,7 +11,7 @@ import de.undercouch.gradle.tasks.download.Download
 ext.targetos = hasProperty('os') ? os : osdetector.os
 ext.targetarch = hasProperty('arch') ? arch : osdetector.arch
 ext.fragmentDir = "com.make.cef.${targetos}.${targetarch}/${targetos}-${targetarch}"
-ext.cefDir = "../cefrust/cef_${targetos}"
+ext.cefDir = (targetarch == 'x86_64') ? "../cefrust/cef_${targetos}64" : "../cefrust/cef_${targetos}32"
 
 println targetos
 println targetarch
@@ -19,8 +19,8 @@ println targetarch
 def cefFile() {
 	def variant = (buildType == 'release') ? '_minimal' : ''
 	def osname = (targetos == 'osx') ? 'macosx' : targetos
-	targetarch = (targetarch == 'x86') ? '32' : '64'
-	"cef_binary_${cefVersion}_${osname}${targetarch}${variant}"
+	def arch = (targetarch == 'x86_64') ? '64' : '32'
+	"cef_binary_${cefVersion}_${osname}${arch}${variant}"
 }
 
 task getCef(type: Download) {
@@ -44,7 +44,13 @@ task buildCefRustExe(dependsOn: getCefAndUnzip, type: Exec) {
         environment("RUSTFLAGS", "-C link-arg=/SUBSYSTEM:WINDOWS -C link-arg=/ENTRY:mainCRTStartup");
 	}
     workingDir '../cefrust'
+
 	commandLine 'cargo', 'build', "--bin", "cefrust_subp", "--${buildType}"
+    def command = commandLine
+	if(targetarch == 'x86'){
+		command.add("--target=i686-pc-windows-msvc")
+	}
+	commandLine = command
 }
 
 task genCefRustBinding(dependsOn: getCefAndUnzip, type: Exec) {
@@ -53,8 +59,14 @@ task genCefRustBinding(dependsOn: getCefAndUnzip, type: Exec) {
 }
 
 task buildCefRustLib(dependsOn: getCefAndUnzip, type: Exec) {
-	workingDir '../cefrust/cefrustlib'
+	workingDir '../cefrust/cefrustlib'	
+
 	commandLine 'cargo', 'build', "--${buildType}"
+    def command = commandLine
+	if(targetarch == 'x86'){
+		command.add("--target=i686-pc-windows-msvc")
+	}
+	commandLine = command
 }
 
 task buildCefRust(dependsOn: [buildCefRustExe, buildCefRustLib]) {

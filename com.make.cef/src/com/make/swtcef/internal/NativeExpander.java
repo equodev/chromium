@@ -85,12 +85,8 @@ public class NativeExpander {
 				e.printStackTrace();
 			}	
 		}
-		System.out.println("----------------");
 	}
-	
-	
-	
-	
+
 	private static boolean isWindows7(){
 		return (System.getProperty("os.name").equalsIgnoreCase("Windows 7"));
 	}

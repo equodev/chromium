@@ -115,7 +115,7 @@ class Detector {
             return "x86_64";
         }
         if (value.matches("^(x8632|x86|i[3-6]86|ia32|x32)$")) {
-            return "x86_32";
+            return "x86";
         }
         if (value.matches("^(ia64|itanium64)$")) {
             return "itanium_64";

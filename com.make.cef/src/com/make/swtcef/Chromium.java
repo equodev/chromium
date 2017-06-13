@@ -427,7 +427,7 @@ public class Chromium extends Composite {
 		if (browsers.get() == 0) {
 			// System.out.println("shutting down CEF");
 			// TODO delete appP, free object on rust
-			// lib.shutdown();
+			// lib.shutdownCEF();
 			//appP = null;
 			//app = null;
 			//browserProcessHandler = null;
@@ -464,7 +464,7 @@ public class Chromium extends Composite {
 						public void run() {
 							DEBUG_CALLBACK("shutting down CEF");
 							// TODO delete appP
-							lib.shutdown();
+							lib.shutdownCEF();
 							lib = null;
 						};
 					});
@@ -508,6 +508,6 @@ public class Chromium extends Composite {
 
 		void try_close_browser(Pointer browser);
 
-		void shutdown();
+		void shutdownCEF();
 	}
 }
