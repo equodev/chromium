@@ -26,6 +26,8 @@ For now, it just loads and displays a URL, but we have a plan to flesh out the f
 
 We (**Make Technology**, http://www.wemaketechnology.com/) have agreed with the **Eclipse Foundation** to do all this work and contribute it under the EPL, but we need your support to make this huge project happen!
 
+https://medium.com/@mikael.barbero/chromium-eclipse-swt-integration-c61f416e97d1
+
 ## Donations
 
 We need funding to complete this work and the **Eclipse Foundation** is accepting donations to make it happen as part of Eclipse and with the EPL. If you think your company is interested in and can help, please contact us (guillez@gmail.com).
