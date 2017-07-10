@@ -84,15 +84,12 @@ public class NativeExpander {
 			Path source = Paths.get(file.getAbsolutePath());
 			Path target = Paths.get(targetPath + System.getProperty("file.separator") + fileName);
 			try {
-				Files.copy(source, target);
+				Files.copy(source, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}	
 		}
 	}
-	
-	
-	
 	
 	private static boolean isWindows7(){
 		return (System.getProperty("os.name").equalsIgnoreCase("Windows 7"));

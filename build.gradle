@@ -82,6 +82,12 @@ task copyCefRust(type: Copy) {
             include 'cefrust_subp*'
         } 
     }
+    if ('linux' == targetos) {
+        from("../cefrust") {
+            include 'libstdc++.so'
+            rename { 'libstdc++.so.6' }
+        }
+    }
     from("../cefrust/cefrustlib/target/${buildType}") {
         include '*cefrustlib*'
     }
@@ -154,9 +160,18 @@ task buildSampleOsgi(type: GradleBuild) {
     tasks = ['build', 'cleanOsgiRuntime', 'createOsgiRuntime']
 }
 
+task cleanMvn(type: Exec) {
+    if ('windows' == osdetector.os) {
+        commandLine 'cmd', '/C', 'mvnw -B clean -Psample,p2 -Dtycho.mode=maven', (gradle.startParameter.isOffline() ? '-o' : '-U')
+    } else {
+        executable './mvnw'
+        args '-B', 'clean', '-Psample,p2', '-Dtycho.mode=maven', (gradle.startParameter.isOffline() ? '-o' : '-U')
+    }
+}
+
 task buildSampleE4(type: Exec) {
     if ('windows' == osdetector.os) {
-        commandLine 'cmd', '/C', 'mvnw -B verify -P sample', (gradle.startParameter.isOffline() ? '-o' : '-U')
+        commandLine 'cmd', '/C', 'mvnw -B verify -Psample', (gradle.startParameter.isOffline() ? '-o' : '-U')
     } else {
         executable './mvnw'
         args '-B', 'verify', '-P', 'sample', (gradle.startParameter.isOffline() ? '-o' : '-U')
@@ -165,7 +180,7 @@ task buildSampleE4(type: Exec) {
 
 task buildP2Repo(type: Exec) {
     if ('windows' == osdetector.os) {
-        commandLine 'cmd', '/C', 'mvnw -B verify -P p2', (gradle.startParameter.isOffline() ? '-o' : '-U')
+        commandLine 'cmd', '/C', 'mvnw -B verify -Pp2', (gradle.startParameter.isOffline() ? '-o' : '-U')
     } else {
         executable './mvnw'
         args '-B', 'verify', '-P', 'p2', (gradle.startParameter.isOffline() ? '-o' : '-U')
