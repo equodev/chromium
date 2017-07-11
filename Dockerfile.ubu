@@ -2,7 +2,7 @@
 FROM ubuntu:14.04
 
 RUN apt-get update && apt-get install -y \
-  curl gcc libgtk2.0-dev libxss-dev libgconf2-dev unzip xvfb
+  curl gcc libgtk2.0-dev libxss-dev libgconf2-dev
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 ENV PATH=$PATH:/root/.cargo/bin
@@ -11,6 +11,9 @@ RUN apt-get install -y software-properties-common python-software-properties \
   && add-apt-repository ppa:openjdk-r/ppa -y \
   && apt-get update && apt-get install -y openjdk-8-jdk
 ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 
+
+# to run
+RUN apt-get install -y xorg xvfb dbus-x11 xfonts-100dpi xfonts-75dpi xfonts-cyrillic unzip
 
 COPY cefswt/gradle* /src/cefswt/
 COPY cefswt/gradle /src/cefswt/gradle
@@ -30,3 +33,4 @@ RUN ./gradlew buildCefRust --stacktrace
 
 RUN ./gradlew buildSampleE4 --stacktrace
 
+#RUN Xvfb :1 -screen 0 1024x768x24 +extension GLX +render -noreset >> xsession.log 2>&1 &

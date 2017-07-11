@@ -4,6 +4,8 @@ build/
 **/bin/
 !cefrust/src/bin
 cefrust/cef_*
+cefrust/target/
+cefrust/**/target/
 **/build/
 **/Dockerfile
 **/.git
