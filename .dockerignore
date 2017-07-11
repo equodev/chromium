@@ -1,0 +1,13 @@
+**/.vscode
+**/.gradle/
+build/
+**/bin/
+!cefrust/src/bin
+cefrust/cef_*
+**/build/
+**/Dockerfile
+**/.git
+cefswt/**/target/
+cefswt/**/*-x86_64/*
+!cefswt/**/*-x86_64/*cefrust*
+!cefswt/**/*-x86_64/files.properties

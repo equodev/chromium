@@ -1,16 +1,16 @@
 # This is produce shared lib and executable linked to older glibc(2.12) and compatible with older linux distros
 FROM ubuntu:14.04
 
-RUN apt-get update && apt-get install -y openjdk-7-jdk curl gcc libgtk2.0-dev libxss-dev libgconf2-dev unzip xvfb
+RUN apt-get update && apt-get install -y \
+  curl gcc libgtk2.0-dev libxss-dev libgconf2-dev unzip xvfb
+
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 ENV PATH=$PATH:/root/.cargo/bin
 
 RUN apt-get install -y software-properties-common python-software-properties \
   && add-apt-repository ppa:openjdk-r/ppa -y \
-  && apt-get update \
-  && apt-get install -y openjdk-8-jdk
-
-ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+  && apt-get update && apt-get install -y openjdk-8-jdk
+ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64 
 
 COPY cefswt/gradle* /src/cefswt/
 COPY cefswt/gradle /src/cefswt/gradle
@@ -23,7 +23,6 @@ COPY cefswt/build.gradle /src/cefswt/
 COPY cefrust/Cargo* /src/cefrust/
 RUN ./gradlew getCefAndUnzip
 
-#change_order_first rust
 COPY cefrust /src/cefrust
 COPY cefswt /src/cefswt
 
