@@ -85,7 +85,7 @@ task copyCefRust(type: Copy) {
     if ('linux' == targetos) {
         from("../cefrust") {
             include 'libstdc++.so'
-            rename { 'libstdc++.so.6' }
+            rename { 'libstdcppcef.so' }
         }
     }
     from("../cefrust/cefrustlib/target/${buildType}") {
@@ -110,12 +110,40 @@ task copyCef(dependsOn: getCefAndUnzip, type: Copy) {
     into fragmentDir
 }
 
-task stripSymbols(type: Exec) {
+task stripCefSymbols(type: Exec) {
 	if ('linux' == osdetector.os && 'linux' == targetos) {
-		copyCef.finalizedBy stripSymbols
+		copyCef.finalizedBy stripCefSymbols
 	}
 	workingDir fragmentDir
 	commandLine 'strip', 'libcef.so'
+}
+
+task stripCefRust(type: Exec) {
+	if ('linux' == osdetector.os && 'linux' == targetos) {
+		copyCefRust.finalizedBy stripCefRust
+	}
+	workingDir fragmentDir
+	commandLine 'strip', 'libcefrustlib.so', 'cefrust_subp'
+}
+
+task fixCefStdLink(type: Exec) {
+    workingDir fragmentDir
+	commandLine "${rootProject.projectDir}/patchelf", '--replace-needed', 'libstdc++.so.6', 'libstdcppcef.so', 'libcef.so'
+}
+
+task fixCefRpath(type: Exec) {
+    workingDir fragmentDir
+	commandLine "${rootProject.projectDir}/patchelf", '--set-rpath', '$ORIGIN', '--force-rpath', 'libcef.so'
+}
+
+task fixCefRustLibRpath(type: Exec) {
+    workingDir fragmentDir
+	commandLine "${rootProject.projectDir}/patchelf", '--set-rpath', '$ORIGIN', '--force-rpath', 'libcefrustlib.so'
+}
+
+task fixCefRustExeRpath(type: Exec) {
+    workingDir fragmentDir
+	commandLine "${rootProject.projectDir}/patchelf", '--set-rpath', '$ORIGIN', '--force-rpath', 'cefrust_subp'
 }
 
 task fixLibFrameworkLink(type: Exec) {
@@ -128,6 +156,18 @@ task fixExeFrameworkLink(type: Exec) {
     workingDir fragmentDir
     executable 'install_name_tool'
     args '-change', "@rpath/Frameworks/Chromium Embedded Framework.framework/Chromium Embedded Framework", "@loader_path/Chromium Embedded Framework.framework/Chromium Embedded Framework", "libcefrustlib.dylib"
+}
+
+task fixLibLink(dependsOn: [fixCefRustExeRpath, fixCefRustLibRpath]) {
+    if ('linux' == osdetector.os && 'linux' == targetos) {
+        stripCefRust.finalizedBy fixLibLink
+    }
+}
+
+task fixCefLink(dependsOn: [fixCefStdLink, fixCefRpath]) {
+    if ('linux' == osdetector.os && 'linux' == targetos) {
+        stripCefSymbols.finalizedBy fixCefLink
+    }
 }
 
 task fixFrameworkLink(dependsOn: [fixLibFrameworkLink, fixExeFrameworkLink]) {

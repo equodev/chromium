@@ -1,6 +1,7 @@
 **/.vscode
 **/.gradle/
 build/
+!build/cef_binary*.tar.bz2
 **/bin/
 !cefrust/src/bin
 cefrust/cef_*

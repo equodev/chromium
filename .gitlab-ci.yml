@@ -13,7 +13,8 @@ cache:
 cef.linux:
   stage: get
   before_script:
-    - apk add --no-cache binutils
+    - apk add --no-cache binutils patchelf
+    - cp -f /usr/bin/patchelf .
   script:
     - ./gradlew copyCef -Pos=linux --no-daemon
   artifacts:
@@ -71,7 +72,6 @@ pages:
     paths:
     - public
     expire_in: 4 weeks
-  when: always
   only:
   - master
-  - "3029"
+  - centos6
