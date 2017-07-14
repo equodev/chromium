@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <application:Application xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:application="http://www.eclipse.org/ui/2010/UIModel/application" xmlns:basic="http://www.eclipse.org/ui/2010/UIModel/application/ui/basic" xmi:id="_c3AF0MjYEeSyMNYR5xypkQ" elementId="org.eclipse.e4.application" bindingContexts="_c3AF2cjYEeSyMNYR5xypkQ">
-  <children xsi:type="basic:TrimmedWindow" xmi:id="_c3AF0cjYEeSyMNYR5xypkQ" elementId="org.eclipse.e4.window.main" label="Chromium E4 Application" x="100" y="100" width="1280" height="750">
+  <children xsi:type="basic:TrimmedWindow" xmi:id="_c3AF0cjYEeSyMNYR5xypkQ" elementId="org.eclipse.e4.window.main" label="Chromium E4 Application" x="10" y="10" width="1024" height="720">
     <children xsi:type="basic:PartSashContainer" xmi:id="_T-Hp4OmlEeaJv4eqYZaS-A" elementId="com.make.cef.sample.e4.partsashcontainer.0" horizontal="true">
-      <children xsi:type="basic:PartStack" xmi:id="_pDv_0OmlEeaJv4eqYZaS-A" elementId="com.make.cef.sample.e4.partstack.0" containerData="80">
-        <children xsi:type="basic:Part" xmi:id="_2a18wOmlEeaJv4eqYZaS-A" elementId="com.make.cef.sample.e4.part.browser" containerData="" contributionURI="bundleclass://com.make.cef.sample.e4/com.make.cef.sample.e4.CefPart" label="Chromium"/>
+      <children xsi:type="basic:PartStack" xmi:id="_pDv_0OmlEeaJv4eqYZaS-A" elementId="com.make.cef.sample.e4.partstack.0" containerData="85">
+        <children xsi:type="basic:Part" xmi:id="_2a18wOmlEeaJv4eqYZaS-A" elementId="com.make.cef.sample.e4.part.browser" containerData="" contributionURI="bundleclass://com.make.cef.sample.e4/com.make.cef.sample.e4.CefPart" label="Chromium" closeable="true"/>
       </children>
-      <children xsi:type="basic:Part" xmi:id="_aVEvcOmmEeaJv4eqYZaS-A" elementId="com.make.cef.sample.e4.part.controls" containerData="20" label="Controls"/>
+      <children xsi:type="basic:Part" xmi:id="_aVEvcOmmEeaJv4eqYZaS-A" elementId="com.make.cef.sample.e4.part.controls" containerData="15" contributionURI="bundleclass://com.make.cef.sample.e4/com.make.cef.sample.e4.ControlsPart" label="Controls"/>
     </children>
   </children>
   <rootContext xmi:id="_c3AF2cjYEeSyMNYR5xypkQ" elementId="org.eclipse.ui.contexts.dialogAndWindow" name="In Dialog and Windows">

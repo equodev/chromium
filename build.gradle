@@ -44,6 +44,27 @@ task buildCefRustExe(dependsOn: getCefAndUnzip, type: Exec) {
 	commandLine 'cargo', 'build', "--bin", "cefrust_subp", "--${buildType}"
 }
 
+task copyHeaders(type: Copy) {
+    into '../rubyffi/cef/include'
+    from("${cefDir}/include") {
+        include 'base/'
+        include 'capi/'
+        include 'internal/'
+    }
+    mustRunAfter getCefAndUnzip
+}
+
+task genCefJavaBinding(dependsOn: [getCefAndUnzip, copyHeaders], type: Exec) {
+    workingDir '../rubyffi'
+    commandLine 'rake'
+}
+
+task copyJavaBinding(type: Copy) {
+    genCefJavaBinding.finalizedBy copyJavaBinding
+    from '../rubyffi/output'
+    into 'com.make.cefswt/'
+}
+
 task genCefRustBinding(dependsOn: getCefAndUnzip, type: Exec) {
     workingDir '../cefrust'
     commandLine 'cargo', 'build', "--${buildType}", "--features", "gen"
