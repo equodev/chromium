@@ -41,7 +41,10 @@ task buildCefRustExe(dependsOn: getCefAndUnzip, type: Exec) {
         environment("RUSTFLAGS", "-C link-arg=/SUBSYSTEM:WINDOWS -C link-arg=/ENTRY:mainCRTStartup");
 	}
     workingDir '../cefrust'
-	commandLine 'cargo', 'build', "--bin", "cefrust_subp", "--${buildType}"
+    if (buildType == 'release')
+	    commandLine 'cargo', 'build', "--bin", "cefrust_subp", "--${buildType}"
+    else
+        commandLine 'cargo', 'build', "--bin", "cefrust_subp"
 }
 
 task copyHeaders(type: Copy) {
@@ -67,12 +70,15 @@ task copyJavaBinding(type: Copy) {
 
 task genCefRustBinding(dependsOn: getCefAndUnzip, type: Exec) {
     workingDir '../cefrust'
-    commandLine 'cargo', 'build', "--${buildType}", "--features", "gen"
+    commandLine 'cargo', 'build', "--features", "gen"
 }
 
 task buildCefRustLib(dependsOn: getCefAndUnzip, type: Exec) {
 	workingDir '../cefrust/cefrustlib'
-	commandLine 'cargo', 'build', "--${buildType}"
+    if (buildType == 'release')
+	    commandLine 'cargo', 'build', "--${buildType}"
+    else
+        commandLine 'cargo', 'build'
 }
 
 task buildCefRust(dependsOn: [buildCefRustExe, buildCefRustLib]) {
@@ -132,17 +138,15 @@ task copyCef(dependsOn: getCefAndUnzip, type: Copy) {
 }
 
 task stripCefSymbols(type: Exec) {
-	if ('linux' == osdetector.os && 'linux' == targetos) {
-		copyCef.finalizedBy stripCefSymbols
-	}
+	copyCef.finalizedBy stripCefSymbols
+	enabled = ('linux' == osdetector.os && 'linux' == targetos && buildType != 'debug')
 	workingDir fragmentDir
 	commandLine 'strip', 'libcef.so'
 }
 
 task stripCefRust(type: Exec) {
-	if ('linux' == osdetector.os && 'linux' == targetos) {
-		copyCefRust.finalizedBy stripCefRust
-	}
+	copyCefRust.finalizedBy stripCefRust
+	enabled = ('linux' == osdetector.os && 'linux' == targetos && buildType != 'debug')
 	workingDir fragmentDir
 	commandLine 'strip', 'libcefrustlib.so', 'cefrust_subp'
 }
@@ -199,6 +203,21 @@ task fixFrameworkLink(dependsOn: [fixLibFrameworkLink, fixExeFrameworkLink]) {
 
 task copyNatives(dependsOn: [copyCef, copyCefRust]) {
 	buildCefRust.finalizedBy copyNatives
+	def libs = fileTree(dir: fragmentDir, exclude: ['files.properties', 'checksum'])
+	inputs.files(libs)
+    outputs.file("$copyCef.destinationDir/checksum")
+    
+    doLast {
+        // checksum
+        def output = libs.files.sort()
+        def fileStreams = new Vector<InputStream>()
+        output.collect(fileStreams) { it.newInputStream() }
+        def seqStream = new SequenceInputStream(fileStreams.elements())
+        def checksum = org.apache.commons.codec.digest.DigestUtils.md5Hex(seqStream)
+
+        def f = new File(copyCef.destinationDir, 'checksum')
+        f.text = checksum
+    }
 }
 
 task writeProps(dependsOn: copyNatives, type: WriteProperties) {
@@ -207,8 +226,12 @@ task writeProps(dependsOn: copyNatives, type: WriteProperties) {
     props.put('cefVersion', cefVersion)
     doFirst {
         def parent = file(fragmentDir).toPath()
-        def output = fileTree(dir: fragmentDir, exclude: 'files.properties').files
-        output.collect { it.toPath() }.each { props.put(it.getParent().fileName.toString() +"/"+ it.fileName.toString(), it.subpath(parent.nameCount-1, it.nameCount).toString().replace("\\", "/")) }
+        def output = fileTree(dir: fragmentDir, exclude: 'files.properties').files.sort()
+
+        output.collect { it.toPath() }.eachWithIndex { path, i ->
+            props.put(i.toString().padLeft(2, '0'), path.subpath(parent.nameCount-1, path.nameCount).toString().replace("\\", "/")) 
+        }
+        props.put('checksum', new File(copyCef.destinationDir, 'checksum').text)
         properties props
     }
     //properties props

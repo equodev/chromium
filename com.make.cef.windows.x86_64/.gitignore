@@ -1,3 +1,4 @@
 windows-x86_64/*
 !windows-x86_64/*cefrust*
 !windows-x86_64/files.properties
+!windows-x86_64/checksum
