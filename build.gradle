@@ -41,17 +41,44 @@ task buildCefRustExe(dependsOn: getCefAndUnzip, type: Exec) {
         environment("RUSTFLAGS", "-C link-arg=/SUBSYSTEM:WINDOWS -C link-arg=/ENTRY:mainCRTStartup");
 	}
     workingDir '../cefrust'
-	commandLine 'cargo', 'build', "--bin", "cefrust_subp", "--${buildType}"
+    if (buildType == 'release')
+	    commandLine 'cargo', 'build', "--bin", "cefrust_subp", "--${buildType}"
+    else
+        commandLine 'cargo', 'build', "--bin", "cefrust_subp"
+}
+
+task copyHeaders(type: Copy) {
+    into '../rubyffi/cef/include'
+    from("${cefDir}/include") {
+        include 'base/'
+        include 'capi/'
+        include 'internal/'
+    }
+    mustRunAfter getCefAndUnzip
+}
+
+task genCefJavaBinding(dependsOn: [getCefAndUnzip, copyHeaders], type: Exec) {
+    workingDir '../rubyffi'
+    commandLine 'rake'
+}
+
+task copyJavaBinding(type: Copy) {
+    genCefJavaBinding.finalizedBy copyJavaBinding
+    from '../rubyffi/output'
+    into 'com.make.cefswt/'
 }
 
 task genCefRustBinding(dependsOn: getCefAndUnzip, type: Exec) {
     workingDir '../cefrust'
-    commandLine 'cargo', 'build', "--${buildType}", "--features", "gen"
+    commandLine 'cargo', 'build', "--features", "gen"
 }
 
 task buildCefRustLib(dependsOn: getCefAndUnzip, type: Exec) {
 	workingDir '../cefrust/cefrustlib'
-	commandLine 'cargo', 'build', "--${buildType}"
+    if (buildType == 'release')
+	    commandLine 'cargo', 'build', '--lib', "--${buildType}"
+    else
+        commandLine 'cargo', 'build', '--lib'
 }
 
 task buildCefRust(dependsOn: [buildCefRustExe, buildCefRustLib]) {
@@ -82,6 +109,12 @@ task copyCefRust(type: Copy) {
             include 'cefrust_subp*'
         } 
     }
+    if ('linux' == targetos) {
+        from("../cefrust") {
+            include 'libstdc++.so'
+            rename { 'libstdcppcef.so' }
+        }
+    }
     from("../cefrust/cefrustlib/target/${buildType}") {
         include '*cefrustlib*'
     }
@@ -104,12 +137,38 @@ task copyCef(dependsOn: getCefAndUnzip, type: Copy) {
     into fragmentDir
 }
 
-task stripSymbols(type: Exec) {
-	if ('linux' == osdetector.os && 'linux' == targetos) {
-		copyCef.finalizedBy stripSymbols
-	}
+task stripCefSymbols(type: Exec) {
+	copyCef.finalizedBy stripCefSymbols
+	enabled = ('linux' == osdetector.os && 'linux' == targetos && buildType != 'debug')
 	workingDir fragmentDir
 	commandLine 'strip', 'libcef.so'
+}
+
+task stripCefRust(type: Exec) {
+	copyCefRust.finalizedBy stripCefRust
+	enabled = ('linux' == osdetector.os && 'linux' == targetos && buildType != 'debug')
+	workingDir fragmentDir
+	commandLine 'strip', 'libcefrustlib.so', 'cefrust_subp'
+}
+
+task fixCefStdLink(type: Exec) {
+    workingDir fragmentDir
+	commandLine "${rootProject.projectDir}/patchelf", '--replace-needed', 'libstdc++.so.6', 'libstdcppcef.so', 'libcef.so'
+}
+
+task fixCefRpath(type: Exec) {
+    workingDir fragmentDir
+	commandLine "${rootProject.projectDir}/patchelf", '--set-rpath', '$ORIGIN', '--force-rpath', 'libcef.so'
+}
+
+task fixCefRustLibRpath(type: Exec) {
+    workingDir fragmentDir
+	commandLine "${rootProject.projectDir}/patchelf", '--set-rpath', '$ORIGIN', '--force-rpath', 'libcefrustlib.so'
+}
+
+task fixCefRustExeRpath(type: Exec) {
+    workingDir fragmentDir
+	commandLine "${rootProject.projectDir}/patchelf", '--set-rpath', '$ORIGIN', '--force-rpath', 'cefrust_subp'
 }
 
 task fixLibFrameworkLink(type: Exec) {
@@ -124,6 +183,18 @@ task fixExeFrameworkLink(type: Exec) {
     args '-change', "@rpath/Frameworks/Chromium Embedded Framework.framework/Chromium Embedded Framework", "@loader_path/Chromium Embedded Framework.framework/Chromium Embedded Framework", "libcefrustlib.dylib"
 }
 
+task fixLibLink(dependsOn: [fixCefRustExeRpath, fixCefRustLibRpath]) {
+    if ('linux' == osdetector.os && 'linux' == targetos) {
+        stripCefRust.finalizedBy fixLibLink
+    }
+}
+
+task fixCefLink(dependsOn: [fixCefStdLink, fixCefRpath]) {
+    if ('linux' == osdetector.os && 'linux' == targetos) {
+        stripCefSymbols.finalizedBy fixCefLink
+    }
+}
+
 task fixFrameworkLink(dependsOn: [fixLibFrameworkLink, fixExeFrameworkLink]) {
     if ('osx' == osdetector.os && 'osx' == targetos) {
         copyCefRust.finalizedBy fixFrameworkLink
@@ -132,6 +203,21 @@ task fixFrameworkLink(dependsOn: [fixLibFrameworkLink, fixExeFrameworkLink]) {
 
 task copyNatives(dependsOn: [copyCef, copyCefRust]) {
 	buildCefRust.finalizedBy copyNatives
+	def libs = fileTree(dir: fragmentDir, exclude: ['files.properties', 'checksum'])
+	inputs.files(libs)
+    outputs.file("$copyCef.destinationDir/checksum")
+    
+    doLast {
+        // checksum
+        def output = libs.files.sort()
+        def fileStreams = new Vector<InputStream>()
+        output.collect(fileStreams) { it.newInputStream() }
+        def seqStream = new SequenceInputStream(fileStreams.elements())
+        def checksum = org.apache.commons.codec.digest.DigestUtils.md5Hex(seqStream)
+
+        def f = new File(copyCef.destinationDir, 'checksum')
+        f.text = checksum
+    }
 }
 
 task writeProps(dependsOn: copyNatives, type: WriteProperties) {
@@ -140,8 +226,12 @@ task writeProps(dependsOn: copyNatives, type: WriteProperties) {
     props.put('cefVersion', cefVersion)
     doFirst {
         def parent = file(fragmentDir).toPath()
-        def output = fileTree(dir: fragmentDir, exclude: 'files.properties').files
-        output.collect { it.toPath() }.each { props.put(it.getParent().fileName.toString() +"/"+ it.fileName.toString(), it.subpath(parent.nameCount-1, it.nameCount).toString().replace("\\", "/")) }
+        def output = fileTree(dir: fragmentDir, exclude: 'files.properties').files.sort()
+
+        output.collect { it.toPath() }.eachWithIndex { path, i ->
+            props.put(i.toString().padLeft(2, '0'), path.subpath(parent.nameCount-1, path.nameCount).toString().replace("\\", "/")) 
+        }
+        props.put('checksum', new File(copyCef.destinationDir, 'checksum').text)
         properties props
     }
     //properties props
@@ -154,9 +244,18 @@ task buildSampleOsgi(type: GradleBuild) {
     tasks = ['build', 'cleanOsgiRuntime', 'createOsgiRuntime']
 }
 
+task cleanMvn(type: Exec) {
+    if ('windows' == osdetector.os) {
+        commandLine 'cmd', '/C', 'mvnw -B clean -Psample,p2 -Dtycho.mode=maven', (gradle.startParameter.isOffline() ? '-o' : '-U')
+    } else {
+        executable './mvnw'
+        args '-B', 'clean', '-Psample,p2', '-Dtycho.mode=maven', (gradle.startParameter.isOffline() ? '-o' : '-U')
+    }
+}
+
 task buildSampleE4(type: Exec) {
     if ('windows' == osdetector.os) {
-        commandLine 'cmd', '/C', 'mvnw -B verify -P sample', (gradle.startParameter.isOffline() ? '-o' : '-U')
+        commandLine 'cmd', '/C', 'mvnw -B verify -Psample', (gradle.startParameter.isOffline() ? '-o' : '-U')
     } else {
         executable './mvnw'
         args '-B', 'verify', '-P', 'sample', (gradle.startParameter.isOffline() ? '-o' : '-U')
@@ -165,7 +264,7 @@ task buildSampleE4(type: Exec) {
 
 task buildP2Repo(type: Exec) {
     if ('windows' == osdetector.os) {
-        commandLine 'cmd', '/C', 'mvnw -B verify -P p2', (gradle.startParameter.isOffline() ? '-o' : '-U')
+        commandLine 'cmd', '/C', 'mvnw -B verify -Pp2', (gradle.startParameter.isOffline() ? '-o' : '-U')
     } else {
         executable './mvnw'
         args '-B', 'verify', '-P', 'p2', (gradle.startParameter.isOffline() ? '-o' : '-U')

@@ -19,6 +19,7 @@ import org.eclipse.e4.ui.di.Focus;
 
 public class CefPart {
 	private Chromium browser;
+	private Text text;
 
 	@Inject
 	public CefPart() {
@@ -32,7 +33,7 @@ public class CefPart {
 		Composite composite = new Composite(parent, SWT.NONE);
 		composite.setLayout(new GridLayout(2, false));
 		
-		final Text text = new Text(composite, SWT.BORDER | SWT.SEARCH);
+		text = new Text(composite, SWT.BORDER | SWT.SEARCH);
 		text.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		
 		final Button ok = new Button(composite, SWT.PUSH);
@@ -41,7 +42,7 @@ public class CefPart {
 		browser = new Chromium(composite, SWT.NONE);
 //		browser = new Chromium(parent, SWT.NONE);
 		browser.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
-		browser.setUrl("about:gpu");
+		setUrl("about:gpu");
 
 		ok.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -51,17 +52,21 @@ public class CefPart {
 		});
 	}
 	
-	
 	@PreDestroy
 	public void preDestroy() {
-		System.err.println("part preDestroy");
+		System.out.println("part preDestroy");
 	}
 	
 	
 	@Focus
 	public void onFocus() {
-		System.err.println("part onfocus");
+//		System.out.println("part onfocus");
 //		browser.setFocus();
+	}
+
+	public void setUrl(String url) {
+		text.setText(url);
+		browser.setUrl(url);
 	}
 	
 }

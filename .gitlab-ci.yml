@@ -11,9 +11,11 @@ cache:
   - /root/.gradle/
 
 cef.linux:
+  image: openjdk:8-jdk
   stage: get
   before_script:
-    - apk add --no-cache binutils
+    - apt-get update -y && apt-get install binutils
+    - chmod +x ./patchelf
   script:
     - ./gradlew copyCef -Pos=linux --no-daemon
   artifacts:
@@ -71,7 +73,6 @@ pages:
     paths:
     - public
     expire_in: 4 weeks
-  when: always
   only:
   - master
-  - "3029"
+  - centos6

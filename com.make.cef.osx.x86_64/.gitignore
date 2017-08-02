@@ -1,3 +1,4 @@
 osx-x86_64/*
 !osx-x86_64/*cefrust*
 !osx-x86_64/files.properties
+!osx-x86_64/checksum
