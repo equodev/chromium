@@ -76,9 +76,9 @@ task genCefRustBinding(dependsOn: getCefAndUnzip, type: Exec) {
 task buildCefRustLib(dependsOn: getCefAndUnzip, type: Exec) {
 	workingDir '../cefrust/cefrustlib'
     if (buildType == 'release')
-	    commandLine 'cargo', 'build', "--${buildType}"
+	    commandLine 'cargo', 'build', '--lib', "--${buildType}"
     else
-        commandLine 'cargo', 'build'
+        commandLine 'cargo', 'build', '--lib'
 }
 
 task buildCefRust(dependsOn: [buildCefRustExe, buildCefRustLib]) {

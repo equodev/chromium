@@ -1,6 +1,9 @@
 rubyffi/
+ffi_gen/
+cef_source/
 **/.vscode
 **/.gradle/
+.vscode/
 build/
 !build/cef_binary*.tar.bz2
 **/bin/
@@ -15,3 +18,4 @@ cefswt/**/target/
 cefswt/**/*-x86_64/*
 !cefswt/**/*-x86_64/*cefrust*
 !cefswt/**/*-x86_64/files.properties
+!cefswt/**/*-x86_64/checksum

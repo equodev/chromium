@@ -60,7 +60,7 @@ public class CefPart {
 	
 	@Focus
 	public void onFocus() {
-		System.out.println("part onfocus");
+//		System.out.println("part onfocus");
 //		browser.setFocus();
 	}
 
