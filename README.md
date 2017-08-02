@@ -12,9 +12,7 @@ It is based on and uses the CEF Framework (https://bitbucket.org/chromiumembedde
 
 For the time being you can get a sample application ready to run. Get the zip for your platform, unzip it and run the cef_rcp app.
 
-- [Download](https://github.com/maketechnology/cefswt/releases/download/v0.1-alpha/cef_rcp-win32.x86_64.zip) Demo for Windows
-- [Download](https://github.com/maketechnology/cefswt/releases/download/v0.1-alpha/cef_rcp-macosx.x86_64.zip) Demo for Mac
-- [Download](https://github.com/maketechnology/cefswt/releases/download/v0.1-alpha/cef_rcp-linux.x86_64.zip) Demo for Linux
+- [Download Demo from Release page](https://github.com/maketechnology/cefswt/releases)
  
 	- ⚠️ On Linux, your first launch will fail due to a bug on CEF. You can workaround this by copying `icudtl.dat`, `natives_blob.bin` and `snapshot_blob.bin` from `~/.swtcef/3.3029.1611.g44e39a8/linux-x86_64`folder to the `jre/bin` folder (e.g.: `/usr/lib/jvm/java-8-oracle/jre/bin/`). Those files should be siblings of the java executable file.
 
