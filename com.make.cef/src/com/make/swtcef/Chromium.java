@@ -174,15 +174,23 @@ public class Chromium extends Composite {
 				//DEBUG_CALLBACK("INIT FROM thread " + Thread.currentThread().getName());
 				lib.cefswt_init(app, cefrustPath);
 
-				Runtime.getRuntime().addShutdownHook(new Thread() {
-					@Override
-					public synchronized void start() {
-						Display.getDefault().syncExec(() -> shutdown());
-					}
-				});
 			}
 			//browsers++;
 		}
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public synchronized void start() {
+				if (app == null) {
+					// already shutdown
+					return;
+				}
+				if (Display.getCurrent() != null) {
+					shutdown();
+				} else {
+					Display.getDefault().syncExec(() -> shutdown());
+				}
+			}
+		});
 	}
 
 	private long getHandle(Composite control) {
@@ -452,11 +460,14 @@ public class Chromium extends Composite {
 	/**
 	 * Re-initializing CEF3 is not supported due to the use of globals. This must be called on app exit. 
 	 */
-	private void shutdown() {
+	public synchronized void shutdown() {
+		if (lib == null || app == null) {
+			return;
+		}
+		app = null;
 		DEBUG_CALLBACK("shutting down CEF on exit from thread " + Thread.currentThread().getName());
 		lib.cefswt_shutdown();
 		//MemoryIO.getInstance().freeMemory(Struct.getMemory(app).address());
-		app = null;
 		DEBUG_CALLBACK("after shutting down CEF");
 	}
 
