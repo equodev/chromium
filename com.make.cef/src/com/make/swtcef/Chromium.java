@@ -102,19 +102,19 @@ public class Chromium extends Composite {
 		// }
 
 		// Runtime runtime = jnr.ffi.Runtime.getRuntime(lib);
+		initCEF(getDisplay());
 		addPaintListener(new PaintListener() {
 			@Override
 			public void paintControl(PaintEvent e) {
-				DEBUG_CALLBACK("paintControl");
+				debugPrint("paintControl");
 				removePaintListener(this);
-//				getDisplay().timerExec(2000, () -> {
-					initCEF(getDisplay());
-					DEBUG_CALLBACK("initCef Done");
+//				getDisplay().timerExec(3000, () -> {
+					debugPrint("initCef Done");
 					cefInitilized.thenRun(() -> { 
-						DEBUG_CALLBACK("cefInitilized Future CALLBACK");
+						debugPrint("cefInitilized Future CALLBACK");
 						getDisplay().asyncExec(() -> createBrowser());
 					});
-					DEBUG_CALLBACK("paintControl Done");
+					debugPrint("paintControl Done");
 //				});
 			}
 		});
@@ -130,7 +130,7 @@ public class Chromium extends Composite {
 				browserProcessHandler = new CEF.BrowserProcessHandler(CEF.RUNTIME);
 				cefInitilized = new CompletableFuture<>();
 				browserProcessHandler.setOnContextInitialized(browserProcessHandler -> {
-					DEBUG_CALLBACK("OnContextInitialized");
+					debugPrint("OnContextInitialized");
 					
 					cefInitilized.complete(true);
 				});
@@ -143,7 +143,7 @@ public class Chromium extends Composite {
 				};
 				browserProcessHandler.setOnScheduleMessagePumpWork((pbrowserProcessHandler, delay) -> {
 //					synchronized (browserProcessHandler) {
-//					DEBUG_CALLBACK("OnScheduleMessagePumpWork " + delay);
+//					debugPrint("OnScheduleMessagePumpWork " + delay);
 					if (display.isDisposed())
 						return;
 					if (delay <= 0) {
@@ -167,11 +167,11 @@ public class Chromium extends Composite {
 				});
 				
 				app.setGetBrowserProcessHandler(appPtr -> {
-					DEBUG_CALLBACK("GetBrowserProcessHandler");
+					debugPrint("GetBrowserProcessHandler");
 					return browserProcessHandler;
 				});
 				System.out.println("cefrust.path: " + cefrustPath);
-				//DEBUG_CALLBACK("INIT FROM thread " + Thread.currentThread().getName());
+				debugPrint("INIT FROM thread " + Thread.currentThread().getName());
 				lib.cefswt_init(app, cefrustPath);
 
 			}
@@ -231,7 +231,7 @@ public class Chromium extends Composite {
 	private void createBrowser() {
 		hwnd = getHandle(this);
 //		hwnd = embeddedHandle;
-		DEBUG_CALLBACK("HWND1: " + hwnd);
+		debugPrint("HWND1: " + hwnd);
 		// String url = "http://www.lanacion.com.ar";
 //		String url = "http://www.google.com";
 		String url = (this.url != null) ? this.url : "about:blank";
@@ -240,7 +240,7 @@ public class Chromium extends Composite {
 		addDisposeListener(new DisposeListener() {
 			@Override
 			public void widgetDisposed(DisposeEvent e) {
-				DEBUG_CALLBACK("disposing chromium");
+				debugPrint("disposing chromium");
 				dispose();
 			}
 		});
@@ -266,19 +266,19 @@ public class Chromium extends Composite {
 		initializeClientHandler(clientHandler);
 		focusHandler = new CEF.FocusHandler(CEF.RUNTIME);
 		focusHandler.setOnGotFocus((focusHandler, browser_1) -> {
-			//DEBUG_CALLBACK("CALLBACK OnGotFocus");
+			debugPrint("CALLBACK OnGotFocus");
 			if (!isFocusControl()) {
 				removeFocusListener(focusListener);
 				boolean r = forceFocus();
 				browserFocus(true);
 				addFocusListener(focusListener);
-				DEBUG_CALLBACK("Forcing focus to SWT canvas: " + r);
+				debugPrint("Forcing focus to SWT canvas: " + r);
 			}
 		});
 		focusHandler.setOnSetFocus((focusHandler, browser_1, focusSource_2) -> {
-			//DEBUG_CALLBACK("CALLBACK OnSetFocus " + focusSource_2);
+			debugPrint("CALLBACK OnSetFocus " + focusSource_2);
 			if (!isFocusControl()) {
-				DEBUG_CALLBACK("Disallowing focus to SWT canvas");
+				debugPrint("Disallowing focus to SWT canvas");
 				removeFocusListener(focusListener);
 				setFocus();
 				addFocusListener(focusListener);
@@ -288,7 +288,7 @@ public class Chromium extends Composite {
 			return 0;
 		});
 		focusHandler.setOnTakeFocus((focusHandler, browser_1, next) -> {
-			//DEBUG_CALLBACK("CALLBACK OnTakeFocus " + next);
+			debugPrint("CALLBACK OnTakeFocus " + next);
 			Control[] tabOrder = getParent().getTabList();
 			if (tabOrder.length == 0)
 				tabOrder = getParent().getChildren();
@@ -305,14 +305,14 @@ public class Chromium extends Composite {
 			}
 		});
 		clientHandler.setGetFocusHandler(client -> {
-			//DEBUG_CALLBACK("GetFocusHandler");
+			debugPrint("GetFocusHandler");
 			return focusHandler;
 		});
 		
 		lifeSpanHandler = new CEF.LifeSpanHandler(CEF.RUNTIME);
 		lifeSpanHandler.setOnBeforeClose((plifeSpanHandler, browser) -> {
 			//lifeSpanHandler.base.ref++;
-			DEBUG_CALLBACK("OnBeforeClose");
+			debugPrint("OnBeforeClose");
 			Browser bs = new CEF.Browser(CEF.RUNTIME);
 			bs.useMemory(browser);
 			lib.cefswt_free(bs);
@@ -323,9 +323,10 @@ public class Chromium extends Composite {
 		});
 		lifeSpanHandler.setDoClose((plifeSpanHandler, browser) -> {
 			//lifeSpanHandler.base.ref++;
-			DEBUG_CALLBACK("DoClose");
+			debugPrint("DoClose");
 			// do not send close notification to top level window
-			return 0;
+			// return 0, cause the window to close 
+			return 1;
 		});
 		clientHandler.setGetLifeSpanHandler(client -> {
 			//DEBUG_CALLBACK("GetLifeSpanHandler");
@@ -360,14 +361,14 @@ public class Chromium extends Composite {
 		final Display display = this.getDisplay();
 //		lib.do_message_loop_work();
 		if (browsers.get() == 1) {
-			DEBUG_CALLBACK("STARTING MSG LOOP");
+			debugPrint("STARTING MSG LOOP");
 			doMessageLoop(display);
 		}
 	}
 
 	public void setUrl(String url) {
 		if (!isDisposed() && browser != null) {
-			DEBUG_CALLBACK("setUrl: " + url);
+			debugPrint("setUrl: " + url);
 			lib.cefswt_load_url(browser, url);
 		}
 		this.url = url;
@@ -383,37 +384,37 @@ public class Chromium extends Composite {
 					lib.cefswt_do_message_loop_work();
 					display.timerExec(loop, this);
 				} else {
-					DEBUG_CALLBACK("STOPPING MSG LOOP");
+					debugPrint("STOPPING MSG LOOP");
 				}
 			}
 		});
 	}
 
-	private static jnr.ffi.Pointer DEBUG_CALLBACK(String log) {
+	private static jnr.ffi.Pointer debugPrint(String log) {
 		System.out.println("J:" + log);
 		return null;
 	}
 
 	protected static void initializeClientHandler(Client client) {
 		// callbacks
-		client.setGetContextMenuHandler((c) -> DEBUG_CALLBACK("get_context_menu_handler"));
-		client.setGetDialogHandler((c) -> DEBUG_CALLBACK("get_dialog_handler"));
+		client.setGetContextMenuHandler((c) -> debugPrint("get_context_menu_handler"));
+		client.setGetDialogHandler((c) -> debugPrint("get_dialog_handler"));
 		client.setGetDisplayHandler((c) -> null);
-		client.setGetDownloadHandler((c) -> DEBUG_CALLBACK("get_download_handler"));
-		client.setGetDragHandler((c) -> DEBUG_CALLBACK("get_drag_handler"));
+		client.setGetDownloadHandler((c) -> debugPrint("get_download_handler"));
+		client.setGetDragHandler((c) -> debugPrint("get_drag_handler"));
 		client.setGetFocusHandler((c) -> null);
-		client.setGetGeolocationHandler((c) -> DEBUG_CALLBACK("get_geolocation_handler"));
-		client.setGetJsdialogHandler((c) -> DEBUG_CALLBACK("get_jsdialog_handler"));
+		client.setGetGeolocationHandler((c) -> debugPrint("get_geolocation_handler"));
+		client.setGetJsdialogHandler((c) -> debugPrint("get_jsdialog_handler"));
 		client.setGetKeyboardHandler((c) -> null);
 		client.setGetLifeSpanHandler((c) -> null);
 		client.setGetLoadHandler((c) -> null);
 		client.setGetRenderHandler((c) -> null);
 		client.setGetRequestHandler((c) -> null);
 		client.setOnProcessMessageReceived((c, browser_1, processId_2, processMessage_3) -> {
-			DEBUG_CALLBACK("on_process_message_received");
+			debugPrint("on_process_message_received");
 			return 0;
 		});
-		client.setGetFindHandler(c -> DEBUG_CALLBACK("setGetFindHandler"));
+		client.setGetFindHandler(c -> debugPrint("setGetFindHandler"));
 	}
 
 	// @Override
@@ -451,7 +452,7 @@ public class Chromium extends Composite {
 		focusListener = null;
 		if (browser != null) {
 			browsers.decrementAndGet();
-			DEBUG_CALLBACK("call close_browser");
+			debugPrint("call close_browser");
 			lib.cefswt_close_browser(browser);
 		}
 		super.dispose();
@@ -460,15 +461,15 @@ public class Chromium extends Composite {
 	/**
 	 * Re-initializing CEF3 is not supported due to the use of globals. This must be called on app exit. 
 	 */
-	public synchronized void shutdown() {
+	public static synchronized void shutdown() {
 		if (lib == null || app == null) {
 			return;
 		}
 		app = null;
-		DEBUG_CALLBACK("shutting down CEF on exit from thread " + Thread.currentThread().getName());
+		debugPrint("shutting down CEF on exit from thread " + Thread.currentThread().getName());
 		lib.cefswt_shutdown();
 		//MemoryIO.getInstance().freeMemory(Struct.getMemory(app).address());
-		DEBUG_CALLBACK("after shutting down CEF");
+		debugPrint("after shutting down CEF");
 	}
 
 	private static Lib loadLib() {
