@@ -40,6 +40,7 @@ public class Chromium extends Composite {
 	private static String cefrustPath;
 	private static AtomicInteger browsers = new AtomicInteger(0);
 	private static CompletableFuture<Boolean> cefInitilized;
+	private static CompletableFuture<Boolean> allDisposed;
 	private static App app;
 	private static BrowserProcessHandler browserProcessHandler;
 
@@ -320,6 +321,9 @@ public class Chromium extends Composite {
 			Chromium.this.browser = null;
 			Chromium.this.focusHandler = null;
 			Chromium.this.lifeSpanHandler = null;
+			if (browsers.get() == 0) {
+				allDisposed.complete(true);
+			}
 		});
 		lifeSpanHandler.setDoClose((plifeSpanHandler, browser) -> {
 			//lifeSpanHandler.base.ref++;
@@ -341,6 +345,7 @@ public class Chromium extends Composite {
 //						System.err.println("Ignore do_message_loop_work due inactive shell");
 						return;
 					}
+					//debugPrint(getSize().x +" "+getSize().y);
 					lib.cefswt_resized(browser, getSize().x, getSize().y);
 //					lib.do_message_loop_work();
 				}
@@ -351,19 +356,19 @@ public class Chromium extends Composite {
 			}
 		});
 		
-		browser = lib.cefswt_create_browser(hwnd, url, clientHandler);
+		final org.eclipse.swt.graphics.Point size = getSize();
+		browser = lib.cefswt_create_browser(hwnd, url, clientHandler, size.x, size.y);
 		if (browser != null) {
-			browsers.incrementAndGet();
-			lib.cefswt_resized(browser, getSize().x, getSize().y);
+			if (browsers.incrementAndGet() == 1) {
+				final Display display = this.getDisplay();
+				debugPrint("STARTING MSG LOOP");
+				doMessageLoop(display);
+				allDisposed = new CompletableFuture<>();
+			} 
+			//lib.cefswt_resized(browser, getSize().x, getSize().y);
 //			lib.do_message_loop_work();
 		}
-
-		final Display display = this.getDisplay();
 //		lib.do_message_loop_work();
-		if (browsers.get() == 1) {
-			debugPrint("STARTING MSG LOOP");
-			doMessageLoop(display);
-		}
 	}
 
 	public void setUrl(String url) {
@@ -466,8 +471,16 @@ public class Chromium extends Composite {
 			return;
 		}
 		app = null;
-		debugPrint("shutting down CEF on exit from thread " + Thread.currentThread().getName());
-		lib.cefswt_shutdown();
+		if (allDisposed == null) {
+			debugPrint("shutting down CEF on exit from thread " + Thread.currentThread().getName());
+			lib.cefswt_shutdown();
+		} else {
+			allDisposed.thenRun(() -> {
+				debugPrint("shutting down CEF on exit from thread " + Thread.currentThread().getName());
+				lib.cefswt_shutdown();			
+			});
+		}
+		
 		//MemoryIO.getInstance().freeMemory(Struct.getMemory(app).address());
 		debugPrint("after shutting down CEF");
 	}
@@ -517,7 +530,7 @@ public class Chromium extends Composite {
 	public static interface Lib {
 		void cefswt_init(@Direct CEF.App app, String cefrustPath);
 
-		Pointer cefswt_create_browser(long hwnd, String url, @Direct CEF.Client clientHandler);
+		Pointer cefswt_create_browser(long hwnd, String url, @Direct CEF.Client clientHandler, int w, int h);
 
 		void cefswt_do_message_loop_work();
 
