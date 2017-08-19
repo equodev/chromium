@@ -43,6 +43,7 @@ public class Chromium extends Composite {
 	private static CompletableFuture<Boolean> allDisposed;
 	private static App app;
 	private static BrowserProcessHandler browserProcessHandler;
+	private static boolean shuttingDown;
 
 	private long hwnd;
 	private Pointer browser;
@@ -313,7 +314,11 @@ public class Chromium extends Composite {
 		lifeSpanHandler = new CEF.LifeSpanHandler(CEF.RUNTIME);
 		lifeSpanHandler.setOnBeforeClose((plifeSpanHandler, browser) -> {
 			//lifeSpanHandler.base.ref++;
-			debugPrint("OnBeforeClose");
+			debugPrint("OnBeforeClose t:" + Thread.currentThread().getName());
+		});
+		lifeSpanHandler.setDoClose((plifeSpanHandler, browser) -> {
+			//lifeSpanHandler.base.ref++;
+			debugPrint("DoClose t:" + Thread.currentThread().getName());
 			Browser bs = new CEF.Browser(CEF.RUNTIME);
 			bs.useMemory(browser);
 			lib.cefswt_free(bs);
@@ -321,13 +326,10 @@ public class Chromium extends Composite {
 			Chromium.this.browser = null;
 			Chromium.this.focusHandler = null;
 			Chromium.this.lifeSpanHandler = null;
-			if (browsers.get() == 0) {
+			if (browsers.get() == 0 && !allDisposed.isDone()) {
+				debugPrint("all disposed");
 				allDisposed.complete(true);
 			}
-		});
-		lifeSpanHandler.setDoClose((plifeSpanHandler, browser) -> {
-			//lifeSpanHandler.base.ref++;
-			debugPrint("DoClose");
 			// do not send close notification to top level window
 			// return 0, cause the window to close 
 			return 1;
@@ -361,9 +363,9 @@ public class Chromium extends Composite {
 		if (browser != null) {
 			if (browsers.incrementAndGet() == 1) {
 				final Display display = this.getDisplay();
+				allDisposed = new CompletableFuture<>();
 				debugPrint("STARTING MSG LOOP");
 				doMessageLoop(display);
-				allDisposed = new CompletableFuture<>();
 			} 
 			//lib.cefswt_resized(browser, getSize().x, getSize().y);
 //			lib.do_message_loop_work();
@@ -467,22 +469,26 @@ public class Chromium extends Composite {
 	 * Re-initializing CEF3 is not supported due to the use of globals. This must be called on app exit. 
 	 */
 	public static synchronized void shutdown() {
-		if (lib == null || app == null) {
+		if (lib == null || app == null || shuttingDown) {
 			return;
 		}
-		app = null;
+		shuttingDown = true;
 		if (allDisposed == null) {
-			debugPrint("shutting down CEF on exit from thread " + Thread.currentThread().getName());
+			debugPrint("allDisposed shutting down CEF on exit from thread " + Thread.currentThread().getName());
+			app = null;
 			lib.cefswt_shutdown();
+			debugPrint("after shutting down CEF");
 		} else {
+			debugPrint("not all disposed " + Thread.currentThread().getName());
 			allDisposed.thenRun(() -> {
 				debugPrint("shutting down CEF on exit from thread " + Thread.currentThread().getName());
-				lib.cefswt_shutdown();			
+				app = null;
+				lib.cefswt_shutdown();
+				debugPrint("after shutting down CEF");
 			});
 		}
 		
 		//MemoryIO.getInstance().freeMemory(Struct.getMemory(app).address());
-		debugPrint("after shutting down CEF");
 	}
 
 	private static Lib loadLib() {

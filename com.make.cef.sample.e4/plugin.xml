@@ -16,6 +16,10 @@
                name="appName"
                value="com.make.cef.sample.e4">
          </property>
+         <property
+               name="lifeCycleURI"
+               value="bundleclass://com.make.cef.sample.e4/com.make.cef.sample.e4.Lifecycle">
+         </property>
       </product>
    </extension>
 
