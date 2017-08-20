@@ -52,6 +52,7 @@ public class Chromium extends Composite {
 	private CEF.LifeSpanHandler lifeSpanHandler;
 	private FocusListener focusListener;
 	private String url;
+	private boolean disposing;
 //private ScheduledFuture<?> pumpTask;
 
     public static boolean isWindows() {
@@ -182,7 +183,7 @@ public class Chromium extends Composite {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public synchronized void start() {
-				if (app == null) {
+				if (app == null || shuttingDown) {
 					// already shutdown
 					return;
 				}
@@ -451,9 +452,17 @@ public class Chromium extends Composite {
 			lib.cefswt_set_focus(browser, set, parent);
 		}
 	}
+	
+	@Override
+	public boolean isDisposed() {
+		if (disposing || shuttingDown)
+			return true;
+		return super.isDisposed();
+	}
 
 	@Override
 	public void dispose() {
+		disposing = true;
 		if (focusListener != null)
 			removeFocusListener(focusListener);
 		focusListener = null;
@@ -479,7 +488,7 @@ public class Chromium extends Composite {
 			lib.cefswt_shutdown();
 			debugPrint("after shutting down CEF");
 		} else {
-			debugPrint("not all disposed " + Thread.currentThread().getName());
+			debugPrint("all disposed? " + allDisposed.isDone() + ":" + Thread.currentThread().getName());
 			allDisposed.thenRun(() -> {
 				debugPrint("shutting down CEF on exit from thread " + Thread.currentThread().getName());
 				app = null;
