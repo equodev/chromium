@@ -1,7 +1,7 @@
 # This is produce shared lib and executable linked to older glibc(2.12) and compatible with older linux distros
 
 # Usage:
-# ln -s .gitignore ../.gitignore
+# ln -s $PWD/.dockerignore $PWD/../.dockerignore
 # docker build -t cef -f Dockerfile ..
 # docker run --name cef -d cef bash
 # docker cp cef:/src/cefswt/com.make.cef.linux.x86_64/linux-x86_64/cefrust_subp ./com.make.cef.linux.x86_64/linux-x86_64/
