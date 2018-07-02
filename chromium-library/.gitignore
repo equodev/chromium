@@ -2,3 +2,5 @@ target/
 cef_osx/
 cef_linux/
 cef_windows/
+.dockerignore
+Dockerfile*
