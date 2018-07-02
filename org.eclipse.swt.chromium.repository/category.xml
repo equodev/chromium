@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature url="features/org.eclipse.swt.chromium.feature_0.3.0.qualifier.jar" id="org.eclipse.swt.chromium.feature" version="0.3.0.qualifier">
+      <category name="org.eclipse.swt.chromium"/>
+   </feature>
+   <category-def name="org.eclipse.swt.chromium" label="Chromium SWT Browser"/>
+</site>
