@@ -31,12 +31,13 @@ unsafe extern fn xioerror_handler_impl(_: *mut x11::xlib::Display) -> c_int {
 }
 
 #[no_mangle]
-pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char) {
+pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char, version: *const c_char) {
     println!("DLL init");
     assert_eq!(unsafe{(*japp).base.size}, std::mem::size_of::<cef::_cef_app_t>());
     //println!("app {:?}", japp);
 
     let cefrust_path = utils::str_from_c(cefrust_path);
+    let version = utils::str_from_c(version);
 
     // let key = "LD_LIBRARY_PATH";
     // env::set_var(key, cefrust_path);
@@ -48,7 +49,7 @@ pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char
     // env::set_current_dir(cefrust_dir).expect("Failed to set current dir");
     // println!("{:?}", env::current_dir().unwrap().to_str());
 
-    let subp = utils::subp_path(cefrust_dir);
+    let subp = utils::subp_path(cefrust_dir, version);
     let subp_cef = utils::cef_string(&subp);
     
     let resources_cef = if cfg!(target_os = "macos") {
