@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Chromium SWT Browser Tests
+Bundle-SymbolicName: org.eclipse.swt.chromium.tests
+Bundle-Version: 0.3.0.qualifier
+Bundle-Vendor: Make Technology
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Require-Bundle: org.eclipse.swt,
+ org.eclipse.swt.tests,
+ org.eclipse.swt.chromium,
+ org.junit;bundle-version="4.12.0"
+Automatic-Module-Name: org.eclipse.swt.chromium.tests
