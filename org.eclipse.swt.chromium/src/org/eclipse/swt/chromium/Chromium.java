@@ -31,8 +31,9 @@ import org.eclipse.swt.internal.chromium.CEFFactory;
 class Chromium extends WebBrowser {
     private static final String VERSION = "0300";
     private static final String CEFVERSION = "3071";
-    private static final String SHARED_LIB = "chromium_swt-"+VERSION;
-    private static final String SUBP = "chromium_subp-"+VERSION;
+    private static final String SHARED_LIB_V = "chromium_swt-"+VERSION;
+    private static final String SUBP = "chromium_subp";
+    private static final String SUBP_V = "chromium_subp-"+VERSION;
     
     Browser chromium;
     OpenWindowListener[] openWindowListeners = new OpenWindowListener[0];
@@ -455,18 +456,28 @@ class Chromium extends WebBrowser {
         String subDir = "chromium-" + CEFVERSION;
         File cefrustlib = null;
         try {
-            File cefrust_subp = Library.findResource(subDir, SUBP, false);
-            cefrustlib = Library.findResource(subDir, System.mapLibraryName(SHARED_LIB), false);
-            cefrustPath = cefrust_subp.getParentFile().getCanonicalPath();
+        	if ("cocoa".equals(platform)) {
+        		Library.findResource(subDir+"/"+SUBP_V+".app/Contents/MacOS", SUBP, false);
+        		Library.findResource(subDir+"/"+SUBP_V+".app/Contents", "Info.plist", false);
+        		Library.findResource(subDir+"/"+SUBP_V+".app/Contents", "PkgInfo", false);
+        	} else {
+        		Library.findResource(subDir, SUBP_V, false);
+        	}
+        	cefrustlib = Library.findResource(subDir, System.mapLibraryName(SHARED_LIB_V), false);
+        	cefrustPath = cefrustlib.getParentFile().getCanonicalPath();
         
             LibraryLoader<Lib> loader = LibraryLoader.create(Lib.class);
             Lib libc = loader
                 .failImmediately()
                 .search(cefrustPath)
-                .load(SHARED_LIB);
+                .load(SHARED_LIB_V);
             return libc;
         } catch(UnsatisfiedLinkError e) {
-            if (cefrustlib != null && !new File(cefrustlib.getParentFile(), System.mapLibraryName("cef")).exists()) {
+            String cefLib = System.mapLibraryName("cef");
+            if ("cocoa".equals(platform)) {
+            	cefLib = "Chromium Embedded Framework.framework";
+            }
+			if (cefrustlib != null && !new File(cefrustlib.getParentFile(), cefLib).exists()) {
                 SWTException swtError = new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY, "Missing CEF binaries for Chromium Browser. "
                         + "Extract CEF binaries to " + cefrustPath);
                 swtError.throwable = e;

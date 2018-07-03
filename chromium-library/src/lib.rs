@@ -129,7 +129,7 @@ fn do_initialize(main_args: cef::_cef_main_args_t, settings: cef::_cef_settings_
     let mut signal_handlers: HashMap<c_int, nix::sys::signal::SigAction> = HashMap::new();
     backup_signal_handlers(&mut signal_handlers);
     
-    swizzleSendEvent();
+    swizzle_send_event();
 
     unsafe { cef::cef_initialize(&main_args, &settings, &mut (*app_raw), std::ptr::null_mut()) };
 
@@ -137,10 +137,11 @@ fn do_initialize(main_args: cef::_cef_main_args_t, settings: cef::_cef_settings_
 }
 
 #[cfg(target_os = "macos")]
-fn swizzleSendEvent() {
+fn swizzle_send_event() {
     use std::ffi::CString;
     use objc::runtime::{BOOL, Class, Method, NO, YES, Object, Sel, self};
     use objc::{Encode, EncodeArguments, Encoding};
+    use nix::libc::intptr_t;
 
     fn count_args(sel: Sel) -> usize {
         sel.name().chars().filter(|&c| c == ':').count()
@@ -185,7 +186,7 @@ fn swizzleSendEvent() {
     let cls = unsafe { runtime::objc_getClass(cls_nm.as_ptr()) as *mut Class };
     assert!(!cls.is_null(), "null class");
 
-    extern fn is_handling_sendevent(this: &mut Object, cmd: Sel) -> BOOL {
+    extern fn is_handling_sendevent(this: &mut Object, _cmd: Sel) -> BOOL {
         //println!("isHandlingSendEvent {:?}", this);
         let kp = &EVENT_KEY as *const _ as *const c_void;
         let is = unsafe { objc_getAssociatedObject(this, kp) };
@@ -194,7 +195,7 @@ fn swizzleSendEvent() {
     }
     unsafe { add_method(cls, sel!(isHandlingSendEvent), is_handling_sendevent as extern fn(&mut Object, Sel) -> BOOL) };
 
-    extern fn set_handling_sendevent(this: &mut Object, cmd: Sel, handling_sendevent: BOOL) {
+    extern fn set_handling_sendevent(this: &mut Object, _cmd: Sel, handling_sendevent: BOOL) {
         //println!("setHandlingSendEvent {:?} {:?}", this, handling_sendevent);
         let kp = &EVENT_KEY as *const _ as *const c_void;
         let policy_assign = 0;
@@ -202,7 +203,7 @@ fn swizzleSendEvent() {
     }
     unsafe { add_method(cls, sel!(setHandlingSendEvent:), set_handling_sendevent as extern fn(&mut Object, Sel, BOOL)) };
 
-    extern fn swizzled_sendevent(this: &mut Object, cmd: Sel, event: Id) {
+    extern fn swizzled_sendevent(this: &mut Object, _cmd: Sel, event: Id) {
         //println!("swizzled_sendevent {:?}", this);
         unsafe {
             let handling: BOOL = msg_send![this, isHandlingSendEvent];
@@ -316,7 +317,7 @@ fn do_resize(win_handle: c_ulong, width: i32, height: i32) {
 }
 
 #[cfg(target_os = "macos")]
-fn do_resize(win_handle: c_ulong, _: i32, _: i32) {
+fn do_resize(_win_handle: c_ulong, _: i32, _: i32) {
     // handled by cocoa
 }
 
@@ -394,7 +395,7 @@ fn do_set_focus(parent: *mut c_void, focus: i32) {
 }
 
 #[cfg(target_os = "macos")]
-fn do_set_focus(parent: *mut c_void, focus: i32) {
+fn do_set_focus(_parent: *mut c_void, _focus: i32) {
     // handled by cocoa
 }
 

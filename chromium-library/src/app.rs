@@ -3,7 +3,7 @@ use utils;
 #[cfg(target_os = "linux")]
 use gtk2;
 
-use std::os::raw::{c_void, c_ulong, c_int, c_uint};
+use std::os::raw::{c_void, c_ulong, c_int};
 use std::mem::{size_of};
 use std::ptr::{null_mut};
 
@@ -64,6 +64,7 @@ pub fn create_browser(canvas_hwnd: c_ulong, url: &str, jclient: &mut cef::_cef_c
 
 #[cfg(target_os = "linux")]
 fn cef_window_info(hwnd: c_ulong, w: c_int, h: c_int) -> cef::_cef_window_info_t {
+    use std::os::raw::{c_uint};
     let window_info = cef::_cef_window_info_t {
         x: 0,
         y: 0,

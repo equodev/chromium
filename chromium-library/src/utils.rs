@@ -5,7 +5,7 @@ pub fn subp_path(cwd: &::std::path::Path, version: &str) -> String {
     let subp_path = if cfg!(target_os = "windows") { 
         cwd.join(format!("chromium_subp-{}.exe", version))
     } else if cfg!(target_os = "macos") {
-        cwd.join(format!("chromium_subp.app/Contents/MacOS/chromium_subp-{}", version))
+        cwd.join(format!("chromium_subp-{}.app/Contents/MacOS/chromium_subp", version))
     } else { 
         cwd.join(format!("chromium_subp-{}", version)) 
     };
