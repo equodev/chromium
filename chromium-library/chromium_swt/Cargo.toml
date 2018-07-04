@@ -2,25 +2,17 @@
 name = "chromium_swt"
 version = "0.3.0"
 authors = ["Make Technology <http://maketechnology.io>", "Guillermo Zunino <guillez@gmail.com>"]
-build = "build.rs"
 
 [lib]
 name = "chromium_swt"
-crate-type = ["rlib", "dylib"]
+crate-type = ["dylib"]
 
 [profile.release]
 lto = true
 codegen-units = 1
 
-[features]
-gen = []
-genJava = []
-
-[target.'cfg(feature = "gen")'.build-dependencies]
-bindgen = "0.32.3"
-
-[target.'cfg(feature = "genJava")'.build-dependencies]
-java_bindgen = { git = "https://github.com/maketechnology/java-bindgen", branch = "java-bindgen" }
+[dependencies]
+chromium = { path = "../chromium_subp/", version = "0.3.0" }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 x11 = "2.17.0"
