@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Chromium SWT Mac OS x86_64
+Bundle-Name: Chromium SWT Windows x86_64
 Bundle-SymbolicName: org.eclipse.swt.chromium.win32.win32.x86_64
 Bundle-Version: 0.3.0.qualifier
 Bundle-Vendor: Make Technology
