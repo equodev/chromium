@@ -460,6 +460,8 @@ class Chromium extends WebBrowser {
         		Library.findResource(subDir+"/"+SUBP_V+".app/Contents/MacOS", SUBP, false);
         		Library.findResource(subDir+"/"+SUBP_V+".app/Contents", "Info.plist", false);
         		Library.findResource(subDir+"/"+SUBP_V+".app/Contents", "PkgInfo", false);
+        	} else if ("win32".equals(platform)) {
+        		Library.findResource(subDir, SUBP_V + ".exe", false);
         	} else {
         		Library.findResource(subDir, SUBP_V, false);
         	}
