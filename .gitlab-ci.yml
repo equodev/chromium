@@ -1,0 +1,54 @@
+stages:
+  - build
+  - deploy
+
+cache:
+  paths:
+  - .m2repo/
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2repo"
+
+build:
+  image: openjdk:8-jdk
+  stage: build
+  script:
+    - SWT_GTK3=0 mvn clean verify -Dmaven.test.failure.ignore=true -DskipTests
+  artifacts:
+    paths:
+    - org.eclipse.swt.chromium.tests/target/surefire-reports
+    - org.eclipse.swt.chromium.repository/target/repository
+
+publish:
+  image: 
+    name: registry.gitlab.com/maketechpub/mc:public
+    entrypoint: ["/bin/sh", "-c"]
+  stage: deploy
+  variables:
+    GIT_DEPTH: "1"
+    RELEASE: "true"
+  dependencies:
+  - build
+  before_script:
+  - QUALIFIER=$(if [[ -z "$RELEASE" ]] ; then echo "dev"; else echo "r"; fi)
+  - export VERSION=$(cat pom.xml | grep "<version>.*</version>" | head -n 1 | awk -F'[><-]' '{print $3}').$QUALIFIER
+  - echo "version $VERSION"
+  script:
+  - mkdir -p public
+  - cp -r org.eclipse.swt.chromium.repository/target/repository public
+  - du -h -s public || true
+  - mc config host add do https://ams3.digitaloceanspaces.com "$DO_KEY" "$DO_SECRET" --lookup auto
+  - mc mb -p do/$DO_BUCKET
+  - mc mirror --overwrite --remove public/repository do/$DO_BUCKET/rls/repository/
+  - current=$(date -u +"%FT%T.%3NZ")
+  - echo "current $current"
+  - 'echo "{\"version\": \"${VERSION}\", \"created\": \"${current}\", \"downloadInstallPath\": \"/repository/plugins/org.eclipse.swt.chromium_.*.jar\", \"downloadUpdatePath\": \"/repository/features/org.eclipse.swt.chromium.feature_.*.jar\"}" > public/metadata.json'
+  - mc cp public/metadata.json do/$DO_BUCKET/rls/
+  after_script:
+  - ls public
+  - ls public/repository
+  when: manual
+  only:
+  - /^rls.*$/
+
+
