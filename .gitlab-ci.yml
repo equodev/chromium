@@ -42,7 +42,7 @@ publish:
   - mc mirror --overwrite --remove public/repository do/$DO_BUCKET/rls/repository/
   - current=$(date -u +"%FT%T.%3NZ")
   - echo "current $current"
-  - 'echo "{\"version\": \"${VERSION}\", \"created\": \"${current}\", \"downloadInstallPath\": \"/repository/plugins/org.eclipse.swt.chromium_.*.jar\", \"downloadUpdatePath\": \"/repository/features/org.eclipse.swt.chromium.feature_.*.jar\"}" > public/metadata.json'
+  - 'echo "{\"version\": \"${VERSION}\", \"created\": \"${current}\", \"downloadInstallPath\": \"/repository/plugins/org.eclipse.swt.chromium\", \"downloadUpdatePath\": \"/repository/features/org.eclipse.swt.chromium.feature\"}" > public/metadata.json'
   - mc cp public/metadata.json do/$DO_BUCKET/rls/
   after_script:
   - ls public

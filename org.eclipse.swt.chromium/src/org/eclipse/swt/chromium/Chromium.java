@@ -33,6 +33,7 @@ import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.internal.Library;
 import org.eclipse.swt.internal.chromium.CEF;
 import org.eclipse.swt.internal.chromium.CEFFactory;
+import org.eclipse.swt.internal.chromium.ResourceExpander;
 
 class Chromium extends WebBrowser {
     private static final String VERSION = "0300";
@@ -463,7 +464,7 @@ class Chromium extends WebBrowser {
         File cefrustlib = null;
         try {
             String mapLibraryName = System.mapLibraryName(SHARED_LIB_V);
-            Enumeration<URL> fragments = Library.class.getClassLoader().getResources("/"+subDir+"/chromium.properties");
+            Enumeration<URL> fragments = Library.class.getClassLoader().getResources(subDir+"/chromium.properties");
             while (fragments.hasMoreElements()) {
                 URL url = (URL) fragments.nextElement();
                 try (InputStream is = url.openStream();) {
@@ -475,14 +476,14 @@ class Chromium extends WebBrowser {
                             Path path = Paths.get(propValue);
                             String fileName = path.getFileName().toString();
                             if (!mapLibraryName.equals(fileName)) {
-                                Library.findResource(path.getParent().toString(), fileName, false);
+                                ResourceExpander.findResource(path.getParent().toString(), fileName, false);
                             }
                         }
                     }
                 }
             }
             
-            cefrustlib = Library.findResource(subDir, mapLibraryName, false);
+            cefrustlib = ResourceExpander.findResource(subDir, mapLibraryName, false);
         	cefrustPath = cefrustlib.getParentFile().getCanonicalPath();
         
             LibraryLoader<Lib> loader = LibraryLoader.create(Lib.class);
