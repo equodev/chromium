@@ -1,7 +1,8 @@
-extern crate chromium_swt;
+extern crate chromium;
 
-use chromium_swt::cef;
-use chromium_swt::utils;
+use chromium::utils;
+use chromium::cef;
+
 use std::os::raw::{c_int};
 use std::ptr::null_mut;
 

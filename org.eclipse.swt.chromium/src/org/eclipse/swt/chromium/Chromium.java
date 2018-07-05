@@ -13,8 +13,14 @@ import jnr.ffi.provider.jffi.NativeRuntime;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -27,13 +33,14 @@ import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.internal.Library;
 import org.eclipse.swt.internal.chromium.CEF;
 import org.eclipse.swt.internal.chromium.CEFFactory;
+import org.eclipse.swt.internal.chromium.ResourceExpander;
 
 class Chromium extends WebBrowser {
     private static final String VERSION = "0300";
     private static final String CEFVERSION = "3071";
     private static final String SHARED_LIB_V = "chromium_swt-"+VERSION;
-    private static final String SUBP = "chromium_subp";
-    private static final String SUBP_V = "chromium_subp-"+VERSION;
+//    private static final String SUBP = "chromium_subp";
+//    private static final String SUBP_V = "chromium_subp-"+VERSION;
     
     Browser chromium;
     OpenWindowListener[] openWindowListeners = new OpenWindowListener[0];
@@ -456,14 +463,27 @@ class Chromium extends WebBrowser {
         String subDir = "chromium-" + CEFVERSION;
         File cefrustlib = null;
         try {
-        	if ("cocoa".equals(platform)) {
-        		Library.findResource(subDir+"/"+SUBP_V+".app/Contents/MacOS", SUBP, false);
-        		Library.findResource(subDir+"/"+SUBP_V+".app/Contents", "Info.plist", false);
-        		Library.findResource(subDir+"/"+SUBP_V+".app/Contents", "PkgInfo", false);
-        	} else {
-        		Library.findResource(subDir, SUBP_V, false);
-        	}
-        	cefrustlib = Library.findResource(subDir, System.mapLibraryName(SHARED_LIB_V), false);
+            String mapLibraryName = System.mapLibraryName(SHARED_LIB_V);
+            Enumeration<URL> fragments = Library.class.getClassLoader().getResources(subDir+"/chromium.properties");
+            while (fragments.hasMoreElements()) {
+                URL url = (URL) fragments.nextElement();
+                try (InputStream is = url.openStream();) {
+                    Properties props = new Properties();
+                    props.load(is);
+                    for (String prop : props.stringPropertyNames()) {
+                        if (!"cefVersion".equals(prop)) {
+                            String propValue = props.getProperty(prop);
+                            Path path = Paths.get(propValue);
+                            String fileName = path.getFileName().toString();
+                            if (!mapLibraryName.equals(fileName)) {
+                                ResourceExpander.findResource(path.getParent().toString(), fileName, false);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            cefrustlib = ResourceExpander.findResource(subDir, mapLibraryName, false);
         	cefrustPath = cefrustlib.getParentFile().getCanonicalPath();
         
             LibraryLoader<Lib> loader = LibraryLoader.create(Lib.class);

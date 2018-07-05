@@ -2,4 +2,6 @@
 rustflags = ["-C", "link-args=-Wl,-rpath,$ORIGIN"]
 
 [target.'cfg(windows)']
-rustflags = ["-C", "link-arg=/SUBSYSTEM:WINDOWS", "-C", "link-arg=/ENTRY:mainCRTStartup"]
+rustflags = [
+    "-C", "target-feature=+crt-static"
+    ]

@@ -1,5 +1,7 @@
 use cef;
 use std::os::raw::{c_char};
+#[cfg(windows)]
+extern crate winapi;
 
 pub fn subp_path(cwd: &::std::path::Path, version: &str) -> String {
     let subp_path = if cfg!(target_os = "windows") { 
@@ -53,7 +55,7 @@ pub fn prepare_args() -> cef::_cef_main_args_t {
 pub fn prepare_args() -> cef::_cef_main_args_t {
     let h_instance = unsafe { winapi::um::libloaderapi::GetModuleHandleA(0 as winapi::um::winnt::LPCSTR) };
     let main_args = cef::_cef_main_args_t {
-        instance: unsafe { std::mem::transmute(h_instance) }
+        instance: unsafe { ::std::mem::transmute(h_instance) }
         //instance: unsafe { std::mem::transmute(0 as i64) }
     };
     // println!("Hello CEF, hinstance: {:?}", main_args.instance);

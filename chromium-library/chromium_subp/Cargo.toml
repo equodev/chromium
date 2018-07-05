@@ -1,0 +1,23 @@
+[package]
+name = "chromium"
+version = "0.3.0"
+authors = ["Make Technology <http://maketechnology.io>", "Guillermo Zunino <guillez@gmail.com>"]
+
+[profile.release]
+lto = true
+codegen-units = 1
+
+[dependencies]
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["winuser", "libloaderapi"] }
+
+[features]
+gen = []
+genJava = []
+
+[target.'cfg(feature = "gen")'.build-dependencies]
+bindgen = "0.32.3"
+
+[target.'cfg(feature = "genJava")'.build-dependencies]
+java_bindgen = { git = "https://github.com/maketechnology/java-bindgen", branch = "java-bindgen" }

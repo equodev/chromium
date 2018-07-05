@@ -1,3 +1,5 @@
+extern crate chromium;
+
 #[cfg(target_os = "linux")]
 extern crate x11;
 #[cfg(unix)]
@@ -6,9 +8,9 @@ extern crate nix;
 #[macro_use]
 extern crate objc;
 
-pub mod cef;
-pub mod utils;
-mod base;
+use chromium::cef;
+use chromium::utils;
+
 mod app;
 #[cfg(target_os = "linux")]
 mod gtk2;
@@ -390,7 +392,7 @@ fn do_set_focus(parent: *mut c_void, focus: i32) {
 }
 
 #[cfg(target_family = "windows")]
-fn do_set_focus(parent: *mut c_void, focus: i32) {
+fn do_set_focus(_parent: *mut c_void, _focus: i32) {
     // TODO
 }
 
