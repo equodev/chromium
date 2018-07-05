@@ -8,32 +8,49 @@ No more custom code for each platform, no more installations of specific librari
 
 It is based on and uses the CEF Framework (https://bitbucket.org/chromiumembedded/cef).
 
+## Design
+
+Chromium SWT Browser is provided as a P2 repository ready to use, which contains:
+
+- chromium bundle
+- chromium native library per platform fragments
+- feature containing all the above
+
+CEF Binaries are provided in a separate repository for easy usage.
+
 ## P2 repository
 
 An eclipse P2 repository is available with the bundle and fragments for Linux, Windows and Mac OS (x86_64 only)
 
-http://dl.maketechnology.io/chromium.swt/rls/repository
+1- Chromium Browser Widget repository (EPL): 
+  http://dl.maketechnology.io/chromium-swt/rls/repository
 
-Third party dependencies (JNR, ASM) are available at eclipse repository: http://download.eclipse.org/releases/photon
+2- Third party dependencies (JNR, ASM) are available at eclipse repository (EPL):
+  http://download.eclipse.org/releases/photon
+
+3- CEF Binaries (Optional) required to run can be manually copied or you can use this repository which provides a feature and per platform fragments with CEF binaries and resources.
+  http://dl.maketechnology.io/chromium-cef/rls/repository
 
 ## Usage
 
-Change your java import to use `import org.eclipse.swt.chromium.Browser;`. It follows the same SWT Browser API. 
+Change your java import to use `import org.eclipse.swt.chromium.Browser;`. It follows the same SWT Browser API.
 
-	- ⚠️ Some of the APIs are not implemented yet.
+Notes:
 
-    - ⚠️ On linux it works only with GTK2 for now.
+	- Some of the APIs are not implemented yet.
 
-	- ⚠️ Make sure you enable the following bundles and their dependencies in your run config:
+    - On linux it works only with GTK2 for now.
+
+	- Make sure you enable the following bundles and their dependencies in your run config:
         - com.github.jnr.ffi
         - com.github.jnr.jffi
         - com.github.jnr.jffi.native (fragment)
         - org.eclipse.swt.chromium
         - org.eclipse.swt.[ws].[os].x86_64 (fragment)
 
-    - ⚠️ You will get an error on first run saying CEF binaries are not available, download cef_binary __3.3071__ client archive from http://opensource.spotify.com/cefbuilds/ and extract binaries to folder indicated in error (~/.swt/lib/*/x86_64/chromium-3071). Then rerun.
+    - If you don't use CEF Binaries repository, you will get an error on first run saying CEF binaries are not available, Use the repository or manually download cef_binary __3.3071__ client archive from http://opensource.spotify.com/cefbuilds/ and extract binaries to folder indicated in error (~/.swt/lib/*/x86_64/chromium-3071). Then rerun.
 
-	- ⚠️ On Linux, your first launch will fail due to a bug on CEF. You can workaround this by copying `icudtl.dat`, `natives_blob.bin` and `snapshot_blob.bin` from CEF folder to the `jre/bin` folder (e.g.: `/usr/lib/jvm/java-8-oracle/jre/bin/`). Those files should be siblings of the java executable file. Fix is WIP. 
+	- ⚠️ On Linux, your first launch may fail due to a bug on CEF. You can workaround this by copying `icudtl.dat`, `natives_blob.bin` and `snapshot_blob.bin` from CEF folder to the `jre/bin` folder (e.g.: `/usr/lib/jvm/java-8-oracle/jre/bin/`). Those files should be siblings of the java executable file. Or use our CEF binaries repo.
 
 ## Build
 
