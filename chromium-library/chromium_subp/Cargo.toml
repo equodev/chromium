@@ -13,11 +13,9 @@ codegen-units = 1
 winapi = { version = "0.3", features = ["winuser", "libloaderapi"] }
 
 [features]
-gen = []
-genJava = []
+gen = ["bindgen"]
+genJava = ["java_bindgen"]
 
-[target.'cfg(feature = "gen")'.build-dependencies]
-bindgen = "0.32.3"
-
-[target.'cfg(feature = "genJava")'.build-dependencies]
-java_bindgen = { git = "https://github.com/maketechnology/java-bindgen", branch = "java-bindgen" }
+[build-dependencies]
+bindgen = { version = "0.32.3", optional = true }
+java_bindgen = { git = "https://github.com/maketechnology/java-bindgen", branch = "java-bindgen", optional = true }

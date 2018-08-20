@@ -361,7 +361,7 @@ pub extern fn cefswt_get_url(browser: *mut cef::cef_browser_t) -> *mut c_char {
     if url.is_null() {
         return std::ptr::null_mut();
     } else {
-        let utf8 = unsafe { cef::cef_string_userfree_utf8_alloc()};
+        let utf8 = unsafe { cef::cef_string_userfree_utf8_alloc() };
         unsafe { cef::cef_string_utf16_to_utf8((*url).str, (*url).length, utf8) };
         return unsafe {(*utf8).str};
     }
