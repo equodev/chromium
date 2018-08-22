@@ -26,6 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
+import org.eclipse.swt.browser.LocationEvent;
+import org.eclipse.swt.browser.LocationListener;
 import org.eclipse.swt.browser.ProgressEvent;
 import org.eclipse.swt.browser.ProgressListener;
 import org.eclipse.swt.browser.TitleEvent;
@@ -74,6 +76,8 @@ class Chromium extends WebBrowser {
     private FocusListener focusListener;
     private String url;
     private String text = "";
+    private boolean canGoBack;
+    private boolean canGoForward;
     private boolean disposing;
 
     public void addOpenWindowListener (OpenWindowListener listener) {
@@ -321,6 +325,8 @@ class Chromium extends WebBrowser {
         loadHandler = CEFFactory.newLoadHandler();
         loadHandler.on_loading_state_change.set((self_, browser, isLoading, canGoBack, canGoForward) -> {
             debugPrint("on_loading_state_change");
+            Chromium.this.canGoBack = canGoBack == 1;
+            Chromium.this.canGoForward = canGoForward == 1;
             if (chromium.isDisposed() || progressListeners == null) return;
             updateText();
             ProgressEvent event = new ProgressEvent(chromium);
@@ -352,6 +358,19 @@ class Chromium extends WebBrowser {
             event.widget = chromium;
             event.title = str;
             for (TitleListener listener : titleListeners) {
+                listener.changed(event);
+            }
+        });
+        displayHandler.on_address_change.set((self, browser, frame, url) -> {
+            if (chromium.isDisposed() || locationListeners == null) return;
+            LocationEvent event = new LocationEvent(chromium);
+            event.display = chromium.getDisplay();
+            event.widget = chromium;
+            event.doit = true;
+            event.location = lib.cefswt_cefstring_to_java(url);
+            event.top = lib.cefswt_is_main_frame(frame);
+            debugPrint("on_address_change:" + event.location);
+            for (LocationListener listener : locationListeners) {
                 listener.changed(event);
             }
         });
@@ -623,7 +642,11 @@ class Chromium extends WebBrowser {
     
     @Override
     public boolean back() {
-        // TODO Auto-generated method stub
+        checkBrowser();
+        if (canGoBack) {
+            lib.cefswt_go_back(browser);
+            return true;
+        }
         return false;
     }
 
@@ -635,7 +658,11 @@ class Chromium extends WebBrowser {
 
     @Override
     public boolean forward() {
-        // TODO Auto-generated method stub
+        checkBrowser();
+        if (canGoForward) {
+            lib.cefswt_go_forward(browser);
+            return true;
+        }
         return false;
     }
 
@@ -668,14 +695,12 @@ class Chromium extends WebBrowser {
 
     @Override
     public boolean isBackEnabled() {
-        // TODO Auto-generated method stub
-        return false;
+        return canGoBack;
     }
 
     @Override
     public boolean isForwardEnabled() {
-        // TODO Auto-generated method stub
-        return false;
+        return canGoForward;
     }
 
     @Override
@@ -723,17 +748,23 @@ class Chromium extends WebBrowser {
         String cefswt_get_url(Pointer browser);
 
         String cefswt_get_text(Pointer browser, CEF.cef_string_visitor_t visitor);
-        
+
         void cefswt_resized(Pointer browser, int width, int height);
 
         void cefswt_set_focus(Pointer browser, boolean focus, long shell_hwnd);
 
+        void cefswt_go_forward(Pointer browser);
+
+        void cefswt_go_back(Pointer browser);
+
         void cefswt_close_browser(Pointer browser);
 
         void cefswt_shutdown();
-        
+
         void cefswt_free(@Direct Pointer bs);
-        
+
         String cefswt_cefstring_to_java(CEF.cef_string_t string);
+
+        boolean cefswt_is_main_frame(Pointer frame);
     }
 }

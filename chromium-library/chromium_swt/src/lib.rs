@@ -445,3 +445,18 @@ fn get_browser_host(browser: *mut cef::cef_browser_t) -> *mut cef::_cef_browser_
     let browser_host = unsafe { get_host_fn(browser) };
     browser_host
 }
+
+#[no_mangle]
+pub extern fn cefswt_is_main_frame(frame: *mut cef::_cef_frame_t) -> i32 {
+    unsafe { (*frame).is_main.expect("null is_main")(frame) }
+}
+
+#[no_mangle]
+pub extern fn cefswt_go_forward(browser: *mut cef::_cef_browser_t) {
+    unsafe { (*browser).go_forward.expect("null go_forward")(browser) };
+}
+
+#[no_mangle]
+pub extern fn cefswt_go_back(browser: *mut cef::_cef_browser_t) {
+    unsafe { (*browser).go_back.expect("null go_back")(browser) };
+}
