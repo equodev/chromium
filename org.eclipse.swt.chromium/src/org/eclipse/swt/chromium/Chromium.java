@@ -26,6 +26,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
+import org.eclipse.swt.browser.ProgressEvent;
+import org.eclipse.swt.browser.ProgressListener;
+import org.eclipse.swt.browser.TitleEvent;
+import org.eclipse.swt.browser.TitleListener;
 import org.eclipse.swt.events.ControlAdapter;
 import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.FocusEvent;
@@ -39,6 +43,7 @@ class Chromium extends WebBrowser {
     private static final String VERSION = "0300";
     private static final String CEFVERSION = "3071";
     private static final String SHARED_LIB_V = "chromium_swt-"+VERSION;
+    private static final int MAX_PROGRESS = 100;
 //    private static final String SUBP = "chromium_subp";
 //    private static final String SUBP_V = "chromium_subp-"+VERSION;
     
@@ -63,6 +68,8 @@ class Chromium extends WebBrowser {
     private CEF.cef_client_t clientHandler;
     private CEF.cef_focus_handler_t focusHandler;
     private CEF.cef_life_span_handler_t lifeSpanHandler;
+    private CEF.cef_load_handler_t loadHandler;
+    private CEF.cef_display_handler_t displayHandler;
     private FocusListener focusListener;
     private String url;
     private boolean disposing;
@@ -242,6 +249,114 @@ class Chromium extends WebBrowser {
 
         clientHandler = CEFFactory.newClient();
         initializeClientHandler(clientHandler);
+        set_focus_handler();
+        set_life_span_handler();
+        set_load_handler();
+        set_display_handler();
+
+        chromium.addControlListener(new ControlAdapter() {
+            @Override
+            public void controlResized(ControlEvent e) {
+                if (!chromium.isDisposed() && browser != null) {
+                    if (chromium.getDisplay().getActiveShell() != chromium.getShell()) {
+//                      System.err.println("Ignore do_message_loop_work due inactive shell");
+                        return;
+                    }
+                    lib.cefswt_resized(browser, chromium.getSize().x, chromium.getSize().y);
+                }
+            }
+        });
+        
+        final org.eclipse.swt.graphics.Point size = chromium.getSize();
+        browser = lib.cefswt_create_browser(hwnd, url, clientHandler, size.x, size.y);
+        if (browser != null) {
+            browsers.incrementAndGet();
+            lib.cefswt_resized(browser, chromium.getSize().x, chromium.getSize().y);
+        }
+
+        final Display display = chromium.getDisplay();
+        if (browsers.get() == 1) {
+            debugPrint("STARTING MSG LOOP");
+            doMessageLoop(display);
+        }
+    }
+
+    private void set_life_span_handler() {
+        lifeSpanHandler = CEFFactory.newLifeSpanHandler();
+        lifeSpanHandler.on_before_close.set((plifeSpanHandler, browser) -> {
+            debugPrint("OnBeforeClose");
+            lib.cefswt_free(browser);
+            Chromium.this.clientHandler = null;
+            Chromium.this.browser = null;
+            Chromium.this.focusHandler = null;
+            Chromium.this.lifeSpanHandler = null;
+            Chromium.this.browser = null;
+            // not always called on linux
+            String platform = SWT.getPlatform();
+            if (("win32".equals(platform) || "cocoa".equals(platform)) && browsers.decrementAndGet() == 0 && shuttindDown) {
+                internalShutdown();
+            }
+        });
+        lifeSpanHandler.do_close.set((plifeSpanHandler, browser) -> {
+            //lifeSpanHandler.base.ref++;
+            debugPrint("DoClose");
+            String platform = SWT.getPlatform();
+            if (("gtk".equals(platform)) && browsers.decrementAndGet() == 0 && shuttindDown) {
+                internalShutdown();
+            }
+            // do not send close notification to top level window
+            // return 0, cause the window to close 
+            return 1;
+        });
+        clientHandler.get_life_span_handler.set(client -> {
+            //DEBUG_CALLBACK("GetLifeSpanHandler");
+            return lifeSpanHandler;
+        });
+    }
+    
+    private void set_load_handler() {
+        loadHandler = CEFFactory.newLoadHandler();
+        loadHandler.on_loading_state_change.set((self_, browser, isLoading, canGoBack, canGoForward) -> {
+            debugPrint("on_loading_state_change");
+            if (chromium.isDisposed() || progressListeners == null) return;
+            ProgressEvent event = new ProgressEvent(chromium);
+            event.display = chromium.getDisplay ();
+            event.widget = chromium;
+            event.current = MAX_PROGRESS;
+            event.current = isLoading == 1 ? 1 : MAX_PROGRESS;
+            event.total = MAX_PROGRESS;
+            for (ProgressListener listener : progressListeners) {
+                if (isLoading == 1) {
+                    listener.changed(event);
+                } else {
+                    listener.completed(event);
+                }
+            }
+        });
+        clientHandler.get_load_handler.set(client -> {
+            return loadHandler;
+        });
+    }
+
+    private void set_display_handler() {
+        displayHandler = CEFFactory.newDisplayHandler();
+        displayHandler.on_title_change.set((self, browser, title) -> {
+            if (chromium.isDisposed() || progressListeners == null) return;
+            String str = lib.cefswt_cefstring_to_java(title);
+            TitleEvent event = new TitleEvent(chromium);
+            event.display = chromium.getDisplay ();
+            event.widget = chromium;
+            event.title = str;
+            for (TitleListener listener : titleListeners) {
+                listener.changed(event);
+            }
+        });
+        clientHandler.get_display_handler.set(client -> {
+            return displayHandler;
+        });
+    }
+
+    private void set_focus_handler() {
         focusHandler = CEFFactory.newFocusHandler();
         focusHandler.on_got_focus.set((focusHandler, browser_1) -> {
             debugPrint("CALLBACK OnGotFocus");
@@ -375,15 +490,11 @@ class Chromium extends WebBrowser {
         // callbacks
         client.get_context_menu_handler.set((c) -> debug("get_context_menu_handler"));
         client.get_dialog_handler.set((c) -> debug("get_dialog_handler"));
-        client.get_display_handler.set((c) -> null);
         client.get_download_handler.set((c) -> debug("get_download_handler"));
         client.get_drag_handler.set((c) -> debug("get_drag_handler"));
-        client.get_focus_handler.set((c) -> null);
         client.get_geolocation_handler.set((c) -> debug("get_geolocation_handler"));
         client.get_jsdialog_handler.set((c) -> debug("get_jsdialog_handler"));
         client.get_keyboard_handler.set((c) -> null);
-        client.get_life_span_handler.set((c) -> null);
-        client.get_load_handler.set((c) -> null);
         client.get_render_handler.set((c) -> null);
         client.get_request_handler.set((c) -> null);
         client.on_process_message_received.set((c, browser_1, processId_2, processMessage_3) -> {
@@ -612,8 +723,9 @@ class Chromium extends WebBrowser {
 
     @Override
     public boolean setText(String html, boolean trusted) {
-        // TODO Auto-generated method stub
-        return false;
+        checkBrowser();
+        lib.cefswt_load_text(browser, html);
+        return true;
     }
 
     @Override
@@ -642,6 +754,8 @@ class Chromium extends WebBrowser {
 
         void cefswt_load_url(Pointer browser, String url);
 
+        void cefswt_load_text(Pointer browser, String text);
+
         String cefswt_get_url(Pointer browser);
         
         void cefswt_resized(Pointer browser, int width, int height);
@@ -653,5 +767,7 @@ class Chromium extends WebBrowser {
         void cefswt_shutdown();
         
         void cefswt_free(@Direct Pointer bs);
+        
+        String cefswt_cefstring_to_java(CEF.cef_string_t string);
     }
 }

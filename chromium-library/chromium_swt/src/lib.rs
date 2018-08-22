@@ -368,6 +368,25 @@ pub extern fn cefswt_get_url(browser: *mut cef::cef_browser_t) -> *mut c_char {
 }
 
 #[no_mangle]
+pub extern fn cefswt_cefstring_to_java(cefstring: *mut cef::cef_string_t) -> *mut c_char {
+    let utf8 = unsafe { cef::cef_string_userfree_utf8_alloc() };
+    unsafe { cef::cef_string_utf16_to_utf8((*cefstring).str, (*cefstring).length, utf8) };
+    return unsafe {(*utf8).str};
+}
+
+#[no_mangle]
+pub extern fn cefswt_load_text(browser: *mut cef::cef_browser_t, text: *const c_char) {
+    let text = utils::str_from_c(text);
+    let text_cef = utils::cef_string(text);
+    let url_cef = utils::cef_string("http://text/");
+    println!("text: {:?}", text);
+    let get_frame = unsafe { (*browser).get_main_frame.expect("null get_main_frame") };
+    let main_frame = unsafe { get_frame(browser) };
+    let load_string = unsafe { (*main_frame).load_string.expect("null load_string") };
+    unsafe { load_string(main_frame, &text_cef, &url_cef) };
+}
+
+#[no_mangle]
 pub extern fn cefswt_set_focus(browser: *mut cef::cef_browser_t, set: bool, parent: *mut c_void) {
     let browser_host = get_browser_host(browser);
     let focus_fn = unsafe { (*browser_host).set_focus.expect("null set_focus") };

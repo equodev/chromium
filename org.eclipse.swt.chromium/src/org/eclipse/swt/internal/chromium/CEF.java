@@ -470,6 +470,108 @@ public class CEF {
     }
   }
   ///
+  /// Implement this structure to handle events related to browser display state.
+  /// The functions of this structure will be called on the UI thread.
+  ///
+  public static class cef_display_handler_t extends Struct {
+    static {
+      mapTypeForClosure(cef_display_handler_t.class);
+    }
+    ///
+    /// Base structure.
+    ///
+    public cef_base_ref_counted_t base = inner(new cef_base_ref_counted_t(getRuntime()));
+    ///
+    /// Called when a frame's address has changed.
+    ///
+    public Function<on_address_change> on_address_change = function(on_address_change.class);
+    ///
+    /// Called when the page title changes.
+    ///
+    public Function<on_title_change> on_title_change = function(on_title_change.class);
+    ///
+    /// Called when the page icon changes.
+    ///
+    public Function<on_favicon_urlchange> on_favicon_urlchange =
+        function(on_favicon_urlchange.class);
+    ///
+    /// Called when web content in the page has toggled fullscreen mode. If
+    /// |fullscreen| is true (1) the content will automatically be sized to fill
+    /// the browser content area. If |fullscreen| is false (0) the content will
+    /// automatically return to its original size and position. The client is
+    /// responsible for resizing the browser if desired.
+    ///
+    public Function<on_fullscreen_mode_change> on_fullscreen_mode_change =
+        function(on_fullscreen_mode_change.class);
+    ///
+    /// Called when the browser is about to display a tooltip. |text| contains the
+    /// text that will be displayed in the tooltip. To handle the display of the
+    /// tooltip yourself return true (1). Otherwise, you can optionally modify
+    /// |text| and then return false (0) to allow the browser to display the
+    /// tooltip. When window rendering is disabled the application is responsible
+    /// for drawing tooltips and the return value is ignored.
+    ///
+    public Function<on_tooltip> on_tooltip = function(on_tooltip.class);
+    ///
+    /// Called when the browser receives a status message. |value| contains the
+    /// text that will be displayed in the status message.
+    ///
+    public Function<on_status_message> on_status_message = function(on_status_message.class);
+    ///
+    /// Called to display a console message. Return true (1) to stop the message
+    /// from being output to the console.
+    ///
+    public Function<on_console_message> on_console_message = function(on_console_message.class);
+
+    public static interface on_address_change {
+      @Delegate
+      void invoke(
+          cef_display_handler_t self_,
+          jnr.ffi.Pointer browser,
+          jnr.ffi.Pointer frame,
+          cef_string_t url);
+    }
+
+    public static interface on_title_change {
+      @Delegate
+      void invoke(cef_display_handler_t self_, jnr.ffi.Pointer browser, cef_string_t title);
+    }
+
+    public static interface on_favicon_urlchange {
+      @Delegate
+      void invoke(cef_display_handler_t self_, jnr.ffi.Pointer browser, jnr.ffi.Pointer icon_urls);
+    }
+
+    public static interface on_fullscreen_mode_change {
+      @Delegate
+      void invoke(cef_display_handler_t self_, jnr.ffi.Pointer browser, int fullscreen);
+    }
+
+    public static interface on_tooltip {
+      @Delegate
+      int invoke(cef_display_handler_t self_, jnr.ffi.Pointer browser, cef_string_t text);
+    }
+
+    public static interface on_status_message {
+      @Delegate
+      void invoke(cef_display_handler_t self_, jnr.ffi.Pointer browser, cef_string_t value);
+    }
+
+    public static interface on_console_message {
+      @Delegate
+      int invoke(
+          cef_display_handler_t self_,
+          jnr.ffi.Pointer browser,
+          cef_string_t message,
+          cef_string_t source,
+          int line);
+    }
+
+    public cef_display_handler_t(jnr.ffi.Runtime runtime) {
+      super(runtime);
+    }
+  }
+  ///
   /// Implement this structure to handle events related to focus. The functions of
   /// this structure will be called on the UI thread.
   ///
@@ -792,7 +894,7 @@ public class CEF {
 
     public static interface get_display_handler {
       @Delegate
-      jnr.ffi.Pointer invoke(cef_client_t self_);
+      cef_display_handler_t invoke(cef_client_t self_);
     }
 
     public static interface get_download_handler {

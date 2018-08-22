@@ -96,6 +96,8 @@ public class CEFFactory {
 	}
 
 	public static CEF.cef_app_t newApp() {
+	    mapTypeForClosure(CEF.cef_string_utf16_t.class);
+	    mapTypeForClosure(CEF.cef_string_t.class);
 		CEF.cef_app_t st = new CEF.cef_app_t(RUNTIME);
 		setBase(st, st.base);
 		return st;
@@ -131,7 +133,13 @@ public class CEFFactory {
 	    return st;
 	}
 	
-	private static void setBase(Struct st, cef_base_ref_counted_t base) {
+	public static CEF.cef_display_handler_t newDisplayHandler() {
+	    CEF.cef_display_handler_t st = new CEF.cef_display_handler_t(RUNTIME);
+	    setBase(st, st.base);
+	    return st;
+	}
+	
+    private static void setBase(Struct st, cef_base_ref_counted_t base) {
 		directMemoryForStruct(st);
 		setBaseRefCounting(st, base);
 		setBaseSize(st, base);
