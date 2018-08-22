@@ -139,6 +139,12 @@ public class CEFFactory {
 	    return st;
 	}
 	
+	public static CEF.cef_string_visitor_t newStringVisitor() {
+	    CEF.cef_string_visitor_t st = new CEF.cef_string_visitor_t(RUNTIME);
+	    setBase(st, st.base);
+	    return st;
+	}
+	
     private static void setBase(Struct st, cef_base_ref_counted_t base) {
 		directMemoryForStruct(st);
 		setBaseRefCounting(st, base);

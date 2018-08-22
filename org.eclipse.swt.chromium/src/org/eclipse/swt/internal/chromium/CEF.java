@@ -202,6 +202,31 @@ public class CEF {
     }
   }
   ///
+  /// Implement this structure to receive string values asynchronously.
+  ///
+  public static class cef_string_visitor_t extends Struct {
+    static {
+      mapTypeForClosure(cef_string_visitor_t.class);
+    }
+    ///
+    /// Base structure.
+    ///
+    public cef_base_ref_counted_t base = inner(new cef_base_ref_counted_t(getRuntime()));
+    ///
+    /// Method that will be executed.
+    ///
+    public Function<visit> visit = function(visit.class);
+
+    public static interface visit {
+      @Delegate
+      void invoke(cef_string_visitor_t self_, cef_string_t string);
+    }
+
+    public cef_string_visitor_t(jnr.ffi.Runtime runtime) {
+      super(runtime);
+    }
+  }
+  ///
   /// Structure used to implement browser process callbacks. The functions of this
   /// structure will be called on the browser process main thread unless otherwise
   /// indicated.

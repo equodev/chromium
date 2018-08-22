@@ -387,6 +387,18 @@ pub extern fn cefswt_load_text(browser: *mut cef::cef_browser_t, text: *const c_
 }
 
 #[no_mangle]
+pub extern fn cefswt_get_text(browser: *mut cef::cef_browser_t, visitor: *mut cef::_cef_string_visitor_t) {
+    assert_eq!(unsafe{(*visitor).base.size}, std::mem::size_of::<cef::_cef_string_visitor_t>());
+    let get_frame = unsafe { (*browser).get_main_frame.expect("null get_main_frame") };
+    let main_frame = unsafe { get_frame(browser) };
+    assert!(!main_frame.is_null());
+    let get_text = unsafe { (*main_frame).get_source.expect("null get_text") };
+    // println!("before get_text");
+    unsafe { get_text(main_frame, visitor) };
+    // println!("after get_text");
+}
+
+#[no_mangle]
 pub extern fn cefswt_set_focus(browser: *mut cef::cef_browser_t, set: bool, parent: *mut c_void) {
     let browser_host = get_browser_host(browser);
     let focus_fn = unsafe { (*browser_host).set_focus.expect("null set_focus") };
