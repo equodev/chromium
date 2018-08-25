@@ -330,7 +330,7 @@ class Chromium extends WebBrowser {
             
             
             String platform = SWT.getPlatform();
-            if (("gtk".equals(platform)) && browsers.decrementAndGet() == 0 && shuttindDown) {
+            if (disposing && ("gtk".equals(platform)) && browsers.decrementAndGet() == 0 && shuttindDown) {
                 internalShutdown();
             }
             if (!disposing) {
@@ -348,7 +348,8 @@ class Chromium extends WebBrowser {
                 Chromium.this.browser = browser;
             }
             chromium.getDisplay().asyncExec(() -> {
-                if (chromium.isDisposed() || visibilityWindowListeners == null) return;
+                debugPrint("on_after_created handling " + browser + ":" + popupWindowEvent);
+                if (chromium == null || chromium.isDisposed() || visibilityWindowListeners == null) return;
                 org.eclipse.swt.browser.WindowEvent event = new org.eclipse.swt.browser.WindowEvent(chromium);
                 event.display = chromium.getDisplay ();
                 event.widget = chromium;
@@ -392,14 +393,18 @@ class Chromium extends WebBrowser {
             int width = popupFeatures.widthSet.get() == 1 ? popupFeatures.width.get() : 0;
             int height = popupFeatures.heightSet.get() == 1 ? popupFeatures.height.get() : 0;
             event.size = new Point(width, height);
-            for (OpenWindowListener listener : openWindowListeners) {
-                listener.open(event);
-            }
+            chromium.getDisplay().syncExec(() -> {
+                for (OpenWindowListener listener : openWindowListeners) {
+                    listener.open(event);
+                }
+            });
             if (event.browser == null && event.required)
                 return 1;
             if (event.browser != null) {
                 event.browser.webBrowser.popupWindowEvent = event;
-                lib.cefswt_set_window_info_parent(windowInfo, client, event.browser.webBrowser.clientHandler, event.browser.webBrowser.getHandle(event.browser));
+                chromium.getDisplay().syncExec(() -> {
+                    lib.cefswt_set_window_info_parent(windowInfo, client, event.browser.webBrowser.clientHandler, event.browser.webBrowser.getHandle(event.browser));
+                });
             }
             return 0;
         });
@@ -740,8 +745,8 @@ class Chromium extends WebBrowser {
 
     @Override
     public boolean execute(String script) {
-        // TODO Auto-generated method stub
-        return false;
+        lib.cefswt_execute(browser, script);
+        return true;
     }
 
     @Override
@@ -849,6 +854,8 @@ class Chromium extends WebBrowser {
 
         void cefswt_go_back(Pointer browser);
 
+        void cefswt_execute(Pointer browser, String script);
+        
         void cefswt_close_browser(Pointer browser);
 
         void cefswt_shutdown();

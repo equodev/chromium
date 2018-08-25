@@ -410,6 +410,17 @@ pub extern fn cefswt_get_text(browser: *mut cef::cef_browser_t, visitor: *mut ce
 }
 
 #[no_mangle]
+pub extern fn cefswt_execute(browser: *mut cef::cef_browser_t, text: *const c_char) {
+    let text = utils::str_from_c(text);
+    let text_cef = utils::cef_string(text);
+    let url_cef = utils::cef_string_empty();
+    let get_frame = unsafe { (*browser).get_main_frame.expect("null get_main_frame") };
+    let main_frame = unsafe { get_frame(browser) };
+    let execute = unsafe { (*main_frame).execute_java_script.expect("null execute_java_script") };
+    unsafe { execute(main_frame, &text_cef, &url_cef, 0) };
+}
+
+#[no_mangle]
 pub extern fn cefswt_set_focus(browser: *mut cef::cef_browser_t, set: bool, parent: *mut c_void) {
     let browser_host = get_browser_host(browser);
     let focus_fn = unsafe { (*browser_host).set_focus.expect("null set_focus") };
