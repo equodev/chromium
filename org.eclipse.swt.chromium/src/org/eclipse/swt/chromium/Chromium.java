@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
+import org.eclipse.swt.browser.CloseWindowListener;
 import org.eclipse.swt.browser.LocationEvent;
 import org.eclipse.swt.browser.LocationListener;
 import org.eclipse.swt.browser.ProgressEvent;
@@ -42,6 +43,7 @@ import org.eclipse.swt.internal.Library;
 import org.eclipse.swt.internal.chromium.CEF;
 import org.eclipse.swt.internal.chromium.CEFFactory;
 import org.eclipse.swt.internal.chromium.ResourceExpander;
+import org.eclipse.swt.internal.chromium.CEF.cef_client_t;
 
 class Chromium extends WebBrowser {
     private static final String VERSION = "0300";
@@ -316,12 +318,26 @@ class Chromium extends WebBrowser {
         lifeSpanHandler.do_close.set((plifeSpanHandler, browser) -> {
             //lifeSpanHandler.base.ref++;
             debugPrint("DoClose");
+            if (!disposing && !chromium.isDisposed() && closeWindowListeners != null) {
+                org.eclipse.swt.browser.WindowEvent event = new org.eclipse.swt.browser.WindowEvent(chromium);
+                event.display = chromium.getDisplay ();
+                event.widget = chromium;
+//                event.browser = chromium;
+                for (CloseWindowListener listener : closeWindowListeners) {
+                    listener.close(event);
+                }
+            }
+            
+            
             String platform = SWT.getPlatform();
             if (("gtk".equals(platform)) && browsers.decrementAndGet() == 0 && shuttindDown) {
                 internalShutdown();
             }
+            if (!disposing) {
+                chromium.dispose();
+            }
             // do not send close notification to top level window
-            // return 0, cause the window to close 
+            // returning 0, cause the window to close 
             return 1;
         });
         lifeSpanHandler.on_after_created.set((self, browser) -> {
