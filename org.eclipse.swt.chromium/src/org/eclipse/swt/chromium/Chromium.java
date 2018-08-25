@@ -32,10 +32,12 @@ import org.eclipse.swt.browser.ProgressEvent;
 import org.eclipse.swt.browser.ProgressListener;
 import org.eclipse.swt.browser.TitleEvent;
 import org.eclipse.swt.browser.TitleListener;
+import org.eclipse.swt.browser.VisibilityWindowListener;
 import org.eclipse.swt.events.ControlAdapter;
 import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.internal.Library;
 import org.eclipse.swt.internal.chromium.CEF;
 import org.eclipse.swt.internal.chromium.CEFFactory;
@@ -79,7 +81,14 @@ class Chromium extends WebBrowser {
     private boolean canGoBack;
     private boolean canGoForward;
     private boolean disposing;
+    private WindowEvent popupWindowEvent;
+    private int instance;
+    private static int INSTANCES = 0;
 
+    public Chromium() {
+        instance = ++INSTANCES;
+    }
+    
     public void addOpenWindowListener (OpenWindowListener listener) {
         OpenWindowListener[] newOpenWindowListeners = new OpenWindowListener[openWindowListeners.length + 1];
         System.arraycopy(openWindowListeners, 0, newOpenWindowListeners, 0, openWindowListeners.length);
@@ -142,7 +151,7 @@ class Chromium extends WebBrowser {
     }
 
     private jnr.ffi.Pointer debugPrint(String log) {
-        System.out.println("J:" + log + (this.url != null ? " " + this.url : " empty url"));
+        System.out.println("J"+instance + ":" + log + (this.url != null ? " " + this.url : " empty url"));
         return null;
     }
     
@@ -315,6 +324,69 @@ class Chromium extends WebBrowser {
             // return 0, cause the window to close 
             return 1;
         });
+        lifeSpanHandler.on_after_created.set((self, browser) -> {
+            if (chromium.isDisposed() || visibilityWindowListeners == null) return;
+            debugPrint("on_after_created " + browser + ":" + popupWindowEvent);
+            if (Chromium.this.browser != null && !browser.equals(Chromium.this.browser)) {
+                // replacing this browser with popup browser. TODO: destroy original
+                Chromium.this.browser = browser;
+            }
+            chromium.getDisplay().asyncExec(() -> {
+                if (chromium.isDisposed() || visibilityWindowListeners == null) return;
+                org.eclipse.swt.browser.WindowEvent event = new org.eclipse.swt.browser.WindowEvent(chromium);
+                event.display = chromium.getDisplay ();
+                event.widget = chromium;
+                event.size = new Point(0,0);
+                event.location = new Point(0,0);
+                if (popupWindowEvent != null) {
+                    event.size = popupWindowEvent.size;
+                    event.location = popupWindowEvent.location;
+                    event.addressBar = popupWindowEvent.addressBar;
+                    event.menuBar = popupWindowEvent.menuBar;
+                    event.statusBar = popupWindowEvent.statusBar;
+                    event.toolBar = popupWindowEvent.toolBar;
+                    popupWindowEvent = null;
+                }
+                for (VisibilityWindowListener listener : visibilityWindowListeners) {
+                    listener.show(event);
+                }
+            });
+        });
+        lifeSpanHandler.on_before_popup.set((self, browser, frame,
+                target_url, target_frame_name, target_disposition,
+                user_gesture, popupFeatures, windowInfo,
+                client, settings, no_javascript_access) -> {
+            debugPrint("on_before_popup " + browser + ":" + popupWindowEvent);
+            if (chromium.isDisposed()) 
+                return 1;
+            if (openWindowListeners == null) 
+                return 0;
+            
+            WindowEvent event = new WindowEvent(chromium);
+            event.display = chromium.getDisplay ();
+            event.widget = chromium;
+            event.required = false;
+            event.addressBar = popupFeatures.locationBarVisible.get() == 1;
+            event.menuBar = popupFeatures.menuBarVisible.get() == 1;
+            event.statusBar = popupFeatures.statusBarVisible.get() == 1;
+            event.toolBar = popupFeatures.toolBarVisible.get() == 1;
+            int x = popupFeatures.xSet.get() == 1 ? popupFeatures.x.get() : 0 ;
+            int y = popupFeatures.ySet.get() == 1 ? popupFeatures.y.get() : 0 ;
+            event.location = new Point(x, y);
+            int width = popupFeatures.widthSet.get() == 1 ? popupFeatures.width.get() : 0;
+            int height = popupFeatures.heightSet.get() == 1 ? popupFeatures.height.get() : 0;
+            event.size = new Point(width, height);
+            for (OpenWindowListener listener : openWindowListeners) {
+                listener.open(event);
+            }
+            if (event.browser == null && event.required)
+                return 1;
+            if (event.browser != null) {
+                event.browser.webBrowser.popupWindowEvent = event;
+                lib.cefswt_set_window_info_parent(windowInfo, client, event.browser.webBrowser.clientHandler, event.browser.webBrowser.getHandle(event.browser));
+            }
+            return 0;
+        });
         clientHandler.get_life_span_handler.set(client -> {
             //DEBUG_CALLBACK("GetLifeSpanHandler");
             return lifeSpanHandler;
@@ -324,7 +396,7 @@ class Chromium extends WebBrowser {
     private void set_load_handler() {
         loadHandler = CEFFactory.newLoadHandler();
         loadHandler.on_loading_state_change.set((self_, browser, isLoading, canGoBack, canGoForward) -> {
-            debugPrint("on_loading_state_change");
+//            debugPrint("on_loading_state_change");
             Chromium.this.canGoBack = canGoBack == 1;
             Chromium.this.canGoForward = canGoForward == 1;
             if (chromium.isDisposed() || progressListeners == null) return;
@@ -736,6 +808,8 @@ class Chromium extends WebBrowser {
 
     public static interface Lib {
         void cefswt_init(@Direct CEF.cef_app_t app, String cefrustPath, String version);
+
+        void cefswt_set_window_info_parent(@Direct Pointer windowInfo, @Direct Pointer client, @Direct cef_client_t clientHandler, long handle);
 
         Pointer cefswt_create_browser(long hwnd, String url, @Direct CEF.cef_client_t clientHandler, int w, int h);
 

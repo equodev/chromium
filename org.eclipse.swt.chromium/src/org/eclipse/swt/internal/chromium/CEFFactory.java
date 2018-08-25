@@ -98,6 +98,7 @@ public class CEFFactory {
 	public static CEF.cef_app_t newApp() {
 	    mapTypeForClosure(CEF.cef_string_utf16_t.class);
 	    mapTypeForClosure(CEF.cef_string_t.class);
+	    mapTypeForClosure(CEF.cef_popup_features_t.class);
 		CEF.cef_app_t st = new CEF.cef_app_t(RUNTIME);
 		setBase(st, st.base);
 		return st;

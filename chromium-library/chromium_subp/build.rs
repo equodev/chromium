@@ -217,7 +217,7 @@ fn gen_java_cef(cef_path: std::path::Display) {
     .opaque_type("_cef_dialog_handler_t")
     .opaque_type("_cef_context_menu_handler_t")
     .opaque_type("_cef_frame_t")
-    .opaque_type("_cef_popup_features_t")
+    .whitelist_type("_cef_popup_features_t")
     .opaque_type("_cef_window_info_t")
     .opaque_type("_cef_browser_settings_t")
     // .whitelisted_type(".*cef_base_t")

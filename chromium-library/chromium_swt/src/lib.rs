@@ -257,7 +257,6 @@ fn restore_signal_handlers(signal_handlers: HashMap<c_int, nix::sys::signal::Sig
 
 #[no_mangle]
 pub extern fn cefswt_create_browser(hwnd: c_ulong, url: *const c_char, client: &mut cef::_cef_client_t, w: c_int, h: c_int) -> *const cef::cef_browser_t {
-    println!("create_browser");
     assert_eq!((*client).base.size, std::mem::size_of::<cef::_cef_client_t>());
 
     // println!("hwnd: {}", hwnd);
@@ -267,6 +266,13 @@ pub extern fn cefswt_create_browser(hwnd: c_ulong, url: *const c_char, client: &
     let browser = app::create_browser(hwnd, url, client, w, h);
 
     browser
+}
+
+#[no_mangle]
+pub extern fn cefswt_set_window_info_parent(window_info: *mut cef::_cef_window_info_t, client: *mut *mut cef::_cef_client_t, jclient: &mut cef::_cef_client_t, hwnd: c_ulong) {
+    println!("cefswt_set_window_info_parent {:?} {}", window_info, hwnd);
+    unsafe { (*client) = jclient };
+    app::set_window_parent(window_info, hwnd);
 }
 
 #[no_mangle]
@@ -379,7 +385,7 @@ pub extern fn cefswt_load_text(browser: *mut cef::cef_browser_t, text: *const c_
     let text = utils::str_from_c(text);
     let text_cef = utils::cef_string(text);
     let url_cef = utils::cef_string("http://text/");
-    println!("text: {:?}", text);
+    // println!("text: {:?}", text);
     let get_frame = unsafe { (*browser).get_main_frame.expect("null get_main_frame") };
     let main_frame = unsafe { get_frame(browser) };
     let load_string = unsafe { (*main_frame).load_string.expect("null load_string") };

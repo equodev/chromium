@@ -202,6 +202,35 @@ public class CEF {
     }
   }
   ///
+  /// Popup window features.
+  ///
+  public static class cef_popup_features_t extends Struct {
+    static {
+      mapTypeForClosure(cef_popup_features_t.class);
+    }
+
+    public Signed32 x = new Signed32();
+    public Signed32 xSet = new Signed32();
+    public Signed32 y = new Signed32();
+    public Signed32 ySet = new Signed32();
+    public Signed32 width = new Signed32();
+    public Signed32 widthSet = new Signed32();
+    public Signed32 height = new Signed32();
+    public Signed32 heightSet = new Signed32();
+    public Signed32 menuBarVisible = new Signed32();
+    public Signed32 statusBarVisible = new Signed32();
+    public Signed32 toolBarVisible = new Signed32();
+    public Signed32 locationBarVisible = new Signed32();
+    public Signed32 scrollbarsVisible = new Signed32();
+    public Signed32 resizable = new Signed32();
+    public Signed32 fullscreen = new Signed32();
+    public Signed32 dialog = new Signed32();
+
+    public cef_popup_features_t(jnr.ffi.Runtime runtime) {
+      super(runtime);
+    }
+  }
+  ///
   /// Implement this structure to receive string values asynchronously.
   ///
   public static class cef_string_visitor_t extends Struct {
@@ -795,11 +824,11 @@ public class CEF {
           cef_string_t target_frame_name,
           cef_window_open_disposition_t target_disposition,
           int user_gesture,
-          jnr.ffi.Pointer popupFeatures,
+          cef_popup_features_t popupFeatures,
           jnr.ffi.Pointer windowInfo,
-          cef_client_t client,
+          jnr.ffi.Pointer client,
           jnr.ffi.Pointer settings,
-          IntByReference no_javascript_access);
+          @Out int no_javascript_access);
     }
 
     public static interface on_after_created {
