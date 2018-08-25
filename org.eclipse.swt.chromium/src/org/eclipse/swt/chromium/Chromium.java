@@ -84,6 +84,7 @@ class Chromium extends WebBrowser {
     private boolean canGoForward;
     private boolean disposing;
     private WindowEvent popupWindowEvent;
+    private boolean ignoreFirstEvents;
     private int instance;
     private static int INSTANCES = 0;
 
@@ -255,6 +256,7 @@ class Chromium extends WebBrowser {
         hwnd = getHandle(chromium);
         if (this.url == null) {
             this.url = "about:blank";
+            ignoreFirstEvents = true;
         }
 
         chromium.addDisposeListener(e -> {
@@ -417,23 +419,27 @@ class Chromium extends WebBrowser {
     private void set_load_handler() {
         loadHandler = CEFFactory.newLoadHandler();
         loadHandler.on_loading_state_change.set((self_, browser, isLoading, canGoBack, canGoForward) -> {
-//            debugPrint("on_loading_state_change");
+            //debugPrint("on_loading_state_change " + isLoading);
             Chromium.this.canGoBack = canGoBack == 1;
             Chromium.this.canGoForward = canGoForward == 1;
             if (chromium.isDisposed() || progressListeners == null) return;
             updateText();
-            ProgressEvent event = new ProgressEvent(chromium);
-            event.display = chromium.getDisplay ();
-            event.widget = chromium;
-            event.current = MAX_PROGRESS;
-            event.current = isLoading == 1 ? 1 : MAX_PROGRESS;
-            event.total = MAX_PROGRESS;
-            for (ProgressListener listener : progressListeners) {
-                if (isLoading == 1) {
-                    listener.changed(event);
-                } else {
-                    listener.completed(event);
+            if (!("about:blank".equals(url) && ignoreFirstEvents)) {
+                ProgressEvent event = new ProgressEvent(chromium);
+                event.display = chromium.getDisplay ();
+                event.widget = chromium;
+                event.current = MAX_PROGRESS;
+                event.current = isLoading == 1 ? 1 : MAX_PROGRESS;
+                event.total = MAX_PROGRESS;
+                for (ProgressListener listener : progressListeners) {
+                    if (isLoading == 1) {
+                        listener.changed(event);
+                    } else {
+                        listener.completed(event);
+                    }
                 }
+            } else if (isLoading == 0 && ignoreFirstEvents) {
+                ignoreFirstEvents = false;
             }
         });
         clientHandler.get_load_handler.set(client -> {
@@ -463,8 +469,10 @@ class Chromium extends WebBrowser {
             event.location = lib.cefswt_cefstring_to_java(url);
             event.top = lib.cefswt_is_main_frame(frame);
             debugPrint("on_address_change:" + event.location);
-            for (LocationListener listener : locationListeners) {
-                listener.changed(event);
+            if (!("about:blank".equals(event.location) && ignoreFirstEvents)) {
+                for (LocationListener listener : locationListeners) {
+                    listener.changed(event);
+                }
             }
         });
         clientHandler.get_display_handler.set(client -> {
