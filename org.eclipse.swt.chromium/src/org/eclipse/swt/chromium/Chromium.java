@@ -818,8 +818,8 @@ class Chromium extends WebBrowser {
     
     @Override
     public void stop() {
-        // TODO Auto-generated method stub
-
+        checkBrowser();
+        lib.cefswt_stop(browser);
     }
 
     public static interface Lib {
@@ -834,6 +834,8 @@ class Chromium extends WebBrowser {
         void cefswt_load_url(Pointer browser, String url);
 
         void cefswt_load_text(Pointer browser, String text);
+
+        void cefswt_stop(Pointer browser);
 
         String cefswt_get_url(Pointer browser);
 
