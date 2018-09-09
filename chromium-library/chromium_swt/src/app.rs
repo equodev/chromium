@@ -108,6 +108,14 @@ fn cef_window_info(hwnd: c_ulong, w: c_int, h: c_int) -> cef::_cef_window_info_t
     window_info
 }
 
+#[cfg(target_os = "macos")]
+pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulong) {
+    use std::os::raw::{c_void};
+    unsafe { println!("orig window_info {} {:?}", hwnd, (*window_info)); };
+    unsafe { (*window_info).parent_view = hwnd as *mut c_void };
+    unsafe { println!("new window_info {:?}", (*window_info)); };
+}
+
 #[cfg(windows)]
 fn cef_window_info(hwnd: c_ulong, w: c_int, h: c_int) -> cef::_cef_window_info_t {
     extern crate winapi;
