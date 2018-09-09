@@ -46,7 +46,7 @@ import org.eclipse.swt.internal.chromium.ResourceExpander;
 import org.eclipse.swt.internal.chromium.CEF.cef_client_t;
 
 class Chromium extends WebBrowser {
-    private static final String VERSION = "0300";
+    private static final String VERSION = "0500";
     private static final String CEFVERSION = "3071";
     private static final String SHARED_LIB_V = "chromium_swt-"+VERSION;
     private static final int MAX_PROGRESS = 100;
