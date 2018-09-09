@@ -494,7 +494,7 @@ class Chromium extends WebBrowser {
         focusHandler = CEFFactory.newFocusHandler();
         focusHandler.on_got_focus.set((focusHandler, browser_1) -> {
             debugPrint("CALLBACK OnGotFocus");
-            if (!isFocusControl()) {
+            if (!chromium.isFocusControl()) {
                 chromium.removeFocusListener(focusListener);
                 boolean r = chromium.forceFocus();
                 debugPrint("Forcing focus to SWT canvas: " + r);
@@ -506,7 +506,7 @@ class Chromium extends WebBrowser {
         });
         focusHandler.on_set_focus.set((focusHandler, browser_1, focusSource) -> {
             debugPrint("CALLBACK OnSetFocus " + focusSource);
-            if (!isFocusControl()) {
+            if (!chromium.isFocusControl()) {
                 debugPrint("Disallowing focus to SWT canvas");
                 chromium.removeFocusListener(focusListener);
                 chromium.setFocus();
