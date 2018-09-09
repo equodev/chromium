@@ -257,7 +257,6 @@ fn restore_signal_handlers(signal_handlers: HashMap<c_int, nix::sys::signal::Sig
 
 #[no_mangle]
 pub extern fn cefswt_create_browser(hwnd: c_ulong, url: *const c_char, client: &mut cef::_cef_client_t, w: c_int, h: c_int) -> *const cef::cef_browser_t {
-    println!("create_browser");
     assert_eq!((*client).base.size, std::mem::size_of::<cef::_cef_client_t>());
 
     // println!("hwnd: {}", hwnd);
@@ -267,6 +266,13 @@ pub extern fn cefswt_create_browser(hwnd: c_ulong, url: *const c_char, client: &
     let browser = app::create_browser(hwnd, url, client, w, h);
 
     browser
+}
+
+#[no_mangle]
+pub extern fn cefswt_set_window_info_parent(window_info: *mut cef::_cef_window_info_t, client: *mut *mut cef::_cef_client_t, jclient: &mut cef::_cef_client_t, hwnd: c_ulong) {
+    println!("cefswt_set_window_info_parent {:?} {}", window_info, hwnd);
+    unsafe { (*client) = jclient };
+    app::set_window_parent(window_info, hwnd);
 }
 
 #[no_mangle]
@@ -361,10 +367,57 @@ pub extern fn cefswt_get_url(browser: *mut cef::cef_browser_t) -> *mut c_char {
     if url.is_null() {
         return std::ptr::null_mut();
     } else {
-        let utf8 = unsafe { cef::cef_string_userfree_utf8_alloc()};
+        let utf8 = unsafe { cef::cef_string_userfree_utf8_alloc() };
         unsafe { cef::cef_string_utf16_to_utf8((*url).str, (*url).length, utf8) };
         return unsafe {(*utf8).str};
     }
+}
+
+#[no_mangle]
+pub extern fn cefswt_cefstring_to_java(cefstring: *mut cef::cef_string_t) -> *mut c_char {
+    let utf8 = unsafe { cef::cef_string_userfree_utf8_alloc() };
+    unsafe { cef::cef_string_utf16_to_utf8((*cefstring).str, (*cefstring).length, utf8) };
+    return unsafe {(*utf8).str};
+}
+
+#[no_mangle]
+pub extern fn cefswt_load_text(browser: *mut cef::cef_browser_t, text: *const c_char) {
+    let text = utils::str_from_c(text);
+    let text_cef = utils::cef_string(text);
+    let url_cef = utils::cef_string("http://text/");
+    // println!("text: {:?}", text);
+    let get_frame = unsafe { (*browser).get_main_frame.expect("null get_main_frame") };
+    let main_frame = unsafe { get_frame(browser) };
+    let load_string = unsafe { (*main_frame).load_string.expect("null load_string") };
+    unsafe { load_string(main_frame, &text_cef, &url_cef) };
+}
+
+#[no_mangle]
+pub extern fn cefswt_stop(browser: *mut cef::cef_browser_t) {
+    unsafe { (*browser).stop_load.expect("null stop_load")(browser); };
+}
+
+#[no_mangle]
+pub extern fn cefswt_get_text(browser: *mut cef::cef_browser_t, visitor: *mut cef::_cef_string_visitor_t) {
+    assert_eq!(unsafe{(*visitor).base.size}, std::mem::size_of::<cef::_cef_string_visitor_t>());
+    let get_frame = unsafe { (*browser).get_main_frame.expect("null get_main_frame") };
+    let main_frame = unsafe { get_frame(browser) };
+    assert!(!main_frame.is_null());
+    let get_text = unsafe { (*main_frame).get_source.expect("null get_text") };
+    // println!("before get_text");
+    unsafe { get_text(main_frame, visitor) };
+    // println!("after get_text");
+}
+
+#[no_mangle]
+pub extern fn cefswt_execute(browser: *mut cef::cef_browser_t, text: *const c_char) {
+    let text = utils::str_from_c(text);
+    let text_cef = utils::cef_string(text);
+    let url_cef = utils::cef_string_empty();
+    let get_frame = unsafe { (*browser).get_main_frame.expect("null get_main_frame") };
+    let main_frame = unsafe { get_frame(browser) };
+    let execute = unsafe { (*main_frame).execute_java_script.expect("null execute_java_script") };
+    unsafe { execute(main_frame, &text_cef, &url_cef, 0) };
 }
 
 #[no_mangle]
@@ -413,4 +466,19 @@ fn get_browser_host(browser: *mut cef::cef_browser_t) -> *mut cef::_cef_browser_
     let get_host_fn = unsafe { (*browser).get_host.expect("null get_host") };
     let browser_host = unsafe { get_host_fn(browser) };
     browser_host
+}
+
+#[no_mangle]
+pub extern fn cefswt_is_main_frame(frame: *mut cef::_cef_frame_t) -> i32 {
+    unsafe { (*frame).is_main.expect("null is_main")(frame) }
+}
+
+#[no_mangle]
+pub extern fn cefswt_go_forward(browser: *mut cef::_cef_browser_t) {
+    unsafe { (*browser).go_forward.expect("null go_forward")(browser) };
+}
+
+#[no_mangle]
+pub extern fn cefswt_go_back(browser: *mut cef::_cef_browser_t) {
+    unsafe { (*browser).go_back.expect("null go_back")(browser) };
 }

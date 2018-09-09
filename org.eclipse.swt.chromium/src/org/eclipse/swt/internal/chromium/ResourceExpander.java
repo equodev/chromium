@@ -130,7 +130,7 @@ public class ResourceExpander {
         boolean extracted = false;
         try {
             if (!file.exists ()) {
-                is = Library.class.getResourceAsStream ("/" + mappedName); //$NON-NLS-1$
+                is = Library.class.getResourceAsStream ("/" + mappedName.replace('\\', '/')); //$NON-NLS-1$
                 if (is != null) {
                     extracted = true;
                     int read;

@@ -4,10 +4,10 @@ package org.eclipse.swt.internal.chromium;
 
 import static org.eclipse.swt.internal.chromium.CEFFactory.mapTypeForClosure;
 
-import org.eclipse.swt.internal.chromium.CEFFactory.cef_base_ref_counted_t;
 import jnr.ffi.*;
 import jnr.ffi.annotations.*;
 import jnr.ffi.byref.*;
+import org.eclipse.swt.internal.chromium.CEFFactory.cef_base_ref_counted_t;
 import jnr.ffi.util.EnumMapper.IntegerEnum;
 
 public class CEF {
@@ -48,6 +48,75 @@ public class CEF {
     }
   }
 
+  public enum cef_errorcode_t implements IntegerEnum {
+    ERR_NONE(0),
+    ERR_FAILED(-2),
+    ERR_ABORTED(-3),
+    ERR_INVALID_ARGUMENT(-4),
+    ERR_INVALID_HANDLE(-5),
+    ERR_FILE_NOT_FOUND(-6),
+    ERR_TIMED_OUT(-7),
+    ERR_FILE_TOO_BIG(-8),
+    ERR_UNEXPECTED(-9),
+    ERR_ACCESS_DENIED(-10),
+    ERR_NOT_IMPLEMENTED(-11),
+    ERR_CONNECTION_CLOSED(-100),
+    ERR_CONNECTION_RESET(-101),
+    ERR_CONNECTION_REFUSED(-102),
+    ERR_CONNECTION_ABORTED(-103),
+    ERR_CONNECTION_FAILED(-104),
+    ERR_NAME_NOT_RESOLVED(-105),
+    ERR_INTERNET_DISCONNECTED(-106),
+    ERR_SSL_PROTOCOL_ERROR(-107),
+    ERR_ADDRESS_INVALID(-108),
+    ERR_ADDRESS_UNREACHABLE(-109),
+    ERR_SSL_CLIENT_AUTH_CERT_NEEDED(-110),
+    ERR_TUNNEL_CONNECTION_FAILED(-111),
+    ERR_NO_SSL_VERSIONS_ENABLED(-112),
+    ERR_SSL_VERSION_OR_CIPHER_MISMATCH(-113),
+    ERR_SSL_RENEGOTIATION_REQUESTED(-114),
+    ERR_CERT_COMMON_NAME_INVALID(-200),
+    ERR_CERT_BEGIN(-200),
+    ERR_CERT_DATE_INVALID(-201),
+    ERR_CERT_AUTHORITY_INVALID(-202),
+    ERR_CERT_CONTAINS_ERRORS(-203),
+    ERR_CERT_NO_REVOCATION_MECHANISM(-204),
+    ERR_CERT_UNABLE_TO_CHECK_REVOCATION(-205),
+    ERR_CERT_REVOKED(-206),
+    ERR_CERT_INVALID(-207),
+    ERR_CERT_WEAK_SIGNATURE_ALGORITHM(-208),
+    ERR_CERT_NON_UNIQUE_NAME(-210),
+    ERR_CERT_WEAK_KEY(-211),
+    ERR_CERT_NAME_CONSTRAINT_VIOLATION(-212),
+    ERR_CERT_VALIDITY_TOO_LONG(-213),
+    ERR_CERT_END(-213),
+    ERR_INVALID_URL(-300),
+    ERR_DISALLOWED_URL_SCHEME(-301),
+    ERR_UNKNOWN_URL_SCHEME(-302),
+    ERR_TOO_MANY_REDIRECTS(-310),
+    ERR_UNSAFE_REDIRECT(-311),
+    ERR_UNSAFE_PORT(-312),
+    ERR_INVALID_RESPONSE(-320),
+    ERR_INVALID_CHUNKED_ENCODING(-321),
+    ERR_METHOD_NOT_SUPPORTED(-322),
+    ERR_UNEXPECTED_PROXY_AUTH(-323),
+    ERR_EMPTY_RESPONSE(-324),
+    ERR_RESPONSE_HEADERS_TOO_BIG(-325),
+    ERR_CACHE_MISS(-400),
+    ERR_INSECURE_RESPONSE(-501),
+    ;
+    private int nativeInt;
+
+    private cef_errorcode_t(int nativeInt) {
+      this.nativeInt = nativeInt;
+    }
+
+    @Override
+    public int intValue() {
+      return nativeInt;
+    }
+  }
+
   public enum cef_window_open_disposition_t implements IntegerEnum {
     WOD_UNKNOWN(0),
     WOD_CURRENT_TAB(1),
@@ -63,6 +132,35 @@ public class CEF {
     private int nativeInt;
 
     private cef_window_open_disposition_t(int nativeInt) {
+      this.nativeInt = nativeInt;
+    }
+
+    @Override
+    public int intValue() {
+      return nativeInt;
+    }
+  }
+
+  public enum cef_transition_type_t implements IntegerEnum {
+    TT_LINK(0x0),
+    TT_EXPLICIT(0x1),
+    TT_AUTO_SUBFRAME(0x3),
+    TT_MANUAL_SUBFRAME(0x4),
+    TT_FORM_SUBMIT(0x7),
+    TT_RELOAD(0x8),
+    TT_SOURCE_MASK(0xff),
+    TT_BLOCKED_FLAG(0x800000),
+    TT_FORWARD_BACK_FLAG(0x1000000),
+    TT_CHAIN_START_FLAG(0x10000000),
+    TT_CHAIN_END_FLAG(0x20000000),
+    TT_CLIENT_REDIRECT_FLAG(0x40000000),
+    TT_SERVER_REDIRECT_FLAG(0x80000000),
+    TT_IS_REDIRECT_MASK(0xc0000000),
+    TT_QUALIFIER_MASK(0xffffff00),
+    ;
+    private int nativeInt;
+
+    private cef_transition_type_t(int nativeInt) {
       this.nativeInt = nativeInt;
     }
 
@@ -101,6 +199,60 @@ public class CEF {
     @Override
     public int intValue() {
       return nativeInt;
+    }
+  }
+  ///
+  /// Popup window features.
+  ///
+  public static class cef_popup_features_t extends Struct {
+    static {
+      mapTypeForClosure(cef_popup_features_t.class);
+    }
+
+    public Signed32 x = new Signed32();
+    public Signed32 xSet = new Signed32();
+    public Signed32 y = new Signed32();
+    public Signed32 ySet = new Signed32();
+    public Signed32 width = new Signed32();
+    public Signed32 widthSet = new Signed32();
+    public Signed32 height = new Signed32();
+    public Signed32 heightSet = new Signed32();
+    public Signed32 menuBarVisible = new Signed32();
+    public Signed32 statusBarVisible = new Signed32();
+    public Signed32 toolBarVisible = new Signed32();
+    public Signed32 locationBarVisible = new Signed32();
+    public Signed32 scrollbarsVisible = new Signed32();
+    public Signed32 resizable = new Signed32();
+    public Signed32 fullscreen = new Signed32();
+    public Signed32 dialog = new Signed32();
+
+    public cef_popup_features_t(jnr.ffi.Runtime runtime) {
+      super(runtime);
+    }
+  }
+  ///
+  /// Implement this structure to receive string values asynchronously.
+  ///
+  public static class cef_string_visitor_t extends Struct {
+    static {
+      mapTypeForClosure(cef_string_visitor_t.class);
+    }
+    ///
+    /// Base structure.
+    ///
+    public cef_base_ref_counted_t base = inner(new cef_base_ref_counted_t(getRuntime()));
+    ///
+    /// Method that will be executed.
+    ///
+    public Function<visit> visit = function(visit.class);
+
+    public static interface visit {
+      @Delegate
+      void invoke(cef_string_visitor_t self_, cef_string_t string);
+    }
+
+    public cef_string_visitor_t(jnr.ffi.Runtime runtime) {
+      super(runtime);
     }
   }
   ///
@@ -191,6 +343,104 @@ public class CEF {
     }
   }
   ///
+  /// Implement this structure to handle events related to browser load status. The
+  /// functions of this structure will be called on the browser process UI thread
+  /// or render process main thread (TID_RENDERER).
+  ///
+  public static class cef_load_handler_t extends Struct {
+    static {
+      mapTypeForClosure(cef_load_handler_t.class);
+    }
+    ///
+    /// Base structure.
+    ///
+    public cef_base_ref_counted_t base = inner(new cef_base_ref_counted_t(getRuntime()));
+    ///
+    /// Called when the loading state has changed. This callback will be executed
+    /// twice -- once when loading is initiated either programmatically or by user
+    /// action, and once when loading is terminated due to completion, cancellation
+    /// of failure. It will be called before any calls to OnLoadStart and after all
+    /// calls to OnLoadError and/or OnLoadEnd.
+    ///
+    public Function<on_loading_state_change> on_loading_state_change =
+        function(on_loading_state_change.class);
+    ///
+    /// Called after a navigation has been committed and before the browser begins
+    /// loading contents in the frame. The |frame| value will never be NULL -- call
+    /// the is_main() function to check if this frame is the main frame.
+    /// |transition_type| provides information about the source of the navigation
+    /// and an accurate value is only available in the browser process. Multiple
+    /// frames may be loading at the same time. Sub-frames may start or continue
+    /// loading after the main frame load has ended. This function will not be
+    /// called for same page navigations (fragments, history state, etc.) or for
+    /// navigations that fail or are canceled before commit. For notification of
+    /// overall browser load status use OnLoadingStateChange instead.
+    ///
+    public Function<on_load_start> on_load_start = function(on_load_start.class);
+    ///
+    /// Called when the browser is done loading a frame. The |frame| value will
+    /// never be NULL -- call the is_main() function to check if this frame is the
+    /// main frame. Multiple frames may be loading at the same time. Sub-frames may
+    /// start or continue loading after the main frame load has ended. This
+    /// function will not be called for same page navigations (fragments, history
+    /// state, etc.) or for navigations that fail or are canceled before commit.
+    /// For notification of overall browser load status use OnLoadingStateChange
+    /// instead.
+    ///
+    public Function<on_load_end> on_load_end = function(on_load_end.class);
+    ///
+    /// Called when a navigation fails or is canceled. This function may be called
+    /// by itself if before commit or in combination with OnLoadStart/OnLoadEnd if
+    /// after commit. |errorCode| is the error code number, |errorText| is the
+    /// error text and |failedUrl| is the URL that failed to load. See
+    /// net\base\net_error_list.h for complete descriptions of the error codes.
+    ///
+    public Function<on_load_error> on_load_error = function(on_load_error.class);
+
+    public static interface on_loading_state_change {
+      @Delegate
+      void invoke(
+          cef_load_handler_t self_,
+          jnr.ffi.Pointer browser,
+          int isLoading,
+          int canGoBack,
+          int canGoForward);
+    }
+
+    public static interface on_load_start {
+      @Delegate
+      void invoke(
+          cef_load_handler_t self_,
+          jnr.ffi.Pointer browser,
+          jnr.ffi.Pointer frame,
+          cef_transition_type_t transition_type);
+    }
+
+    public static interface on_load_end {
+      @Delegate
+      void invoke(
+          cef_load_handler_t self_,
+          jnr.ffi.Pointer browser,
+          jnr.ffi.Pointer frame,
+          int httpStatusCode);
+    }
+
+    public static interface on_load_error {
+      @Delegate
+      void invoke(
+          cef_load_handler_t self_,
+          jnr.ffi.Pointer browser,
+          jnr.ffi.Pointer frame,
+          cef_errorcode_t errorCode,
+          cef_string_t errorText,
+          cef_string_t failedUrl);
+    }
+
+    public cef_load_handler_t(jnr.ffi.Runtime runtime) {
+      super(runtime);
+    }
+  }
+  ///
   /// Implement this structure to provide handler implementations. Methods will be
   /// called by the process and/or thread indicated.
   ///
@@ -270,6 +520,108 @@ public class CEF {
     }
 
     public cef_app_t(jnr.ffi.Runtime runtime) {
+      super(runtime);
+    }
+  }
+  ///
+  /// Implement this structure to handle events related to browser display state.
+  /// The functions of this structure will be called on the UI thread.
+  ///
+  public static class cef_display_handler_t extends Struct {
+    static {
+      mapTypeForClosure(cef_display_handler_t.class);
+    }
+    ///
+    /// Base structure.
+    ///
+    public cef_base_ref_counted_t base = inner(new cef_base_ref_counted_t(getRuntime()));
+    ///
+    /// Called when a frame's address has changed.
+    ///
+    public Function<on_address_change> on_address_change = function(on_address_change.class);
+    ///
+    /// Called when the page title changes.
+    ///
+    public Function<on_title_change> on_title_change = function(on_title_change.class);
+    ///
+    /// Called when the page icon changes.
+    ///
+    public Function<on_favicon_urlchange> on_favicon_urlchange =
+        function(on_favicon_urlchange.class);
+    ///
+    /// Called when web content in the page has toggled fullscreen mode. If
+    /// |fullscreen| is true (1) the content will automatically be sized to fill
+    /// the browser content area. If |fullscreen| is false (0) the content will
+    /// automatically return to its original size and position. The client is
+    /// responsible for resizing the browser if desired.
+    ///
+    public Function<on_fullscreen_mode_change> on_fullscreen_mode_change =
+        function(on_fullscreen_mode_change.class);
+    ///
+    /// Called when the browser is about to display a tooltip. |text| contains the
+    /// text that will be displayed in the tooltip. To handle the display of the
+    /// tooltip yourself return true (1). Otherwise, you can optionally modify
+    /// |text| and then return false (0) to allow the browser to display the
+    /// tooltip. When window rendering is disabled the application is responsible
+    /// for drawing tooltips and the return value is ignored.
+    ///
+    public Function<on_tooltip> on_tooltip = function(on_tooltip.class);
+    ///
+    /// Called when the browser receives a status message. |value| contains the
+    /// text that will be displayed in the status message.
+    ///
+    public Function<on_status_message> on_status_message = function(on_status_message.class);
+    ///
+    /// Called to display a console message. Return true (1) to stop the message
+    /// from being output to the console.
+    ///
+    public Function<on_console_message> on_console_message = function(on_console_message.class);
+
+    public static interface on_address_change {
+      @Delegate
+      void invoke(
+          cef_display_handler_t self_,
+          jnr.ffi.Pointer browser,
+          jnr.ffi.Pointer frame,
+          cef_string_t url);
+    }
+
+    public static interface on_title_change {
+      @Delegate
+      void invoke(cef_display_handler_t self_, jnr.ffi.Pointer browser, cef_string_t title);
+    }
+
+    public static interface on_favicon_urlchange {
+      @Delegate
+      void invoke(cef_display_handler_t self_, jnr.ffi.Pointer browser, jnr.ffi.Pointer icon_urls);
+    }
+
+    public static interface on_fullscreen_mode_change {
+      @Delegate
+      void invoke(cef_display_handler_t self_, jnr.ffi.Pointer browser, int fullscreen);
+    }
+
+    public static interface on_tooltip {
+      @Delegate
+      int invoke(cef_display_handler_t self_, jnr.ffi.Pointer browser, cef_string_t text);
+    }
+
+    public static interface on_status_message {
+      @Delegate
+      void invoke(cef_display_handler_t self_, jnr.ffi.Pointer browser, cef_string_t value);
+    }
+
+    public static interface on_console_message {
+      @Delegate
+      int invoke(
+          cef_display_handler_t self_,
+          jnr.ffi.Pointer browser,
+          cef_string_t message,
+          cef_string_t source,
+          int line);
+    }
+
+    public cef_display_handler_t(jnr.ffi.Runtime runtime) {
       super(runtime);
     }
   }
@@ -472,11 +824,11 @@ public class CEF {
           cef_string_t target_frame_name,
           cef_window_open_disposition_t target_disposition,
           int user_gesture,
-          jnr.ffi.Pointer popupFeatures,
+          cef_popup_features_t popupFeatures,
           jnr.ffi.Pointer windowInfo,
-          cef_client_t client,
+          jnr.ffi.Pointer client,
           jnr.ffi.Pointer settings,
-          IntByReference no_javascript_access);
+          @Out int no_javascript_access);
     }
 
     public static interface on_after_created {
@@ -596,7 +948,7 @@ public class CEF {
 
     public static interface get_display_handler {
       @Delegate
-      jnr.ffi.Pointer invoke(cef_client_t self_);
+      cef_display_handler_t invoke(cef_client_t self_);
     }
 
     public static interface get_download_handler {
@@ -641,7 +993,7 @@ public class CEF {
 
     public static interface get_load_handler {
       @Delegate
-      jnr.ffi.Pointer invoke(cef_client_t self_);
+      cef_load_handler_t invoke(cef_client_t self_);
     }
 
     public static interface get_render_handler {

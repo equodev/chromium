@@ -78,6 +78,18 @@ fn cef_window_info(hwnd: c_ulong, w: c_int, h: c_int) -> cef::_cef_window_info_t
     window_info
 }
 
+#[cfg(target_os = "linux")]
+pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulong) {
+    use std::os::raw::{c_void};
+    unsafe {println!("orig window_info {} {:?}", hwnd, (*window_info)); };
+    let win = unsafe { gtk2::gtk_widget_get_window(hwnd as *mut c_void) };
+    println!("WIN: {:?}", win);
+    // let xid = unsafe { gtk2::gdk_x11_drawable_get_xid(win) };
+    // println!("XID: {:?}", xid);
+    // unsafe { (*window_info).parent_window = win };
+    unsafe { println!("new window_info {:?}", (*window_info)); };
+}
+
 #[cfg(target_os = "macos")]
 fn cef_window_info(hwnd: c_ulong, w: c_int, h: c_int) -> cef::_cef_window_info_t {
     use std::os::raw::{c_void};
@@ -94,6 +106,14 @@ fn cef_window_info(hwnd: c_ulong, w: c_int, h: c_int) -> cef::_cef_window_info_t
     };
     println!("parent {:?}", window_info.parent_view);
     window_info
+}
+
+#[cfg(target_os = "macos")]
+pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulong) {
+    use std::os::raw::{c_void};
+    unsafe { println!("orig window_info {} {:?}", hwnd, (*window_info)); };
+    unsafe { (*window_info).parent_view = hwnd as *mut c_void };
+    unsafe { println!("new window_info {:?}", (*window_info)); };
 }
 
 #[cfg(windows)]
@@ -116,4 +136,11 @@ fn cef_window_info(hwnd: c_ulong, w: c_int, h: c_int) -> cef::_cef_window_info_t
     };
     println!("parent {:?}", window_info.parent_window);
     window_info
+}
+
+#[cfg(windows)]
+pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulong) {
+    unsafe { println!("orig window_info {} {:?}", hwnd, (*window_info)); };
+    unsafe { (*window_info).parent_window = hwnd as cef::win::HWND };
+    unsafe { println!("new window_info {:?}", (*window_info)); };
 }

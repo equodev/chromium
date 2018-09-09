@@ -1,6 +1,6 @@
 #[cfg(gen)]
 extern crate bindgen;
-#[cfg(genJava)]
+#[cfg(feature = "genJava")]
 extern crate java_bindgen;
 
 #[cfg(debug_assertions)]
@@ -11,6 +11,7 @@ const CEF_TARGET: &'static str = "Release";
 #[cfg(feature = "gen")]
 fn main() {
   link();
+  let cef_path = get_cef_path();
   gen_cef(cef_path.display());
   gen_os(cef_path.display());
 }
@@ -18,6 +19,7 @@ fn main() {
 #[cfg(feature = "genJava")]
 fn main() {
   link();
+  let cef_path = get_cef_path();
   gen_java_cef(cef_path.display());
 }
 
@@ -175,6 +177,8 @@ fn gen_java_cef(cef_path: std::path::Display) {
     .whitelist_type("cef_focus_source_t")
     .whitelist_type("cef_process_id_t")
     .whitelist_type("cef_window_open_disposition_t")
+    .whitelist_type("cef_transition_type_t")
+    .whitelist_type("cef_errorcode_t")
     // .whitelist_type("_cef_browser_t")
     // .whitelist_type("_cef_browser_host_t")
     // .whitelist_type("_cef_frame_t")
@@ -184,6 +188,9 @@ fn gen_java_cef(cef_path: std::path::Display) {
     .whitelist_type("_cef_focus_handler_t")
     .whitelist_type("_cef_app_t")
     .whitelist_type("_cef_life_span_handler_t")
+    .whitelist_type("_cef_load_handler_t")
+    .whitelist_type("_cef_display_handler_t")
+    .whitelist_type("_cef_string_visitor_t")
     // .whitelist_type("_cef_command_line_t")
     // .whitelist_type("_cef_print_handler_t")
     // .whitelist_type("_cef_print_settings_t")
@@ -200,7 +207,6 @@ fn gen_java_cef(cef_path: std::path::Display) {
     .opaque_type("_cef_browser_t")
     .opaque_type("_cef_process_message_t")
     .opaque_type("_cef_request_handler_t")
-    .opaque_type("_cef_load_handler_t")
     .opaque_type("_cef_render_handler_t")
     .opaque_type("_cef_keyboard_handler_t")
     .opaque_type("_cef_jsdialog_handler_t")
@@ -208,11 +214,10 @@ fn gen_java_cef(cef_path: std::path::Display) {
     .opaque_type("_cef_find_handler_t")
     .opaque_type("_cef_drag_handler_t")
     .opaque_type("_cef_download_handler_t")
-    .opaque_type("_cef_display_handler_t")
     .opaque_type("_cef_dialog_handler_t")
     .opaque_type("_cef_context_menu_handler_t")
     .opaque_type("_cef_frame_t")
-    .opaque_type("_cef_popup_features_t")
+    .whitelist_type("_cef_popup_features_t")
     .opaque_type("_cef_window_info_t")
     .opaque_type("_cef_browser_settings_t")
     // .whitelisted_type(".*cef_base_t")
