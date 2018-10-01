@@ -398,6 +398,11 @@ pub extern fn cefswt_stop(browser: *mut cef::cef_browser_t) {
 }
 
 #[no_mangle]
+pub extern fn cefswt_reload(browser: *mut cef::cef_browser_t) {
+    unsafe { (*browser).reload.expect("null reload")(browser); };
+}
+
+#[no_mangle]
 pub extern fn cefswt_get_text(browser: *mut cef::cef_browser_t, visitor: *mut cef::_cef_string_visitor_t) {
     assert_eq!(unsafe{(*visitor).base.size}, std::mem::size_of::<cef::_cef_string_visitor_t>());
     let get_frame = unsafe { (*browser).get_main_frame.expect("null get_main_frame") };

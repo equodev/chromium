@@ -806,8 +806,7 @@ class Chromium extends WebBrowser {
 
     @Override
     public void refresh() {
-        // TODO Auto-generated method stub
-
+        lib.cefswt_reload(browser);
     }
 
     @Override
@@ -849,6 +848,8 @@ class Chromium extends WebBrowser {
         void cefswt_load_text(Pointer browser, String text);
 
         void cefswt_stop(Pointer browser);
+
+        void cefswt_reload(Pointer browser);
 
         String cefswt_get_url(Pointer browser);
 
