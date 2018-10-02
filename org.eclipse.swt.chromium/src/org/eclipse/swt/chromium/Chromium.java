@@ -37,6 +37,8 @@ import org.eclipse.swt.browser.LocationEvent;
 import org.eclipse.swt.browser.LocationListener;
 import org.eclipse.swt.browser.ProgressEvent;
 import org.eclipse.swt.browser.ProgressListener;
+import org.eclipse.swt.browser.StatusTextEvent;
+import org.eclipse.swt.browser.StatusTextListener;
 import org.eclipse.swt.browser.TitleEvent;
 import org.eclipse.swt.browser.TitleListener;
 import org.eclipse.swt.browser.VisibilityWindowListener;
@@ -481,6 +483,17 @@ class Chromium extends WebBrowser {
                 for (LocationListener listener : locationListeners) {
                     listener.changed(event);
                 }
+            }
+        });
+        displayHandler.on_status_message.set((self, browser, status) -> {
+            if (chromium.isDisposed() || statusTextListeners == null) return;
+            String str = lib.cefswt_cefstring_to_java(status);
+            StatusTextEvent event = new StatusTextEvent(chromium);
+            event.display = chromium.getDisplay ();
+            event.widget = chromium;
+            event.text = str;
+            for (StatusTextListener listener : statusTextListeners) {
+                listener.changed(event);
             }
         });
         clientHandler.get_display_handler.set(client -> {
