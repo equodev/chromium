@@ -47,6 +47,90 @@ public class CEF {
       super(runtime);
     }
   }
+  ///
+  /// Time information. Values should always be in UTC.
+  ///
+  public static class cef_time_t extends Struct {
+    static {
+      mapTypeForClosure(cef_time_t.class);
+    }
+    /// Four or five digit year "2007" (1601 to 30827 on
+    /// Windows, 1970 to 2038 on 32-bit POSIX)
+    public Signed32 year = new Signed32();
+    /// 1-based month (values 1 = January, etc.)
+    public Signed32 month = new Signed32();
+    /// 0-based day of week (0 = Sunday, etc.)
+    public Signed32 day_of_week = new Signed32();
+    /// 1-based day of month (1-31)
+    public Signed32 day_of_month = new Signed32();
+    /// Hour within the current day (0-23)
+    public Signed32 hour = new Signed32();
+    /// Minute within the current hour (0-59)
+    public Signed32 minute = new Signed32();
+    /// Second within the current minute (0-59 plus leap
+    /// seconds which may take it up to 60).
+    public Signed32 second = new Signed32();
+    /// Milliseconds within the current second (0-999)
+    public Signed32 millisecond = new Signed32();
+
+    public cef_time_t(jnr.ffi.Runtime runtime) {
+      super(runtime);
+    }
+  }
+  ///
+  /// Cookie information.
+  ///
+  public static class cef_cookie_t extends Struct {
+    static {
+      mapTypeForClosure(cef_cookie_t.class);
+    }
+    ///
+    /// The cookie name.
+    ///
+    public cef_string_t name = inner(new cef_string_t(getRuntime()));
+    ///
+    /// The cookie value.
+    ///
+    public cef_string_t value = inner(new cef_string_t(getRuntime()));
+    ///
+    /// If |domain| is empty a host cookie will be created instead of a domain
+    /// cookie. Domain cookies are stored with a leading "." and are visible to
+    /// sub-domains whereas host cookies are not.
+    ///
+    public cef_string_t domain = inner(new cef_string_t(getRuntime()));
+    ///
+    /// If |path| is non-empty only URLs at or below the path will get the cookie
+    /// value.
+    ///
+    public cef_string_t path = inner(new cef_string_t(getRuntime()));
+    ///
+    /// If |secure| is true the cookie will only be sent for HTTPS requests.
+    ///
+    public Signed32 secure = new Signed32();
+    ///
+    /// If |httponly| is true the cookie will only be sent for HTTP requests.
+    ///
+    public Signed32 httponly = new Signed32();
+    ///
+    /// The cookie creation date. This is automatically populated by the system on
+    /// cookie creation.
+    ///
+    public cef_time_t creation = inner(new cef_time_t(getRuntime()));
+    ///
+    /// The cookie last access date. This is automatically populated by the system
+    /// on access.
+    ///
+    public cef_time_t last_access = inner(new cef_time_t(getRuntime()));
+    ///
+    /// The cookie expiration date is only valid if |has_expires| is true.
+    ///
+    public Signed32 has_expires = new Signed32();
+    public cef_time_t expires = inner(new cef_time_t(getRuntime()));
+
+    public cef_cookie_t(jnr.ffi.Runtime runtime) {
+      super(runtime);
+    }
+  }
 
   public enum cef_errorcode_t implements IntegerEnum {
     ERR_NONE(0),
@@ -252,6 +336,41 @@ public class CEF {
     }
 
     public cef_string_visitor_t(jnr.ffi.Runtime runtime) {
+      super(runtime);
+    }
+  }
+  ///
+  /// Structure to implement for visiting cookie values. The functions of this
+  /// structure will always be called on the IO thread.
+  ///
+  public static class cef_cookie_visitor_t extends Struct {
+    static {
+      mapTypeForClosure(cef_cookie_visitor_t.class);
+    }
+    ///
+    /// Base structure.
+    ///
+    public cef_base_ref_counted_t base = inner(new cef_base_ref_counted_t(getRuntime()));
+    ///
+    /// Method that will be called once for each cookie. |count| is the 0-based
+    /// index for the current cookie. |total| is the total number of cookies. Set
+    /// |deleteCookie| to true (1) to delete the cookie currently being visited.
+    /// Return false (0) to stop visiting cookies. This function may never be
+    /// called if no cookies are found.
+    ///
+    public Function<visit> visit = function(visit.class);
+
+    public static interface visit {
+      @Delegate
+      int invoke(
+          cef_cookie_visitor_t self_,
+          cef_cookie_t cookie,
+          int count,
+          int total,
+          @Out int deleteCookie);
+    }
+
+    public cef_cookie_visitor_t(jnr.ffi.Runtime runtime) {
       super(runtime);
     }
   }

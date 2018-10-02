@@ -15,13 +15,19 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.net.HttpCookie;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.swt.SWT;
@@ -68,6 +74,8 @@ class Chromium extends WebBrowser {
     private static CEF.cef_app_t app;
     private static CEF.cef_browser_process_handler_t browserProcessHandler;
     private static boolean shuttindDown;
+    private static CEF.cef_cookie_visitor_t cookieVisitor;
+    private static CompletableFuture<Boolean> cookieVisited;
 
     private long hwnd;
     private Pointer browser;
@@ -679,6 +687,9 @@ class Chromium extends WebBrowser {
                 .failImmediately()
                 .search(cefrustPath)
                 .load(SHARED_LIB_V);
+            
+            setupCookies();
+
             return libc;
         } catch(UnsatisfiedLinkError e) {
             String cefLib = System.mapLibraryName("cef");
@@ -697,6 +708,60 @@ class Chromium extends WebBrowser {
             swtError.throwable = e;
             throw swtError;
         }
+    }
+
+    private static void setupCookies() {
+        WebBrowser.NativeClearSessions = () -> {
+            lib.cefswt_delete_cookies();
+        };
+        WebBrowser.NativeSetCookie = () -> {
+            List<HttpCookie> cookies = HttpCookie.parse(WebBrowser.CookieValue);
+            for (HttpCookie cookie : cookies) {
+                long age = cookie.getMaxAge();
+                if (age != -1) {
+                    age = Instant.now().plusSeconds(age).getEpochSecond();
+                }
+                WebBrowser.CookieResult = lib.cefswt_set_cookie(WebBrowser.CookieUrl, 
+                        cookie.getName(), cookie.getValue(), cookie.getDomain(), cookie.getPath(), 
+                        cookie.getSecure() ? 1 : 0, cookie.isHttpOnly() ? 1 : 0, age);
+//                debug("CookieSet " + WebBrowser.CookieUrl + " " + cookie.getName() + " " + cookie.getValue() + " " + cookie.getDomain());
+                break;
+            }
+        };
+        WebBrowser.NativeGetCookie = () -> {
+            if (cookieVisitor == null) {
+                setCookieVisitor();
+            }
+            cookieVisited = new CompletableFuture<>();
+            boolean result = lib.cefswt_get_cookie(WebBrowser.CookieUrl, cookieVisitor);
+            if (!result) {
+                cookieVisited = null;
+                throw new SWTException("Failed to get cookies");
+            }
+            try {
+                cookieVisited.get(100, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                // no cookies found
+            } finally {
+                cookieVisited = null;
+            }
+        };
+    }
+
+    private static void setCookieVisitor() {
+        cookieVisitor = CEFFactory.newCookieVisitor();
+        cookieVisitor.visit.set((self, cefcookie, count, total, delete) -> {
+            String name = lib.cefswt_cefstring_to_java(cefcookie.name);
+            debug("Visitor " + count + "/" +total + ": " + name + ":" + Thread.currentThread());
+            if (WebBrowser.CookieName != null && WebBrowser.CookieName.equals(name)) {
+                String value = lib.cefswt_cookie_value(cefcookie);
+//                debug("cookie value: " + value);
+                WebBrowser.CookieValue = value;
+                cookieVisited.complete(true);
+                return 0;
+            }
+            return 1;
+        });
     }
 
     private static void fixJNRClosureClassLoader() {
@@ -866,6 +931,8 @@ class Chromium extends WebBrowser {
         void cefswt_execute(Pointer browser, String script);
         
         void cefswt_close_browser(Pointer browser);
+        
+        boolean cefswt_is_main_frame(Pointer frame);
 
         void cefswt_shutdown();
 
@@ -873,6 +940,12 @@ class Chromium extends WebBrowser {
 
         String cefswt_cefstring_to_java(CEF.cef_string_t string);
 
-        boolean cefswt_is_main_frame(Pointer frame);
+        boolean cefswt_set_cookie(String url, String name, String value, String domain, String path, int secure, int httpOnly, double maxAge);
+
+        boolean cefswt_get_cookie(String url, CEF.cef_cookie_visitor_t visitor);
+
+        void cefswt_delete_cookies();
+
+        String cefswt_cookie_value(CEF.cef_cookie_t cookie);
     }
 }

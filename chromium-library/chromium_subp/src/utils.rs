@@ -69,6 +69,14 @@ pub fn cef_string(value: &str) -> cef::cef_string_t {
     str_cef
 }
 
+pub fn cef_string_from_c(cstr: *const c_char) -> cef::cef_string_t {
+    if cstr.is_null() {
+        cef_string_empty()
+    } else {
+        cef_string(str_from_c(cstr))
+    }
+}
+
 pub fn cef_string_empty() -> cef::cef_string_t {
     let mut empty_str = cef::cef_string_t {
         str: ::std::ptr::null_mut(), 

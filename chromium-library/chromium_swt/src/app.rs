@@ -7,7 +7,7 @@ use std::os::raw::{c_ulong, c_int};
 use std::mem::{size_of};
 use std::ptr::{null_mut};
 
-pub fn create_browser(canvas_hwnd: c_ulong, url: &str, jclient: &mut cef::_cef_client_t, w: c_int, h: c_int) -> *const cef::cef_browser_t {
+pub fn create_browser(canvas_hwnd: c_ulong, url: &str, jclient: &mut cef::_cef_client_t, w: c_int, h: c_int) -> *mut cef::cef_browser_t {
     println!("create_browser in {}", canvas_hwnd);
 
     let window_info = cef_window_info(canvas_hwnd, w, h);

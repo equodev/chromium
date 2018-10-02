@@ -99,6 +99,7 @@ public class CEFFactory {
 	    mapTypeForClosure(CEF.cef_string_utf16_t.class);
 	    mapTypeForClosure(CEF.cef_string_t.class);
 	    mapTypeForClosure(CEF.cef_popup_features_t.class);
+	    mapTypeForClosure(CEF.cef_cookie_t.class);
 		CEF.cef_app_t st = new CEF.cef_app_t(RUNTIME);
 		setBase(st, st.base);
 		return st;
@@ -142,6 +143,12 @@ public class CEFFactory {
 	
 	public static CEF.cef_string_visitor_t newStringVisitor() {
 	    CEF.cef_string_visitor_t st = new CEF.cef_string_visitor_t(RUNTIME);
+	    setBase(st, st.base);
+	    return st;
+	}
+	
+	public static CEF.cef_cookie_visitor_t newCookieVisitor() {
+	    CEF.cef_cookie_visitor_t st = new CEF.cef_cookie_visitor_t(RUNTIME);
 	    setBase(st, st.base);
 	    return st;
 	}

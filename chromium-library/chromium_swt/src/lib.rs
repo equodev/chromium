@@ -265,6 +265,10 @@ pub extern fn cefswt_create_browser(hwnd: c_ulong, url: *const c_char, client: &
     // println!("url: {:?}", url);
     let browser = app::create_browser(hwnd, url, client, w, h);
 
+    // let browser_host = get_browser_host(browser);
+    // unsafe {
+    //     (*browser_host).show_dev_tools.expect("no dev_tools")(browser_host, std::ptr::null_mut(), std::ptr::null_mut(), std::ptr::null_mut(), std::ptr::null_mut());
+    // }
     browser
 }
 
@@ -375,6 +379,12 @@ pub extern fn cefswt_get_url(browser: *mut cef::cef_browser_t) -> *mut c_char {
 
 #[no_mangle]
 pub extern fn cefswt_cefstring_to_java(cefstring: *mut cef::cef_string_t) -> *mut c_char {
+    unsafe {
+        if (*cefstring).length == 0 {
+            println!("NULL STRING");
+            return std::ptr::null_mut();
+        }
+    }
     let utf8 = unsafe { cef::cef_string_userfree_utf8_alloc() };
     unsafe { cef::cef_string_utf16_to_utf8((*cefstring).str, (*cefstring).length, utf8) };
     return unsafe {(*utf8).str};
@@ -457,6 +467,59 @@ fn do_set_focus(_parent: *mut c_void, _focus: i32) {
 #[cfg(target_os = "macos")]
 fn do_set_focus(_parent: *mut c_void, _focus: i32) {
     // handled by cocoa
+}
+
+#[no_mangle]
+pub extern fn cefswt_set_cookie(jurl: *const c_char, jname: *const c_char, jvalue: *const c_char, jdomain: *const c_char, jpath: *const c_char, secure: i32, httponly: i32, max_age: f64) -> c_int {
+    let manager = unsafe { cef::cef_cookie_manager_get_global_manager(std::ptr::null_mut()) };
+    let url = utils::cef_string_from_c(jurl);
+    let domain = utils::cef_string_from_c(jdomain);
+    let path = utils::cef_string_from_c(jpath);
+    let name = utils::cef_string_from_c(jname);
+    let value = utils::cef_string_from_c(jvalue);
+    let has_expires = if max_age == -1.0 {
+        0
+    } else {
+        1
+    };
+    let mut expires = cef::cef_time_t { year: 0, month: 0, day_of_week: 0, day_of_month: 0, hour: 0, minute: 0, second: 0, millisecond: 0 };
+    
+    if max_age == -1.0 {
+        unsafe { cef::cef_time_from_doublet(max_age, &mut expires) };
+    }
+
+    let cookie = cef::_cef_cookie_t {
+        name: name,
+        value: value,
+        domain: domain,
+        path: path,
+        secure,
+        httponly,
+        has_expires,
+        expires,
+        creation: expires,
+        last_access: expires
+    };
+    unsafe { (*manager).set_cookie.expect("null set_cookie")(manager, &url, &cookie, std::ptr::null_mut()) }
+}
+
+#[no_mangle]
+pub extern fn cefswt_get_cookie(jurl: *const c_char, jvisitor: *mut cef::_cef_cookie_visitor_t) -> c_int {
+    let manager = unsafe { cef::cef_cookie_manager_get_global_manager(std::ptr::null_mut()) };
+    let url = utils::cef_string_from_c(jurl);
+
+    unsafe { (*manager).visit_url_cookies.expect("null visit_url_cookies")(manager, &url, 1, jvisitor) }
+}
+
+#[no_mangle]
+pub extern fn cefswt_cookie_value(cookie: *mut cef::_cef_cookie_t) -> *mut c_char {
+    unsafe { cefswt_cefstring_to_java(&mut (*cookie).value) }
+}
+
+#[no_mangle]
+pub extern fn cefswt_delete_cookies() {
+    let manager = unsafe { cef::cef_cookie_manager_get_global_manager(std::ptr::null_mut()) };
+    unsafe { (*manager).delete_cookies.expect("null delete_cookies")(manager, std::ptr::null_mut(), std::ptr::null_mut(), std::ptr::null_mut()) };
 }
 
 #[no_mangle]

@@ -1,4 +1,4 @@
-#[cfg(gen)]
+#[cfg(feature = "gen")]
 extern crate bindgen;
 #[cfg(feature = "genJava")]
 extern crate java_bindgen;
@@ -127,6 +127,7 @@ fn gen_cef(cef_path: std::path::Display) {
     .whitelist_function("cef_shutdown")
     .whitelist_function("cef_browser_host_create_browser")
     .whitelist_function("cef_urlrequest_create")
+    .whitelist_function("cef_cookie_manager_get_global_manager")
     .whitelist_function("cef_.*")
     .blacklist_type("_cef_main_args_t")
     .blacklist_type("_cef_window_info_t")
@@ -191,6 +192,9 @@ fn gen_java_cef(cef_path: std::path::Display) {
     .whitelist_type("_cef_load_handler_t")
     .whitelist_type("_cef_display_handler_t")
     .whitelist_type("_cef_string_visitor_t")
+    .whitelist_type("_cef_cookie_visitor_t")
+    .whitelist_type("_cef_cookie_t")
+    .whitelist_type("_cef_time_t")
     // .whitelist_type("_cef_command_line_t")
     // .whitelist_type("_cef_print_handler_t")
     // .whitelist_type("_cef_print_settings_t")
@@ -273,6 +277,7 @@ fn generator(cef_path: std::path::Display) -> bindgen::Builder {
     .derive_debug(true)
     .raw_line("#![allow(dead_code)]")
     .raw_line("#![allow(non_snake_case)]")
-    .raw_line("#![allow(non_camel_case_types)]");
+    .raw_line("#![allow(non_camel_case_types)]")
+    .raw_line("#![allow(non_upper_case_globals)]");
   gen
 } 
