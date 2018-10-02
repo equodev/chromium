@@ -77,6 +77,23 @@ public class CEF {
       super(runtime);
     }
   }
+
+  public enum cef_return_value_t implements IntegerEnum {
+    RV_CANCEL(0x0),
+    RV_CONTINUE(0x1),
+    RV_CONTINUE_ASYNC(0x2),
+    ;
+    private int nativeInt;
+
+    private cef_return_value_t(int nativeInt) {
+      this.nativeInt = nativeInt;
+    }
+
+    @Override
+    public int intValue() {
+      return nativeInt;
+    }
+  }
   ///
   /// Cookie information.
   ///
@@ -129,6 +146,23 @@ public class CEF {
 
     public cef_cookie_t(jnr.ffi.Runtime runtime) {
       super(runtime);
+    }
+  }
+
+  public enum cef_termination_status_t implements IntegerEnum {
+    TS_ABNORMAL_TERMINATION(0x0),
+    TS_PROCESS_WAS_KILLED(0x1),
+    TS_PROCESS_CRASHED(0x2),
+    ;
+    private int nativeInt;
+
+    private cef_termination_status_t(int nativeInt) {
+      this.nativeInt = nativeInt;
+    }
+
+    @Override
+    public int intValue() {
+      return nativeInt;
     }
   }
 
@@ -245,6 +279,24 @@ public class CEF {
     private int nativeInt;
 
     private cef_transition_type_t(int nativeInt) {
+      this.nativeInt = nativeInt;
+    }
+
+    @Override
+    public int intValue() {
+      return nativeInt;
+    }
+  }
+  public enum cef_urlrequest_status_t implements IntegerEnum {
+    UR_UNKNOWN(0x0),
+    UR_SUCCESS(0x1),
+    UR_IO_PENDING(0x2),
+    UR_CANCELED(0x3),
+    UR_FAILED(0x4),
+    ;
+    private int nativeInt;
+
+    private cef_urlrequest_status_t(int nativeInt) {
       this.nativeInt = nativeInt;
     }
 
@@ -970,6 +1022,333 @@ public class CEF {
     }
   }
   ///
+  /// Implement this structure to handle events related to browser requests. The
+  /// functions of this structure will be called on the thread indicated.
+  ///
+  public static class cef_request_handler_t extends Struct {
+    static {
+      mapTypeForClosure(cef_request_handler_t.class);
+    }
+    ///
+    /// Base structure.
+    ///
+    public cef_base_ref_counted_t base = inner(new cef_base_ref_counted_t(getRuntime()));
+    ///
+    /// Called on the UI thread before browser navigation. Return true (1) to
+    /// cancel the navigation or false (0) to allow the navigation to proceed. The
+    /// |request| object cannot be modified in this callback.
+    /// cef_load_handler_t::OnLoadingStateChange will be called twice in all cases.
+    /// If the navigation is allowed cef_load_handler_t::OnLoadStart and
+    /// cef_load_handler_t::OnLoadEnd will be called. If the navigation is canceled
+    /// cef_load_handler_t::OnLoadError will be called with an |errorCode| value of
+    /// ERR_ABORTED.
+    ///
+    public Function<on_before_browse> on_before_browse = function(on_before_browse.class);
+    ///
+    /// Called on the UI thread before OnBeforeBrowse in certain limited cases
+    /// where navigating a new or different browser might be desirable. This
+    /// includes user-initiated navigation that might open in a special way (e.g.
+    /// links clicked via middle-click or ctrl + left-click) and certain types of
+    /// cross-origin navigation initiated from the renderer process (e.g.
+    /// navigating the top-level frame to/from a file URL). The |browser| and
+    /// |frame| values represent the source of the navigation. The
+    /// |target_disposition| value indicates where the user intended to navigate
+    /// the browser based on standard Chromium behaviors (e.g. current tab, new
+    /// tab, etc). The |user_gesture| value will be true (1) if the browser
+    /// navigated via explicit user gesture (e.g. clicking a link) or false (0) if
+    /// it navigated automatically (e.g. via the DomContentLoaded event). Return
+    /// true (1) to cancel the navigation or false (0) to allow the navigation to
+    /// proceed in the source browser's top-level frame.
+    ///
+    public Function<on_open_urlfrom_tab> on_open_urlfrom_tab = function(on_open_urlfrom_tab.class);
+    ///
+    /// Called on the IO thread before a resource request is loaded. The |request|
+    /// object may be modified. Return RV_CONTINUE to continue the request
+    /// immediately. Return RV_CONTINUE_ASYNC and call cef_request_tCallback::
+    /// cont() at a later time to continue or cancel the request asynchronously.
+    /// Return RV_CANCEL to cancel the request immediately.
+    ///
+    ///
+    public Function<on_before_resource_load> on_before_resource_load =
+        function(on_before_resource_load.class);
+    ///
+    /// Called on the IO thread before a resource is loaded. To allow the resource
+    /// to load normally return NULL. To specify a handler for the resource return
+    /// a cef_resource_handler_t object. The |request| object should not be
+    /// modified in this callback.
+    ///
+    public Function<get_resource_handler> get_resource_handler =
+        function(get_resource_handler.class);
+    ///
+    /// Called on the IO thread when a resource load is redirected. The |request|
+    /// parameter will contain the old URL and other request-related information.
+    /// The |response| parameter will contain the response that resulted in the
+    /// redirect. The |new_url| parameter will contain the new URL and can be
+    /// changed if desired. The |request| object cannot be modified in this
+    /// callback.
+    ///
+    public Function<on_resource_redirect> on_resource_redirect =
+        function(on_resource_redirect.class);
+    ///
+    /// Called on the IO thread when a resource response is received. To allow the
+    /// resource to load normally return false (0). To redirect or retry the
+    /// resource modify |request| (url, headers or post body) and return true (1).
+    /// The |response| object cannot be modified in this callback.
+    ///
+    public Function<on_resource_response> on_resource_response =
+        function(on_resource_response.class);
+    ///
+    /// Called on the IO thread to optionally filter resource response content.
+    /// |request| and |response| represent the request and response respectively
+    /// and cannot be modified in this callback.
+    ///
+    public Function<get_resource_response_filter> get_resource_response_filter =
+        function(get_resource_response_filter.class);
+    ///
+    /// Called on the IO thread when a resource load has completed. |request| and
+    /// |response| represent the request and response respectively and cannot be
+    /// modified in this callback. |status| indicates the load completion status.
+    /// |received_content_length| is the number of response bytes actually read.
+    ///
+    public Function<on_resource_load_complete> on_resource_load_complete =
+        function(on_resource_load_complete.class);
+    ///
+    /// Called on the IO thread when the browser needs credentials from the user.
+    /// |isProxy| indicates whether the host is a proxy server. |host| contains the
+    /// hostname and |port| contains the port number. |realm| is the realm of the
+    /// challenge and may be NULL. |scheme| is the authentication scheme used, such
+    /// as "basic" or "digest", and will be NULL if the source of the request is an
+    /// FTP server. Return true (1) to continue the request and call
+    /// cef_auth_callback_t::cont() either in this function or at a later time when
+    /// the authentication information is available. Return false (0) to cancel the
+    /// request immediately.
+    ///
+    public Function<get_auth_credentials> get_auth_credentials =
+        function(get_auth_credentials.class);
+    ///
+    /// Called on the IO thread when JavaScript requests a specific storage quota
+    /// size via the webkitStorageInfo.requestQuota function. |origin_url| is the
+    /// origin of the page making the request. |new_size| is the requested quota
+    /// size in bytes. Return true (1) to continue the request and call
+    /// cef_request_tCallback::cont() either in this function or at a later time to
+    /// grant or deny the request. Return false (0) to cancel the request
+    /// immediately.
+    ///
+    public Function<on_quota_request> on_quota_request = function(on_quota_request.class);
+    ///
+    /// Called on the UI thread to handle requests for URLs with an unknown
+    /// protocol component. Set |allow_os_execution| to true (1) to attempt
+    /// execution via the registered OS protocol handler, if any. SECURITY WARNING:
+    /// YOU SHOULD USE THIS METHOD TO ENFORCE RESTRICTIONS BASED ON SCHEME, HOST OR
+    /// OTHER URL ANALYSIS BEFORE ALLOWING OS EXECUTION.
+    ///
+    public Function<on_protocol_execution> on_protocol_execution =
+        function(on_protocol_execution.class);
+    ///
+    /// Called on the UI thread to handle requests for URLs with an invalid SSL
+    /// certificate. Return true (1) and call cef_request_tCallback::cont() either
+    /// in this function or at a later time to continue or cancel the request.
+    /// Return false (0) to cancel the request immediately. If
+    /// CefSettings.ignore_certificate_errors is set all invalid certificates will
+    /// be accepted without calling this function.
+    ///
+    public Function<on_certificate_error> on_certificate_error =
+        function(on_certificate_error.class);
+    ///
+    /// Called on the UI thread when a client certificate is being requested for
+    /// authentication. Return false (0) to use the default behavior and
+    /// automatically select the first certificate available. Return true (1) and
+    /// call cef_select_client_certificate_callback_t::Select either in this
+    /// function or at a later time to select a certificate. Do not call Select or
+    /// call it with NULL to continue without using any certificate. |isProxy|
+    /// indicates whether the host is an HTTPS proxy or the origin server. |host|
+    /// and |port| contains the hostname and port of the SSL server. |certificates|
+    /// is the list of certificates to choose from; this list has already been
+    /// pruned by Chromium so that it only contains certificates from issuers that
+    /// the server trusts.
+    ///
+    public Function<on_select_client_certificate> on_select_client_certificate =
+        function(on_select_client_certificate.class);
+    ///
+    /// Called on the browser process UI thread when a plugin has crashed.
+    /// |plugin_path| is the path of the plugin that crashed.
+    ///
+    public Function<on_plugin_crashed> on_plugin_crashed = function(on_plugin_crashed.class);
+    ///
+    /// Called on the browser process UI thread when the render view associated
+    /// with |browser| is ready to receive/handle IPC messages in the render
+    /// process.
+    ///
+    public Function<on_render_view_ready> on_render_view_ready =
+        function(on_render_view_ready.class);
+    ///
+    /// Called on the browser process UI thread when the render process terminates
+    /// unexpectedly. |status| indicates how the process terminated.
+    ///
+    public Function<on_render_process_terminated> on_render_process_terminated =
+        function(on_render_process_terminated.class);
+
+    public static interface on_before_browse {
+      @Delegate
+      int invoke(
+          cef_request_handler_t self_,
+          jnr.ffi.Pointer browser,
+          jnr.ffi.Pointer frame,
+          jnr.ffi.Pointer request,
+          int is_redirect);
+    }
+
+    public static interface on_open_urlfrom_tab {
+      @Delegate
+      int invoke(
+          cef_request_handler_t self_,
+          jnr.ffi.Pointer browser,
+          jnr.ffi.Pointer frame,
+          cef_string_t target_url,
+          cef_window_open_disposition_t target_disposition,
+          int user_gesture);
+    }
+
+    public static interface on_before_resource_load {
+      @Delegate
+      cef_return_value_t invoke(
+          cef_request_handler_t self_,
+          jnr.ffi.Pointer browser,
+          jnr.ffi.Pointer frame,
+          jnr.ffi.Pointer request,
+          jnr.ffi.Pointer callback);
+    }
+
+    public static interface get_resource_handler {
+      @Delegate
+      jnr.ffi.Pointer invoke(
+          cef_request_handler_t self_,
+          jnr.ffi.Pointer browser,
+          jnr.ffi.Pointer frame,
+          jnr.ffi.Pointer request);
+    }
+
+    public static interface on_resource_redirect {
+      @Delegate
+      void invoke(
+          cef_request_handler_t self_,
+          jnr.ffi.Pointer browser,
+          jnr.ffi.Pointer frame,
+          jnr.ffi.Pointer request,
+          jnr.ffi.Pointer response,
+          cef_string_t new_url);
+    }
+
+    public static interface on_resource_response {
+      @Delegate
+      int invoke(
+          cef_request_handler_t self_,
+          jnr.ffi.Pointer browser,
+          jnr.ffi.Pointer frame,
+          jnr.ffi.Pointer request,
+          jnr.ffi.Pointer response);
+    }
+
+    public static interface get_resource_response_filter {
+      @Delegate
+      jnr.ffi.Pointer invoke(
+          cef_request_handler_t self_,
+          jnr.ffi.Pointer browser,
+          jnr.ffi.Pointer frame,
+          jnr.ffi.Pointer request,
+          jnr.ffi.Pointer response);
+    }
+
+    public static interface on_resource_load_complete {
+      @Delegate
+      void invoke(
+          cef_request_handler_t self_,
+          jnr.ffi.Pointer browser,
+          jnr.ffi.Pointer frame,
+          jnr.ffi.Pointer request,
+          jnr.ffi.Pointer response,
+          cef_urlrequest_status_t status,
+          int received_content_length);
+    }
+
+    public static interface get_auth_credentials {
+      @Delegate
+      int invoke(
+          cef_request_handler_t self_,
+          jnr.ffi.Pointer browser,
+          jnr.ffi.Pointer frame,
+          int isProxy,
+          cef_string_t host,
+          int port,
+          cef_string_t realm,
+          cef_string_t scheme,
+          jnr.ffi.Pointer callback);
+    }
+
+    public static interface on_quota_request {
+      @Delegate
+      int invoke(
+          cef_request_handler_t self_,
+          jnr.ffi.Pointer browser,
+          cef_string_t origin_url,
+          int new_size,
+          jnr.ffi.Pointer callback);
+    }
+
+    public static interface on_protocol_execution {
+      @Delegate
+      void invoke(
+          cef_request_handler_t self_,
+          jnr.ffi.Pointer browser,
+          cef_string_t url,
+          IntByReference allow_os_execution);
+    }
+
+    public static interface on_certificate_error {
+      @Delegate
+      int invoke(
+          cef_request_handler_t self_,
+          jnr.ffi.Pointer browser,
+          cef_errorcode_t cert_error,
+          cef_string_t request_url,
+          jnr.ffi.Pointer ssl_info,
+          jnr.ffi.Pointer callback);
+    }
+
+    public static interface on_select_client_certificate {
+      @Delegate
+      int invoke(
+          cef_request_handler_t self_,
+          jnr.ffi.Pointer browser,
+          int isProxy,
+          cef_string_t host,
+          int port,
+          int certificatesCount,
+          jnr.ffi.Pointer certificates,
+          jnr.ffi.Pointer callback);
+    }
+
+    public static interface on_plugin_crashed {
+      @Delegate
+      void invoke(cef_request_handler_t self_, jnr.ffi.Pointer browser, cef_string_t plugin_path);
+    }
+
+    public static interface on_render_view_ready {
+      @Delegate
+      void invoke(cef_request_handler_t self_, jnr.ffi.Pointer browser);
+    }
+
+    public static interface on_render_process_terminated {
+      @Delegate
+      void invoke(
+          cef_request_handler_t self_, jnr.ffi.Pointer browser, cef_termination_status_t status);
+    }
+
+    public cef_request_handler_t(jnr.ffi.Runtime runtime) {
+      super(runtime);
+    }
+  }
+  ///
   /// Implement this structure to provide handler implementations.
   ///
   public static class cef_client_t extends Struct {
@@ -1122,7 +1501,7 @@ public class CEF {
 
     public static interface get_request_handler {
       @Delegate
-      jnr.ffi.Pointer invoke(cef_client_t self_);
+      cef_request_handler_t invoke(cef_client_t self_);
     }
 
     public static interface on_process_message_received {

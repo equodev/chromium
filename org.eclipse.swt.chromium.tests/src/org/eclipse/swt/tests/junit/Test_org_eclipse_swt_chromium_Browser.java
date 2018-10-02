@@ -351,7 +351,11 @@ public void test_LocationListener_changing() {
 	AtomicBoolean changingFired = new AtomicBoolean(false);
 	browser.addLocationListener(changingAdapter(e -> changingFired.set(true)));
 	shell.open();
-	browser.setText("Hello world");
+	if (isChromium) {
+	    browser.setUrl("about:version");
+	} else { // Chromium cannot fire changing event for setText
+	    browser.setText("Hello world");
+	}
 	boolean passed = waitForPassCondition(changingFired::get);
 	assertTrue("LocationListener.changing() event was never fixed", passed);
 }
@@ -388,8 +392,12 @@ public void test_LocationListener_changingAndOnlyThenChanged() {
 		}
 	});
 	shell.open();
-	browser.setText("Hello world");
-	waitForPassCondition(finished::get);
+	if (isChromium) {
+	    browser.setUrl("about:version");
+	} else { // Chromium cannot fire changing event for setText
+	    browser.setText("Hello world");
+	}
+    waitForPassCondition(finished::get);
 
 	if (finished.get() && changingFired.get() && changedFired.get() && !changedFiredTooEarly.get()) {
 		return; // pass
@@ -465,7 +473,11 @@ public void test_LocationListener_ProgressListener_cancledLoad () {
 		}
 	}));
 	shell.open();
-	browser.setText("You should not see this message.");
+	if (isChromium) {
+	    browser.setUrl("about:version");
+	} else { // Chromium cannot fire changing event for setText
+	    browser.setText("You should not see this message.");
+	}
 
 	// We must wait for events *not* to fire.
 	// On Gtk, Quadcore (Intel i7-4870HQ pci-e SSD, all events fire after ~80ms.

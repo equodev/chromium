@@ -86,6 +86,7 @@ class Chromium extends WebBrowser {
     private CEF.cef_life_span_handler_t lifeSpanHandler;
     private CEF.cef_load_handler_t loadHandler;
     private CEF.cef_display_handler_t displayHandler;
+    private CEF.cef_request_handler_t requestHandler;
     private CEF.cef_string_visitor_t  textVisitor;
     private FocusListener focusListener;
     private String url;
@@ -283,6 +284,7 @@ class Chromium extends WebBrowser {
         set_life_span_handler();
         set_load_handler();
         set_display_handler();
+        set_request_handler();
 
         chromium.addControlListener(new ControlAdapter() {
             @Override
@@ -444,11 +446,24 @@ class Chromium extends WebBrowser {
                 for (ProgressListener listener : progressListeners) {
                     if (isLoading == 1) {
                         listener.changed(event);
-                    } else {
-                        listener.completed(event);
                     }
                 }
             } else if (isLoading == 0 && ignoreFirstEvents) {
+                ignoreFirstEvents = false;
+            }
+        });
+        loadHandler.on_load_end.set((self, browser, frame, http_status) -> {
+            if (chromium.isDisposed() || progressListeners == null) return;
+            if (!("about:blank".equals(url) && ignoreFirstEvents)) {
+                ProgressEvent event = new ProgressEvent(chromium);
+                event.display = chromium.getDisplay ();
+                event.widget = chromium;
+                event.current = MAX_PROGRESS;
+                event.total = MAX_PROGRESS;
+                for (ProgressListener listener : progressListeners) {
+                    listener.completed(event);
+                }
+            } else if (ignoreFirstEvents) {
                 ignoreFirstEvents = false;
             }
         });
@@ -460,7 +475,7 @@ class Chromium extends WebBrowser {
     private void set_display_handler() {
         displayHandler = CEFFactory.newDisplayHandler();
         displayHandler.on_title_change.set((self, browser, title) -> {
-            if (chromium.isDisposed() || progressListeners == null) return;
+            if (chromium.isDisposed() || titleListeners == null) return;
             String str = lib.cefswt_cefstring_to_java(title);
             TitleEvent event = new TitleEvent(chromium);
             event.display = chromium.getDisplay ();
@@ -478,8 +493,8 @@ class Chromium extends WebBrowser {
             event.doit = true;
             event.location = lib.cefswt_cefstring_to_java(url);
             event.top = lib.cefswt_is_main_frame(frame);
-            debugPrint("on_address_change:" + event.location);
             if (!("about:blank".equals(event.location) && ignoreFirstEvents)) {
+                debugPrint("on_address_change:" + event.location + " " + event.top);
                 for (LocationListener listener : locationListeners) {
                     listener.changed(event);
                 }
@@ -498,6 +513,27 @@ class Chromium extends WebBrowser {
         });
         clientHandler.get_display_handler.set(client -> {
             return displayHandler;
+        });
+    }
+    
+    private void set_request_handler() {
+        requestHandler = CEFFactory.newRequestHandler();
+        requestHandler.on_before_browse.set((self, browser, frame, request, is_redirect) -> {
+            debugPrint("on_before_browse");
+            if (chromium.isDisposed() || locationListeners == null) return 0;
+            LocationEvent event = new LocationEvent(chromium);
+            event.display = chromium.getDisplay();
+            event.widget = chromium;
+            event.doit = true;
+            event.location = lib.cefswt_request_to_java(request);
+            debugPrint("on_before_browse:" + event.location);
+            for (LocationListener listener : locationListeners) {
+                listener.changing(event);
+            }
+            return event.doit ? 0 : 1;
+        });
+        clientHandler.get_request_handler.set(client -> {
+            return requestHandler;
         });
     }
     
@@ -594,7 +630,6 @@ class Chromium extends WebBrowser {
         client.get_jsdialog_handler.set((c) -> debug("get_jsdialog_handler"));
         client.get_keyboard_handler.set((c) -> null);
         client.get_render_handler.set((c) -> null);
-        client.get_request_handler.set((c) -> null);
         client.on_process_message_received.set((c, browser_1, processId_2, processMessage_3) -> {
             debug("on_process_message_received");
             return 0;
@@ -952,6 +987,8 @@ class Chromium extends WebBrowser {
         void cefswt_free(@Direct Pointer bs);
 
         String cefswt_cefstring_to_java(CEF.cef_string_t string);
+
+        String cefswt_request_to_java(Pointer request);
 
         boolean cefswt_set_cookie(String url, String name, String value, String domain, String path, int secure, int httpOnly, double maxAge);
 

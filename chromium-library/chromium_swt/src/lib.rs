@@ -391,6 +391,14 @@ pub extern fn cefswt_cefstring_to_java(cefstring: *mut cef::cef_string_t) -> *mu
 }
 
 #[no_mangle]
+pub extern fn cefswt_request_to_java(request: *mut cef::cef_request_t) -> *mut c_char {
+    let url = unsafe { (*request).get_url.expect("null get_url")(request) };
+    let cstr = cefswt_cefstring_to_java(url);
+    unsafe { cef::cef_string_userfree_utf16_free(url) };
+    cstr
+}
+
+#[no_mangle]
 pub extern fn cefswt_load_text(browser: *mut cef::cef_browser_t, text: *const c_char) {
     let text = utils::str_from_c(text);
     let text_cef = utils::cef_string(text);
