@@ -255,11 +255,23 @@ fn restore_signal_handlers(signal_handlers: HashMap<c_int, nix::sys::signal::Sig
     }
 }
 
+unsafe extern "C" fn on_process_message_received(
+            self_: *mut cef::_cef_client_t,
+            browser: *mut cef::_cef_browser_t,
+            source_process: cef::cef_process_id_t,
+            message: *mut cef::_cef_process_message_t,
+        ) -> c_int
+{
+    println!("RUST on_process_message_received {:?} {} {}", source_process, cef::cef_currently_on(cef::cef_thread_id_t::TID_UI), cef::cef_currently_on(cef::cef_thread_id_t::TID_IO));
+    1
+}
+        
 #[no_mangle]
 pub extern fn cefswt_create_browser(hwnd: c_ulong, url: *const c_char, client: &mut cef::_cef_client_t, w: c_int, h: c_int) -> *const cef::cef_browser_t {
     assert_eq!((*client).base.size, std::mem::size_of::<cef::_cef_client_t>());
 
     // println!("hwnd: {}", hwnd);
+    // (*client).on_process_message_received = Option::Some(on_process_message_received);
  
     let url = utils::str_from_c(url);
     // println!("url: {:?}", url);
@@ -441,6 +453,42 @@ pub extern fn cefswt_execute(browser: *mut cef::cef_browser_t, text: *const c_ch
     let main_frame = unsafe { get_frame(browser) };
     let execute = unsafe { (*main_frame).execute_java_script.expect("null execute_java_script") };
     unsafe { execute(main_frame, &text_cef, &url_cef, 0) };
+}
+
+#[no_mangle]
+pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char, id: i32) -> c_int {
+    let text_cef = utils::cef_string_from_c(text);
+    let name = utils::cef_string("eval");
+    unsafe {
+        let msg = cef::cef_process_message_create(&name);
+        let args = (*msg).get_argument_list.unwrap()(msg);
+        let s = (*args).set_int.unwrap()(args, 0, id);
+        assert_eq!(s, 1);
+        let s = (*args).set_string.unwrap()(args, 1, &text_cef);
+        assert_eq!(s, 1);
+        let send_fn = (*browser).send_process_message.expect("null send_process_message");
+        let sent = send_fn(browser, cef::cef_process_id_t::PID_RENDERER, msg);
+        assert_eq!(sent, 1);
+        sent
+    }
+}
+
+#[no_mangle]
+pub extern fn cefswt_function(browser: *mut cef::cef_browser_t, name: *const c_char, id: i32) -> c_int {
+    let name_cef = utils::cef_string_from_c(name);
+    let msg_name = utils::cef_string("function");
+    unsafe {
+        let msg = cef::cef_process_message_create(&msg_name);
+        let args = (*msg).get_argument_list.unwrap()(msg);
+        let s = (*args).set_int.unwrap()(args, 0, id);
+        assert_eq!(s, 1);
+        let s = (*args).set_string.unwrap()(args, 1, &name_cef);
+        assert_eq!(s, 1);
+        let send_fn = (*browser).send_process_message.expect("null send_process_message");
+        let sent = send_fn(browser, cef::cef_process_id_t::PID_RENDERER, msg);
+        assert_eq!(sent, 1);
+        sent
+    }
 }
 
 #[no_mangle]
