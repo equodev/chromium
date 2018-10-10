@@ -916,55 +916,24 @@ class Chromium extends WebBrowser {
         evalFinished = false;
         boolean sent = lib.cefswt_eval(browser, script, EVAL++);
         if (!sent) {
-            throw new SWTException("Script that was evaluated");
+            throw new SWTException("Script that was evaluated failed");
         }
         
-        long ASYNC_EXEC_TIMEOUT_MS = 10000;
-        final Instant timeOut = Instant.now().plusMillis(ASYNC_EXEC_TIMEOUT_MS);
-        Display display = chromium.getDisplay();
-        while (!chromium.isDisposed()) {
-            lib.cefswt_do_message_loop_work();
-            lib.cefswt_do_message_loop_work();
-            lib.cefswt_do_message_loop_work();
-            lib.cefswt_do_message_loop_work();
-            lib.cefswt_do_message_loop_work();
-            lib.cefswt_do_message_loop_work();
-//            boolean eventsDispatched = OS.g_main_context_iteration (0, false);
-            boolean eventsDispatched = display.readAndDispatch();
-            lib.cefswt_do_message_loop_work();
-            lib.cefswt_do_message_loop_work();
-            lib.cefswt_do_message_loop_work();
-            lib.cefswt_do_message_loop_work();
-            lib.cefswt_do_message_loop_work();
-            lib.cefswt_do_message_loop_work();
-            lib.cefswt_do_message_loop_work();
-            lib.cefswt_do_message_loop_work();
-            lib.cefswt_do_message_loop_work();
-            if (evalFinished) {
-                return true;
-            } else if (Instant.now().isAfter(timeOut)) {
-                System.err.println("SWT call to Webkit timed out after " + ASYNC_EXEC_TIMEOUT_MS
-                        + "ms. No return value will be provided.\n"
-                        + "Possible reasons:\n"
-                        + "1) Problem: Your javascript needs more than " + ASYNC_EXEC_TIMEOUT_MS +"ms to execute.\n"
-                        + "   Solution: Don't run such javascript, it blocks Eclipse's UI. SWT currently allows such code to complete, but this error is thrown \n"
-                        + "     and the return value of execute()/evalute() will be false/null.\n\n"
-                        + "2) However, if you believe that your application should execute as expected (in under" + ASYNC_EXEC_TIMEOUT_MS + " ms),\n"
-                        + " then it might be a deadlock in SWT/Browser/webkit2 logic.\n"
-                        + " I.e, it might be a bug in SWT (e.g this does not occur on Windows/Cocoa, but occurs on Linux). If you believe it to be a bug in SWT, then\n"
-                        + "\n Additional information about the error is as following:\n");
-                break;
-            }
-//            else if (!eventsDispatched) {
-                lib.cefswt_do_message_loop_work();
-                lib.cefswt_do_message_loop_work();
-                lib.cefswt_do_message_loop_work();
-                lib.cefswt_do_message_loop_work();
-                lib.cefswt_do_message_loop_work();
-                lib.cefswt_do_message_loop_work();
-
-                System.out.println("sleep");
-                display.sleep();
+//            if (evalFinished) {
+//                return true;
+//            } else if (Instant.now().isAfter(timeOut)) {
+//                System.err.println("SWT call to Webkit timed out after " + ASYNC_EXEC_TIMEOUT_MS
+//                        + "ms. No return value will be provided.\n"
+//                        + "Possible reasons:\n"
+//                        + "1) Problem: Your javascript needs more than " + ASYNC_EXEC_TIMEOUT_MS +"ms to execute.\n"
+//                        + "   Solution: Don't run such javascript, it blocks Eclipse's UI. SWT currently allows such code to complete, but this error is thrown \n"
+//                        + "     and the return value of execute()/evalute() will be false/null.\n\n"
+//                        + "2) However, if you believe that your application should execute as expected (in under" + ASYNC_EXEC_TIMEOUT_MS + " ms),\n"
+//                        + " then it might be a deadlock in SWT/Browser/webkit2 logic.\n"
+//                        + " I.e, it might be a bug in SWT (e.g this does not occur on Windows/Cocoa, but occurs on Linux). If you believe it to be a bug in SWT, then\n"
+//                        + "\n Additional information about the error is as following:\n");
+//                break;
+//            }
 //                synchronized (chromium) {
 //                    try {
 //                        chromium.wait(10);
@@ -973,8 +942,7 @@ class Chromium extends WebBrowser {
 //                    }
 //                }
 //            }
-        }
-
+//        }
         
         return false;
     }
@@ -1091,6 +1059,8 @@ class Chromium extends WebBrowser {
         boolean cefswt_eval(Pointer browser, String script, int id);
         
         boolean cefswt_function(Pointer browser, String name, int id);
+
+        boolean cefswt_function_return(Pointer browser, int id, String ret);
         
         void cefswt_close_browser(Pointer browser);
         

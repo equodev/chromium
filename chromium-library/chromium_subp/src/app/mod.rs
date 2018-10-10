@@ -1,5 +1,6 @@
 use cef;
 use utils;
+use socket;
 // use super::Step;
 // use Msg;
 use std::os::raw::{c_int};
@@ -62,20 +63,20 @@ impl App {
 struct Browser(*mut cef::_cef_browser_t);
 unsafe impl Send for Browser {}
 
-struct RenderProcessHandler {
-    cef: cef::_cef_render_process_handler_t,
-    function_handler: Option<V8Handler>,
-    // function: *mut cef::cef_v8value_t,
-    context: *mut cef::cef_v8context_t,
-    pending_functions: Vec<(c_int, cef::cef_string_userfree_t)>
-}
-
 fn register_function(id: c_int, name: *mut cef::cef_string_t, global: *mut cef::cef_v8value_t, handler: &mut V8Handler) {
     // Add the "myfunc" function to the "window" object.
     let handler_name = utils::cef_string(&format!("{}", id));
     let func = unsafe { cef::cef_v8value_create_function(&handler_name, handler.as_ptr()) };
     let s = unsafe { (*global).set_value_bykey.unwrap()(global, name, func, cef::cef_v8_propertyattribute_t::V8_PROPERTY_ATTRIBUTE_NONE) };
     assert_eq!(s, 1);
+}
+
+struct RenderProcessHandler {
+    cef: cef::_cef_render_process_handler_t,
+    function_handler: Option<V8Handler>,
+    // function: *mut cef::cef_v8value_t,
+    context: *mut cef::cef_v8context_t,
+    pending_functions: Vec<(c_int, cef::cef_string_userfree_t)>,
 }
 
 impl RenderProcessHandler {
@@ -85,7 +86,7 @@ impl RenderProcessHandler {
             function_handler: Option::None,
             // function: ::std::ptr::null_mut(),
             context: ::std::ptr::null_mut(),
-            pending_functions: Vec::new()
+            pending_functions: Vec::new(),
         }
     }
 
@@ -131,15 +132,11 @@ impl RenderProcessHandler {
                 let valid = (*message).is_valid.unwrap()(message);
                 let name = (*message).get_name.unwrap()(message);
                 if valid == 0 {
-                    cef::cef_string_userfree_utf16_free(name);
                     return 0;
                 }
-                let eval = utils::cef_string("eval");
-                let function = utils::cef_string("function");
-                if cef::cef_string_utf16_cmp(&eval, name) == 0 {
+                let rph = self_ as *mut RenderProcessHandler;
+                let handled = if cef::cef_string_utf16_cmp(&utils::cef_string("eval"), name) == 0 {
                     println!("RECEIVED EVAL MSG");
-                    cef::cef_string_userfree_utf16_free(name);
-
                     let id = 1;
 
                     let eval_ret = utils::cef_string("evalRet");
@@ -149,22 +146,18 @@ impl RenderProcessHandler {
                     assert_eq!(s, 1);
                     let s = (*args).set_bool.unwrap()(args, 1, 1);
                     assert_eq!(s, 1);
-                    let send_fn = (*browser).send_process_message.expect("null send_process_message");
-                    let sent = send_fn(browser, cef::cef_process_id_t::PID_BROWSER, msg);
-                    assert_eq!(sent, 1);
-                    
-                    return 1;
+                    // let send_fn = (*browser).send_process_message.expect("null send_process_message");
+                    // let sent = send_fn(browser, cef::cef_process_id_t::PID_BROWSER, msg);
+                    // assert_eq!(sent, 1);
+                    socket::socket_client()
                 }
-                else if cef::cef_string_utf16_cmp(&function, name) == 0 {
+                else if cef::cef_string_utf16_cmp(&utils::cef_string("function"), name) == 0 {
                     println!("RECEIVED FUNCTION MSG {:?} {} {}", source_process, cef::cef_currently_on(cef::cef_thread_id_t::TID_IO), cef::cef_currently_on(cef::cef_thread_id_t::TID_RENDERER));
-
-                    cef::cef_string_userfree_utf16_free(name);
 
                     let args = (*message).get_argument_list.unwrap()(message);
                     let id = (*args).get_int.unwrap()(args, 0);
                     let name = (*args).get_string.unwrap()(args, 1);
 
-                    let rph = self_ as *mut RenderProcessHandler;
                     let context = (*rph).context;
                     if (*rph).context.is_null() {
                         (*rph).pending_functions.push((id, name));
@@ -181,11 +174,24 @@ impl RenderProcessHandler {
                         let s = (*context).exit.unwrap()(context);
                         assert_eq!(s, 1);
                     }
-
-                    return 1;
+                    1
                 }
+                else if cef::cef_string_utf16_cmp(&utils::cef_string("function_return"), name) == 0 {
+                    println!("RECEIVED FUNCTION RETURN {:?} {} {}", source_process, cef::cef_currently_on(cef::cef_thread_id_t::TID_IO), cef::cef_currently_on(cef::cef_thread_id_t::TID_RENDERER));
+                    let args = (*message).get_argument_list.unwrap()(message);
+                    let id = (*args).get_int.unwrap()(args, 0);
+                    let ret = utils::cef_string("THE RET");
+                    let handler: Option<&mut V8Handler> = (*rph).function_handler.as_mut();
+                    let handler: &mut V8Handler = handler.expect("no handler");
+                    handler.returned = true;
+                    1
+                }
+                else {
+                    0
+                };
 
                 cef::cef_string_userfree_utf16_free(name);
+                return handled;
             }
             0
         }
@@ -209,14 +215,16 @@ impl RenderProcessHandler {
 
 struct V8Handler {
     cef: cef::_cef_v8handler_t,
-    browser: *mut cef::_cef_browser_t
+    browser: *mut cef::_cef_browser_t,
+    returned: bool
 }
 
 impl V8Handler {
     fn new(browser: *mut cef::_cef_browser_t) -> V8Handler {
         V8Handler {
             cef: V8Handler::cef_function_handler(),
-            browser: browser
+            browser: browser,
+            returned: false
         }
     }
 
@@ -229,10 +237,10 @@ impl V8Handler {
             self_: *mut cef::_cef_v8handler_t,
             name: *const cef::cef_string_t,
             _object: *mut cef::_cef_v8value_t,
-            _arguments_count: usize,
-            _arguments: *const *const cef::_cef_v8value_t,
-            _retval: *mut *mut cef::_cef_v8value_t,
-            _exception: *mut cef::cef_string_t,
+            arguments_count: usize,
+            arguments: *const *const cef::_cef_v8value_t,
+            retval: *mut *mut cef::_cef_v8value_t,
+            exception: *mut cef::cef_string_t,
         ) -> c_int {
             println!("cef_function_handler CALLED");
             let handler = self_ as *mut V8Handler;
@@ -246,8 +254,15 @@ impl V8Handler {
 
             let sent = (*browser).send_process_message.unwrap()(browser, cef::cef_process_id_t::PID_BROWSER, msg);
             assert_eq!(sent, 1);
-            1
+
+            // wait_return
+            println!("before PARK");
+            let r = socket::socket_server();
+            *retval = cef::cef_v8value_create_bool(1);
+            println!("after PARK");
+            r
         }
+        
 
         cef::_cef_v8handler_t {
             base: Base::new(mem::size_of::<cef::_cef_v8handler_t>()),

@@ -66,7 +66,7 @@ public class Test_org_eclipse_swt_chromium_Browser extends Test_org_eclipse_swt_
 	int     debug_show_browser_timeout_seconds = 2; // if above set to true, then how long should the browser be shown for.
 													// This is independent of whether test passes or fails.
 
-	boolean debug_verbose_output = false;
+	boolean debug_verbose_output = true;
 
 	int secondsToWaitTillFail; // configured in setUp() to allow individual tests to override this.
 	// CONFIG END
@@ -1894,7 +1894,7 @@ public void test_BrowserFunction_callback () {
 
 		@Override
 		public Object function(Object[] arguments) {
-			javaCallbackExecuted.set(true);
+//			javaCallbackExecuted.set(true);
 			return null;
 		}
 	}
@@ -1903,7 +1903,8 @@ public void test_BrowserFunction_callback () {
 			+ "<script language=\"JavaScript\">\n"
 			+ "function callCustomFunction() {\n"  // Define a javascript function.
 			+ "     document.body.style.backgroundColor = 'red'\n"
-			+ "		jsCallbackToJava()\n"        // This calls the javafunction that we registered.
+			+ "		var r = jsCallbackToJava()\n"        // This calls the javafunction that we registered.
+			+ "     console.log('the return'+r)\n"
 			+ "}"
 			+ "</script>\n"
 			+ "</head>\n"

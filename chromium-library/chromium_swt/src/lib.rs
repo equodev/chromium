@@ -10,6 +10,7 @@ extern crate objc;
 
 use chromium::cef;
 use chromium::utils;
+use chromium::socket;
 
 mod app;
 #[cfg(target_os = "linux")]
@@ -18,6 +19,7 @@ mod gtk2;
 use std::os::raw::{c_char, c_int, c_ulong, c_void};
 #[cfg(unix)]
 use std::collections::HashMap;
+use std::io::prelude::*;
 
 #[cfg(target_os = "linux")]
 unsafe extern fn xerror_handler_impl(_: *mut x11::xlib::Display, event: *mut x11::xlib::XErrorEvent) -> c_int {
@@ -93,7 +95,7 @@ pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char
         locale: utils::cef_string_empty(),
         log_file: logfile_cef,
         log_severity: cef::cef_log_severity_t::LOGSEVERITY_INFO,
-        //log_severity: cef::cef_log_severity_t::LOGSEVERITY_VERBOSE,
+        // log_severity: cef::cef_log_severity_t::LOGSEVERITY_VERBOSE,
         javascript_flags: utils::cef_string_empty(),
         resources_dir_path: resources_cef,
         locales_dir_path: locales_cef,
@@ -466,9 +468,11 @@ pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char,
         assert_eq!(s, 1);
         let s = (*args).set_string.unwrap()(args, 1, &text_cef);
         assert_eq!(s, 1);
-        let send_fn = (*browser).send_process_message.expect("null send_process_message");
-        let sent = send_fn(browser, cef::cef_process_id_t::PID_RENDERER, msg);
+        let sent = (*browser).send_process_message.unwrap()(browser, cef::cef_process_id_t::PID_RENDERER, msg);
         assert_eq!(sent, 1);
+
+        let r = socket::socket_server();
+
         sent
     }
 }
@@ -484,10 +488,28 @@ pub extern fn cefswt_function(browser: *mut cef::cef_browser_t, name: *const c_c
         assert_eq!(s, 1);
         let s = (*args).set_string.unwrap()(args, 1, &name_cef);
         assert_eq!(s, 1);
-        let send_fn = (*browser).send_process_message.expect("null send_process_message");
-        let sent = send_fn(browser, cef::cef_process_id_t::PID_RENDERER, msg);
+        let sent = (*browser).send_process_message.unwrap()(browser, cef::cef_process_id_t::PID_RENDERER, msg);
         assert_eq!(sent, 1);
         sent
+    }
+}
+
+#[no_mangle]
+pub extern fn cefswt_function_return(browser: *mut cef::cef_browser_t, id: i32, ret: *const c_char) -> c_int {
+    let ret_cef = utils::cef_string_from_c(ret);
+    let msg_name = utils::cef_string("function_return");
+    unsafe {
+        let msg = cef::cef_process_message_create(&msg_name);
+        let args = (*msg).get_argument_list.unwrap()(msg);
+        let s = (*args).set_int.unwrap()(args, 0, id);
+        assert_eq!(s, 1);
+        let s = (*args).set_string.unwrap()(args, 1, &ret_cef);
+        assert_eq!(s, 1);
+        // let sent = (*browser).send_process_message.unwrap()(browser, cef::cef_process_id_t::PID_RENDERER, msg);
+        // assert_eq!(sent, 1);
+        // sent
+        
+        socket::socket_client()
     }
 }
 
