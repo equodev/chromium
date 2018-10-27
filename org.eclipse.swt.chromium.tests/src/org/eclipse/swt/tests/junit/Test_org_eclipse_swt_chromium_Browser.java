@@ -62,7 +62,7 @@ public class Test_org_eclipse_swt_chromium_Browser extends Test_org_eclipse_swt_
 
 	// CONFIG
 	/** This forces tests to display the shell/browser for a brief moment. Useful to see what's going on with broken jUnits */
-	boolean debug_show_browser = false; // true to display browser.
+	boolean debug_show_browser = true; // true to display browser.
 	int     debug_show_browser_timeout_seconds = 2; // if above set to true, then how long should the browser be shown for.
 													// This is independent of whether test passes or fails.
 
@@ -577,6 +577,7 @@ public void test_OpenWindowListener_openHasValidEventDetails() {
 /** Test that a script 'window.open()' opens a child popup shell. */
 @Test
 public void test_OpenWindowListener_open_ChildPopup() {
+	assumeFalse("Skipping temporarily", isChromium);
 	AtomicBoolean childCompleted = new AtomicBoolean(false);
 
 	Shell childShell = new Shell(shell, SWT.None);
@@ -612,6 +613,7 @@ public void test_OpenWindowListener_open_ChildPopup() {
 /** Validate event order : Child's visibility should come before progress completed event */
 @Test
 public void test_OpenWindow_Progress_Listener_ValidateEventOrder() {
+	assumeFalse("Skipping temporarily", isChromium);
 	AtomicBoolean windowOpenFired = new AtomicBoolean(false);
 	AtomicBoolean childCompleted = new AtomicBoolean(false);
 	AtomicBoolean visibilityShowed = new AtomicBoolean(false);
@@ -1029,6 +1031,7 @@ public void test_VisibilityWindowListener_addAndRemove() {
 /** Verify that if multiple child shells are open, no duplicate visibility events are sent. */
 @Test
 public void test_VisibilityWindowListener_multiple_shells() {
+		assumeFalse("Skipping temporarily", isChromium);
 		AtomicBoolean secondChildCompleted = new AtomicBoolean(false);
 		AtomicInteger childCount = new AtomicInteger(0);
 
@@ -1087,6 +1090,7 @@ public void test_VisibilityWindowListener_multiple_shells() {
  */
 @Test
 public void test_VisibilityWindowListener_eventSize() {
+	assumeFalse("Skipping temporarily", isChromium);
 	shell.setSize(200,300);
 	AtomicBoolean childCompleted = new AtomicBoolean(false);
 	AtomicReference<Point> result = new AtomicReference<>(new Point(0,0));
@@ -1295,8 +1299,11 @@ public void test_LocationListener_evaluateInCallback() {
 		}
 	});
 
-	browser.setText("<body>Hello <b>World</b></body>");
-
+	if (isChromium) {
+		browser.setUrl("about:version");
+	} else { // Chromium cannot fire changing event for setText
+		browser.setText("<body>Hello <b>World</b></body>");
+	}
 	// Wait till both listeners were fired.
 	if (SwtTestUtil.isWindows) {
 		waitForPassCondition(changingFinished::get); // Windows doesn't reach changedFinished.get();
@@ -1317,7 +1324,7 @@ public void test_LocationListener_evaluateInCallback() {
 	if (isWebkit2) {
 		// Evaluation works in all cases.
 		passed = changingFinished.get() && changedFinished.get() && changed && changing;
-	} else if (isWebkit1) {
+	} else if (isWebkit1 || isChromium) {
 		// On Webkit1, evaluation in 'changing' fails.
 		passed = changingFinished.get() && changedFinished.get() && changed; // && changing (broken)
 	} else if (SwtTestUtil.isCocoa) {
@@ -1334,6 +1341,7 @@ public void test_LocationListener_evaluateInCallback() {
 /** Verify that evaluation works inside an OpenWindowListener */
 @Test
 public void test_OpenWindowListener_evaluateInCallback() {
+	assumeFalse("Skipping temporarily", isChromium);
 	assumeTrue(!isWebkit1); // This works on Webkit1, but can sporadically fail, see Bug 509411
 	AtomicBoolean eventFired = new AtomicBoolean(false);
 	browser.addOpenWindowListener(event -> {
@@ -1427,7 +1435,7 @@ public void test_refresh() {
 /** Text without html tags */
 @Test
 public void test_getText() {
-	if (SwtTestUtil.isWindows) {
+	if (SwtTestUtil.isWindows || isChromium) {
 		// Window's Browser implementation returns the processed HTML rather than the original one.
 		// The processed webpage has html tags added to it.
 		getText_helper("helloWorld", "<html><head></head><body>helloWorld</body></html>");
@@ -1449,7 +1457,7 @@ public void test_getText_html() {
 @Test
 public void test_getText_script() {
 	String testString = "<html><head></head><body>hello World<script>document.body.style.backgroundColor = \"red\";</script></body></html>";
-	if (SwtTestUtil.isWindows) {
+	if (SwtTestUtil.isWindows || isChromium) {
 		// Window's Browser implementation returns the processed HTML rather than the original one.
 		// The processed page injects "style" property into the body from the script.
 		getText_helper(testString, "<html><head></head><body style=\"background-color: red;\">hello World<script>document.body.style.backgroundColor = \"red\";</script></body></html>");
@@ -1762,6 +1770,7 @@ public void test_evaluate_evaluation_failed_exception() {
  */
 @Test
 public void test_evaluate_array_numbers() {
+	assumeFalse("Skipping temporarily", isChromium);
 	assumeFalse(webkit1SkipMsg(), isWebkit1); // Bug 509411
 
 	// Small note:
@@ -1801,6 +1810,7 @@ public void test_evaluate_array_numbers() {
  */
 @Test
 public void test_evaluate_array_strings () {
+	assumeFalse("Skipping temporarily", isChromium);
 	assumeFalse(webkit1SkipMsg(), isWebkit1); // Bug 509411
 
 	final AtomicReferenceArray<String> atomicStringArray = new AtomicReferenceArray<>(3);
@@ -1840,6 +1850,7 @@ public void test_evaluate_array_strings () {
  */
 @Test
 public void test_evaluate_array_mixedTypes () {
+	assumeFalse("Skipping temporarily", isChromium);
 	assumeFalse(webkit1SkipMsg(), isWebkit1); // Bug 509411
 	final AtomicReferenceArray<Object> atomicArray = new AtomicReferenceArray<>(3);
 	atomicArray.set(0, "executing");
@@ -1894,7 +1905,7 @@ public void test_BrowserFunction_callback () {
 
 		@Override
 		public Object function(Object[] arguments) {
-//			javaCallbackExecuted.set(true);
+			javaCallbackExecuted.set(true);
 			return null;
 		}
 	}
@@ -1903,8 +1914,7 @@ public void test_BrowserFunction_callback () {
 			+ "<script language=\"JavaScript\">\n"
 			+ "function callCustomFunction() {\n"  // Define a javascript function.
 			+ "     document.body.style.backgroundColor = 'red'\n"
-			+ "		var r = jsCallbackToJava()\n"        // This calls the javafunction that we registered.
-			+ "     console.log('the return'+r)\n"
+			+ "		jsCallbackToJava()\n"        // This calls the javafunction that we registered.
 			+ "}"
 			+ "</script>\n"
 			+ "</head>\n"
@@ -2202,6 +2212,81 @@ public void test_BrowserFunction_callback_with_javaReturningInt () {
 	boolean passed = waitForPassCondition(() -> returnInt.get() == 42);
 	String message = "Java should have returned something back to javascript. But something went wrong";
 	assertTrue(message, passed);
+}
+
+
+/**
+ * Test that javascript can call java, java returns an mixed array back to javascript.
+ *
+ * It's a bit tricky to tell if javascript actually received the correct value from java.
+ * Solution: make a second function/callback that is called with the value that javascript received from java.
+ *
+ * Logic:
+ *  1) Java registers function callCustomFunction() by setting html body.
+ *  2) which in turn calls JavascriptCallback, which returns mixed array value back to javascript.
+ *  3) javascript then calls JavascriptCallback_javascriptReceivedJavaArray() and passes it value received from java.
+ *  4) Java validates that the correct value was passed to javascript and was passed back to java.
+ *
+ * loosely based on Snippet307.
+ */
+@Test
+public void test_BrowserFunction_callback_with_javaReturningArray () {
+    // On webkit1, this test works if ran on it's own. But sometimes in test-suite with other tests it causes jvm crash.
+    // culprit seems to be the main_context_iteration() call in shell.setVisible().
+    // See Bug 509587.  Solution: Webkit2.
+    assumeFalse(webkit1SkipMsg(), isWebkit1);
+    AtomicReferenceArray<Object> returnArray = new AtomicReferenceArray<>(3);
+    
+    class JavascriptCallback extends BrowserFunction { // Note: Local class defined inside method.
+        JavascriptCallback(Browser browser, String name) {
+            super(browser, name);
+        }
+        
+        @Override
+        public Object function(Object[] arguments) {
+            return new Object[] {"a String", 42, true};
+        }
+    }
+    
+    class JavascriptCallback_javascriptReceivedJavaArray extends BrowserFunction { // Note: Local class defined inside method.
+        JavascriptCallback_javascriptReceivedJavaArray(Browser browser, String name) {
+            super(browser, name);
+        }
+        
+        @Override
+        public Object function(Object[] arguments) {
+            Object[] returnVal = (Object[]) arguments[0];
+            returnArray.set(0, returnVal[0]);
+            returnArray.set(1, returnVal[1]);
+            returnArray.set(2, returnVal[2]);
+            return null;
+        }
+    }
+    
+    String htmlWithScript = "<html><head>\n"
+            + "<script language=\"JavaScript\">\n"
+            + "function callCustomFunction() {\n"  // Define a javascript function.
+            + "     document.body.style.backgroundColor = 'red'\n"
+            + "     var retVal = jsCallbackToJava()\n"  // 2)
+            + "		document.write(retVal)\n"        // This calls the javafunction that we registered. Set HTML body to return value.
+            + "     jsSuccess(retVal)\n"				// 3)
+            + "}"
+            + "</script>\n"
+            + "</head>\n"
+            + "<body> If you see this, javascript did not receive anything from Java. This page should just be '42' </body>\n"
+            + "</html>\n";
+    // 1)
+    browser.setText(htmlWithScript);
+    new JavascriptCallback(browser, "jsCallbackToJava");
+    new JavascriptCallback_javascriptReceivedJavaArray(browser, "jsSuccess");
+    
+    browser.addProgressListener(callCustomFunctionUponLoad);
+    
+    shell.open();
+    boolean passed = waitForPassCondition(() -> 
+    "a String".equals(returnArray.get(0)) && Double.valueOf(42.0d).equals(returnArray.get(1)) && Boolean.valueOf((boolean) returnArray.get(2)) == true);
+    String message = "Java should have returned something back to javascript. But something went wrong";
+    assertTrue(message, passed);
 }
 
 

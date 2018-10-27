@@ -19,7 +19,6 @@ mod gtk2;
 use std::os::raw::{c_char, c_int, c_ulong, c_void};
 #[cfg(unix)]
 use std::collections::HashMap;
-use std::io::prelude::*;
 
 #[cfg(target_os = "linux")]
 unsafe extern fn xerror_handler_impl(_: *mut x11::xlib::Display, event: *mut x11::xlib::XErrorEvent) -> c_int {
@@ -257,19 +256,8 @@ fn restore_signal_handlers(signal_handlers: HashMap<c_int, nix::sys::signal::Sig
     }
 }
 
-unsafe extern "C" fn on_process_message_received(
-            self_: *mut cef::_cef_client_t,
-            browser: *mut cef::_cef_browser_t,
-            source_process: cef::cef_process_id_t,
-            message: *mut cef::_cef_process_message_t,
-        ) -> c_int
-{
-    println!("RUST on_process_message_received {:?} {} {}", source_process, cef::cef_currently_on(cef::cef_thread_id_t::TID_UI), cef::cef_currently_on(cef::cef_thread_id_t::TID_IO));
-    1
-}
-        
 #[no_mangle]
-pub extern fn cefswt_create_browser(hwnd: c_ulong, url: *const c_char, client: &mut cef::_cef_client_t, w: c_int, h: c_int) -> *const cef::cef_browser_t {
+pub extern fn cefswt_create_browser(hwnd: c_ulong, url: *const c_char, client: &mut cef::_cef_client_t, w: c_int, h: c_int, js: c_int) -> *const cef::cef_browser_t {
     assert_eq!((*client).base.size, std::mem::size_of::<cef::_cef_client_t>());
 
     // println!("hwnd: {}", hwnd);
@@ -277,7 +265,7 @@ pub extern fn cefswt_create_browser(hwnd: c_ulong, url: *const c_char, client: &
  
     let url = utils::str_from_c(url);
     // println!("url: {:?}", url);
-    let browser = app::create_browser(hwnd, url, client, w, h);
+    let browser = app::create_browser(hwnd, url, client, w, h, js);
 
     // let browser_host = get_browser_host(browser);
     // unsafe {
@@ -382,26 +370,12 @@ pub extern fn cefswt_get_url(browser: *mut cef::cef_browser_t) -> *mut c_char {
     assert!(!main_frame.is_null());
     let get_url = unsafe { (*main_frame).get_url.expect("null get_url") };
     let url = unsafe { get_url(main_frame) };
-    if url.is_null() {
-        return std::ptr::null_mut();
-    } else {
-        let utf8 = unsafe { cef::cef_string_userfree_utf8_alloc() };
-        unsafe { cef::cef_string_utf16_to_utf8((*url).str, (*url).length, utf8) };
-        return unsafe {(*utf8).str};
-    }
+    utils::cstr_from_cef(url)
 }
 
 #[no_mangle]
 pub extern fn cefswt_cefstring_to_java(cefstring: *mut cef::cef_string_t) -> *mut c_char {
-    unsafe {
-        if (*cefstring).length == 0 {
-            println!("NULL STRING");
-            return std::ptr::null_mut();
-        }
-    }
-    let utf8 = unsafe { cef::cef_string_userfree_utf8_alloc() };
-    unsafe { cef::cef_string_utf16_to_utf8((*cefstring).str, (*cefstring).length, utf8) };
-    return unsafe {(*utf8).str};
+    utils::cstr_from_cef(cefstring)
 }
 
 #[no_mangle]
@@ -458,7 +432,7 @@ pub extern fn cefswt_execute(browser: *mut cef::cef_browser_t, text: *const c_ch
 }
 
 #[no_mangle]
-pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char, id: i32) -> c_int {
+pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char, id: i32, callback: unsafe extern "C" fn(kind: socket::ReturnType, value: *const c_char)) -> c_int {
     let text_cef = utils::cef_string_from_c(text);
     let name = utils::cef_string("eval");
     unsafe {
@@ -471,9 +445,9 @@ pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char,
         let sent = (*browser).send_process_message.unwrap()(browser, cef::cef_process_id_t::PID_RENDERER, msg);
         assert_eq!(sent, 1);
 
-        let r = socket::socket_server();
-
-        sent
+        let r = socket::socket_server().expect("Failed to read from socket");
+        callback(r.kind, r.str_value);
+        1
     }
 }
 
@@ -494,23 +468,46 @@ pub extern fn cefswt_function(browser: *mut cef::cef_browser_t, name: *const c_c
     }
 }
 
+#[repr(C)]
+#[derive(Debug)]
+pub struct FunctionSt {
+    pub id: i32, 
+    pub args: usize,
+}
+
 #[no_mangle]
-pub extern fn cefswt_function_return(browser: *mut cef::cef_browser_t, id: i32, ret: *const c_char) -> c_int {
-    let ret_cef = utils::cef_string_from_c(ret);
-    let msg_name = utils::cef_string("function_return");
-    unsafe {
-        let msg = cef::cef_process_message_create(&msg_name);
-        let args = (*msg).get_argument_list.unwrap()(msg);
-        let s = (*args).set_int.unwrap()(args, 0, id);
-        assert_eq!(s, 1);
-        let s = (*args).set_string.unwrap()(args, 1, &ret_cef);
-        assert_eq!(s, 1);
-        // let sent = (*browser).send_process_message.unwrap()(browser, cef::cef_process_id_t::PID_RENDERER, msg);
-        // assert_eq!(sent, 1);
-        // sent
-        
-        socket::socket_client()
+pub unsafe extern fn cefswt_function_id(message: *mut cef::cef_process_message_t) -> *const FunctionSt {
+    let valid = (*message).is_valid.unwrap()(message);
+    let name = (*message).get_name.unwrap()(message);
+    let mut st = FunctionSt {id: -1, args: 0};
+    if valid == 1 && cef::cef_string_utf16_cmp(&utils::cef_string("function_call"), name) == 0 {
+        let args = (*message).get_argument_list.unwrap()(message);
+        let args_len = (*args).get_size.unwrap()(args);
+        st = FunctionSt {
+            id: (*args).get_int.unwrap()(args, 0),
+            args: args_len / 2
+        };
     }
+    let r = Box::new(st);
+    let r = Box::into_raw(r);
+    return r;    
+}
+
+#[no_mangle]
+pub unsafe extern fn cefswt_function_arg(message: *mut cef::cef_process_message_t, index: i32, callback: unsafe extern "C" fn(kind: socket::ReturnType, value: *const c_char)) -> c_int {
+    let args = (*message).get_argument_list.unwrap()(message);
+    let kind = (*args).get_int.unwrap()(args, (index*2+1) as usize);
+    let arg = (*args).get_string.unwrap()(args, (index*2+2) as usize);
+    let cstr = utils::cstr_from_cef(arg);
+    let kind = socket::ReturnType::from(kind);
+    callback(kind, cstr);
+    1
+}
+
+#[no_mangle]
+pub extern fn cefswt_function_return(_browser: *mut cef::cef_browser_t, _id: i32, kind: socket::ReturnType, ret: *const c_char) -> c_int {
+    let cstr = unsafe { std::ffi::CStr::from_ptr(ret) };
+    socket::socket_client(cstr.to_owned(), kind)
 }
 
 #[no_mangle]

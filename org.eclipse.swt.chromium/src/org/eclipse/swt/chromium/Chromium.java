@@ -19,10 +19,12 @@ import java.net.HttpCookie;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.NumberFormat;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Locale;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -50,9 +52,12 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.internal.Library;
 import org.eclipse.swt.internal.chromium.CEF;
 import org.eclipse.swt.internal.chromium.CEFFactory;
+import org.eclipse.swt.internal.chromium.CEFFactory.EvalReturned;
+import org.eclipse.swt.internal.chromium.CEFFactory.FunctionSt;
+import org.eclipse.swt.internal.chromium.CEFFactory.ReturnType;
 import org.eclipse.swt.internal.chromium.ResourceExpander;
 import org.eclipse.swt.internal.chromium.CEF.cef_client_t;
-import org.eclipse.swt.internal.gtk.OS;
+import org.eclipse.swt.internal.chromium.CEF.cef_process_id_t;
 
 class Chromium extends WebBrowser {
     private static final String VERSION = "0500";
@@ -64,7 +69,6 @@ class Chromium extends WebBrowser {
     
     Browser chromium;
     OpenWindowListener[] openWindowListeners = new OpenWindowListener[0];
-    public boolean jsEnabledOnNextPage = false;
 
     static {
         lib = loadLib();
@@ -92,13 +96,13 @@ class Chromium extends WebBrowser {
     private FocusListener focusListener;
     private String url;
     private String text = "";
+    private CompletableFuture<String> textReady;
     private boolean canGoBack;
     private boolean canGoForward;
+    private boolean enableProgress = false;
     private boolean disposing;
     private WindowEvent popupWindowEvent;
-    private boolean ignoreFirstEvents;
     private int instance;
-    private boolean evalFinished;
     private static int EVAL = 1;
     private static int INSTANCES = 0;
 
@@ -285,7 +289,6 @@ class Chromium extends WebBrowser {
         hwnd = getHandle(chromium);
         if (this.url == null) {
             this.url = "about:blank";
-            ignoreFirstEvents = true;
         }
 
         chromium.addDisposeListener(e -> {
@@ -318,7 +321,7 @@ class Chromium extends WebBrowser {
         });
         
         final org.eclipse.swt.graphics.Point size = chromium.getSize();
-        browser = lib.cefswt_create_browser(hwnd, url, clientHandler, size.x, size.y);
+        browser = lib.cefswt_create_browser(hwnd, url, clientHandler, size.x, size.y, jsEnabledOnNextPage ? 1 : 0);
         if (browser != null) {
             browsers.incrementAndGet();
             lib.cefswt_resized(browser, chromium.getSize().x, chromium.getSize().y);
@@ -377,7 +380,7 @@ class Chromium extends WebBrowser {
             debugPrint("on_after_created " + browser + ":" + popupWindowEvent);
             if (Chromium.this.browser != null && !browser.equals(Chromium.this.browser)) {
                 // replacing this browser with popup browser. TODO: destroy original
-                Chromium.this.browser = browser;
+//                Chromium.this.browser = browser;
             }
             chromium.getDisplay().asyncExec(() -> {
                 debugPrint("on_after_created handling " + browser + ":" + popupWindowEvent);
@@ -434,9 +437,9 @@ class Chromium extends WebBrowser {
                 return 1;
             if (event.browser != null) {
                 event.browser.webBrowser.popupWindowEvent = event;
-                chromium.getDisplay().syncExec(() -> {
-                    lib.cefswt_set_window_info_parent(windowInfo, client, event.browser.webBrowser.clientHandler, event.browser.webBrowser.getHandle(event.browser));
-                });
+//                chromium.getDisplay().syncExec(() -> {
+//                    lib.cefswt_set_window_info_parent(windowInfo, client, event.browser.webBrowser.clientHandler, event.browser.webBrowser.getHandle(event.browser));
+//                });
             }
             return 0;
         });
@@ -453,8 +456,10 @@ class Chromium extends WebBrowser {
             Chromium.this.canGoBack = canGoBack == 1;
             Chromium.this.canGoForward = canGoForward == 1;
             if (chromium.isDisposed() || progressListeners == null) return;
-            updateText();
-            if (!(/*"about:blank".equals(url) && */ignoreFirstEvents)) {
+            if (!enableProgress) {
+                return;
+            }
+//            if (!(/*"about:blank".equals(url) && */ignoreFirstEvents)) {
                 ProgressEvent event = new ProgressEvent(chromium);
                 event.display = chromium.getDisplay ();
                 event.widget = chromium;
@@ -466,13 +471,15 @@ class Chromium extends WebBrowser {
                         listener.changed(event);
                     }
                 }
-            } else if (isLoading == 0 && ignoreFirstEvents) {
-//                ignoreFirstEvents = false;
-            }
+//            }
         });
         loadHandler.on_load_end.set((self, browser, frame, http_status) -> {
             if (chromium.isDisposed() || progressListeners == null) return;
-            if (!(/*"about:blank".equals(url) && */ignoreFirstEvents)) {
+            updateText();
+            if (!enableProgress) {
+                return;
+            }
+            textReady.thenRun(() -> {
                 ProgressEvent event = new ProgressEvent(chromium);
                 event.display = chromium.getDisplay ();
                 event.widget = chromium;
@@ -481,9 +488,7 @@ class Chromium extends WebBrowser {
                 for (ProgressListener listener : progressListeners) {
                     listener.completed(event);
                 }
-            } else if (ignoreFirstEvents) {
-                ignoreFirstEvents = false;
-            }
+            });
         });
         clientHandler.get_load_handler.set(client -> {
             return loadHandler;
@@ -505,18 +510,21 @@ class Chromium extends WebBrowser {
         });
         displayHandler.on_address_change.set((self, browser, frame, url) -> {
             if (chromium.isDisposed() || locationListeners == null) return;
+            if (!enableProgress) {
+                return;
+            }
             LocationEvent event = new LocationEvent(chromium);
             event.display = chromium.getDisplay();
             event.widget = chromium;
             event.doit = true;
             event.location = lib.cefswt_cefstring_to_java(url);
             event.top = lib.cefswt_is_main_frame(frame);
-            if (!("about:blank".equals(event.location) && ignoreFirstEvents)) {
+//            if (!("about:blank".equals(event.location) && ignoreFirstEvents)) {
                 debugPrint("on_address_change:" + event.location + " " + event.top);
                 for (LocationListener listener : locationListeners) {
                     listener.changed(event);
                 }
-            }
+//            }
         });
         displayHandler.on_status_message.set((self, browser, status) -> {
             if (chromium.isDisposed() || statusTextListeners == null) return;
@@ -561,6 +569,7 @@ class Chromium extends WebBrowser {
             String newtext = lib.cefswt_cefstring_to_java(cefString);
             if (newtext != null) {
                 text = newtext;
+                textReady.complete(text);
             }
         });
     }
@@ -627,22 +636,6 @@ class Chromium extends WebBrowser {
                 }
             }
         });
-//        new Thread(() -> {
-//          while (lib != null && browsers.get() > 0) {
-//              display.syncExec(() -> {
-//                  System.out.println("loop");
-//                  lib.cefswt_do_message_loop_work();
-//              });
-//              display.wake();
-//              System.out.println("wake");
-//              try {
-//                Thread.sleep(100);
-//              } catch (InterruptedException e) {
-//                e.printStackTrace();
-//              }
-//          }
-//          debug("STOPPING MSG LOOP");
-//        }).start();
     }
     
     private synchronized void checkBrowser() {
@@ -664,18 +657,71 @@ class Chromium extends WebBrowser {
         client.get_jsdialog_handler.set((c) -> debug("get_jsdialog_handler"));
         client.get_keyboard_handler.set((c) -> null);
         client.get_render_handler.set((c) -> null);
-        client.on_process_message_received.set((c, browser_1, processId_2, processMessage_3) -> {
-            debug("on_process_message_received " + Thread.currentThread());
-            
-//            evalFinished = true;
-            
-            int id = 1;
-            Object ret = functions.get(id).function(new Object[0]);
-            lib.cefswt_function_return(browser, id, "the ret");
-            
-            return id;
+        client.on_process_message_received.set((c, browser_1, source, processMessage) -> {
+            return browserFunctionCalled(source, processMessage);
         });
         client.get_find_handler.set(c -> debug("setGetFindHandler"));
+    }
+
+    private int browserFunctionCalled(cef_process_id_t source, Pointer processMessage) {
+        if (source != CEF.cef_process_id_t.PID_RENDERER || !jsEnabled) {
+            return 0;
+        }
+        FunctionSt fn = lib.cefswt_function_id(processMessage);
+        int id = fn.id.get();
+        if (id < 0) {
+            return 0;
+        }
+        int argsSize = fn.args.intValue();
+        Object[] args = new Object[argsSize];
+        for (int i = 0; i < argsSize; i++) {
+            int arg = i;
+            EvalReturned callback = (type, value) -> {
+                args[arg] = mapType(type, value);
+            };
+            lib.cefswt_function_arg(processMessage, i, callback);
+        }
+        Object ret = functions.get(id).function(args);
+        
+        ReturnType returnType = ReturnType.Error;
+        String returnStr = "";
+        if (ret == null) { 
+            returnType = ReturnType.Null;
+            returnStr = "null";
+        } else if (Boolean.class.isInstance(ret)) {
+            returnType = ReturnType.Bool;
+            returnStr = Boolean.TRUE.equals(ret) ? "1" : "0";
+        } else if (Number.class.isInstance(ret)) {
+            returnType = ReturnType.Double;
+            returnStr = NumberFormat.getInstance(Locale.US).format(ret);
+        } else if (String.class.isInstance(ret)) {
+            returnType = ReturnType.Str;
+            returnStr = ret.toString();
+        } else if (ret.getClass().isArray()) {
+            returnType = ReturnType.Array;
+            Object[] array = (Object[]) ret;
+            StringBuilder buffer = new StringBuilder();
+            for (int i = 0; i < array.length; i++) {
+                if (i > 0) {
+                    buffer.append(";");
+                }
+                if (array[i] == null) { 
+                    buffer.append("null");
+                } else if (Boolean.class.isInstance(array[i])) {
+                    buffer.append(Boolean.toString((boolean) array[i]));
+                } else if (Number.class.isInstance(array[i])) {
+                    buffer.append(NumberFormat.getInstance(Locale.US).format(array[i]));
+                } else if (String.class.isInstance(array[i])) {
+                    buffer.append("\"").append(array[i]).append("\"");
+                }
+            }
+            returnStr = buffer.toString();
+        } else {
+            returnStr = "Unsupported return type " + ret.getClass().getName();
+        }
+        lib.cefswt_function_return(browser, id, returnType, returnStr);
+        
+        return 1;
     }
 
     protected void browserFocus(boolean set) {
@@ -907,44 +953,71 @@ class Chromium extends WebBrowser {
 
     @Override
     public boolean execute(String script) {
+        if (!jsEnabled) {
+            return false;
+        }
         lib.cefswt_execute(browser, script);
         return true;
     }
     
     @Override
     public Object evaluate(String script) throws SWTException {
-        evalFinished = false;
-        boolean sent = lib.cefswt_eval(browser, script, EVAL++);
-        if (!sent) {
+        if (!jsEnabled) {
+            return null;
+        }
+        Object[] ret = new Object[1];
+        EvalReturned callback = (type, value) -> {
+          ret[0] = mapType(type, value);
+        };
+        StringBuilder buffer = new StringBuilder ("(function() {");
+        buffer.append ("\n");
+        buffer.append (script);
+        buffer.append ("\n})()");
+        
+        boolean returnSt = lib.cefswt_eval(browser, buffer.toString(), EVAL++, callback);
+        if (!returnSt) {
             throw new SWTException("Script that was evaluated failed");
         }
-        
-//            if (evalFinished) {
-//                return true;
-//            } else if (Instant.now().isAfter(timeOut)) {
-//                System.err.println("SWT call to Webkit timed out after " + ASYNC_EXEC_TIMEOUT_MS
-//                        + "ms. No return value will be provided.\n"
-//                        + "Possible reasons:\n"
-//                        + "1) Problem: Your javascript needs more than " + ASYNC_EXEC_TIMEOUT_MS +"ms to execute.\n"
-//                        + "   Solution: Don't run such javascript, it blocks Eclipse's UI. SWT currently allows such code to complete, but this error is thrown \n"
-//                        + "     and the return value of execute()/evalute() will be false/null.\n\n"
-//                        + "2) However, if you believe that your application should execute as expected (in under" + ASYNC_EXEC_TIMEOUT_MS + " ms),\n"
-//                        + " then it might be a deadlock in SWT/Browser/webkit2 logic.\n"
-//                        + " I.e, it might be a bug in SWT (e.g this does not occur on Windows/Cocoa, but occurs on Linux). If you believe it to be a bug in SWT, then\n"
-//                        + "\n Additional information about the error is as following:\n");
-//                break;
-//            }
-//                synchronized (chromium) {
-//                    try {
-//                        chromium.wait(10);
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//            }
-//        }
-        
-        return false;
+        return ret[0];
+    }
+
+    private Object mapType(ReturnType type, String value) throws SWTException {
+        if (type == ReturnType.Error) {
+              if ((SWT.ERROR_INVALID_RETURN_VALUE+"").equals(value)) {
+                  throw new SWTException(SWT.ERROR_INVALID_RETURN_VALUE);
+              }
+              throw new SWTException(SWT.ERROR_FAILED_EVALUATE, value);
+          } 
+          else if (type == ReturnType.Null) {
+              return null;
+          } 
+          else if (type == ReturnType.Bool) {
+              return "1".equals(value) ? Boolean.TRUE : Boolean.FALSE ;
+          } 
+          else if (type == ReturnType.Double) {
+              return Double.parseDouble(value);
+          } 
+          else if (type == ReturnType.Array) {
+              String[] elements = value.split(";(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
+              Object[] array = new Object[elements.length];
+              for (int i = 0; i < array.length; i++) {
+                  if (elements[i].startsWith("\"")) {
+                      array[i] = elements[i].substring(1, elements[i].length()-1);
+                  } else if ("null".equals(elements[i])) {
+                      array[i] = null;
+                  } else if ("true".equals(elements[i])) {
+                      array[i] = Boolean.TRUE;
+                  } else if ("false".equals(elements[i])) {
+                      array[i] = Boolean.FALSE;
+                  } else {
+                      array[i] = Double.parseDouble(elements[i]);
+                  }
+              }
+              return array;
+          } 
+          else {
+              return value;
+          }
     }
 
     @Override
@@ -970,6 +1043,7 @@ class Chromium extends WebBrowser {
     
     private void updateText() {
         if (browser != null && textVisitor != null) {
+            textReady = new CompletableFuture<String>();
             lib.cefswt_get_text(browser, textVisitor);
         }
     }
@@ -996,6 +1070,7 @@ class Chromium extends WebBrowser {
 
     @Override
     public void refresh() {
+        jsEnabled = jsEnabledOnNextPage;
         lib.cefswt_reload(browser);
     }
 
@@ -1004,6 +1079,8 @@ class Chromium extends WebBrowser {
         checkBrowser();
         this.text = html;
         this.url = "http://text";
+        enableProgress = true;
+        jsEnabled = jsEnabledOnNextPage;
         lib.cefswt_load_text(browser, html);
         return true;
     }
@@ -1011,6 +1088,8 @@ class Chromium extends WebBrowser {
     @Override
     public boolean setUrl(String url, String postData, String[] headers) {
         // if not yet created will be used when created
+        enableProgress = true;
+        jsEnabled = jsEnabledOnNextPage;
         if (!chromium.isDisposed() && browser != null) {
             debugPrint("setUrl: " + url);
             lib.cefswt_load_url(browser, url);
@@ -1030,7 +1109,7 @@ class Chromium extends WebBrowser {
 
         void cefswt_set_window_info_parent(@Direct Pointer windowInfo, @Direct Pointer client, @Direct cef_client_t clientHandler, long handle);
 
-        Pointer cefswt_create_browser(long hwnd, String url, @Direct CEF.cef_client_t clientHandler, int w, int h);
+        Pointer cefswt_create_browser(long hwnd, String url, @Direct CEF.cef_client_t clientHandler, int w, int h, int js);
 
         void cefswt_do_message_loop_work();
 
@@ -1056,11 +1135,15 @@ class Chromium extends WebBrowser {
 
         void cefswt_execute(Pointer browser, String script);
         
-        boolean cefswt_eval(Pointer browser, String script, int id);
+        boolean cefswt_eval(Pointer browser, String script, int id, EvalReturned callback);
         
         boolean cefswt_function(Pointer browser, String name, int id);
 
-        boolean cefswt_function_return(Pointer browser, int id, String ret);
+        FunctionSt cefswt_function_id(Pointer msg);
+        
+        boolean cefswt_function_arg(Pointer msg, int index, EvalReturned callback);
+
+        boolean cefswt_function_return(Pointer browser, int id, ReturnType returnType, String ret);
         
         void cefswt_close_browser(Pointer browser);
         

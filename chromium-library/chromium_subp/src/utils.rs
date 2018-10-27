@@ -100,3 +100,14 @@ pub fn str_from_c(cstr: *const c_char) -> &'static str {
     let url = ::std::str::from_utf8(slice.to_bytes()).unwrap();
     url
 }
+
+pub fn cstr_from_cef(cefstring: *const cef::cef_string_t) -> *mut c_char {
+    unsafe {
+        if cefstring.is_null() || (*cefstring).length == 0 {
+            return ::std::ptr::null_mut();
+        }
+    }
+    let utf8 = unsafe { cef::cef_string_userfree_utf8_alloc() };
+    unsafe { cef::cef_string_utf16_to_utf8((*cefstring).str, (*cefstring).length, utf8) };
+    return unsafe {(*utf8).str};
+}

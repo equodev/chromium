@@ -7,7 +7,7 @@ use std::os::raw::{c_ulong, c_int};
 use std::mem::{size_of};
 use std::ptr::{null_mut};
 
-pub fn create_browser(canvas_hwnd: c_ulong, url: &str, jclient: &mut cef::_cef_client_t, w: c_int, h: c_int) -> *mut cef::cef_browser_t {
+pub fn create_browser(canvas_hwnd: c_ulong, url: &str, jclient: &mut cef::_cef_client_t, w: c_int, h: c_int, js: c_int) -> *mut cef::cef_browser_t {
     println!("create_browser in {}", canvas_hwnd);
 
     let window_info = cef_window_info(canvas_hwnd, w, h);
@@ -28,7 +28,7 @@ pub fn create_browser(canvas_hwnd: c_ulong, url: &str, jclient: &mut cef::_cef_c
         minimum_logical_font_size: 0,
         default_encoding: utils::cef_string_empty(),
         remote_fonts: cef::cef_state_t::STATE_DEFAULT,
-        javascript: cef::cef_state_t::STATE_DEFAULT,
+        javascript: if js == 0 { cef::cef_state_t::STATE_DISABLED } else { cef::cef_state_t::STATE_DEFAULT },
         javascript_open_windows: cef::cef_state_t::STATE_DEFAULT,
         javascript_close_windows: cef::cef_state_t::STATE_DEFAULT,
         javascript_access_clipboard: cef::cef_state_t::STATE_DEFAULT,
