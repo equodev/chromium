@@ -244,8 +244,12 @@ unsafe fn convert_type(ret: *mut cef::cef_v8value_t) -> (CString, socket::Return
     else if (*ret).is_string.unwrap()(ret) == 1 {
         let ret_str_cef = (*ret).get_string_value.unwrap()(ret);
         let ret_str = utils::cstr_from_cef(ret_str_cef);
-        let ret_str = CStr::from_ptr(ret_str);
-        (ret_str.to_owned(), socket::ReturnType::Str)
+        //let ret_str = CStr::from_ptr(ret_str);
+        //(ret_str.to_owned(), socket::ReturnType::Str)
+        // let ret_str = CString::from_raw(ret_str);
+        // (ret_str, socket::ReturnType::Str)
+        let cstr = utils::str_from_c(ret_str);
+        (CString::new(cstr).expect("Failed to convert v8string to CString"), socket::ReturnType::Str)
     }
     else if (*ret).is_array.unwrap()(ret) == 1 {
         let length = (*ret).get_array_length.unwrap()(ret);

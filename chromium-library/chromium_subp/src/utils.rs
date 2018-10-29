@@ -19,7 +19,7 @@ pub fn subp_path(cwd: &::std::path::Path, version: &str) -> String {
 
 #[cfg(unix)]
 pub fn prepare_args() -> cef::_cef_main_args_t {
-    use std::ffi;
+    use std::ffi::{CString};
     let mut args: Vec<*mut c_char> = ::std::env::args().map(|arg| {
         // println!("arg: {:?}", arg);
         let carg_rslt = CString::new(arg);
