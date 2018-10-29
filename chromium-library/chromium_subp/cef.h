@@ -17,3 +17,4 @@
 #include "include/capi/cef_urlrequest_capi.h"
 //#include "include/internal/cef_types_linux.h"
 //#include "include/internal/cef_types_win.h"
+#include "include/capi/cef_cookie_capi.h"

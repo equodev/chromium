@@ -1,4 +1,4 @@
-#[cfg(gen)]
+#[cfg(feature = "gen")]
 extern crate bindgen;
 #[cfg(feature = "genJava")]
 extern crate java_bindgen;
@@ -127,6 +127,7 @@ fn gen_cef(cef_path: std::path::Display) {
     .whitelist_function("cef_shutdown")
     .whitelist_function("cef_browser_host_create_browser")
     .whitelist_function("cef_urlrequest_create")
+    .whitelist_function("cef_cookie_manager_get_global_manager")
     .whitelist_function("cef_.*")
     .blacklist_type("_cef_main_args_t")
     .blacklist_type("_cef_window_info_t")
@@ -179,6 +180,9 @@ fn gen_java_cef(cef_path: std::path::Display) {
     .whitelist_type("cef_window_open_disposition_t")
     .whitelist_type("cef_transition_type_t")
     .whitelist_type("cef_errorcode_t")
+    .whitelist_type("cef_termination_status_t")
+    .whitelist_type("cef_urlrequest_status_t")
+    .whitelist_type("cef_return_value_t")
     // .whitelist_type("_cef_browser_t")
     // .whitelist_type("_cef_browser_host_t")
     // .whitelist_type("_cef_frame_t")
@@ -190,7 +194,11 @@ fn gen_java_cef(cef_path: std::path::Display) {
     .whitelist_type("_cef_life_span_handler_t")
     .whitelist_type("_cef_load_handler_t")
     .whitelist_type("_cef_display_handler_t")
+    .whitelist_type("_cef_request_handler_t")
     .whitelist_type("_cef_string_visitor_t")
+    .whitelist_type("_cef_cookie_visitor_t")
+    .whitelist_type("_cef_cookie_t")
+    .whitelist_type("_cef_time_t")
     // .whitelist_type("_cef_command_line_t")
     // .whitelist_type("_cef_print_handler_t")
     // .whitelist_type("_cef_print_settings_t")
@@ -206,7 +214,6 @@ fn gen_java_cef(cef_path: std::path::Display) {
     .opaque_type("_cef_render_process_handler_t")
     .opaque_type("_cef_browser_t")
     .opaque_type("_cef_process_message_t")
-    .opaque_type("_cef_request_handler_t")
     .opaque_type("_cef_render_handler_t")
     .opaque_type("_cef_keyboard_handler_t")
     .opaque_type("_cef_jsdialog_handler_t")
@@ -220,6 +227,15 @@ fn gen_java_cef(cef_path: std::path::Display) {
     .whitelist_type("_cef_popup_features_t")
     .opaque_type("_cef_window_info_t")
     .opaque_type("_cef_browser_settings_t")
+    .opaque_type("_cef_x509certificate_t")
+    .opaque_type("_cef_select_client_certificate_callback_t")
+    .opaque_type("_cef_sslinfo_t")
+    .opaque_type("_cef_auth_callback_t")
+    .opaque_type("_cef_request_t")
+    .opaque_type("_cef_request_callback_t")
+    .opaque_type("_cef_response_t")
+    .opaque_type("_cef_response_filter_t")
+    .opaque_type("_cef_resource_handler_t")
     // .whitelisted_type(".*cef_base_t")
     // .whitelisted_type("_cef_scheme_registrar_t")
     // .whitelisted_type("_cef_.*_handler_t")
@@ -273,6 +289,7 @@ fn generator(cef_path: std::path::Display) -> bindgen::Builder {
     .derive_debug(true)
     .raw_line("#![allow(dead_code)]")
     .raw_line("#![allow(non_snake_case)]")
-    .raw_line("#![allow(non_camel_case_types)]");
+    .raw_line("#![allow(non_camel_case_types)]")
+    .raw_line("#![allow(non_upper_case_globals)]");
   gen
 } 

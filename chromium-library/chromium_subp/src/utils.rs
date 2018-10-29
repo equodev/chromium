@@ -1,5 +1,6 @@
 use cef;
 use std::os::raw::{c_char};
+use std::ffi::{CStr};
 #[cfg(windows)]
 extern crate winapi;
 
@@ -18,20 +19,20 @@ pub fn subp_path(cwd: &::std::path::Path, version: &str) -> String {
 
 #[cfg(unix)]
 pub fn prepare_args() -> cef::_cef_main_args_t {
-    use std::ffi;
+    use std::ffi::{CString};
     let mut args: Vec<*mut c_char> = ::std::env::args().map(|arg| {
         // println!("arg: {:?}", arg);
-        let carg_rslt = ffi::CString::new(arg);
+        let carg_rslt = CString::new(arg);
         let carg = carg_rslt.expect("cant create arg");
         let mp = carg.into_raw();
         mp
     }).collect();
     if cfg!(target_os = "macos") {
-        let carg_rslt = ffi::CString::new("--disable-gpu-compositing");
+        let carg_rslt = CString::new("--disable-gpu-compositing");
         let carg = carg_rslt.expect("cant create arg");
         let mp = carg.into_raw();
         args.push(mp);
-        let carg_rslt = ffi::CString::new("--disable-accelerated-2d-canvas");
+        let carg_rslt = CString::new("--disable-accelerated-2d-canvas");
         let carg = carg_rslt.expect("cant create arg");
         let mp = carg.into_raw();
         args.push(mp);
@@ -69,6 +70,14 @@ pub fn cef_string(value: &str) -> cef::cef_string_t {
     str_cef
 }
 
+pub fn cef_string_from_c(cstr: *const c_char) -> cef::cef_string_t {
+    if cstr.is_null() {
+        cef_string_empty()
+    } else {
+        cef_string(str_from_c(cstr))
+    }
+}
+
 pub fn cef_string_empty() -> cef::cef_string_t {
     let mut empty_str = cef::cef_string_t {
         str: ::std::ptr::null_mut(), 
@@ -88,7 +97,16 @@ unsafe extern "C" fn dtr(_: *mut cef::char16) {
 }
 
 pub fn str_from_c(cstr: *const c_char) -> &'static str {
-    let slice = unsafe { ::std::ffi::CStr::from_ptr(cstr) };
+    let slice = unsafe { CStr::from_ptr(cstr) };
     let url = ::std::str::from_utf8(slice.to_bytes()).unwrap();
     url
+}
+
+pub fn cstr_from_cef(cefstring: *const cef::cef_string_t) -> *mut c_char {
+    if cefstring.is_null() {
+        return ::std::ptr::null_mut();
+    }
+    let utf8 = unsafe { cef::cef_string_userfree_utf8_alloc() };
+    unsafe { cef::cef_string_utf16_to_utf8((*cefstring).str, (*cefstring).length, utf8) };
+    unsafe {(*utf8).str}
 }
