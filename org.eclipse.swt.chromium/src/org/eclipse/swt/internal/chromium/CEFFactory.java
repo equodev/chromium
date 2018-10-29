@@ -13,6 +13,7 @@ import jnr.ffi.LibraryLoader;
 import jnr.ffi.Runtime;
 import jnr.ffi.Struct;
 import jnr.ffi.annotations.Delegate;
+import jnr.ffi.annotations.Encoding;
 import jnr.ffi.mapper.CompositeTypeMapper;
 import jnr.ffi.mapper.DefaultTypeMapper;
 import jnr.ffi.mapper.FromNativeContext;
@@ -317,6 +318,7 @@ public class CEFFactory {
         }
 
         public Signed32 id = new Signed32();
+        public Signed32 port = new Signed32();
         public size_t args = new size_t();
 
         public FunctionSt(jnr.ffi.Runtime runtime) {
@@ -327,7 +329,7 @@ public class CEFFactory {
 
     public static interface EvalReturned {
         @Delegate
-        void invoke(ReturnType type, String value);
+        void invoke(ReturnType type, @Encoding("UTF8") String value);
     }
 
 }

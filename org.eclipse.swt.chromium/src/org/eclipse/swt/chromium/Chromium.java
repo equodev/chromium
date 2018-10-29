@@ -8,6 +8,7 @@ import org.eclipse.swt.widgets.Widget;
 import jnr.ffi.LibraryLoader;
 import jnr.ffi.Pointer;
 import jnr.ffi.annotations.Direct;
+import jnr.ffi.annotations.Encoding;
 import jnr.ffi.provider.ClosureManager;
 import jnr.ffi.provider.jffi.NativeRuntime;
 
@@ -103,6 +104,8 @@ class Chromium extends WebBrowser {
     private boolean disposing;
     private WindowEvent popupWindowEvent;
     private int instance;
+	private boolean hasFocus;
+	private boolean ignoreFirstFocus = true;
     private static int EVAL = 1;
     private static int INSTANCES = 0;
 
@@ -474,9 +477,11 @@ class Chromium extends WebBrowser {
 //            }
         });
         loadHandler.on_load_end.set((self, browser, frame, http_status) -> {
-            if (chromium.isDisposed() || progressListeners == null) return;
+        	//debugPrint("on_load_end"); 
+        	if (chromium.isDisposed() || progressListeners == null) return;
             updateText();
             if (!enableProgress) {
+            	enableProgress = true;
                 return;
             }
             textReady.thenRun(() -> {
@@ -509,7 +514,8 @@ class Chromium extends WebBrowser {
             }
         });
         displayHandler.on_address_change.set((self, browser, frame, url) -> {
-            if (chromium.isDisposed() || locationListeners == null) return;
+        	//debugPrint("on_address_change ");
+        	if (chromium.isDisposed() || locationListeners == null) return;
             if (!enableProgress) {
                 return;
             }
@@ -578,30 +584,19 @@ class Chromium extends WebBrowser {
         focusHandler = CEFFactory.newFocusHandler();
         focusHandler.on_got_focus.set((focusHandler, browser_1) -> {
             debugPrint("CALLBACK OnGotFocus");
-            if (!chromium.isFocusControl()) {
-                chromium.removeFocusListener(focusListener);
-                boolean r = chromium.forceFocus();
-                debugPrint("Forcing focus to SWT canvas: " + r);
-                if (r) {
-                    browserFocus(true);
-                }
-                chromium.addFocusListener(focusListener);
-            }
+            hasFocus = true;
         });
         focusHandler.on_set_focus.set((focusHandler, browser_1, focusSource) -> {
             debugPrint("CALLBACK OnSetFocus " + focusSource);
-            if (!chromium.isFocusControl()) {
-                debugPrint("Disallowing focus to SWT canvas");
-                chromium.removeFocusListener(focusListener);
-                chromium.setFocus();
-                chromium.addFocusListener(focusListener);
-                return 1;
+            if (ignoreFirstFocus) {
+            	ignoreFirstFocus  = false;
+            	return 1;
             }
-            //System.out.println("Allowing focus to SWT canvas");
             return 0;
         });
         focusHandler.on_take_focus.set((focusHandler, browser_1, next) -> {
             debugPrint("CALLBACK OnTakeFocus " + next);
+            hasFocus = false;
             Control[] tabOrder = chromium.getParent().getTabList();
             if (tabOrder.length == 0)
                 tabOrder = chromium.getParent().getChildren();
@@ -621,6 +616,11 @@ class Chromium extends WebBrowser {
             debugPrint("GetFocusHandler");
             return focusHandler;
         });
+    }
+    
+    @Override
+    public boolean isFocusControl() {
+    	return hasFocus;
     }
     
     // single loop for all browsers
@@ -719,7 +719,7 @@ class Chromium extends WebBrowser {
         } else {
             returnStr = "Unsupported return type " + ret.getClass().getName();
         }
-        lib.cefswt_function_return(browser, id, returnType, returnStr);
+        lib.cefswt_function_return(browser, id, fn.port.get(), returnType, returnStr);
         
         return 1;
     }
@@ -967,7 +967,8 @@ class Chromium extends WebBrowser {
         }
         Object[] ret = new Object[1];
         EvalReturned callback = (type, value) -> {
-          ret[0] = mapType(type, value);
+        	//debugPrint("eval retured: " +type + ":"+value.length()+":"+value);
+            ret[0] = mapType(type, value);
         };
         StringBuilder buffer = new StringBuilder ("(function() {");
         buffer.append ("\n");
@@ -1079,7 +1080,6 @@ class Chromium extends WebBrowser {
         checkBrowser();
         this.text = html;
         this.url = "http://text";
-        enableProgress = true;
         jsEnabled = jsEnabledOnNextPage;
         lib.cefswt_load_text(browser, html);
         return true;
@@ -1088,7 +1088,6 @@ class Chromium extends WebBrowser {
     @Override
     public boolean setUrl(String url, String postData, String[] headers) {
         // if not yet created will be used when created
-        enableProgress = true;
         jsEnabled = jsEnabledOnNextPage;
         if (!chromium.isDisposed() && browser != null) {
             debugPrint("setUrl: " + url);
@@ -1121,9 +1120,9 @@ class Chromium extends WebBrowser {
 
         void cefswt_reload(Pointer browser);
 
-        String cefswt_get_url(Pointer browser);
+        @Encoding("UTF8") String cefswt_get_url(Pointer browser);
 
-        String cefswt_get_text(Pointer browser, CEF.cef_string_visitor_t visitor);
+        @Encoding("UTF8") String cefswt_get_text(Pointer browser, CEF.cef_string_visitor_t visitor);
 
         void cefswt_resized(Pointer browser, int width, int height);
 
@@ -1143,7 +1142,7 @@ class Chromium extends WebBrowser {
         
         boolean cefswt_function_arg(Pointer msg, int index, EvalReturned callback);
 
-        boolean cefswt_function_return(Pointer browser, int id, ReturnType returnType, String ret);
+        boolean cefswt_function_return(Pointer browser, int id, int port, ReturnType returnType, String ret);
         
         void cefswt_close_browser(Pointer browser);
         
@@ -1153,9 +1152,9 @@ class Chromium extends WebBrowser {
 
         void cefswt_free(@Direct Pointer bs);
 
-        String cefswt_cefstring_to_java(CEF.cef_string_t string);
+        @Encoding("UTF8") String cefswt_cefstring_to_java(CEF.cef_string_t string);
 
-        String cefswt_request_to_java(Pointer request);
+        @Encoding("UTF8") String cefswt_request_to_java(Pointer request);
 
         boolean cefswt_set_cookie(String url, String name, String value, String domain, String path, int secure, int httpOnly, double maxAge);
 
@@ -1163,6 +1162,6 @@ class Chromium extends WebBrowser {
 
         void cefswt_delete_cookies();
 
-        String cefswt_cookie_value(CEF.cef_cookie_t cookie);
+        @Encoding("UTF8") String cefswt_cookie_value(CEF.cef_cookie_t cookie);
     }
 }

@@ -1,7 +1,7 @@
 use std::net::{TcpListener, TcpStream};
 use std::io::{Read, Write};
-use std::os::raw::c_char;
-use std::ffi::CString;
+use std::ffi::{CString, CStr};
+use std::thread::{self, JoinHandle};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ReturnType {
@@ -29,7 +29,7 @@ impl ReturnType {
 #[derive(Debug, PartialEq, Eq)]
 pub struct ReturnSt {
     pub kind: ReturnType, 
-    pub str_value: *mut c_char,
+    pub str_value: CString
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -63,13 +63,10 @@ fn read_struct<T, R: Read>(mut read: R) -> ::std::io::Result<(usize,T)> {
 fn read_buffer(channel: &[u8]) -> ReturnSt {
     let (skip, read_msg) = read_struct::<ReturnMsg, _>(channel).unwrap();
 
-    let mut s2 = String::new();
-    (&channel[skip .. ]).read_to_string(&mut s2).expect("Failed to read string");
-    let cstr = CString::new(s2).unwrap();
-    let raw_str = cstr.into_raw();
+    let cstr = CStr::from_bytes_with_nul(&channel[skip .. ]).expect("Failed to read string");
     ReturnSt {
         kind: read_msg.kind,
-        str_value: raw_str,
+        str_value: cstr.to_owned(),
     }
 }
 
@@ -82,7 +79,7 @@ fn write_buffer<W: Write>(channel: &mut W, val: CString, kind: ReturnType) {
     let mut buffer = Vec::new();
     buffer.write_all(bytes).expect("Failed to write struct");    
     
-    let bytes = val.into_bytes();
+    let bytes = val.into_bytes_with_nul();
     buffer.write_all(&bytes).expect("Failed to write return");
     channel.write_all(&buffer).expect("Failed to write buffer");
 }
@@ -115,34 +112,51 @@ fn serialize_null() {
     assert_eq!(CString::new("").unwrap(), unsafe{CString::from_raw(read_st.str_value)});
 }
 
-pub fn socket_server() -> Result<ReturnSt, ::std::io::Error> {
-    let listener = TcpListener::bind("127.0.0.1:9687").unwrap();
-    match listener.accept() {
-        Ok((mut socket, addr)) => {
-            println!("new client: {:?}", addr);
-            
-            let mut buffer = Vec::new();
-            match socket.read_to_end(&mut buffer) {
-                Ok(n) => {
-                    println!("read from socket: {} {} {:?}", n, ::std::mem::size_of::<ReturnSt>(), buffer);
-                    let ret = read_buffer(&buffer);
-                    Ok(ret)
-                },
-                Err(e) => {
-                    println!("couldn't read from socket: {:?}", e);
-                    Err(e)
+pub fn read_response() -> (u16, JoinHandle<ReturnSt>) {
+    let port = get_available_port().expect("no ports available");
+    let child = thread::spawn(move || {
+        let listener = TcpListener::bind(("127.0.0.1", port)).unwrap();
+        match listener.accept() {
+            Ok((mut socket, addr)) => {
+                println!("new client: {:?}", addr);
+                
+                let mut buffer = Vec::new();
+                match socket.read_to_end(&mut buffer) {
+                    Ok(n) => {
+                        println!("read from socket: {} {} {:?}", n, ::std::mem::size_of::<ReturnSt>(), buffer);
+                        let ret = read_buffer(&buffer);
+                        println!("st: {:?}", ret);
+                        ret
+                    },
+                    Err(e) => {
+                        println!("couldn't read from socket: {:?}", e);
+                        panic!(e)
+                    }
                 }
+            },
+            Err(e) => {
+                println!("couldn't get client: {:?}", e);
+                panic!(e)
             }
-        },
-        Err(e) => {
-            println!("couldn't get client: {:?}", e);
-            Err(e)
         }
-    }
+    });
+    (port, child)
 }
 
-pub fn socket_client(ret: CString, ret_type: ReturnType) -> i32 {
-    let mut stream = TcpStream::connect("127.0.0.1:9687").unwrap();        
+pub fn socket_client(port: u16, ret: CString, ret_type: ReturnType) -> i32 {
+    let mut stream = TcpStream::connect(("127.0.0.1", port)).unwrap();
     write_buffer(&mut stream, ret, ret_type);
     1
+}
+
+fn get_available_port() -> Option<u16> {
+    (8001..9999)
+        .find(|port| port_is_available(*port))
+}
+
+fn port_is_available(port: u16) -> bool {
+    match TcpListener::bind(("127.0.0.1", port)) {
+        Ok(_) => true,
+        Err(_) => false,
+    }
 }

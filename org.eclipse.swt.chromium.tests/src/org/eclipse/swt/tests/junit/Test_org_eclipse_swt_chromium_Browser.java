@@ -104,7 +104,7 @@ public void setUp() {
 	browser = new Browser(shell, SWT.NONE);
 
 	String shellTitle = name.getMethodName();
-	if (SwtTestUtil.isGTK && browser.getBrowserType().equals("chromium")) {
+	if (browser.getBrowserType().equals("chromium")) {
 	    isChromium = true;
 	}
     if (SwtTestUtil.isGTK && browser.getBrowserType().equals("webkit")) {
@@ -264,7 +264,7 @@ public void test_get_set_Cookies() {
 public void test_getChildren() {
 	// Win32's Browser is a special case. It has 1 child by default, the OleFrame.
 	// See Bug 499387 and Bug 511874
-	if (SwtTestUtil.isWindows) {
+	if (SwtTestUtil.isWindows && !isChromium) {
 		int childCount = composite.getChildren().length;
 		String msg = "Browser on Win32 is a special case, the first child is an OleFrame (ActiveX control). Actual child count is: " + childCount;
 		assertTrue(msg, childCount == 1);
@@ -1473,7 +1473,7 @@ public void test_getText_script() {
 @Test
 public void test_getText_doctype() {
 	String testString = "<!DOCTYPE html><html><head></head><body>hello World</body></html>";
-	if (SwtTestUtil.isWindows) {
+	if (SwtTestUtil.isWindows && !isChromium) {
 		// Window's Browser implementation returns the processed HTML rather than the original one.
 		// The processed page strips out DOCTYPE.
 		getText_helper(testString, "<html><head></head><body>hello World</body></html>");
@@ -2273,7 +2273,7 @@ public void test_BrowserFunction_callback_with_javaReturningArray () {
             + "}"
             + "</script>\n"
             + "</head>\n"
-            + "<body> If you see this, javascript did not receive anything from Java. This page should just be '42' </body>\n"
+            + "<body> If you see this, javascript did not receive anything from Java. This page should just be '{\"a String\", 42, true}' </body>\n"
             + "</html>\n";
     // 1)
     browser.setText(htmlWithScript);

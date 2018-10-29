@@ -23,7 +23,7 @@ use std::collections::HashMap;
 #[cfg(target_os = "linux")]
 unsafe extern fn xerror_handler_impl(_: *mut x11::xlib::Display, event: *mut x11::xlib::XErrorEvent) -> c_int {
     print!("X error received: ");
-    println!("type {}, serial {}, error_code {}, request_code {}, minor_code {}", 
+    println!("type {}, serial {}, error_code {}, request_code {}, minor_code {}",
         (*event).type_, (*event).serial, (*event).error_code, (*event).request_code, (*event).minor_code);
     0
 }
@@ -54,7 +54,7 @@ pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char
 
     let subp = utils::subp_path(cefrust_dir, version);
     let subp_cef = utils::cef_string(&subp);
-    
+
     let resources_cef = if cfg!(target_os = "macos") {
         utils::cef_string(cefrust_dir.join("Chromium Embedded Framework.framework").join("Resources").to_str().unwrap())
     } else {
@@ -118,7 +118,7 @@ fn do_initialize(main_args: cef::_cef_main_args_t, settings: cef::_cef_settings_
 
     let mut signal_handlers: HashMap<c_int, nix::sys::signal::SigAction> = HashMap::new();
     backup_signal_handlers(&mut signal_handlers);
-    
+
     unsafe { cef::cef_initialize(&main_args, &settings, app_raw, std::ptr::null_mut()) };
 
     restore_signal_handlers(signal_handlers);
@@ -131,7 +131,7 @@ static EVENT_KEY: char = 'k';
 fn do_initialize(main_args: cef::_cef_main_args_t, settings: cef::_cef_settings_t, app_raw: *mut cef::_cef_app_t) {
     let mut signal_handlers: HashMap<c_int, nix::sys::signal::SigAction> = HashMap::new();
     backup_signal_handlers(&mut signal_handlers);
-    
+
     swizzle_send_event();
 
     unsafe { cef::cef_initialize(&main_args, &settings, &mut (*app_raw), std::ptr::null_mut()) };
@@ -158,7 +158,7 @@ fn swizzle_send_event() {
         types.extend(args.iter().map(|e| e.as_str()));
         CString::new(types).unwrap()
     }
-    
+
     pub unsafe fn add_method<F>(cls: *mut Class, sel: Sel, func: F)
             where F: objc::declare::MethodImplementation<Callee=Object> {
         let encs = F::Args::encodings();
@@ -217,7 +217,7 @@ fn swizzle_send_event() {
     }
     let sel_swizzled_sendevent = sel!(_swizzled_sendEvent:);
     unsafe { add_method(cls, sel_swizzled_sendevent, swizzled_sendevent as extern fn(&mut Object, Sel, Id)) };
-    
+
     unsafe {
         let original = runtime::class_getInstanceMethod(cls, sel!(sendEvent:)) as *mut Method;
         let swizzled = runtime::class_getInstanceMethod(cls, sel_swizzled_sendevent) as *mut Method;
@@ -233,10 +233,10 @@ fn do_initialize(main_args: cef::_cef_main_args_t, settings: cef::_cef_settings_
 #[cfg(unix)]
 fn backup_signal_handlers(signal_handlers: &mut HashMap<c_int, nix::sys::signal::SigAction>) {
     use nix::sys::signal;
-    let signals_to_restore = [signal::SIGHUP, signal::SIGINT, signal::SIGQUIT, signal::SIGILL, 
-        signal::SIGABRT, signal::SIGFPE, signal::SIGSEGV, signal::SIGALRM, signal::SIGTERM, 
+    let signals_to_restore = [signal::SIGHUP, signal::SIGINT, signal::SIGQUIT, signal::SIGILL,
+        signal::SIGABRT, signal::SIGFPE, signal::SIGSEGV, signal::SIGALRM, signal::SIGTERM,
         signal::SIGCHLD, signal::SIGBUS, signal::SIGTRAP, signal::SIGPIPE];
-    
+
     for signal in &signals_to_restore {
         let sig_action = signal::SigAction::new(signal::SigHandler::SigDfl,
                                           signal::SaFlags::empty(),
@@ -262,7 +262,7 @@ pub extern fn cefswt_create_browser(hwnd: c_ulong, url: *const c_char, client: &
 
     // println!("hwnd: {}", hwnd);
     // (*client).on_process_message_received = Option::Some(on_process_message_received);
- 
+
     let url = utils::str_from_c(url);
     // println!("url: {:?}", url);
     let browser = app::create_browser(hwnd, url, client, w, h, js);
@@ -304,7 +304,7 @@ pub extern fn cefswt_free(obj: *mut cef::cef_browser_t) {
 #[no_mangle]
 pub extern fn cefswt_resized(browser: *mut cef::cef_browser_t, width: i32, height: i32) {
     //println!("Calling resized {}:{}", width, height);
-    
+
     let browser_host = get_browser_host(browser);
     let get_window_handle_fn = unsafe { (*browser_host).get_window_handle.expect("no get_window_handle") };
     let win_handle = unsafe { get_window_handle_fn(browser_host) };
@@ -341,7 +341,7 @@ fn do_resize(win_handle: c_ulong, width: i32, height: i32) {
 
     let x = 0;
     let y = 0;
-    unsafe { winapi::um::winuser::SetWindowPos(win_handle as winapi::shared::windef::HWND, 
+    unsafe { winapi::um::winuser::SetWindowPos(win_handle as winapi::shared::windef::HWND,
         std::ptr::null_mut(), x, y, width, height, winapi::um::winuser::SWP_NOZORDER) };
 }
 
@@ -374,14 +374,14 @@ pub extern fn cefswt_get_url(browser: *mut cef::cef_browser_t) -> *mut c_char {
 }
 
 #[no_mangle]
-pub extern fn cefswt_cefstring_to_java(cefstring: *mut cef::cef_string_t) -> *mut c_char {
+pub extern fn cefswt_cefstring_to_java(cefstring: *mut cef::cef_string_t) -> *const c_char {
     utils::cstr_from_cef(cefstring)
 }
 
 #[no_mangle]
 pub extern fn cefswt_request_to_java(request: *mut cef::cef_request_t) -> *mut c_char {
     let url = unsafe { (*request).get_url.expect("null get_url")(request) };
-    let cstr = cefswt_cefstring_to_java(url);
+    let cstr = utils::cstr_from_cef(url);
     unsafe { cef::cef_string_userfree_utf16_free(url) };
     cstr
 }
@@ -438,21 +438,26 @@ pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char,
     unsafe {
         let msg = cef::cef_process_message_create(&name);
         let args = (*msg).get_argument_list.unwrap()(msg);
-        let s = (*args).set_int.unwrap()(args, 0, id);
+        let s = (*args).set_int.unwrap()(args, 1, id);
         assert_eq!(s, 1);
-        let s = (*args).set_string.unwrap()(args, 1, &text_cef);
+        let s = (*args).set_string.unwrap()(args, 2, &text_cef);
         assert_eq!(s, 1);
+        let (port, thread) = socket::read_response();
+        let s = (*args).set_int.unwrap()(args, 0, port as i32);
+        assert_eq!(s, 1);
+
         let sent = (*browser).send_process_message.unwrap()(browser, cef::cef_process_id_t::PID_RENDERER, msg);
         assert_eq!(sent, 1);
-
-        let r = socket::socket_server().expect("Failed to read from socket");
-        callback(r.kind, r.str_value);
+        // cef::cef_string_userfree_utf16_free(text_cef);
+        let rsp = thread.join();
+        let r = rsp.expect("Failed to read from socket");
+        callback(r.kind, r.str_value.as_ptr());
         1
     }
 }
 
 #[no_mangle]
-pub extern fn cefswt_function(browser: *mut cef::cef_browser_t, name: *const c_char, id: i32) -> c_int {
+pub extern fn cefswt_function(browser: *mut cef::cef_browser_t, name: *mut c_char, id: i32) -> c_int {
     let name_cef = utils::cef_string_from_c(name);
     let msg_name = utils::cef_string("function");
     unsafe {
@@ -471,7 +476,8 @@ pub extern fn cefswt_function(browser: *mut cef::cef_browser_t, name: *const c_c
 #[repr(C)]
 #[derive(Debug)]
 pub struct FunctionSt {
-    pub id: i32, 
+    pub id: i32,
+    pub port: i32,
     pub args: usize,
 }
 
@@ -479,25 +485,27 @@ pub struct FunctionSt {
 pub unsafe extern fn cefswt_function_id(message: *mut cef::cef_process_message_t) -> *const FunctionSt {
     let valid = (*message).is_valid.unwrap()(message);
     let name = (*message).get_name.unwrap()(message);
-    let mut st = FunctionSt {id: -1, args: 0};
+    let mut st = FunctionSt {id: -1, args: 0, port: 0};
     if valid == 1 && cef::cef_string_utf16_cmp(&utils::cef_string("function_call"), name) == 0 {
         let args = (*message).get_argument_list.unwrap()(message);
         let args_len = (*args).get_size.unwrap()(args);
+        let port = (*args).get_int.unwrap()(args, 0);
         st = FunctionSt {
-            id: (*args).get_int.unwrap()(args, 0),
-            args: args_len / 2
+            id: (*args).get_int.unwrap()(args, 1),
+            args: (args_len-1) / 2,
+            port
         };
     }
     let r = Box::new(st);
     let r = Box::into_raw(r);
-    return r;    
+    return r;
 }
 
 #[no_mangle]
 pub unsafe extern fn cefswt_function_arg(message: *mut cef::cef_process_message_t, index: i32, callback: unsafe extern "C" fn(kind: socket::ReturnType, value: *const c_char)) -> c_int {
     let args = (*message).get_argument_list.unwrap()(message);
-    let kind = (*args).get_int.unwrap()(args, (index*2+1) as usize);
-    let arg = (*args).get_string.unwrap()(args, (index*2+2) as usize);
+    let kind = (*args).get_int.unwrap()(args, (1+index*2+1) as usize);
+    let arg = (*args).get_string.unwrap()(args, (1+index*2+2) as usize);
     let cstr = utils::cstr_from_cef(arg);
     let kind = socket::ReturnType::from(kind);
     callback(kind, cstr);
@@ -505,9 +513,10 @@ pub unsafe extern fn cefswt_function_arg(message: *mut cef::cef_process_message_
 }
 
 #[no_mangle]
-pub extern fn cefswt_function_return(_browser: *mut cef::cef_browser_t, _id: i32, kind: socket::ReturnType, ret: *const c_char) -> c_int {
+pub extern fn cefswt_function_return(_browser: *mut cef::cef_browser_t, _id: i32, port: i32, kind: socket::ReturnType, ret: *const c_char) -> c_int {
     let cstr = unsafe { std::ffi::CStr::from_ptr(ret) };
-    socket::socket_client(cstr.to_owned(), kind)
+    let s = socket::socket_client(port as u16, cstr.to_owned(), kind);
+    s
 }
 
 #[no_mangle]
@@ -558,7 +567,7 @@ pub extern fn cefswt_set_cookie(jurl: *const c_char, jname: *const c_char, jvalu
         1
     };
     let mut expires = cef::cef_time_t { year: 0, month: 0, day_of_week: 0, day_of_month: 0, hour: 0, minute: 0, second: 0, millisecond: 0 };
-    
+
     if max_age == -1.0 {
         unsafe { cef::cef_time_from_doublet(max_age, &mut expires) };
     }
@@ -588,7 +597,7 @@ pub extern fn cefswt_get_cookie(jurl: *const c_char, jvisitor: *mut cef::_cef_co
 
 #[no_mangle]
 pub extern fn cefswt_cookie_value(cookie: *mut cef::_cef_cookie_t) -> *mut c_char {
-    unsafe { cefswt_cefstring_to_java(&mut (*cookie).value) }
+    unsafe { utils::cstr_from_cef(&mut (*cookie).value) }
 }
 
 #[no_mangle]
