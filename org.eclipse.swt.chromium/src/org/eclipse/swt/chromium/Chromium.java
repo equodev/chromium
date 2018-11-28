@@ -50,6 +50,7 @@ import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.internal.DPIUtil;
 import org.eclipse.swt.internal.Library;
 import org.eclipse.swt.internal.chromium.CEF;
 import org.eclipse.swt.internal.chromium.CEFFactory;
@@ -318,16 +319,17 @@ class Chromium extends WebBrowser {
 //                      System.err.println("Ignore do_message_loop_work due inactive shell");
                         return;
                     }
-                    lib.cefswt_resized(browser, chromium.getSize().x, chromium.getSize().y);
+                    Point size = getChromiumSize();
+					lib.cefswt_resized(browser,  size.x,  size.y);
                 }
             }
         });
         
-        final org.eclipse.swt.graphics.Point size = chromium.getSize();
+        final org.eclipse.swt.graphics.Point size = getChromiumSize();
         browser = lib.cefswt_create_browser(hwnd, url, clientHandler, size.x, size.y, jsEnabledOnNextPage ? 1 : 0);
         if (browser != null) {
             browsers.incrementAndGet();
-            lib.cefswt_resized(browser, chromium.getSize().x, chromium.getSize().y);
+            lib.cefswt_resized(browser, size.x,  size.y);
         }
 
         final Display display = chromium.getDisplay();
@@ -335,6 +337,11 @@ class Chromium extends WebBrowser {
             debugPrint("STARTING MSG LOOP");
             doMessageLoop(display);
         }
+    }
+
+    private Point getChromiumSize() {
+    	Point size = chromium.getSize();
+    	return DPIUtil.autoScaleUp(size);
     }
 
     private void set_life_span_handler() {
