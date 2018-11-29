@@ -1124,9 +1124,9 @@ class Chromium extends WebBrowser {
 
         void cefswt_do_message_loop_work();
 
-        void cefswt_load_url(Pointer browser, String url);
+        void cefswt_load_url(Pointer browser, @Encoding("UTF8") String url);
 
-        void cefswt_load_text(Pointer browser, String text);
+        void cefswt_load_text(Pointer browser, @Encoding("UTF8") String text);
 
         void cefswt_stop(Pointer browser);
 
@@ -1144,17 +1144,17 @@ class Chromium extends WebBrowser {
 
         void cefswt_go_back(Pointer browser);
 
-        void cefswt_execute(Pointer browser, String script);
+        void cefswt_execute(Pointer browser, @Encoding("UTF8") String script);
         
-        boolean cefswt_eval(Pointer browser, String script, int id, EvalReturned callback);
+        boolean cefswt_eval(Pointer browser, @Encoding("UTF8") String script, int id, EvalReturned callback);
         
-        boolean cefswt_function(Pointer browser, String name, int id);
+        boolean cefswt_function(Pointer browser, @Encoding("UTF8") String name, int id);
 
         FunctionSt cefswt_function_id(Pointer msg);
         
         boolean cefswt_function_arg(Pointer msg, int index, EvalReturned callback);
 
-        boolean cefswt_function_return(Pointer browser, int id, int port, ReturnType returnType, String ret);
+        boolean cefswt_function_return(Pointer browser, int id, int port, ReturnType returnType, @Encoding("UTF8") String ret);
         
         void cefswt_close_browser(Pointer browser);
         
@@ -1168,7 +1168,7 @@ class Chromium extends WebBrowser {
 
         @Encoding("UTF8") String cefswt_request_to_java(Pointer request);
 
-        boolean cefswt_set_cookie(String url, String name, String value, String domain, String path, int secure, int httpOnly, double maxAge);
+        boolean cefswt_set_cookie(@Encoding("UTF8") String url, @Encoding("UTF8") String name, @Encoding("UTF8") String value, @Encoding("UTF8") String domain, @Encoding("UTF8") String path, int secure, int httpOnly, double maxAge);
 
         boolean cefswt_get_cookie(String url, CEF.cef_cookie_visitor_t visitor);
 
