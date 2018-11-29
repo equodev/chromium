@@ -640,7 +640,7 @@ public class Browser extends Composite {
     public boolean isFocusControl () {
         checkWidget();
         if (webBrowser.isFocusControl ()) return true;
-        return super.isFocusControl ();
+        return false;
     }
 
     /**
