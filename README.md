@@ -28,7 +28,7 @@ An eclipse P2 repository is available with the bundle and fragments for Linux, W
 2- Third party dependencies (JNR, ASM) are available at eclipse repository (EPL):
   http://download.eclipse.org/releases/photon
 
-3- CEF Binaries (Optional) required to run can be manually copied or you can use this repository which provides a feature and per platform fragments with CEF binaries and resources.
+3- CEF Binaries (Optional) required to run can be manually copied to ~/.swt/lib/[os]/x86_64/ or you can use this repository which provides a feature and per platform fragments with CEF binaries and resources.
   http://dl.maketechnology.io/chromium-cef/rls/repository
 
 ## Usage
@@ -37,9 +37,7 @@ Change your java import to use `import org.eclipse.swt.chromium.Browser;`. It fo
 
 Notes:
 
-	- Some of the APIs are not implemented yet.
-
-    - On linux it works only with GTK2 for now.
+  - On linux it works only with GTK2 for now.
 
 	- Make sure you enable the following bundles and their dependencies in your run config:
         - com.github.jnr.ffi
@@ -48,18 +46,26 @@ Notes:
         - org.eclipse.swt.chromium
         - org.eclipse.swt.[ws].[os].x86_64 (fragment)
 
-    - If you don't use CEF Binaries repository, you will get an error on first run saying CEF binaries are not available, Use the repository or manually download cef_binary __3.3071__ client archive from http://opensource.spotify.com/cefbuilds/ and extract binaries to folder indicated in error (~/.swt/lib/*/x86_64/chromium-3071). Then rerun.
+    - If you don't use CEF Binaries repository, you will get an error on first run saying CEF binaries are not available. Use the CEF Binaries repository or manually download cef_binary __3.3071__ client archive from http://opensource.spotify.com/cefbuilds/ and extract binaries to folder indicated in error (~/.swt/lib/*/x86_64/chromium-3071). Then rerun.
 
-	- ⚠️ On Linux, your first launch may fail due to a bug on CEF. You can workaround this by copying `icudtl.dat`, `natives_blob.bin` and `snapshot_blob.bin` from CEF folder to the `jre/bin` folder (e.g.: `/usr/lib/jvm/java-8-oracle/jre/bin/`). Those files should be siblings of the java executable file. Or use our CEF binaries repo.
+	- ⚠️ On Linux, your first launch may fail due to a bug on CEF. You can workaround this by copying `icudtl.dat`, `natives_blob.bin` and `snapshot_blob.bin` from CEF folder to the `jre/bin` folder (e.g.: `/usr/lib/jvm/java-8-oracle/jre/bin/`). Those files should be siblings of the java executable file. Or use our CEF binaries repo which contains the fix.
 
 ## Build
 
 - Clone this repo.
 - `mvn clean package`
 
+### Run tests
+
+- Exract the CEF binaries first or run the widget once to extract the binaries, as indicated in Usage.
+- `mvn verify`
+- Or from eclipse run the single test class from bundle as Junit tests. (Note: you may need to change paths to .jars in local installation)
+
+Notes: Running with mvn has some test failing due accessing protected fields from same package in different bundes. This is a temporary until it gets merged to SWT.
+
 ## Status and Plan
 
-For now, it just loads and displays a URL, but we have a plan to flesh out the full SWT Browser API, including the Javascript support.
+The full SWT Browser API is supported now, including sync and async Javascript support.
 
 We (**Make Technology**, http://www.maketechnology.io/) have agreed with the **Eclipse Foundation** to do all this work and contribute it under the EPL, but we need your support to make this huge project happen!
 
