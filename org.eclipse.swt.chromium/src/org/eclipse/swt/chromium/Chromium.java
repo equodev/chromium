@@ -353,7 +353,6 @@ class Chromium extends WebBrowser {
             Chromium.this.browser = null;
             Chromium.this.focusHandler = null;
             Chromium.this.lifeSpanHandler = null;
-            Chromium.this.browser = null;
             // not always called on linux
             String platform = SWT.getPlatform();
             if (("win32".equals(platform) || "cocoa".equals(platform)) && browsers.decrementAndGet() == 0 && shuttindDown) {
@@ -362,6 +361,10 @@ class Chromium extends WebBrowser {
         });
         lifeSpanHandler.do_close.set((plifeSpanHandler, browser) -> {
             //lifeSpanHandler.base.ref++;
+            if (!lib.cefswt_is_same(Chromium.this.browser, browser)) {
+            	debugPrint("DoClose popup:" + Chromium.this.browser+":"+browser);
+            	return 0;
+            }
             debugPrint("DoClose");
             if (!disposing && !chromium.isDisposed() && closeWindowListeners != null) {
                 org.eclipse.swt.browser.WindowEvent event = new org.eclipse.swt.browser.WindowEvent(chromium);
@@ -1116,6 +1119,8 @@ class Chromium extends WebBrowser {
         void cefswt_set_window_info_parent(@Direct Pointer windowInfo, @Direct Pointer client, @Direct cef_client_t clientHandler, long handle);
 
         Pointer cefswt_create_browser(long hwnd, String url, @Direct CEF.cef_client_t clientHandler, int w, int h, int js);
+
+        boolean cefswt_is_same(@Direct Pointer browser, @Direct Pointer that);
 
         void cefswt_do_message_loop_work();
 
