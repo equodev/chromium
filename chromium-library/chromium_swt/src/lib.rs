@@ -554,6 +554,11 @@ fn do_set_focus(_parent: *mut c_void, _focus: i32) {
 }
 
 #[no_mangle]
+pub extern fn cefswt_is_same(browser: *mut cef::cef_browser_t, that: *mut cef::cef_browser_t) -> c_int {
+    unsafe { (*browser).is_same.unwrap()(browser, that) }
+}
+
+#[no_mangle]
 pub extern fn cefswt_set_cookie(jurl: *const c_char, jname: *const c_char, jvalue: *const c_char, jdomain: *const c_char, jpath: *const c_char, secure: i32, httponly: i32, max_age: f64) -> c_int {
     let manager = unsafe { cef::cef_cookie_manager_get_global_manager(std::ptr::null_mut()) };
     let url = utils::cef_string_from_c(jurl);
