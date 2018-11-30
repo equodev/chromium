@@ -257,7 +257,7 @@ fn restore_signal_handlers(signal_handlers: HashMap<c_int, nix::sys::signal::Sig
 }
 
 #[no_mangle]
-pub extern fn cefswt_create_browser(hwnd: c_ulong, url: *const c_char, client: &mut cef::_cef_client_t, w: c_int, h: c_int, js: c_int) -> *const cef::cef_browser_t {
+pub extern fn cefswt_create_browser(hwnd: c_ulong, url: *const c_char, client: &mut cef::_cef_client_t, w: c_int, h: c_int, js: c_int, bg: cef::cef_color_t) -> *const cef::cef_browser_t {
     assert_eq!((*client).base.size, std::mem::size_of::<cef::_cef_client_t>());
 
     // println!("hwnd: {}", hwnd);
@@ -265,7 +265,7 @@ pub extern fn cefswt_create_browser(hwnd: c_ulong, url: *const c_char, client: &
 
     let url = utils::str_from_c(url);
     // println!("url: {:?}", url);
-    let browser = app::create_browser(hwnd, url, client, w, h, js);
+    let browser = app::create_browser(hwnd, url, client, w, h, js, bg);
 
     // let browser_host = get_browser_host(browser);
     // unsafe {

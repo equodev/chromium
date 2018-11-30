@@ -49,6 +49,7 @@ import org.eclipse.swt.events.ControlAdapter;
 import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.internal.DPIUtil;
 import org.eclipse.swt.internal.Library;
@@ -326,17 +327,24 @@ class Chromium extends WebBrowser {
         });
         
         final org.eclipse.swt.graphics.Point size = getChromiumSize();
-        browser = lib.cefswt_create_browser(hwnd, url, clientHandler, size.x, size.y, jsEnabledOnNextPage ? 1 : 0);
+        final Display display = chromium.getDisplay();
+        final Color bgColor = display.getSystemColor(SWT.COLOR_WIDGET_BACKGROUND);
+        int cefBgColor = cefColor(bgColor.getAlpha(), bgColor.getRed(), bgColor.getGreen(), bgColor.getBlue());
+        
+        browser = lib.cefswt_create_browser(hwnd, url, clientHandler, size.x, size.y, jsEnabledOnNextPage ? 1 : 0, cefBgColor);
         if (browser != null) {
             browsers.incrementAndGet();
             lib.cefswt_resized(browser, size.x,  size.y);
         }
 
-        final Display display = chromium.getDisplay();
         if (browsers.get() == 1) {
             debugPrint("STARTING MSG LOOP");
             doMessageLoop(display);
         }
+    }
+
+    private int cefColor(int a, int r, int g, int b) {
+    	return (a << 24) | (r << 16) | (g << 8) | (b << 0);
     }
 
     private Point getChromiumSize() {
@@ -1118,7 +1126,7 @@ class Chromium extends WebBrowser {
 
         void cefswt_set_window_info_parent(@Direct Pointer windowInfo, @Direct Pointer client, @Direct cef_client_t clientHandler, long handle);
 
-        Pointer cefswt_create_browser(long hwnd, String url, @Direct CEF.cef_client_t clientHandler, int w, int h, int js);
+        Pointer cefswt_create_browser(long hwnd, String url, @Direct CEF.cef_client_t clientHandler, int w, int h, int js, int cefBgColor);
 
         boolean cefswt_is_same(@Direct Pointer browser, @Direct Pointer that);
 
