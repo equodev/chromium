@@ -2243,7 +2243,7 @@ public void test_BrowserFunction_callback_with_javaReturningString () {
 
 		@Override
 		public Object function(Object[] arguments) {
-			return "a ä string";
+			return "a ï¿½ string";
 		}
 	}
 
@@ -2282,7 +2282,7 @@ public void test_BrowserFunction_callback_with_javaReturningString () {
 	browser.addProgressListener(callCustomFunctionUponLoad);
 
 	shell.open();
-	boolean passed = waitForPassCondition(() -> "a ä string".equals(returnString.get()));
+	boolean passed = waitForPassCondition(() -> "a ï¿½ string".equals(returnString.get()));
 	String message = "Java should have returned something back to javascript. But something went wrong";
 	assertTrue(message, passed);
 }
@@ -2415,6 +2415,91 @@ public void test_BrowserFunction_callback_afterPageReload() {
 	assertTrue(message, passed);
 }
 
+/**
+ * Test that execute works works in callback BrowserFunction multiple times.
+ */
+@Test
+public void test_BrowserFunction_callback_and_execute() {
+	assumeFalse(webkit1SkipMsg(), isWebkit1);
+
+	AtomicBoolean javaCallbackExecuted = new AtomicBoolean(false);
+	AtomicInteger callCount = new AtomicInteger(0);
+
+	new BrowserFunction(browser, "callFunc") {
+		@Override
+		public Object function(Object[] arguments) {
+			System.out.println("callFunc BrowserFunc " +callCount.get() + " " + arguments[0]);
+			browser.execute("doSomething()");
+			if (arguments != null && arguments.length == 1 && "de".equals(arguments[0])) {
+				callCount.incrementAndGet();
+				return "{\"Reset\":\"Zur0cksetzen\"}";
+			}
+			callCount.incrementAndGet();
+			return "{\"Reset\":\"Reset\"}";
+		}
+	};
+	new BrowserFunction(browser, "finishedSomething") {
+		@Override
+		public Object function(Object[] arguments) {
+			System.out.println("finishedSomething BrowserFunc " + callCount.get() + " " + arguments[0]);
+			callCount.incrementAndGet();
+			browser.execute("doSomething1()");
+			javaCallbackExecuted.set(true);
+			return null;
+		}
+	};
+	browser.setText("<html>\n" + 
+			"<body>\n" + 
+			"\n" + 
+			"	English\n" + 
+			"	<div id=\"english\"></div>\n" + 
+			"	German\n" + 
+			"	<div id=\"german\"></div>\n" + 
+			"\n" + 
+			"	<script>\n" + 
+			"		console.log('callFunc(en)')\n" + 
+			"		var en = callFunc('en');\n" + 
+			"		console.log('en json received');\n" + 
+			"		var enResult = JSON.parse(en);\n" + 
+			"		console.log('en json parsed')\n" + 
+			"		document.getElementById('english').innerHTML = \"Success: \" + enResult.Reset;\n" + 
+			"		console.log('html updated')\n" + 
+			"	\n" + 
+			"		console.log('callFunc(de)');\n" + 
+			"		var de = callFunc('de');\n" + 
+			"		console.log('de json received');\n" + 
+			"		var deResult = JSON.parse(de);\n" + 
+			"		console.log('de json parsed');\n" + 
+			"		document.getElementById('german').innerHTML = \"Success: \" + deResult.Reset;\n" + 
+			"		console.log('html updated 2');\n" + 
+			"		\n" + 
+			"		// functions needed for demonstration of issue 31\n" + 
+			"		function doSomething() {\n" + 
+			"			console.log('Doin something');\n" + 
+			"			var tmp = 0;\n" + 
+			"			for (var i = 0; i < 10000; i++) {\n" + 
+			"				tmp = tmp + 1 * 2;\n" + 
+			"			}\n" + 
+			"			console.log('Finished something');\n" + 
+			"			finishedSomething('a');\n" + 
+			"		}\n" + 
+			"		function doSomething1() {\n" + 
+			"			console.log('Doin something1');\n" + 
+			"			var tmp = 0;\n" + 
+			"			for (var i = 0; i < 10000; i++) {\n" + 
+			"				tmp = tmp + 1 * 2;\n" + 
+			"			}\n" + 
+			"			console.log('Finished something1');\n" + 
+			"		}\n" + 
+			"	</script>\n" + 
+			"</body>\n" + 
+			"</html>");
+
+	shell.open();
+	boolean passed = waitForPassCondition(() -> javaCallbackExecuted.get() && callCount.get() == 4);
+	String message = "A javascript callback should work. But something went wrong. Call count: " + callCount.get();
+	assertTrue(message, passed);
+}
 
 /* custom */
 /**

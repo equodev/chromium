@@ -442,17 +442,24 @@ pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char,
         assert_eq!(s, 1);
         let s = (*args).set_string.unwrap()(args, 2, &text_cef);
         assert_eq!(s, 1);
-        let (port, thread) = socket::read_response();
-        let s = (*args).set_int.unwrap()(args, 0, port as i32);
-        assert_eq!(s, 1);
+        match socket::read_response() {
+            Ok((port, thread)) => {
+                let s = (*args).set_int.unwrap()(args, 0, port as i32);
+                assert_eq!(s, 1);
 
-        let sent = (*browser).send_process_message.unwrap()(browser, cef::cef_process_id_t::PID_RENDERER, msg);
-        assert_eq!(sent, 1);
-        // cef::cef_string_userfree_utf16_free(text_cef);
-        let rsp = thread.join();
-        let r = rsp.expect("Failed to read from socket");
-        callback(r.kind, r.str_value.as_ptr());
-        1
+                let sent = (*browser).send_process_message.unwrap()(browser, cef::cef_process_id_t::PID_RENDERER, msg);
+                assert_eq!(sent, 1);
+                // cef::cef_string_userfree_utf16_free(text_cef);
+                let rsp = thread.join();
+                let r = rsp.expect("Failed to read from socket");
+                callback(r.kind, r.str_value.as_ptr());
+                1
+            },
+            Err(e) => {
+                println!("Failed to start socket server {:?}", e);
+                0
+            }
+        }
     }
 }
 

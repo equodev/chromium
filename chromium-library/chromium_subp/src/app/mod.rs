@@ -353,82 +353,90 @@ impl V8Handler {
                     let s = (*args).set_string.unwrap()(args, 1+i*2+2, &strval);
                     assert_eq!(s, 1);
                 } else {
-                        println!("ARG {} is NULL", i);
+                    println!("ARG {} is NULL", i);
                 }
             }
 
-            let (port, child) = socket::read_response();
-            let s = (*args).set_int.unwrap()(args, 0, port as i32);
-            assert_eq!(s, 1);
-            let sent = (*browser).send_process_message.unwrap()(browser, cef::cef_process_id_t::PID_BROWSER, msg);
-            assert_eq!(sent, 1);
+            match socket::read_response() {
+                Ok((port, child)) => {
+                    let s = (*args).set_int.unwrap()(args, 0, port as i32);
+                    assert_eq!(s, 1);
+                    let sent = (*browser).send_process_message.unwrap()(browser, cef::cef_process_id_t::PID_BROWSER, msg);
+                    assert_eq!(sent, 1);
 
-            // wait_return
-            let result = child.join();
-            match result {
-                Ok(return_st) => {
-                    match return_st.kind {
-                        socket::ReturnType::Null => {
-                            *retval = cef::cef_v8value_create_null();
-                        },
-                        socket::ReturnType::Bool => {
-                            let boolean = return_st.str_value.to_str().unwrap().parse::<i32>().expect("cannot parse i32");
-                            *retval = cef::cef_v8value_create_bool(boolean);
-                        },
-                        socket::ReturnType::Double => {
-                            let double = return_st.str_value.to_str().unwrap().parse::<f64>().expect("cannot parse f64");
-                            *retval = cef::cef_v8value_create_double(double);
-                        },
-                        socket::ReturnType::Str => {
-                            let str_cef = utils::cef_string(return_st.str_value.to_str().unwrap());
-                            *retval = cef::cef_v8value_create_string(&str_cef);
-                        },
-                        socket::ReturnType::Array => {
-                            let rstr = return_st.str_value.to_str().unwrap();
-                            let mut in_string = false;
-                            let v: Vec<&str> = rstr.split(|c| {
-                                if c == '"' && in_string {
-                                    in_string = false;
-                                } else if c == '"' && !in_string {
-                                    in_string = true;
-                                } 
-                                c == ';' && !in_string
-                            }).collect();
-                            let array = cef::cef_v8value_create_array(v.len() as i32);
-                            for i in 0..v.len() {
-                                let vi = if v[i].chars().next() == Some('"') {
-                                    let strcef = utils::cef_string(v[i].get(1..v[i].len()-1).expect("bad str array"));
-                                    cef::cef_v8value_create_string(&strcef)
-                                } else if v[i] == "null" {
-                                    cef::cef_v8value_create_null()
-                                } else if v[i] == "true" {
-                                    cef::cef_v8value_create_bool(1)
-                                } else if v[i] == "false" {
-                                    cef::cef_v8value_create_bool(0)
-                                } else if v[i].parse::<u32>().is_ok() {
-                                    cef::cef_v8value_create_uint(v[i].parse::<u32>().unwrap())
-                                } else if v[i].parse::<i32>().is_ok() {
-                                    cef::cef_v8value_create_int(v[i].parse::<i32>().unwrap())
-                                } else if v[i].parse::<f64>().is_ok() {
-                                    cef::cef_v8value_create_double(v[i].parse::<f64>().unwrap())
-                                } else {
-                                    cef::cef_v8value_create_null()
-                                };
-                                let s = (*array).set_value_byindex.unwrap()(array, i as i32, vi);
-                                assert_eq!(s, 1, "failed to set v8array index");
+                    // wait_return
+                    let result = child.join();
+                    match result {
+                        Ok(return_st) => {
+                            match return_st.kind {
+                                socket::ReturnType::Null => {
+                                    *retval = cef::cef_v8value_create_null();
+                                },
+                                socket::ReturnType::Bool => {
+                                    let boolean = return_st.str_value.to_str().unwrap().parse::<i32>().expect("cannot parse i32");
+                                    *retval = cef::cef_v8value_create_bool(boolean);
+                                },
+                                socket::ReturnType::Double => {
+                                    let double = return_st.str_value.to_str().unwrap().parse::<f64>().expect("cannot parse f64");
+                                    *retval = cef::cef_v8value_create_double(double);
+                                },
+                                socket::ReturnType::Str => {
+                                    let str_cef = utils::cef_string(return_st.str_value.to_str().unwrap());
+                                    *retval = cef::cef_v8value_create_string(&str_cef);
+                                },
+                                socket::ReturnType::Array => {
+                                    let rstr = return_st.str_value.to_str().unwrap();
+                                    let mut in_string = false;
+                                    let v: Vec<&str> = rstr.split(|c| {
+                                        if c == '"' && in_string {
+                                            in_string = false;
+                                        } else if c == '"' && !in_string {
+                                            in_string = true;
+                                        } 
+                                        c == ';' && !in_string
+                                    }).collect();
+                                    let array = cef::cef_v8value_create_array(v.len() as i32);
+                                    for i in 0..v.len() {
+                                        let vi = if v[i].chars().next() == Some('"') {
+                                            let strcef = utils::cef_string(v[i].get(1..v[i].len()-1).expect("bad str array"));
+                                            cef::cef_v8value_create_string(&strcef)
+                                        } else if v[i] == "null" {
+                                            cef::cef_v8value_create_null()
+                                        } else if v[i] == "true" {
+                                            cef::cef_v8value_create_bool(1)
+                                        } else if v[i] == "false" {
+                                            cef::cef_v8value_create_bool(0)
+                                        } else if v[i].parse::<u32>().is_ok() {
+                                            cef::cef_v8value_create_uint(v[i].parse::<u32>().unwrap())
+                                        } else if v[i].parse::<i32>().is_ok() {
+                                            cef::cef_v8value_create_int(v[i].parse::<i32>().unwrap())
+                                        } else if v[i].parse::<f64>().is_ok() {
+                                            cef::cef_v8value_create_double(v[i].parse::<f64>().unwrap())
+                                        } else {
+                                            cef::cef_v8value_create_null()
+                                        };
+                                        let s = (*array).set_value_byindex.unwrap()(array, i as i32, vi);
+                                        assert_eq!(s, 1, "failed to set v8array index");
+                                    }
+                                    *retval = array;
+                                },
+                                _ => {
+                                    println!("unsupported {:?}", return_st.kind);
+                                    *exception = utils::cef_string(return_st.str_value.to_str().unwrap());
+                                }
                             }
-                            *retval = array;
                         },
-                        _ => {
-                            println!("unsupported {:?}", return_st.kind);
-                            *exception = utils::cef_string(return_st.str_value.to_str().unwrap());
+                        Err(e) => {
+                            println!("socket server error {:?}", e);
+                            *exception = utils::cef_string("socket server panic");
                         }
                     }
                 },
-                Err(_) => {
-                    *exception = utils::cef_string("socker server panic");
+                Err(e) => {
+                    println!("cannot start socket server {:?}", e);
+                    *exception = utils::cef_string("cannot start socket server");
                 }
-            } 
+            }
             1
         }
 
