@@ -403,17 +403,17 @@ class Chromium extends WebBrowser {
                 event.widget = chromium;
                 event.size = new Point(0,0);
                 event.location = new Point(0,0);
-                if (popupWindowEvent != null) {
-                    event.size = popupWindowEvent.size;
-                    event.location = popupWindowEvent.location;
-                    event.addressBar = popupWindowEvent.addressBar;
-                    event.menuBar = popupWindowEvent.menuBar;
-                    event.statusBar = popupWindowEvent.statusBar;
-                    event.toolBar = popupWindowEvent.toolBar;
-                    popupWindowEvent = null;
-                }
+//                if (popupWindowEvent != null) {
+//                    event.size = popupWindowEvent.size;
+//                    event.location = popupWindowEvent.location;
+//                    event.addressBar = popupWindowEvent.addressBar;
+//                    event.menuBar = popupWindowEvent.menuBar;
+//                    event.statusBar = popupWindowEvent.statusBar;
+//                    event.toolBar = popupWindowEvent.toolBar;
+//                    popupWindowEvent = null;
+//                }
                 for (VisibilityWindowListener listener : visibilityWindowListeners) {
-                    listener.show(event);
+//                    listener.show(event);
                 }
             });
         });
@@ -441,17 +441,41 @@ class Chromium extends WebBrowser {
             int width = popupFeatures.widthSet.get() == 1 ? popupFeatures.width.get() : 0;
             int height = popupFeatures.heightSet.get() == 1 ? popupFeatures.height.get() : 0;
             event.size = new Point(width, height);
-            chromium.getDisplay().syncExec(() -> {
+//            chromium.getDisplay().syncExec(() -> {
                 for (OpenWindowListener listener : openWindowListeners) {
                     listener.open(event);
                 }
-            });
+//            });
             if (event.browser == null && event.required)
                 return 1;
             if (event.browser != null) {
-                event.browser.webBrowser.popupWindowEvent = event;
+//                event.browser.webBrowser.popupWindowEvent = event;
 //                chromium.getDisplay().syncExec(() -> {
-//                    lib.cefswt_set_window_info_parent(windowInfo, client, event.browser.webBrowser.clientHandler, event.browser.webBrowser.getHandle(event.browser));
+                    long popupHandle = event.browser.webBrowser.getHandle(event.browser);
+                    debug("popup will use hwnd:"+popupHandle);
+					lib.cefswt_set_window_info_parent(windowInfo, client, event.browser.webBrowser.clientHandler, popupHandle);
+					debug("reparent popup");
+					
+//					if (chromium == null || chromium.isDisposed() || visibilityWindowListeners == null) return;
+	                org.eclipse.swt.browser.WindowEvent event1 = new org.eclipse.swt.browser.WindowEvent(chromium);
+	                event1.display = chromium.getDisplay ();
+	                event1.widget = event.browser;
+	                event1.size = new Point(0,0);
+	                event1.location = new Point(0,0);
+//	                if (popupWindowEvent != null) {
+	                    event1.size = event.size;
+	                    event1.location = event.location;
+	                    event1.addressBar = event.addressBar;
+	                    event1.menuBar = event.menuBar;
+	                    event1.statusBar = event.statusBar;
+	                    event1.toolBar = event.toolBar;
+//	                    popupWindowEvent = null;
+//	                }
+	                chromium.getDisplay().asyncExec(() -> {
+		                for (VisibilityWindowListener listener : event.browser.webBrowser.visibilityWindowListeners) {
+		                    listener.show(event1);
+		                }
+	                });
 //                });
             }
             return 0;
@@ -1116,7 +1140,7 @@ class Chromium extends WebBrowser {
     public static interface Lib {
         void cefswt_init(@Direct CEF.cef_app_t app, String cefrustPath, String version);
 
-        void cefswt_set_window_info_parent(@Direct Pointer windowInfo, @Direct Pointer client, @Direct cef_client_t clientHandler, long handle);
+        void cefswt_set_window_info_parent(Pointer windowInfo, Pointer client, cef_client_t clientHandler, long handle);
 
         Pointer cefswt_create_browser(long hwnd, String url, @Direct CEF.cef_client_t clientHandler, int w, int h, int js);
 

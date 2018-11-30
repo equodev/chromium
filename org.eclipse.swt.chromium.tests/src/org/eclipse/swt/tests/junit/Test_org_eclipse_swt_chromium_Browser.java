@@ -63,7 +63,7 @@ public class Test_org_eclipse_swt_chromium_Browser extends Test_org_eclipse_swt_
 	// CONFIG
 	/** This forces tests to display the shell/browser for a brief moment. Useful to see what's going on with broken jUnits */
 	boolean debug_show_browser = true; // true to display browser.
-	int     debug_show_browser_timeout_seconds = 2; // if above set to true, then how long should the browser be shown for.
+	int     debug_show_browser_timeout_seconds = 60; // if above set to true, then how long should the browser be shown for.
 													// This is independent of whether test passes or fails.
 
 	boolean debug_verbose_output = true;
@@ -577,7 +577,7 @@ public void test_OpenWindowListener_openHasValidEventDetails() {
 /** Test that a script 'window.open()' opens a child popup shell. */
 @Test
 public void test_OpenWindowListener_open_ChildPopup() {
-	assumeFalse("Skipping temporarily", isChromium);
+//	assumeFalse("Skipping temporarily", isChromium);
 	AtomicBoolean childCompleted = new AtomicBoolean(false);
 
 	Shell childShell = new Shell(shell, SWT.None);
@@ -591,7 +591,12 @@ public void test_OpenWindowListener_open_ChildPopup() {
 
 	browserChild.addVisibilityWindowListener(showAdapter(event -> {
 		childShell.open();
-		browserChild.setText("Child Browser");
+		
+		if (isChromium) {
+			browserChild.setUrl("about:version");
+		} else { // Chromium cannot fire changing event for setText
+			browserChild.setText("Child Browser");
+		}
 	}));
 	 //Triggers test to finish.
 	browserChild.addProgressListener(completedAdapter(event -> childCompleted.set(true)));

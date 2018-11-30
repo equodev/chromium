@@ -996,9 +996,9 @@ public class CEF {
           cef_window_open_disposition_t target_disposition,
           int user_gesture,
           cef_popup_features_t popupFeatures,
-          jnr.ffi.Pointer windowInfo,
-          jnr.ffi.Pointer client,
-          jnr.ffi.Pointer settings,
+          @Out jnr.ffi.Pointer windowInfo,
+          @Out jnr.ffi.Pointer client,
+          @Out jnr.ffi.Pointer settings,
           @Out int no_javascript_access);
     }
 

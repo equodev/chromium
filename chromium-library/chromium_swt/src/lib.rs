@@ -276,9 +276,12 @@ pub extern fn cefswt_create_browser(hwnd: c_ulong, url: *const c_char, client: &
 
 #[no_mangle]
 pub extern fn cefswt_set_window_info_parent(window_info: *mut cef::_cef_window_info_t, client: *mut *mut cef::_cef_client_t, jclient: &mut cef::_cef_client_t, hwnd: c_ulong) {
-    println!("cefswt_set_window_info_parent {:?} {}", window_info, hwnd);
-    unsafe { (*client) = jclient };
-    app::set_window_parent(window_info, hwnd);
+    unsafe {
+        println!("cefswt_set_window_info_parent {:?} {}", *window_info, hwnd);
+        (*client) = jclient;
+        app::set_window_parent(window_info, hwnd);
+        println!("after cefswt_set_window_info_parent {:?} {}", *window_info, hwnd);
+    };
 }
 
 #[no_mangle]

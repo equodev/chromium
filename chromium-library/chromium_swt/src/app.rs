@@ -141,6 +141,6 @@ fn cef_window_info(hwnd: c_ulong, w: c_int, h: c_int) -> cef::_cef_window_info_t
 #[cfg(windows)]
 pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulong) {
     unsafe { println!("orig window_info {} {:?}", hwnd, (*window_info)); };
-    unsafe { (*window_info).parent_window = hwnd as cef::win::HWND };
+    unsafe { (*window_info).window = hwnd as cef::win::HWND };
     unsafe { println!("new window_info {:?}", (*window_info)); };
 }
