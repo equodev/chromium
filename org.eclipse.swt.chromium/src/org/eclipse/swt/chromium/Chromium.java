@@ -49,7 +49,9 @@ import org.eclipse.swt.events.ControlAdapter;
 import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.internal.DPIUtil;
 import org.eclipse.swt.internal.Library;
 import org.eclipse.swt.internal.chromium.CEF;
 import org.eclipse.swt.internal.chromium.CEFFactory;
@@ -61,7 +63,7 @@ import org.eclipse.swt.internal.chromium.CEF.cef_client_t;
 import org.eclipse.swt.internal.chromium.CEF.cef_process_id_t;
 
 class Chromium extends WebBrowser {
-    private static final String VERSION = "0600";
+    private static final String VERSION = "0700";
     private static final String CEFVERSION = "3071";
     private static final String SHARED_LIB_V = "chromium_swt-"+VERSION;
     private static final int MAX_PROGRESS = 100;
@@ -318,23 +320,36 @@ class Chromium extends WebBrowser {
 //                      System.err.println("Ignore do_message_loop_work due inactive shell");
                         return;
                     }
-                    lib.cefswt_resized(browser, chromium.getSize().x, chromium.getSize().y);
+                    Point size = getChromiumSize();
+					lib.cefswt_resized(browser,  size.x,  size.y);
                 }
             }
         });
         
-        final org.eclipse.swt.graphics.Point size = chromium.getSize();
-        browser = lib.cefswt_create_browser(hwnd, url, clientHandler, size.x, size.y, jsEnabledOnNextPage ? 1 : 0);
+        final org.eclipse.swt.graphics.Point size = getChromiumSize();
+        final Display display = chromium.getDisplay();
+        final Color bgColor = display.getSystemColor(SWT.COLOR_WIDGET_BACKGROUND);
+        int cefBgColor = cefColor(bgColor.getAlpha(), bgColor.getRed(), bgColor.getGreen(), bgColor.getBlue());
+        
+        browser = lib.cefswt_create_browser(hwnd, url, clientHandler, size.x, size.y, jsEnabledOnNextPage ? 1 : 0, cefBgColor);
         if (browser != null) {
             browsers.incrementAndGet();
-            lib.cefswt_resized(browser, chromium.getSize().x, chromium.getSize().y);
+            lib.cefswt_resized(browser, size.x,  size.y);
         }
 
-        final Display display = chromium.getDisplay();
         if (browsers.get() == 1) {
             debugPrint("STARTING MSG LOOP");
             doMessageLoop(display);
         }
+    }
+
+    private int cefColor(int a, int r, int g, int b) {
+    	return (a << 24) | (r << 16) | (g << 8) | (b << 0);
+    }
+
+    private Point getChromiumSize() {
+    	Point size = chromium.getSize();
+    	return DPIUtil.autoScaleUp(size);
     }
 
     private void set_life_span_handler() {
@@ -346,7 +361,6 @@ class Chromium extends WebBrowser {
             Chromium.this.browser = null;
             Chromium.this.focusHandler = null;
             Chromium.this.lifeSpanHandler = null;
-            Chromium.this.browser = null;
             // not always called on linux
             String platform = SWT.getPlatform();
             if (("win32".equals(platform) || "cocoa".equals(platform)) && browsers.decrementAndGet() == 0 && shuttindDown) {
@@ -355,6 +369,10 @@ class Chromium extends WebBrowser {
         });
         lifeSpanHandler.do_close.set((plifeSpanHandler, browser) -> {
             //lifeSpanHandler.base.ref++;
+            if (!lib.cefswt_is_same(Chromium.this.browser, browser)) {
+            	debugPrint("DoClose popup:" + Chromium.this.browser+":"+browser);
+            	return 0;
+            }
             debugPrint("DoClose");
             if (!disposing && !chromium.isDisposed() && closeWindowListeners != null) {
                 org.eclipse.swt.browser.WindowEvent event = new org.eclipse.swt.browser.WindowEvent(chromium);
@@ -1108,13 +1126,15 @@ class Chromium extends WebBrowser {
 
         void cefswt_set_window_info_parent(@Direct Pointer windowInfo, @Direct Pointer client, @Direct cef_client_t clientHandler, long handle);
 
-        Pointer cefswt_create_browser(long hwnd, String url, @Direct CEF.cef_client_t clientHandler, int w, int h, int js);
+        Pointer cefswt_create_browser(long hwnd, String url, @Direct CEF.cef_client_t clientHandler, int w, int h, int js, int cefBgColor);
+
+        boolean cefswt_is_same(@Direct Pointer browser, @Direct Pointer that);
 
         void cefswt_do_message_loop_work();
 
-        void cefswt_load_url(Pointer browser, String url);
+        void cefswt_load_url(Pointer browser, @Encoding("UTF8") String url);
 
-        void cefswt_load_text(Pointer browser, String text);
+        void cefswt_load_text(Pointer browser, @Encoding("UTF8") String text);
 
         void cefswt_stop(Pointer browser);
 
@@ -1132,17 +1152,17 @@ class Chromium extends WebBrowser {
 
         void cefswt_go_back(Pointer browser);
 
-        void cefswt_execute(Pointer browser, String script);
+        void cefswt_execute(Pointer browser, @Encoding("UTF8") String script);
         
-        boolean cefswt_eval(Pointer browser, String script, int id, EvalReturned callback);
+        boolean cefswt_eval(Pointer browser, @Encoding("UTF8") String script, int id, EvalReturned callback);
         
-        boolean cefswt_function(Pointer browser, String name, int id);
+        boolean cefswt_function(Pointer browser, @Encoding("UTF8") String name, int id);
 
         FunctionSt cefswt_function_id(Pointer msg);
         
         boolean cefswt_function_arg(Pointer msg, int index, EvalReturned callback);
 
-        boolean cefswt_function_return(Pointer browser, int id, int port, ReturnType returnType, String ret);
+        boolean cefswt_function_return(Pointer browser, int id, int port, ReturnType returnType, @Encoding("UTF8") String ret);
         
         void cefswt_close_browser(Pointer browser);
         
@@ -1156,7 +1176,7 @@ class Chromium extends WebBrowser {
 
         @Encoding("UTF8") String cefswt_request_to_java(Pointer request);
 
-        boolean cefswt_set_cookie(String url, String name, String value, String domain, String path, int secure, int httpOnly, double maxAge);
+        boolean cefswt_set_cookie(@Encoding("UTF8") String url, @Encoding("UTF8") String name, @Encoding("UTF8") String value, @Encoding("UTF8") String domain, @Encoding("UTF8") String path, int secure, int httpOnly, double maxAge);
 
         boolean cefswt_get_cookie(String url, CEF.cef_cookie_visitor_t visitor);
 

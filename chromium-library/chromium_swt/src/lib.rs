@@ -257,7 +257,7 @@ fn restore_signal_handlers(signal_handlers: HashMap<c_int, nix::sys::signal::Sig
 }
 
 #[no_mangle]
-pub extern fn cefswt_create_browser(hwnd: c_ulong, url: *const c_char, client: &mut cef::_cef_client_t, w: c_int, h: c_int, js: c_int) -> *const cef::cef_browser_t {
+pub extern fn cefswt_create_browser(hwnd: c_ulong, url: *const c_char, client: &mut cef::_cef_client_t, w: c_int, h: c_int, js: c_int, bg: cef::cef_color_t) -> *const cef::cef_browser_t {
     assert_eq!((*client).base.size, std::mem::size_of::<cef::_cef_client_t>());
 
     // println!("hwnd: {}", hwnd);
@@ -265,7 +265,7 @@ pub extern fn cefswt_create_browser(hwnd: c_ulong, url: *const c_char, client: &
 
     let url = utils::str_from_c(url);
     // println!("url: {:?}", url);
-    let browser = app::create_browser(hwnd, url, client, w, h, js);
+    let browser = app::create_browser(hwnd, url, client, w, h, js, bg);
 
     // let browser_host = get_browser_host(browser);
     // unsafe {
@@ -442,17 +442,24 @@ pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char,
         assert_eq!(s, 1);
         let s = (*args).set_string.unwrap()(args, 2, &text_cef);
         assert_eq!(s, 1);
-        let (port, thread) = socket::read_response();
-        let s = (*args).set_int.unwrap()(args, 0, port as i32);
-        assert_eq!(s, 1);
+        match socket::read_response() {
+            Ok((port, thread)) => {
+                let s = (*args).set_int.unwrap()(args, 0, port as i32);
+                assert_eq!(s, 1);
 
-        let sent = (*browser).send_process_message.unwrap()(browser, cef::cef_process_id_t::PID_RENDERER, msg);
-        assert_eq!(sent, 1);
-        // cef::cef_string_userfree_utf16_free(text_cef);
-        let rsp = thread.join();
-        let r = rsp.expect("Failed to read from socket");
-        callback(r.kind, r.str_value.as_ptr());
-        1
+                let sent = (*browser).send_process_message.unwrap()(browser, cef::cef_process_id_t::PID_RENDERER, msg);
+                assert_eq!(sent, 1);
+                // cef::cef_string_userfree_utf16_free(text_cef);
+                let rsp = thread.join();
+                let r = rsp.expect("Failed to read from socket");
+                callback(r.kind, r.str_value.as_ptr());
+                1
+            },
+            Err(e) => {
+                println!("Failed to start socket server {:?}", e);
+                0
+            }
+        }
     }
 }
 
@@ -551,6 +558,11 @@ fn do_set_focus(_parent: *mut c_void, _focus: i32) {
 #[cfg(target_os = "macos")]
 fn do_set_focus(_parent: *mut c_void, _focus: i32) {
     // handled by cocoa
+}
+
+#[no_mangle]
+pub extern fn cefswt_is_same(browser: *mut cef::cef_browser_t, that: *mut cef::cef_browser_t) -> c_int {
+    unsafe { (*browser).is_same.unwrap()(browser, that) }
 }
 
 #[no_mangle]

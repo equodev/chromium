@@ -112,41 +112,62 @@ fn serialize_null() {
     assert_eq!(CString::new("").unwrap(), unsafe{CString::from_raw(read_st.str_value)});
 }
 
-pub fn read_response() -> (u16, JoinHandle<ReturnSt>) {
-    let port = get_available_port().expect("no ports available");
-    let child = thread::spawn(move || {
-        let listener = TcpListener::bind(("127.0.0.1", port)).unwrap();
-        match listener.accept() {
-            Ok((mut socket, addr)) => {
-                println!("new client: {:?}", addr);
-                
-                let mut buffer = Vec::new();
-                match socket.read_to_end(&mut buffer) {
-                    Ok(n) => {
-                        println!("read from socket: {} {} {:?}", n, ::std::mem::size_of::<ReturnSt>(), buffer);
-                        let ret = read_buffer(&buffer);
-                        println!("st: {:?}", ret);
-                        ret
-                    },
-                    Err(e) => {
-                        println!("couldn't read from socket: {:?}", e);
-                        panic!(e)
-                    }
+pub fn read_response() -> Result<(u16, JoinHandle<ReturnSt>), String> {
+    match get_available_port() {
+        Some(port) => {
+            match TcpListener::bind(("127.0.0.1", port)) {
+                Ok(listener) => {
+                    //println!("new server, waiting response in :{:?}", port);
+                    let child = thread::spawn(move || {
+                        match listener.accept() {
+                            Ok((mut socket, addr)) => {
+                                println!("new client: {:?}", addr);
+                                
+                                let mut buffer = Vec::new();
+                                match socket.read_to_end(&mut buffer) {
+                                    Ok(n) => {
+                                        println!("read from socket: {} {} {:?}", n, ::std::mem::size_of::<ReturnSt>(), buffer);
+                                        let ret = read_buffer(&buffer);
+                                        println!("st: {:?}", ret);
+                                        ret
+                                    },
+                                    Err(e) => {
+                                        println!("couldn't read from socket: {:?}", e);
+                                        panic!(e)
+                                    }
+                                }
+                            },
+                            Err(e) => {
+                                println!("couldn't get client: {:?}", e);
+                                panic!(e)
+                            }
+                        }
+                    });
+                    Ok((port, child))
+                },
+                Err(e) => {
+                    println!("couldn't bind port: {:?}", e);
+                    Err(e.to_string())
                 }
-            },
-            Err(e) => {
-                println!("couldn't get client: {:?}", e);
-                panic!(e)
             }
+        },
+        None => {
+            Err("no ports available".to_string())
         }
-    });
-    (port, child)
+    }
 }
 
 pub fn socket_client(port: u16, ret: CString, ret_type: ReturnType) -> i32 {
-    let mut stream = TcpStream::connect(("127.0.0.1", port)).unwrap();
-    write_buffer(&mut stream, ret, ret_type);
-    1
+    match TcpStream::connect(("127.0.0.1", port)) {
+        Ok(mut stream) => {
+            write_buffer(&mut stream, ret, ret_type);
+            1
+        }
+        Err(e) => {
+            println!("Cannot connect to renderer socket {:?}", e);
+            0
+        }
+    }
 }
 
 fn get_available_port() -> Option<u16> {
