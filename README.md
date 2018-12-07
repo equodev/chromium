@@ -52,6 +52,8 @@ Notes:
 
 ## Build
 
+This repo uses GIT LFS, please install (https://git-lfs.github.com/) before cloning.
+
 - Clone this repo.
 - `mvn clean package`
 
