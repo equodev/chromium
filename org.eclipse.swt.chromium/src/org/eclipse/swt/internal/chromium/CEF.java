@@ -989,7 +989,7 @@ public class CEF {
       @Delegate
       int invoke(
           cef_life_span_handler_t self_,
-          jnr.ffi.Pointer browser,
+          @Direct jnr.ffi.Pointer browser,
           jnr.ffi.Pointer frame,
           cef_string_t target_url,
           cef_string_t target_frame_name,
@@ -1004,7 +1004,7 @@ public class CEF {
 
     public static interface on_after_created {
       @Delegate
-      void invoke(cef_life_span_handler_t self_, jnr.ffi.Pointer browser);
+      void invoke(cef_life_span_handler_t self_, @Direct jnr.ffi.Pointer browser);
     }
 
     public static interface do_close {

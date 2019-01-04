@@ -275,12 +275,12 @@ pub extern fn cefswt_create_browser(hwnd: c_ulong, url: *const c_char, client: &
 }
 
 #[no_mangle]
-pub extern fn cefswt_set_window_info_parent(window_info: *mut cef::_cef_window_info_t, client: *mut *mut cef::_cef_client_t, jclient: &mut cef::_cef_client_t, hwnd: c_ulong) {
+pub extern fn cefswt_set_window_info_parent(window_info: *mut cef::_cef_window_info_t, client: *mut *mut cef::_cef_client_t, jclient: &mut cef::_cef_client_t, hwnd: c_ulong, w: c_int, h: c_int) {
     unsafe {
-        println!("cefswt_set_window_info_parent {:?} {}", *window_info, hwnd);
+        //println!("cefswt_set_window_info_parent {:?} {}", *window_info, hwnd);
         (*client) = jclient;
-        app::set_window_parent(window_info, hwnd);
-        println!("after cefswt_set_window_info_parent {:?} {}", *window_info, hwnd);
+        app::set_window_parent(window_info, hwnd, w, h);
+        //println!("after cefswt_set_window_info_parent {:?} {}", *window_info, hwnd);
     };
 }
 
@@ -435,7 +435,8 @@ pub extern fn cefswt_execute(browser: *mut cef::cef_browser_t, text: *const c_ch
 }
 
 #[no_mangle]
-pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char, id: i32, callback: unsafe extern "C" fn(kind: socket::ReturnType, value: *const c_char)) -> c_int {
+pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char, id: i32,
+        callback: unsafe extern "C" fn(work: c_int, kind: socket::ReturnType, value: *const c_char)) -> c_int {
     let text_cef = utils::cef_string_from_c(text);
     let name = utils::cef_string("eval");
     unsafe {
@@ -445,17 +446,9 @@ pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char,
         assert_eq!(s, 1);
         let s = (*args).set_string.unwrap()(args, 2, &text_cef);
         assert_eq!(s, 1);
-        match socket::read_response() {
-            Ok((port, thread)) => {
-                let s = (*args).set_int.unwrap()(args, 0, port as i32);
-                assert_eq!(s, 1);
-
-                let sent = (*browser).send_process_message.unwrap()(browser, cef::cef_process_id_t::PID_RENDERER, msg);
-                assert_eq!(sent, 1);
-                // cef::cef_string_userfree_utf16_free(text_cef);
-                let rsp = thread.join();
-                let r = rsp.expect("Failed to read from socket");
-                callback(r.kind, r.str_value.as_ptr());
+        match socket::wait_response(browser, msg, args, cef::cef_process_id_t::PID_RENDERER, Some(callback)) {
+            Ok(r) => {
+                callback(0, r.kind, r.str_value.as_ptr());
                 1
             },
             Err(e) => {
@@ -512,13 +505,13 @@ pub unsafe extern fn cefswt_function_id(message: *mut cef::cef_process_message_t
 }
 
 #[no_mangle]
-pub unsafe extern fn cefswt_function_arg(message: *mut cef::cef_process_message_t, index: i32, callback: unsafe extern "C" fn(kind: socket::ReturnType, value: *const c_char)) -> c_int {
+pub unsafe extern fn cefswt_function_arg(message: *mut cef::cef_process_message_t, index: i32, callback: unsafe extern "C" fn(work: c_int, kind: socket::ReturnType, value: *const c_char)) -> c_int {
     let args = (*message).get_argument_list.unwrap()(message);
     let kind = (*args).get_int.unwrap()(args, (1+index*2+1) as usize);
     let arg = (*args).get_string.unwrap()(args, (1+index*2+2) as usize);
     let cstr = utils::cstr_from_cef(arg);
     let kind = socket::ReturnType::from(kind);
-    callback(kind, cstr);
+    callback(0, kind, cstr);
     1
 }
 

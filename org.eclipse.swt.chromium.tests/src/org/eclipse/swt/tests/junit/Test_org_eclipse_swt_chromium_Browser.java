@@ -62,8 +62,8 @@ public class Test_org_eclipse_swt_chromium_Browser extends Test_org_eclipse_swt_
 
 	// CONFIG
 	/** This forces tests to display the shell/browser for a brief moment. Useful to see what's going on with broken jUnits */
-	boolean debug_show_browser = true; // true to display browser.
-	int     debug_show_browser_timeout_seconds = 60; // if above set to true, then how long should the browser be shown for.
+	boolean debug_show_browser = false; // true to display browser.
+	int     debug_show_browser_timeout_seconds = 15; // if above set to true, then how long should the browser be shown for.
 													// This is independent of whether test passes or fails.
 
 	boolean debug_verbose_output = true;
@@ -73,6 +73,8 @@ public class Test_org_eclipse_swt_chromium_Browser extends Test_org_eclipse_swt_
 
 	@Rule
 	public TestName name = new TestName();
+	@Rule
+	public RepeatRule repeatRule = new RepeatRule();
 
 	Browser browser;
 	boolean isWebkit1 = false;
@@ -180,6 +182,7 @@ public void test_ClearAllSessionCookies () {
 
 	// Using JavaScript Cookie API on local (file) URL gives DOM Exception 18
 	browser.setUrl("http://www.eclipse.org/swt");
+	shell.open();
 	waitForPassCondition(loaded::get);
 
 	// Set the cookies
@@ -246,6 +249,7 @@ public void test_get_set_Cookies() {
 
 	// Using JavaScript Cookie API on local (file) URL gives DOM Exception 18
 	browser.setUrl("http://www.eclipse.org/swt");
+	shell.open();
 	waitForPassCondition(loaded::get);
 
 	// Set the cookies
@@ -618,7 +622,7 @@ public void test_OpenWindowListener_open_ChildPopup() {
 /** Validate event order : Child's visibility should come before progress completed event */
 @Test
 public void test_OpenWindow_Progress_Listener_ValidateEventOrder() {
-	assumeFalse("Skipping temporarily", isChromium);
+//	assumeFalse("Skipping temporarily", isChromium);
 	AtomicBoolean windowOpenFired = new AtomicBoolean(false);
 	AtomicBoolean childCompleted = new AtomicBoolean(false);
 	AtomicBoolean visibilityShowed = new AtomicBoolean(false);
@@ -737,6 +741,7 @@ public void test_ProgressListener_completed_Called() {
 	};
 	browser.addProgressListener(l);
 	browser.setText("<html><body>This test ensures that the completed listener is called.</body></html>");
+	shell.open();
 	boolean passed = waitForPassCondition(childCompleted::get);
 	assertTrue(passed);
 }
@@ -1036,7 +1041,7 @@ public void test_VisibilityWindowListener_addAndRemove() {
 /** Verify that if multiple child shells are open, no duplicate visibility events are sent. */
 @Test
 public void test_VisibilityWindowListener_multiple_shells() {
-		assumeFalse("Skipping temporarily", isChromium);
+//		assumeFalse("Skipping temporarily", isChromium);
 		AtomicBoolean secondChildCompleted = new AtomicBoolean(false);
 		AtomicInteger childCount = new AtomicInteger(0);
 
@@ -1095,7 +1100,7 @@ public void test_VisibilityWindowListener_multiple_shells() {
  */
 @Test
 public void test_VisibilityWindowListener_eventSize() {
-	assumeFalse("Skipping temporarily", isChromium);
+//	assumeFalse("Skipping temporarily", isChromium);
 	shell.setSize(200,300);
 	AtomicBoolean childCompleted = new AtomicBoolean(false);
 	AtomicReference<Point> result = new AtomicReference<>(new Point(0,0));
@@ -1346,7 +1351,7 @@ public void test_LocationListener_evaluateInCallback() {
 /** Verify that evaluation works inside an OpenWindowListener */
 @Test
 public void test_OpenWindowListener_evaluateInCallback() {
-	assumeFalse("Skipping temporarily", isChromium);
+//	assumeFalse("Skipping temporarily", isChromium);
 	assumeTrue(!isWebkit1); // This works on Webkit1, but can sporadically fail, see Bug 509411
 	AtomicBoolean eventFired = new AtomicBoolean(false);
 	browser.addOpenWindowListener(event -> {

@@ -329,7 +329,7 @@ public class CEFFactory {
 
     public static interface EvalReturned {
         @Delegate
-        void invoke(ReturnType type, @Encoding("UTF8") String value);
+        void invoke(int loop, ReturnType type, @Encoding("UTF8") String value);
     }
 
 }

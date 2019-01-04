@@ -139,8 +139,23 @@ fn cef_window_info(hwnd: c_ulong, w: c_int, h: c_int) -> cef::_cef_window_info_t
 }
 
 #[cfg(windows)]
-pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulong) {
-    unsafe { println!("orig window_info {} {:?}", hwnd, (*window_info)); };
-    unsafe { (*window_info).window = hwnd as cef::win::HWND };
-    unsafe { println!("new window_info {:?}", (*window_info)); };
+pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulong, w: c_int, h: c_int) {
+    extern crate winapi;
+    unsafe {
+        //println!("orig window_info {} {:?}", hwnd, (*window_info));
+        (*window_info).parent_window = hwnd as cef::win::HWND;
+        (*window_info).x = 0;
+        (*window_info).y = 0;
+        (*window_info).width = w;
+        (*window_info).height = h;
+        (*window_info).parent_window = hwnd as cef::win::HWND;
+        (*window_info).windowless_rendering_enabled = 0;
+        (*window_info).window = 0 as cef::win::HWND;
+        (*window_info).ex_style = 0;
+        (*window_info).window_name = cef::cef_string_t { str: null_mut(),  length: 0,  dtor: Option::None };
+        (*window_info).style = winapi::um::winuser::WS_CHILDWINDOW | winapi::um::winuser::WS_CLIPCHILDREN
+            | winapi::um::winuser::WS_CLIPSIBLINGS | winapi::um::winuser::WS_VISIBLE | winapi::um::winuser::WS_TABSTOP;
+        (*window_info).menu = 0 as cef::win::HMENU;
+        //println!("new window_info {:?}", (*window_info)); 
+    };
 }
