@@ -34,7 +34,7 @@ unsafe extern fn xioerror_handler_impl(_: *mut x11::xlib::Display) -> c_int {
 }
 
 #[no_mangle]
-pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char, version: *const c_char) {
+pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char, version: *const c_char, debug_port: c_int) {
     println!("DLL init");
     assert_eq!(unsafe{(*japp).base.size}, std::mem::size_of::<cef::_cef_app_t>());
     //println!("app {:?}", japp);
@@ -99,7 +99,7 @@ pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char
         resources_dir_path: resources_cef,
         locales_dir_path: locales_cef,
         pack_loading_disabled: 0,
-        remote_debugging_port: 0,
+        remote_debugging_port: debug_port,
         uncaught_exception_stack_size: 0,
         ignore_certificate_errors: 0,
         enable_net_security_expiration: 0,

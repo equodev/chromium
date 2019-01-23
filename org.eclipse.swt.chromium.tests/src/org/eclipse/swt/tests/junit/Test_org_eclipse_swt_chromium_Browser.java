@@ -1348,6 +1348,7 @@ public void test_LocationListener_evaluateInCallback() {
 /** Verify that evaluation works inside an OpenWindowListener */
 @Test
 public void test_OpenWindowListener_evaluateInCallback() {
+	assumeFalse("Skipping temporarily", isChromium);
 	assumeTrue(!isWebkit1); // This works on Webkit1, but can sporadically fail, see Bug 509411
 	AtomicBoolean eventFired = new AtomicBoolean(false);
 	browser.addOpenWindowListener(event -> {

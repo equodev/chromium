@@ -271,7 +271,13 @@ class Chromium extends WebBrowser {
                     return browserProcessHandler;
                 });
                 System.out.println("cefrust.path: " + cefrustPath);
-                lib.cefswt_init(app, cefrustPath, VERSION);
+                int debugPort = 0;
+                try {
+                	debugPort = Integer.parseInt(System.getProperty("org.eclipse.swt.chromium.remote-debugging-port", "0"));
+                } catch (NumberFormatException e) {
+                	debugPort = 0;
+                }
+                lib.cefswt_init(app, cefrustPath, VERSION, debugPort);
             }
         }
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -1295,7 +1301,7 @@ class Chromium extends WebBrowser {
     }
 
     public static interface Lib {
-        void cefswt_init(@Direct CEF.cef_app_t app, String cefrustPath, String version);
+        void cefswt_init(@Direct CEF.cef_app_t app, String cefrustPath, String version, int debugPort);
 
         void cefswt_set_window_info_parent(Pointer windowInfo, Pointer client, @Direct CEF.cef_client_t clientHandler, long handle, int w, int h);
 
