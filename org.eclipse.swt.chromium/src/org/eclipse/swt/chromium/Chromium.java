@@ -357,6 +357,9 @@ class Chromium extends WebBrowser {
         set_load_handler();
         set_display_handler();
         set_request_handler();
+        clientHandler.on_process_message_received.set((c, browser_1, source, processMessage) -> {
+            return browserFunctionCalled(source, processMessage);
+        });
 
         chromium.addControlListener(new ControlAdapter() {
             @Override
@@ -401,6 +404,12 @@ class Chromium extends WebBrowser {
     	lib.cefswt_set_window_info_parent(windowInfo, client, clientHandler, popupHandle, size.x, size.y);
     	debugPrint("reparent popup");
 	}
+
+    private void createDefaultPopup(Pointer windowInfo, Pointer client, WindowEvent event) {
+    	CEF.cef_client_t nullHandler = null;
+		lib.cefswt_set_window_info_parent(windowInfo, client, nullHandler, 0, 0, 0);
+    	debugPrint("default popup");
+    }
     
     private int cefColor(int a, int r, int g, int b) {
     	return (a << 24) | (r << 16) | (g << 8) | (b << 0);
@@ -542,6 +551,8 @@ class Chromium extends WebBrowser {
                 
                 if (event.browser != null) {
                 	event.browser.webBrowser.createPopup(windowInfo, client, event);
+                } else {
+                	createDefaultPopup(windowInfo, client, event);
                 }
             });
             loopDisable = false;
@@ -784,9 +795,9 @@ class Chromium extends WebBrowser {
         client.get_keyboard_handler.set((c) -> null);
         client.get_render_handler.set((c) -> null);
         client.on_process_message_received.set((c, browser_1, source, processMessage) -> {
-            return browserFunctionCalled(source, processMessage);
+            debug("on_process_message_received"); return 0;
         });
-        client.get_find_handler.set(c -> debug("setGetFindHandler"));
+        client.get_find_handler.set(c -> debug("get_find_handler"));
     }
 
     private int browserFunctionCalled(CEF.cef_process_id_t source, Pointer processMessage) {

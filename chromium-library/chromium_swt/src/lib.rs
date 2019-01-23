@@ -279,7 +279,9 @@ pub extern fn cefswt_set_window_info_parent(window_info: *mut cef::_cef_window_i
     unsafe {
         //println!("cefswt_set_window_info_parent {:?} {}", *window_info, hwnd);
         (*client) = jclient;
-        app::set_window_parent(window_info, hwnd, w, h);
+        if hwnd != 0 {
+            app::set_window_parent(window_info, hwnd, w, h);
+        }
         //println!("after cefswt_set_window_info_parent {:?} {}", *window_info, hwnd);
     };
 }
