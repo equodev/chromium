@@ -2,7 +2,7 @@ use std::net::{TcpListener, TcpStream};
 use std::io::{Read, Write};
 use std::ffi::{CString, CStr};
 use std::os::raw::{c_char, c_int};
-use std::thread::{self, JoinHandle};
+// use std::thread::{self, JoinHandle};
 use cef;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -114,58 +114,6 @@ fn serialize_null() {
     assert_eq!(CString::new("").unwrap(), unsafe{CString::from_raw(read_st.str_value)});
 }
 
-pub fn read_response() -> Result<(u16, JoinHandle<ReturnSt>), String> {
-    match get_available_port() {
-        Some(port) => {
-            match TcpListener::bind(("127.0.0.1", port)) {
-                Ok(listener) => {
-                    //println!("new server, waiting response in :{:?}", port);
-                    let child = thread::spawn(move || {
-                        let mut res = None;
-                        listener.set_nonblocking(true).expect("Cannot set non-blocking");
-                        for stream in listener.incoming() {
-                            match stream {
-                                Ok(mut stream) => {
-                                    println!("new client!");
-                                    let mut buffer = Vec::new();
-                                    match stream.read_to_end(&mut buffer) {
-                                        Ok(n) => {
-                                            println!("read from socket: {} {} {:?}", n, ::std::mem::size_of::<ReturnSt>(), buffer);
-                                            let ret = read_buffer(&buffer);
-                                            println!("st: {:?}", ret);
-                                            res = Some(ret);
-                                        },
-                                        Err(e) => {
-                                            println!("couldn't read from socket: {:?}", e);
-                                            panic!(e)
-                                        }
-                                    }
-                                },
-                                Err(e) => { 
-                                    println!("couldn't get client: {:?}", e); 
-                                    // panic!(e)
-                                }
-                            };
-                            if res.is_some() {
-                                return res.unwrap();
-                            }
-                        };
-                        return res.unwrap();
-                    });
-                    Ok((port, child))
-                },
-                Err(e) => {
-                    println!("couldn't bind port: {:?}", e);
-                    Err(e.to_string())
-                }
-            }
-        },
-        None => {
-            Err("no ports available".to_string())
-        }
-    }
-}
-
 pub fn wait_response(browser: *mut cef::cef_browser_t, 
         msg: *mut cef::cef_process_message_t,
         args: *mut cef::_cef_list_value_t,
@@ -203,8 +151,8 @@ pub fn wait_response(browser: *mut cef::cef_browser_t,
                                     }
                                 }
                             },
-                            Err(e) => { 
-                                println!("couldn't get client: {:?}", e);
+                            Err(_e) => { 
+                                // println!("couldn't get client: {:?}", e);
                                 unsafe {
                                     if let Some(call) = callback {
                                         call(1, ReturnType::Error, ::std::ptr::null());

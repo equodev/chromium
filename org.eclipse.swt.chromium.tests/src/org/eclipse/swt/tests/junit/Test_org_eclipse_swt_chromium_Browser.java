@@ -581,7 +581,6 @@ public void test_OpenWindowListener_openHasValidEventDetails() {
 /** Test that a script 'window.open()' opens a child popup shell. */
 @Test
 public void test_OpenWindowListener_open_ChildPopup() {
-//	assumeFalse("Skipping temporarily", isChromium);
 	AtomicBoolean childCompleted = new AtomicBoolean(false);
 
 	Shell childShell = new Shell(shell, SWT.None);
@@ -622,7 +621,6 @@ public void test_OpenWindowListener_open_ChildPopup() {
 /** Validate event order : Child's visibility should come before progress completed event */
 @Test
 public void test_OpenWindow_Progress_Listener_ValidateEventOrder() {
-//	assumeFalse("Skipping temporarily", isChromium);
 	AtomicBoolean windowOpenFired = new AtomicBoolean(false);
 	AtomicBoolean childCompleted = new AtomicBoolean(false);
 	AtomicBoolean visibilityShowed = new AtomicBoolean(false);
@@ -1041,7 +1039,6 @@ public void test_VisibilityWindowListener_addAndRemove() {
 /** Verify that if multiple child shells are open, no duplicate visibility events are sent. */
 @Test
 public void test_VisibilityWindowListener_multiple_shells() {
-//		assumeFalse("Skipping temporarily", isChromium);
 		AtomicBoolean secondChildCompleted = new AtomicBoolean(false);
 		AtomicInteger childCount = new AtomicInteger(0);
 
@@ -1100,7 +1097,6 @@ public void test_VisibilityWindowListener_multiple_shells() {
  */
 @Test
 public void test_VisibilityWindowListener_eventSize() {
-//	assumeFalse("Skipping temporarily", isChromium);
 	shell.setSize(200,300);
 	AtomicBoolean childCompleted = new AtomicBoolean(false);
 	AtomicReference<Point> result = new AtomicReference<>(new Point(0,0));
@@ -1309,13 +1305,14 @@ public void test_LocationListener_evaluateInCallback() {
 		}
 	});
 
+	shell.open();
 	if (isChromium) {
 		browser.setUrl("about:version");
 	} else { // Chromium cannot fire changing event for setText
 		browser.setText("<body>Hello <b>World</b></body>");
 	}
 	// Wait till both listeners were fired.
-	if (SwtTestUtil.isWindows) {
+	if (SwtTestUtil.isWindows && !isChromium) {
 		waitForPassCondition(changingFinished::get); // Windows doesn't reach changedFinished.get();
 	} else
 		waitForPassCondition(() -> (changingFinished.get() && changedFinished.get()));
@@ -1351,7 +1348,6 @@ public void test_LocationListener_evaluateInCallback() {
 /** Verify that evaluation works inside an OpenWindowListener */
 @Test
 public void test_OpenWindowListener_evaluateInCallback() {
-//	assumeFalse("Skipping temporarily", isChromium);
 	assumeTrue(!isWebkit1); // This works on Webkit1, but can sporadically fail, see Bug 509411
 	AtomicBoolean eventFired = new AtomicBoolean(false);
 	browser.addOpenWindowListener(event -> {
@@ -1780,7 +1776,6 @@ public void test_evaluate_evaluation_failed_exception() {
  */
 @Test
 public void test_evaluate_array_numbers() {
-	assumeFalse("Skipping temporarily", isChromium);
 	assumeFalse(webkit1SkipMsg(), isWebkit1); // Bug 509411
 
 	// Small note:
@@ -1820,7 +1815,6 @@ public void test_evaluate_array_numbers() {
  */
 @Test
 public void test_evaluate_array_strings () {
-	assumeFalse("Skipping temporarily", isChromium);
 	assumeFalse(webkit1SkipMsg(), isWebkit1); // Bug 509411
 
 	final AtomicReferenceArray<String> atomicStringArray = new AtomicReferenceArray<>(3);
@@ -1860,7 +1854,6 @@ public void test_evaluate_array_strings () {
  */
 @Test
 public void test_evaluate_array_mixedTypes () {
-	assumeFalse("Skipping temporarily", isChromium);
 	assumeFalse(webkit1SkipMsg(), isWebkit1); // Bug 509411
 	final AtomicReferenceArray<Object> atomicArray = new AtomicReferenceArray<>(3);
 	atomicArray.set(0, "executing");

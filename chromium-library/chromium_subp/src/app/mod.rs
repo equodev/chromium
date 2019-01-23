@@ -190,7 +190,7 @@ unsafe fn handle_eval(browser: *mut cef::_cef_browser_t, message: *mut cef::_cef
     println!("RECEIVED EVAL MSG");
     let args = (*message).get_argument_list.unwrap()(message);
     let port = (*args).get_int.unwrap()(args, 0) as u16;
-    // let id = (*args).get_int.unwrap()(args, 1);
+    let id = (*args).get_int.unwrap()(args, 1);
     let code = (*args).get_string.unwrap()(args, 2);
 
     let frame = (*browser).get_main_frame.unwrap()(browser);
@@ -211,12 +211,12 @@ unsafe fn handle_eval(browser: *mut cef::_cef_browser_t, message: *mut cef::_cef
     } else {
         println!("Eval succeded {:?}", ret);
 
-        let (ret_str, kind) = convert_type(ret);
+        let (ret_str, kind) = convert_type(ret, id, context);
         socket::socket_client(port, ret_str, kind);
     }
 }
 
-unsafe fn convert_type(ret: *mut cef::cef_v8value_t) -> (CString, socket::ReturnType) {
+unsafe fn convert_type(ret: *mut cef::cef_v8value_t, _eval_id: c_int, context: *mut cef::cef_v8context_t) -> (CString, socket::ReturnType) {
     if (*ret).is_null.expect("is_null")(ret) == 1 || (*ret).is_undefined.unwrap()(ret) == 1 {
         let ret_str = CString::new("").unwrap();
         (ret_str, socket::ReturnType::Null)
@@ -254,10 +254,16 @@ unsafe fn convert_type(ret: *mut cef::cef_v8value_t) -> (CString, socket::Return
     else if (*ret).is_array.unwrap()(ret) == 1 {
         let length = (*ret).get_array_length.unwrap()(ret);
         let mut arraystr = String::new();
+        let array_val = ret;
+        
+        if !context.is_null() {
+            let s = (*context).enter.unwrap()(context);
+            assert_eq!(s, 1);
+        }
+
         for i in 0..length {
-            let vali = (*ret).get_value_byindex.unwrap()(ret, i);
+            let vali = (*array_val).get_value_byindex.unwrap()(array_val, i);
             let valstr = if vali == ::std::ptr::null_mut() {
-                // See: https://bitbucket.org/chromiumembedded/cef/issues/1865/cef_v8value_t-get_value_byindex-does
                 format!("null")
             }
             else if (*vali).is_null.unwrap()(vali) == 1 || (*vali).is_undefined.unwrap()(vali) == 1 {
@@ -294,6 +300,10 @@ unsafe fn convert_type(ret: *mut cef::cef_v8value_t) -> (CString, socket::Return
             }
             arraystr.push_str(&valstr);
             println!("array: {}", arraystr);
+        }
+        if !context.is_null() {
+            let s = (*context).exit.unwrap()(context);
+            assert_eq!(s, 1);
         }
         (CString::new(arraystr).unwrap(), socket::ReturnType::Array)
     }
@@ -345,7 +355,7 @@ impl V8Handler {
 
                 if !v8val.is_null() {
                     let ptr = v8val.read() as *mut cef::_cef_v8value_t;
-                    let (cstr, kind) = convert_type(ptr);
+                    let (cstr, kind) = convert_type(ptr, 0, ::std::ptr::null_mut());
                     let s = (*args).set_int.unwrap()(args, 1+i*2+1, kind as i32);
                     assert_eq!(s, 1);
                     let rstr = cstr.into_string().expect("failed to convert string");
