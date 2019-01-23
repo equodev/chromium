@@ -160,7 +160,8 @@ public class ResourceExpander {
     static void chmod(String permision, String path) {
         if (os().equals ("win32")) return; //$NON-NLS-1$
         try {
-            Runtime.getRuntime ().exec (new String []{"chmod", permision, path}).waitFor(); //$NON-NLS-1$
+        	new File(path).setExecutable(true);
+//            Runtime.getRuntime ().exec (new String []{"chmod", permision, path}).waitFor(); //$NON-NLS-1$
         } catch (Throwable e) {}
     }
 }
