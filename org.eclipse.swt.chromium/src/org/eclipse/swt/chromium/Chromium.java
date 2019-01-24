@@ -19,11 +19,13 @@ import java.lang.reflect.Field;
 import java.net.HttpCookie;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
@@ -64,6 +66,7 @@ import org.eclipse.swt.internal.chromium.CEFFactory.ReturnType;
 import org.eclipse.swt.internal.chromium.ResourceExpander;
 
 class Chromium extends WebBrowser {
+	private static final String DATA_TEXT_URL = "data:text/html;base64,";
 	private static final String VERSION = "0700";
     private static final String CEFVERSION = "3071";
     private static final String SHARED_LIB_V = "chromium_swt-"+VERSION;
@@ -205,7 +208,7 @@ class Chromium extends WebBrowser {
     }
 
     private jnr.ffi.Pointer debugPrint(String log) {
-        System.out.println("J"+instance + ":" + Thread.currentThread().getName() +":" + log + (this.url != null ? " (" + this.url + ")" : " empty-url"));
+        System.out.println("J"+instance + ":" + Thread.currentThread().getName() +":" + log + (this.url != null ? " (" + getPlainUrl(this.url) + ")" : " empty-url"));
         return null;
     }
     
@@ -478,11 +481,7 @@ class Chromium extends WebBrowser {
                 	final org.eclipse.swt.graphics.Point size = getChromiumSize();
                 	lib.cefswt_resized(browser, size.x,  size.y);
                 }
-            	if (this.text != null && !this.text.isEmpty()) {
-            		debugPrint("load text after created");
-            		doSetText(this.text);
-                }
-                else if (this.isPopup != null && this.url != null) {
+                if (this.isPopup != null && this.url != null) {
                 	debugPrint("load url after created");
                 	doSetUrlPost(browser, url, postData, headers);
                 }
@@ -616,8 +615,8 @@ class Chromium extends WebBrowser {
 //            }
         });
         loadHandler.on_load_end.set((self, browser, frame, http_status) -> {
-        	debugPrint("on_load_end"); 
-        	if (chromium.isDisposed() || progressListeners == null) return;
+//        	debugPrint("on_load_end"); 
+//        	if (chromium.isDisposed() || progressListeners == null) return;
         });
         clientHandler.get_load_handler.set(client -> {
             return loadHandler;
@@ -628,11 +627,7 @@ class Chromium extends WebBrowser {
         displayHandler = CEFFactory.newDisplayHandler();
         displayHandler.on_title_change.set((self, browser, title) -> {
             if (chromium.isDisposed() || titleListeners == null) return;
-            String str = lib.cefswt_cefstring_to_java(title);
-            if (!enableProgress.isDone() && (this.text != null && !this.text.isEmpty())) {
-                debugPrint("!on_title_change to " + str);
-            	return;
-            }
+            String str = getPlainUrl(lib.cefswt_cefstring_to_java(title));
             debugPrint("on_title_change: " + str);
             TitleEvent event = new TitleEvent(chromium);
             event.display = chromium.getDisplay ();
@@ -649,7 +644,7 @@ class Chromium extends WebBrowser {
             event.display = chromium.getDisplay();
             event.widget = chromium;
             event.doit = true;
-            event.location = lib.cefswt_cefstring_to_java(url);
+            event.location = getPlainUrl(lib.cefswt_cefstring_to_java(url));
             event.top = lib.cefswt_is_main_frame(frame);
             if (!enableProgress.isDone()) {
                 debugPrint("!on_address_change to " + event.location + " " + (event.top ? "main" : "!main"));
@@ -681,22 +676,24 @@ class Chromium extends WebBrowser {
     private void set_request_handler() {
         requestHandler = CEFFactory.newRequestHandler();
         requestHandler.on_before_browse.set((self, browser, frame, request, is_redirect) -> {
-        	debugPrint("on_before_browse");
             if (chromium.isDisposed() || locationListeners == null) return 0;
-            LocationEvent event = new LocationEvent(chromium);
-            event.display = chromium.getDisplay();
-            event.widget = chromium;
-            event.doit = true;
-            event.location = lib.cefswt_request_to_java(request);
-            debugPrint("on_before_browse:" + event.location);
-            for (LocationListener listener : locationListeners) {
-                listener.changing(event);
+            if (lib.cefswt_is_main_frame(frame)) {
+	            LocationEvent event = new LocationEvent(chromium);
+	            event.display = chromium.getDisplay();
+	            event.widget = chromium;
+	            event.doit = true;
+	            event.location = lib.cefswt_request_to_java(request);
+	            debugPrint("on_before_browse:" + event.location);
+	            for (LocationListener listener : locationListeners) {
+	                listener.changing(event);
+	            }
+	            if (!event.doit) {
+	            	debugPrint("canceled nav, dependats:"+enableProgress.getNumberOfDependents());
+	            	enableProgress = new CompletableFuture<>();
+	            }
+	            return event.doit ? 0 : 1;
             }
-            if (!event.doit) {
-            	debugPrint("canceled nav, dependats:"+enableProgress.getNumberOfDependents());
-            	enableProgress = new CompletableFuture<>();
-            }
-            return event.doit ? 0 : 1;
+            return 0;
         });
         clientHandler.get_request_handler.set(client -> {
             return requestHandler;
@@ -1235,12 +1232,12 @@ class Chromium extends WebBrowser {
             if (this.url == null) {
                 return "about:blank";
             }
-    		return this.url;
+    		return getPlainUrl(this.url);
     	}
         String cefurl = lib.cefswt_get_url(browser);
 //        debugPrint("getUrl1:" + cefurl);
         if (cefurl == null)
-            cefurl = this.url;
+            cefurl = getPlainUrl(this.url);
         return cefurl;
     }
 
@@ -1267,25 +1264,16 @@ class Chromium extends WebBrowser {
 
     @Override
     public boolean setText(String html, boolean trusted) {
-        // if not yet created will be used when created
-        this.text = html;
-        this.url = "http://text";
-        jsEnabled = jsEnabledOnNextPage;
-        if (!chromium.isDisposed() && browser != null) {
-        	debugPrint("set text");
-        	doSetText(html);
-        } else {
-        	debugPrint("!load text");
-        }
-        return true;
+        String texturl = DATA_TEXT_URL + Base64.getEncoder().encodeToString(html.getBytes(StandardCharsets.ISO_8859_1));
+        return setUrl(texturl, null, null);
     }
-
-	private CompletableFuture<Void> doSetText(String html) {
-		return enableProgress.thenRun(() -> {
-			debugPrint("load text");
-			lib.cefswt_load_text(browser, html);
-		});
-	}
+    
+    private static String getPlainUrl(String url) {
+    	if (url != null && url.startsWith(DATA_TEXT_URL)) {
+    		return url.substring(0, DATA_TEXT_URL.length()-1);
+    	}
+    	return url;
+    }
 
     @Override
     public boolean setUrl(String url, String postData, String[] headers) {
