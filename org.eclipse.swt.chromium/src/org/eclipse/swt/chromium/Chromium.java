@@ -510,9 +510,10 @@ class Chromium extends WebBrowser {
                     event.menuBar = isPopup.menuBar;
                     event.statusBar = isPopup.statusBar;
                     event.toolBar = isPopup.toolBar;
-                }
-                for (VisibilityWindowListener listener : visibilityWindowListeners) {
-                    listener.show(event);
+
+                    for (VisibilityWindowListener listener : visibilityWindowListeners) {
+                    	listener.show(event);
+                    }
                 }
 //            });
         });
@@ -825,6 +826,15 @@ class Chromium extends WebBrowser {
         }
         Object ret = functions.get(id).function(args);
         
+        Object[] returnPair = convertType(ret);
+        ReturnType returnType = (ReturnType) returnPair[0];
+        String returnStr = (String) returnPair[1];
+		lib.cefswt_function_return(browser, id, fn.port.get(), returnType, returnStr);
+        
+        return 1;
+    }
+
+    private Object[] convertType(Object ret) {
         ReturnType returnType = ReturnType.Error;
         String returnStr = "";
         if (ret == null) { 
@@ -843,30 +853,27 @@ class Chromium extends WebBrowser {
             returnType = ReturnType.Array;
             Object[] array = (Object[]) ret;
             StringBuilder buffer = new StringBuilder();
+            buffer.append("\"");
             for (int i = 0; i < array.length; i++) {
                 if (i > 0) {
                     buffer.append(";");
                 }
-                if (array[i] == null) { 
-                    buffer.append("null");
-                } else if (Boolean.class.isInstance(array[i])) {
-                    buffer.append(Boolean.toString((boolean) array[i]));
-                } else if (Number.class.isInstance(array[i])) {
-                    buffer.append(NumberFormat.getInstance(Locale.US).format(array[i]));
-                } else if (String.class.isInstance(array[i])) {
-                    buffer.append("\"").append(array[i]).append("\"");
-                }
+                Object[] arrayElem = convertType(array[i]);
+                buffer.append("'");
+                buffer.append(((ReturnType) arrayElem[0]).intValue());
+                buffer.append(",");
+                buffer.append((String) arrayElem[1]);
+                buffer.append("'");
             }
+            buffer.append("\"");
             returnStr = buffer.toString();
         } else {
             returnStr = "Unsupported return type " + ret.getClass().getName();
         }
-        lib.cefswt_function_return(browser, id, fn.port.get(), returnType, returnStr);
-        
-        return 1;
-    }
+		return new Object[] {returnType, returnStr};
+	}
 
-    protected void browserFocus(boolean set) {
+	protected void browserFocus(boolean set) {
         //debugPrint("cef focus: " + set);
         if (!chromium.isDisposed() && browser != null) {
             long parent = (Display.getDefault().getActiveShell() == null) ? 0 : getHandle(chromium.getParent());
@@ -1168,20 +1175,15 @@ class Chromium extends WebBrowser {
               return Double.parseDouble(value);
           } 
           else if (type == ReturnType.Array) {
-              String[] elements = value.split(";(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
+        	  String value_unquoted = value.substring(1, value.length()-1);
+        	  String[] elements = value_unquoted.split(";(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
               Object[] array = new Object[elements.length];
               for (int i = 0; i < array.length; i++) {
-                  if (elements[i].startsWith("\"")) {
-                      array[i] = elements[i].substring(1, elements[i].length()-1);
-                  } else if ("null".equals(elements[i])) {
-                      array[i] = null;
-                  } else if ("true".equals(elements[i])) {
-                      array[i] = Boolean.TRUE;
-                  } else if ("false".equals(elements[i])) {
-                      array[i] = Boolean.FALSE;
-                  } else {
-                      array[i] = Double.parseDouble(elements[i]);
-                  }
+            	  String elemUnquoted = elements[i].substring(1, elements[i].length()-1);
+            	  String[] parts = elemUnquoted.split(",(?=(?:[^']*'[^']*')*[^']*$)", 2);
+            	  ReturnType elemType = CEFFactory.ReturnType.from(parts[0]);
+            	  Object elemValue = mapType(elemType, parts[1]);
+            	  array[i] = elemValue;
               }
               return array;
           } 
