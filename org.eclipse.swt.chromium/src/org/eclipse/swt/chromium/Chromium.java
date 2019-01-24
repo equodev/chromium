@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.net.HttpCookie;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.NumberFormat;
@@ -116,6 +117,8 @@ class Chromium extends WebBrowser {
 	private boolean ignoreFirstFocus = true;
 	private PaintListener paintListener;
 	private WindowEvent isPopup;
+	private String postData;
+	private String[] headers;
 
     public Chromium() {
         instance = ++INSTANCES;
@@ -481,7 +484,7 @@ class Chromium extends WebBrowser {
                 }
                 else if (this.isPopup != null && this.url != null) {
                 	debugPrint("load url after created");
-                	lib.cefswt_load_url(browser, url);
+                	doSetUrlPost(browser, url, postData, headers);
                 }
                 else if (!"about:blank".equals(this.url)) {
                 	enableProgress.complete(true);
@@ -1288,19 +1291,28 @@ class Chromium extends WebBrowser {
     public boolean setUrl(String url, String postData, String[] headers) {
         // if not yet created will be used when created
     	this.url = url;
+    	this.postData = postData;
+    	this.headers = headers;
         jsEnabled = jsEnabledOnNextPage;
         if (!chromium.isDisposed() && browser != null) {
             debugPrint("set url: " + url);
-            doSetUrl(url);
+            doSetUrl(url, postData, headers);
         }
         return true;
     }
 
-	private CompletableFuture<Void> doSetUrl(String url) {
+	private CompletableFuture<Void> doSetUrl(String url, String postData, String[] headers) {
 		return enableProgress.thenRun(() -> {
-			debugPrint("load text");
-			lib.cefswt_load_url(browser, url);
+			debugPrint("load url");
+			doSetUrlPost(browser, url, postData, headers);
 		});
+	}
+
+	private void doSetUrlPost(Pointer browser, String url, String postData, String[] headers) {
+		byte[] bytes = (postData != null) ? postData.getBytes(Charset.forName("ASCII")) : null;
+		int bytesLength = (postData != null) ? bytes.length : 0 ;
+		int headersLength = (headers != null) ? headers.length : 0 ; 
+		lib.cefswt_load_url(browser, url, bytes, bytesLength, headers, headersLength);
 	}
     
     @Override
@@ -1324,7 +1336,7 @@ class Chromium extends WebBrowser {
 
         void cefswt_do_message_loop_work();
 
-        void cefswt_load_url(Pointer browser, @Encoding("UTF8") String url);
+        void cefswt_load_url(Pointer browser, @Encoding("UTF8") String url, byte[] bytes, int length, String[] headers, int length2);
 
         void cefswt_load_text(Pointer browser, @Encoding("UTF8") String text);
 

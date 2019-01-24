@@ -358,14 +358,49 @@ pub extern fn cefswt_close_browser(browser: *mut cef::cef_browser_t) {
 }
 
 #[no_mangle]
-pub extern fn cefswt_load_url(browser: *mut cef::cef_browser_t, url: *const c_char) {
+pub extern fn cefswt_load_url(browser: *mut cef::cef_browser_t, url: *const c_char, post_bytes: *const c_void, post_size: usize, headers: *const *const c_char, headers_size: usize) {
     let url = utils::str_from_c(url);
     let url_cef = utils::cef_string(url);
     println!("url: {:?}", url);
-    let get_frame = unsafe { (*browser).get_main_frame.expect("null get_main_frame") };
-    let main_frame = unsafe { get_frame(browser) };
-    let load_url = unsafe { (*main_frame).load_url.expect("null load_url") };
-    unsafe { load_url(main_frame, &url_cef) };
+    unsafe {
+        let get_frame = (*browser).get_main_frame.expect("null get_main_frame");
+        let main_frame = get_frame(browser);
+        if post_bytes.is_null() && headers.is_null() {
+            (*main_frame).load_url.unwrap()(main_frame, &url_cef);
+        } else {
+            let request = cef::cef_request_create();
+            (*request).set_url.unwrap()(request, &url_cef);
+            if !post_bytes.is_null() {
+                let post_data = cef::cef_post_data_create();
+                let post_element = cef::cef_post_data_element_create();
+                (*post_element).set_to_bytes.unwrap()(post_element, post_size, post_bytes);
+                (*post_data).add_element.unwrap()(post_data, post_element);
+
+                (*request).set_post_data.unwrap()(request, post_data);
+            }
+
+            if !headers.is_null() {
+                let map = cef::cef_string_multimap_alloc();
+
+                for i in 0..headers_size {
+                    let header = headers.wrapping_add(i);
+                    let ptr = header.read();
+
+                    let header_str = utils::str_from_c(ptr);
+                    let header: Vec<&str> = header_str.splitn(2, ':').collect();
+                    let key = header[0].trim();
+                    let value = header[1].trim();
+                    let key = utils::cef_string(key);
+                    let value = utils::cef_string(value);
+
+                    cef::cef_string_multimap_append(map, &key, &value);
+                }
+                (*request).set_header_map.unwrap()(request, map);
+            }
+
+            (*main_frame).load_request.unwrap()(main_frame, request);
+        }
+    }
 }
 
 #[no_mangle]
