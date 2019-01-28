@@ -157,17 +157,27 @@ pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulon
     extern crate winapi;
     unsafe {
         //println!("orig window_info {} {:?}", hwnd, (*window_info));
-        (*window_info).x = x;
-        (*window_info).y = y;
-        (*window_info).width = w;
-        (*window_info).height = h;
+        if x != 0 {
+            (*window_info).x = x;
+        }
+        if y != 0 {
+            (*window_info).y = y;
+        }
+        if w != 0 {
+            (*window_info).width = w;
+        }
+        if h != 0 {
+            (*window_info).height = h;
+        }
         (*window_info).parent_window = hwnd as cef::win::HWND;
         (*window_info).windowless_rendering_enabled = 0;
         (*window_info).window = 0 as cef::win::HWND;
         (*window_info).ex_style = 0;
         (*window_info).window_name = cef::cef_string_t { str: null_mut(),  length: 0,  dtor: Option::None };
-        (*window_info).style = winapi::um::winuser::WS_CHILDWINDOW | winapi::um::winuser::WS_CLIPCHILDREN
-            | winapi::um::winuser::WS_CLIPSIBLINGS | winapi::um::winuser::WS_VISIBLE | winapi::um::winuser::WS_TABSTOP;
+        if hwnd != 0 {
+            (*window_info).style = winapi::um::winuser::WS_CHILDWINDOW | winapi::um::winuser::WS_CLIPCHILDREN
+                | winapi::um::winuser::WS_CLIPSIBLINGS | winapi::um::winuser::WS_VISIBLE | winapi::um::winuser::WS_TABSTOP;
+        }
         (*window_info).menu = 0 as cef::win::HMENU;
         //println!("new window_info {:?}", (*window_info)); 
     };

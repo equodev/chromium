@@ -124,7 +124,7 @@ class Chromium extends WebBrowser {
 	private boolean ignoreFirstFocus = true;
 	private PaintListener paintListener;
 	private WindowEvent isPopup;
-    private List<CEF.cef_life_span_handler_t> popupHandlers = new ArrayList<>();
+    private List<jnr.ffi.Struct> popupHandlers = new ArrayList<>();
 
     public Chromium() {
         instance = ++INSTANCES;
@@ -445,6 +445,7 @@ class Chromium extends WebBrowser {
         });
         popupHandler.on_before_close.set((plifeSpanHandler, browser) -> {
             debug("popup OnBeforeClose");
+            popupHandlers.remove(nullHandler);
             popupHandlers.remove(popupHandler);
             disposingAny--;
         });
@@ -458,6 +459,7 @@ class Chromium extends WebBrowser {
             return popupHandler;
         });
         popupHandlers.add(popupHandler);
+        popupHandlers.add(nullHandler);
 		lib.cefswt_set_window_info_parent(windowInfo, client, nullHandler, 0, event.location.x, event.location.y, event.size.x, event.size.y);
     	debugPrint("default popup");
     }
