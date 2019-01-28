@@ -87,26 +87,28 @@ impl RenderProcessHandler {
         unsafe extern "C" fn on_context_created(
             self_: *mut cef::_cef_render_process_handler_t,
             browser: *mut cef::_cef_browser_t,
-            _frame: *mut cef::_cef_frame_t,
+            frame: *mut cef::_cef_frame_t,
             context: *mut cef::_cef_v8context_t,
         ) {
-            println!("CONTEXT CREATED");
-            let rph = self_ as *mut RenderProcessHandler;
-            
-            (*rph).function_handler = Option::Some(V8Handler::new(browser));
-            let handler: Option<&mut V8Handler> = (*rph).function_handler.as_mut();
-            let handler: &mut V8Handler = handler.expect("no handler");
-            
-            // (*rph).function = func;
-            (*rph).context = context;
-            
-            // Retrieve the context's window object.
-            let global = (*context).get_global.unwrap()(context);
+            if (*frame).is_main.unwrap()(frame) == 1 {
+                println!("CONTEXT CREATED");
+                let rph = self_ as *mut RenderProcessHandler;
+                
+                (*rph).function_handler = Option::Some(V8Handler::new(browser));
+                let handler: Option<&mut V8Handler> = (*rph).function_handler.as_mut();
+                let handler: &mut V8Handler = handler.expect("no handler");
+                
+                // (*rph).function = func;
+                (*rph).context = context;
+                
+                // Retrieve the context's window object.
+                let global = (*context).get_global.unwrap()(context);
 
-            let pendings = &mut (*rph).functions;
-            for pending in pendings.iter() {
-                let (id, name) = pending;
-                register_function(*id, *name, global, handler);
+                let pendings = &mut (*rph).functions;
+                for pending in pendings.iter() {
+                    let (id, name) = pending;
+                    register_function(*id, *name, global, handler);
+                }
             }
         }
 

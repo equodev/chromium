@@ -79,14 +79,18 @@ fn cef_window_info(hwnd: c_ulong, w: c_int, h: c_int) -> cef::_cef_window_info_t
 }
 
 #[cfg(target_os = "linux")]
-pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulong) {
-    use std::os::raw::{c_void};
+pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulong, x: c_int, y: c_int, w: c_int, h: c_int) {
+    use std::os::raw::{c_uint, c_void};
     unsafe {println!("orig window_info {} {:?}", hwnd, (*window_info)); };
-    let win = unsafe { gtk2::gtk_widget_get_window(hwnd as *mut c_void) };
-    println!("WIN: {:?}", win);
-    // let xid = unsafe { gtk2::gdk_x11_drawable_get_xid(win) };
-    // println!("XID: {:?}", xid);
-    // unsafe { (*window_info).parent_window = win };
+    unsafe { 
+        (*window_info).x = x as c_uint;
+        (*window_info).y = y as c_uint;
+        (*window_info).width = w as c_uint;
+        (*window_info).height = h as c_uint;
+        (*window_info).parent_window = if hwnd == 0 { 0 } else { gtk2::gdk_x11_drawable_get_xid(gtk2::gtk_widget_get_window(hwnd as *mut c_void)) };
+        (*window_info).windowless_rendering_enabled = 0;
+        (*window_info).window = 0;
+    }
     unsafe { println!("new window_info {:?}", (*window_info)); };
 }
 
@@ -109,10 +113,20 @@ fn cef_window_info(hwnd: c_ulong, w: c_int, h: c_int) -> cef::_cef_window_info_t
 }
 
 #[cfg(target_os = "macos")]
-pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulong) {
+pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulong, x: c_int, y: c_int, w: c_int, h: c_int) {
     use std::os::raw::{c_void};
     unsafe { println!("orig window_info {} {:?}", hwnd, (*window_info)); };
-    unsafe { (*window_info).parent_view = hwnd as *mut c_void };
+    unsafe { 
+        (*window_info).x = x;
+        (*window_info).y = y;
+        (*window_info).width = w;
+        (*window_info).height = h;
+        (*window_info).parent_view = hwnd as *mut c_void;
+        (*window_info).windowless_rendering_enabled = 0;
+        (*window_info).view = 0 as *mut c_void;
+        (*window_info).hidden = 0;
+        (*window_info).window_name = cef::cef_string_t { str: null_mut(),  length: 0,  dtor: Option::None };
+    };
     unsafe { println!("new window_info {:?}", (*window_info)); };
 }
 
@@ -139,13 +153,12 @@ fn cef_window_info(hwnd: c_ulong, w: c_int, h: c_int) -> cef::_cef_window_info_t
 }
 
 #[cfg(windows)]
-pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulong, w: c_int, h: c_int) {
+pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulong, x: c_int, y: c_int, w: c_int, h: c_int) {
     extern crate winapi;
     unsafe {
         //println!("orig window_info {} {:?}", hwnd, (*window_info));
-        (*window_info).parent_window = hwnd as cef::win::HWND;
-        (*window_info).x = 0;
-        (*window_info).y = 0;
+        (*window_info).x = x;
+        (*window_info).y = y;
         (*window_info).width = w;
         (*window_info).height = h;
         (*window_info).parent_window = hwnd as cef::win::HWND;

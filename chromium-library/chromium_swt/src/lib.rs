@@ -275,20 +275,24 @@ pub extern fn cefswt_create_browser(hwnd: c_ulong, url: *const c_char, client: &
 }
 
 #[no_mangle]
-pub extern fn cefswt_set_window_info_parent(window_info: *mut cef::_cef_window_info_t, client: *mut *mut cef::_cef_client_t, jclient: &mut cef::_cef_client_t, hwnd: c_ulong, w: c_int, h: c_int) {
+pub extern fn cefswt_set_window_info_parent(window_info: *mut cef::_cef_window_info_t, client: *mut *mut cef::_cef_client_t, jclient: &mut cef::_cef_client_t, hwnd: c_ulong, x: c_int, y: c_int, w: c_int, h: c_int) {
     unsafe {
         //println!("cefswt_set_window_info_parent {:?} {}", *window_info, hwnd);
         (*client) = jclient;
-        if hwnd != 0 {
-            app::set_window_parent(window_info, hwnd, w, h);
-        }
+        app::set_window_parent(window_info, hwnd, x, y, w, h);
         //println!("after cefswt_set_window_info_parent {:?} {}", *window_info, hwnd);
     };
 }
 
 #[no_mangle]
-pub extern fn cefswt_do_message_loop_work() {
-    unsafe { cef::cef_do_message_loop_work() };
+pub extern fn cefswt_do_message_loop_work() -> c_int {
+    let result = std::panic::catch_unwind(|| {
+        unsafe { cef::cef_do_message_loop_work() };
+    });
+    match result {
+        Ok(_) => 1,
+        Err(_) => 0
+    }
 }
 
 #[no_mangle]

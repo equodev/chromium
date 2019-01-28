@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Enumeration;
@@ -71,7 +72,7 @@ class Chromium extends WebBrowser {
     private static final String CEFVERSION = "3071";
     private static final String SHARED_LIB_V = "chromium_swt-"+VERSION;
     private static final int MAX_PROGRESS = 100;
-    private static final int LOOP = 100;
+    private static final int LOOP = 50;
 //    private static final String SUBP = "chromium_subp";
 //    private static final String SUBP_V = "chromium_subp-"+VERSION;
     
@@ -95,6 +96,7 @@ class Chromium extends WebBrowser {
     private static int INSTANCES = 0;
     private static Runnable loopWork;
     private static boolean loopDisable;
+    private static boolean pumpDisable;
     private static int disposingAny = 0;
 
     private long hwnd;
@@ -108,6 +110,8 @@ class Chromium extends WebBrowser {
     private CEF.cef_string_visitor_t  textVisitor;
     private FocusListener focusListener;
     private String url;
+    private String postData;
+    private String[] headers;
     private String text = "";
     private CompletableFuture<String> textReady;
     private boolean canGoBack;
@@ -120,8 +124,7 @@ class Chromium extends WebBrowser {
 	private boolean ignoreFirstFocus = true;
 	private PaintListener paintListener;
 	private WindowEvent isPopup;
-	private String postData;
-	private String[] headers;
+    private List<CEF.cef_life_span_handler_t> popupHandlers = new ArrayList<>();
 
     public Chromium() {
         instance = ++INSTANCES;
@@ -235,12 +238,10 @@ class Chromium extends WebBrowser {
                         return;
                     }
 //                    debug("WORK PUMP");
-                    if (browsers.get() > 0 && !loopDisable) {
-                    	lib.cefswt_do_message_loop_work();
-                    }
+                    safe_loop_work();
                 };
                 browserProcessHandler.on_schedule_message_pump_work.set((pbrowserProcessHandler, delay) -> {
-                    if (lib == null || display.isDisposed() || browsers.get() <= 0)
+                    if (lib == null || display.isDisposed() || browsers.get() <= 0 || pumpDisable || disposingAny > 0)
                         return;
 //                    debugPrint("pump "+delay);
                     Runnable scheduleWork = () -> {
@@ -253,9 +254,7 @@ class Chromium extends WebBrowser {
                     	if (delay <= 0) {
                     		restartLoop(display, 0);
 //                        	debug("WORK PUMP NOW");
-                    		if (disposingAny <= 0) {
-                    			display.asyncExec(runnable);
-                    		}
+                			display.asyncExec(runnable);
                     	} else {
                     		scheduleWork.run();
                     	}
@@ -300,6 +299,17 @@ class Chromium extends WebBrowser {
                 }
             }
         });
+    }
+
+    private static void safe_loop_work() {
+        if (browsers.get() > 0 && !loopDisable) {
+        	if (lib.cefswt_do_message_loop_work() == 0) {
+        	    System.err.println("error looping");
+        	}
+        	if (pumpDisable == true) {
+        	    pumpDisable = false;
+        	}
+        }
     }
 
 	private void restartLoop(Display display, int ms) {
@@ -401,19 +411,54 @@ class Chromium extends WebBrowser {
     		paintListener = null;
     	}
     	isPopup = event;
+    	
+        String platform = SWT.getPlatform ();
+    	if ("gtk".equals(platform) && chromium.getDisplay().getActiveShell() != chromium.getShell()) {
+    	    // on linux the window hosting the popup needs to be created
+    	    boolean visible = chromium.getShell().isVisible();
+    	    chromium.getShell().open();
+    	    chromium.getShell().setVisible(visible);
+    	}
 
         prepareBrowser();
     	long popupHandle =  hwnd;
     	debugPrint("popup will use hwnd:"+popupHandle);
-        final org.eclipse.swt.graphics.Point size = getChromiumSize();
+        Point size = chromium.getParent().getSize();
+        size = DPIUtil.autoScaleUp(size);
 
-    	lib.cefswt_set_window_info_parent(windowInfo, client, clientHandler, popupHandle, size.x, size.y);
+    	lib.cefswt_set_window_info_parent(windowInfo, client, clientHandler, popupHandle, 0, 0, size.x, size.y);
     	debugPrint("reparent popup");
 	}
-
+    
     private void createDefaultPopup(Pointer windowInfo, Pointer client, WindowEvent event) {
-    	CEF.cef_client_t nullHandler = null;
-		lib.cefswt_set_window_info_parent(windowInfo, client, nullHandler, 0, 0, 0);
+//    	CEF.cef_client_t nullHandler = null;
+        CEF.cef_client_t nullHandler = CEFFactory.newClient();
+        initializeClientHandler(nullHandler);
+        CEF.cef_life_span_handler_t popupHandler = CEFFactory.newLifeSpanHandler();
+        popupHandler.on_after_created.set((self, browser) -> {
+            debug("popup on_after_created");
+            try {
+                // not sleeping here causes deadlock with multiple window.open
+                Thread.sleep(LOOP);
+            } catch (InterruptedException e) {
+            }
+        });
+        popupHandler.on_before_close.set((plifeSpanHandler, browser) -> {
+            debug("popup OnBeforeClose");
+            popupHandlers.remove(popupHandler);
+            disposingAny--;
+        });
+        popupHandler.do_close.set((plifeSpanHandler, browser) -> {
+            debug("popup DoClose");
+            disposingAny++;
+            return 0;
+        });
+
+        nullHandler.get_life_span_handler.set(self -> {
+            return popupHandler;
+        });
+        popupHandlers.add(popupHandler);
+		lib.cefswt_set_window_info_parent(windowInfo, client, nullHandler, 0, event.location.x, event.location.y, event.size.x, event.size.y);
     	debugPrint("default popup");
     }
     
@@ -512,9 +557,19 @@ class Chromium extends WebBrowser {
                     event.menuBar = isPopup.menuBar;
                     event.statusBar = isPopup.statusBar;
                     event.toolBar = isPopup.toolBar;
+                    
+                    if (event.size != null && !event.size.equals(new Point(0,0))) {
+                          Point size = event.size;
+                          chromium.getShell().setSize(chromium.getShell().computeSize(size.x, size.y));
+                    }
 
                     for (VisibilityWindowListener listener : visibilityWindowListeners) {
                     	listener.show(event);
+                    }
+                    try {
+                        // not sleeping here causes deadlock with multiple window.open
+                        Thread.sleep(LOOP);
+                    } catch (InterruptedException e) {
                     }
                 }
 //            });
@@ -529,6 +584,7 @@ class Chromium extends WebBrowser {
             if (openWindowListeners == null) 
                 return 0;
             loopDisable = true;
+            pumpDisable = true;
 
             WindowEvent event = new WindowEvent(chromium);
             
@@ -762,12 +818,10 @@ class Chromium extends WebBrowser {
     private static void doMessageLoop(final Display display) {
         loopWork = new Runnable() {
             public void run() {
-                if (lib != null && browsers.get() > 0 && !display.isDisposed()) {
-//                	debug("WORK CLOCK");
-                	if (!loopDisable) {
-                		lib.cefswt_do_message_loop_work();
-                	}
-                    display.timerExec(LOOP, loopWork);
+                if (lib != null && !display.isDisposed()) {
+                	//debug("WORK CLOCK");
+                	safe_loop_work();
+                	display.timerExec(LOOP, loopWork);
                 } else {
                     debug("STOPPING MSG LOOP");
                 }
@@ -1316,13 +1370,13 @@ class Chromium extends WebBrowser {
     public static interface Lib {
         void cefswt_init(@Direct CEF.cef_app_t app, String cefrustPath, String version, int debugPort);
 
-        void cefswt_set_window_info_parent(Pointer windowInfo, Pointer client, @Direct CEF.cef_client_t clientHandler, long handle, int w, int h);
+        void cefswt_set_window_info_parent(Pointer windowInfo, Pointer client, @Direct CEF.cef_client_t clientHandler, long handle, int x, int y, int w, int h);
 
         Pointer cefswt_create_browser(long hwnd, String url, @Direct CEF.cef_client_t clientHandler, int w, int h, int js, int cefBgColor);
 
         boolean cefswt_is_same(@Direct Pointer browser, @Direct Pointer that);
 
-        void cefswt_do_message_loop_work();
+        int cefswt_do_message_loop_work();
 
         void cefswt_load_url(Pointer browser, @Encoding("UTF8") String url, byte[] bytes, int length, String[] headers, int length2);
 
