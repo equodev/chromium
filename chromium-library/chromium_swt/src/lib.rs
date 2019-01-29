@@ -493,7 +493,7 @@ pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char,
                 1
             },
             Err(e) => {
-                println!("Failed to start socket server {:?}", e);
+                println!("Failed in socket server {:?}", e);
                 0
             }
         }

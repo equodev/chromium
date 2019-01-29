@@ -138,16 +138,23 @@ pub fn wait_response(browser: *mut cef::cef_browser_t,
                             Ok(mut stream) => {
                                 println!("new client!");
                                 let mut buffer = Vec::new();
-                                match stream.read_to_end(&mut buffer) {
-                                    Ok(n) => {
-                                        println!("read from socket: {} {} {:?}", n, ::std::mem::size_of::<ReturnSt>(), buffer);
-                                        let ret = read_buffer(&buffer);
-                                        println!("st: {:?}", ret);
-                                        res = Some(Ok(ret));
-                                    },
-                                    Err(e) => {
-                                        println!("couldn't read from socket: {:?}", e);
-                                        res = Some(Err(e.to_string()));
+                                loop {
+                                    match stream.read_to_end(&mut buffer) {
+                                        Ok(n) => {
+                                            println!("read from socket: {} {} {:?}", n, ::std::mem::size_of::<ReturnSt>(), buffer);
+                                            let ret = read_buffer(&buffer);
+                                            println!("st: {:?}", ret);
+                                            res = Some(Ok(ret));
+                                            break;
+                                        },
+                                        Err(ref e) if e.kind() == ::std::io::ErrorKind::WouldBlock => {
+
+                                        },
+                                        Err(e) => {
+                                            println!("couldn't read from socket: {:?}", e);
+                                            res = Some(Err(e.to_string()));
+                                            break;
+                                        }
                                     }
                                 }
                             },
@@ -162,7 +169,7 @@ pub fn wait_response(browser: *mut cef::cef_browser_t,
                             }
                         };
                         if res.is_some() {
-                            return res.unwrap();
+                            break;
                         }
                     };
                     res.unwrap()

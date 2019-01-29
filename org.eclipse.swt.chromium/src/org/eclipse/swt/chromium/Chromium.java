@@ -665,9 +665,11 @@ class Chromium extends WebBrowser {
                 } else {
 	                textReady.thenRun(() -> {
 	              	  	debugPrint("progress completed"); 
-	                    for (ProgressListener listener : progressListeners) {
-	                        listener.completed(event);
-	                    }
+	                    chromium.getDisplay().asyncExec(() -> {
+	                    	for (ProgressListener listener : progressListeners) {
+	                    		listener.completed(event);
+	                    	}
+	                    });
 	                });
                 }
 //            }
@@ -710,9 +712,11 @@ class Chromium extends WebBrowser {
             }
 //            if (!("about:blank".equals(event.location) && ignoreFirstEvents)) {
                 debugPrint("on_address_change to " + event.location + " " + (event.top ? "main" : "!main"));
-                for (LocationListener listener : locationListeners) {
-                    listener.changed(event);
-                }
+            chromium.getDisplay().asyncExec(() -> {
+            	for (LocationListener listener : locationListeners) {
+            		listener.changed(event);
+            	}
+            });    
 //            }
         });
         displayHandler.on_status_message.set((self, browser, status) -> {
@@ -742,8 +746,13 @@ class Chromium extends WebBrowser {
 	            event.doit = true;
 	            event.location = lib.cefswt_request_to_java(request);
 	            debugPrint("on_before_browse:" + event.location);
-	            for (LocationListener listener : locationListeners) {
-	                listener.changing(event);
+	            try {
+	            	loopDisable = true;
+	            	for (LocationListener listener : locationListeners) {
+	            		listener.changing(event);
+	            	}
+	            } finally {
+	            	loopDisable = false;	            	
 	            }
 	            if (!event.doit) {
 	            	debugPrint("canceled nav, dependats:"+enableProgress.getNumberOfDependents());
@@ -1192,8 +1201,9 @@ class Chromium extends WebBrowser {
         EvalReturned callback = (loop, type, value) -> {
         	//debugPrint("eval retured: " +type + ":"+value.length()+":"+value);
         	if (loop == 1) {
-        		chromium.getDisplay().readAndDispatch();
-//        		chromium.getDisplay().sleep();
+        		if (!(loopDisable && "cocoa".equals(SWT.getPlatform()))) {
+        			chromium.getDisplay().readAndDispatch();
+        		}
         		if (!loopDisable) {
 //        			lib.cefswt_do_message_loop_work();
         		}
