@@ -3,6 +3,7 @@ package org.eclipse.swt.chromium;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Widget;
 
 import jnr.ffi.LibraryLoader;
@@ -107,6 +108,7 @@ class Chromium extends WebBrowser {
     private CEF.cef_load_handler_t loadHandler;
     private CEF.cef_display_handler_t displayHandler;
     private CEF.cef_request_handler_t requestHandler;
+    private CEF.cef_jsdialog_handler_t jsDialogHandler;
     private CEF.cef_string_visitor_t  textVisitor;
     private FocusListener focusListener;
     private String url;
@@ -373,6 +375,7 @@ class Chromium extends WebBrowser {
         set_load_handler();
         set_display_handler();
         set_request_handler();
+        set_jsdialog_handler();
         clientHandler.on_process_message_received.set((c, browser_1, source, processMessage) -> {
             return browserFunctionCalled(source, processMessage);
         });
@@ -478,10 +481,14 @@ class Chromium extends WebBrowser {
         lifeSpanHandler.on_before_close.set((plifeSpanHandler, browser) -> {
             debugPrint("OnBeforeClose");
             lib.cefswt_free(browser);
-            Chromium.this.clientHandler = null;
             Chromium.this.browser = null;
+            Chromium.this.clientHandler = null;
             Chromium.this.focusHandler = null;
             Chromium.this.lifeSpanHandler = null;
+            Chromium.this.loadHandler = null;
+            Chromium.this.displayHandler = null;
+            Chromium.this.requestHandler = null;
+            Chromium.this.jsDialogHandler = null;
             // not always called on linux
             disposingAny--;
             if (browsers.decrementAndGet() == 0 && shuttindDown) {
@@ -772,6 +779,45 @@ class Chromium extends WebBrowser {
         });
     }
     
+    private void set_jsdialog_handler() {
+        if (!"gtk".equals(SWT.getPlatform())) {
+            return;
+        }
+        jsDialogHandler = CEFFactory.newJsDialogHandler();
+        jsDialogHandler.on_jsdialog.set((self_, browser, origin_url, dialog_type, message_text, default_prompt_text, callback, suppress_message) -> {
+            if (chromium.isDisposed()) return 0;
+            
+            int style = SWT.ICON_WORKING;
+            switch (dialog_type) {
+            case JSDIALOGTYPE_ALERT:
+                style = SWT.ICON_INFORMATION;
+                break;
+            case JSDIALOGTYPE_CONFIRM:
+                style = SWT.ICON_WARNING;
+                break;
+            case JSDIALOGTYPE_PROMPT:
+                style = SWT.ICON_QUESTION | SWT.YES | SWT.NO;
+                break;
+            }
+            String url = lib.cefswt_cefstring_to_java(origin_url);
+            String msg = lib.cefswt_cefstring_to_java(message_text);
+            String prompt = lib.cefswt_cefstring_to_java(default_prompt_text);
+            MessageBox box = new MessageBox(chromium.getShell(), style);
+            box.setText(getPlainUrl(url));
+            if (prompt != null) {
+                box.setMessage(msg);
+            } else {
+                box.setMessage(msg);
+            }
+            int open = box.open();
+            lib.cefswt_dialog_close(callback, open == SWT.OK || open == SWT.YES ? 1 : 0, default_prompt_text);
+            return 1;
+        });
+        clientHandler.get_jsdialog_handler.set(client -> {
+            return jsDialogHandler;
+        });
+    }
+    
     private void set_text_visitor() {
         textVisitor = CEFFactory.newStringVisitor();
         textVisitor.visit.set((self, cefString) -> {
@@ -862,7 +908,7 @@ class Chromium extends WebBrowser {
         client.get_download_handler.set((c) -> debug("get_download_handler"));
         client.get_drag_handler.set((c) -> debug("get_drag_handler"));
         client.get_geolocation_handler.set((c) -> debug("get_geolocation_handler"));
-        client.get_jsdialog_handler.set((c) -> debug("get_jsdialog_handler"));
+        client.get_jsdialog_handler.set((c) -> null);
         client.get_keyboard_handler.set((c) -> null);
         client.get_render_handler.set((c) -> null);
         client.on_process_message_received.set((c, browser_1, source, processMessage) -> {
@@ -1341,7 +1387,7 @@ class Chromium extends WebBrowser {
     
     private static String getPlainUrl(String url) {
     	if (url != null && url.startsWith(DATA_TEXT_URL)) {
-    		return url.substring(0, DATA_TEXT_URL.length()-1);
+    		return url.substring(0, DATA_TEXT_URL.length()-8);
     	}
     	return url;
     }
@@ -1438,6 +1484,8 @@ class Chromium extends WebBrowser {
         @Encoding("UTF8") String cefswt_cefstring_to_java(CEF.cef_string_t string);
 
         @Encoding("UTF8") String cefswt_request_to_java(Pointer request);
+
+        void cefswt_dialog_close(Pointer callback, int i, CEF.cef_string_t default_prompt_text);
 
         boolean cefswt_set_cookie(@Encoding("UTF8") String url, @Encoding("UTF8") String name, @Encoding("UTF8") String value, @Encoding("UTF8") String domain, @Encoding("UTF8") String path, int secure, int httpOnly, double maxAge);
 

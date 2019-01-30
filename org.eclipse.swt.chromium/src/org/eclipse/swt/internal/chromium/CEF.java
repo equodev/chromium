@@ -322,6 +322,23 @@ public class CEF {
     }
   }
 
+  public enum cef_jsdialog_type_t implements IntegerEnum {
+    JSDIALOGTYPE_ALERT(0x0),
+    JSDIALOGTYPE_CONFIRM(0x1),
+    JSDIALOGTYPE_PROMPT(0x2),
+    ;
+    private int nativeInt;
+
+    private cef_jsdialog_type_t(int nativeInt) {
+      this.nativeInt = nativeInt;
+    }
+
+    @Override
+    public int intValue() {
+      return nativeInt;
+    }
+  }
+
   public enum cef_focus_source_t implements IntegerEnum {
     FOCUS_SOURCE_NAVIGATION(0),
     FOCUS_SOURCE_SYSTEM(1),
@@ -842,6 +859,95 @@ public class CEF {
     }
 
     public cef_focus_handler_t(jnr.ffi.Runtime runtime) {
+      super(runtime);
+    }
+  }
+  ///
+  /// Implement this structure to handle events related to JavaScript dialogs. The
+  /// functions of this structure will be called on the UI thread.
+  ///
+  public static class cef_jsdialog_handler_t extends Struct {
+    static {
+      mapTypeForClosure(cef_jsdialog_handler_t.class);
+    }
+    ///
+    /// Base structure.
+    ///
+    public cef_base_ref_counted_t base = inner(new cef_base_ref_counted_t(getRuntime()));
+    ///
+    /// Called to run a JavaScript dialog. If |origin_url| is non-NULL it can be
+    /// passed to the CefFormatUrlForSecurityDisplay function to retrieve a secure
+    /// and user-friendly display string. The |default_prompt_text| value will be
+    /// specified for prompt dialogs only. Set |suppress_message| to true (1) and
+    /// return false (0) to suppress the message (suppressing messages is
+    /// preferable to immediately executing the callback as this is used to detect
+    /// presumably malicious behavior like spamming alert messages in
+    /// onbeforeunload). Set |suppress_message| to false (0) and return false (0)
+    /// to use the default implementation (the default implementation will show one
+    /// modal dialog at a time and suppress any additional dialog requests until
+    /// the displayed dialog is dismissed). Return true (1) if the application will
+    /// use a custom dialog or if the callback has been executed immediately.
+    /// Custom dialogs may be either modal or modeless. If a custom dialog is used
+    /// the application must execute |callback| once the custom dialog is
+    /// dismissed.
+    ///
+    public Function<on_jsdialog> on_jsdialog = function(on_jsdialog.class);
+    ///
+    /// Called to run a dialog asking the user if they want to leave a page. Return
+    /// false (0) to use the default dialog implementation. Return true (1) if the
+    /// application will use a custom dialog or if the callback has been executed
+    /// immediately. Custom dialogs may be either modal or modeless. If a custom
+    /// dialog is used the application must execute |callback| once the custom
+    /// dialog is dismissed.
+    ///
+    public Function<on_before_unload_dialog> on_before_unload_dialog =
+        function(on_before_unload_dialog.class);
+    ///
+    /// Called to cancel any pending dialogs and reset any saved dialog state. Will
+    /// be called due to events like page navigation irregardless of whether any
+    /// dialogs are currently pending.
+    ///
+    public Function<on_reset_dialog_state> on_reset_dialog_state =
+        function(on_reset_dialog_state.class);
+    ///
+    /// Called when the default implementation dialog is closed.
+    ///
+    public Function<on_dialog_closed> on_dialog_closed = function(on_dialog_closed.class);
+
+    public static interface on_jsdialog {
+      @Delegate
+      int invoke(
+          cef_jsdialog_handler_t self_,
+          jnr.ffi.Pointer browser,
+          cef_string_t origin_url,
+          cef_jsdialog_type_t dialog_type,
+          cef_string_t message_text,
+          cef_string_t default_prompt_text,
+          jnr.ffi.Pointer callback,
+          int suppress_message);
+    }
+
+    public static interface on_before_unload_dialog {
+      @Delegate
+      int invoke(
+          cef_jsdialog_handler_t self_,
+          jnr.ffi.Pointer browser,
+          cef_string_t message_text,
+          int is_reload,
+          jnr.ffi.Pointer callback);
+    }
+
+    public static interface on_reset_dialog_state {
+      @Delegate
+      void invoke(cef_jsdialog_handler_t self_, jnr.ffi.Pointer browser);
+    }
+
+    public static interface on_dialog_closed {
+      @Delegate
+      void invoke(cef_jsdialog_handler_t self_, jnr.ffi.Pointer browser);
+    }
+
+    public cef_jsdialog_handler_t(jnr.ffi.Runtime runtime) {
       super(runtime);
     }
   }
@@ -1476,7 +1582,7 @@ public class CEF {
 
     public static interface get_jsdialog_handler {
       @Delegate
-      jnr.ffi.Pointer invoke(cef_client_t self_);
+      cef_jsdialog_handler_t invoke(cef_client_t self_);
     }
 
     public static interface get_keyboard_handler {
