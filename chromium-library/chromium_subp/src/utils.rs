@@ -97,9 +97,13 @@ unsafe extern "C" fn dtr(_: *mut cef::char16) {
 }
 
 pub fn str_from_c(cstr: *const c_char) -> &'static str {
-    let slice = unsafe { CStr::from_ptr(cstr) };
-    let url = ::std::str::from_utf8(slice.to_bytes()).unwrap();
-    url
+    if cstr.is_null() {
+        ""
+    } else {
+        let slice = unsafe { CStr::from_ptr(cstr) };
+        let url = ::std::str::from_utf8(slice.to_bytes()).expect("failed from_utf8");
+        url
+    }
 }
 
 pub fn cstr_from_cef(cefstring: *const cef::cef_string_t) -> *mut c_char {
