@@ -647,44 +647,40 @@ class Chromium extends WebBrowser {
             Chromium.this.canGoBack = canGoBack == 1;
             Chromium.this.canGoForward = canGoForward == 1;
             if (chromium.isDisposed() || progressListeners == null) return;
-          updateText();
-          if (isPopup != null) {
-        	  textReady.thenRun(() -> enableProgress.complete(true));
-          }
-          else if (!enableProgress.isDone() && isLoading == 0) {
-        	  textReady.thenRun(() -> {
-        		  enableProgress.complete(true);
-        	  });
-              return;
-          }
-          else if (!enableProgress.isDone()) {
+            updateText();
+            if (isPopup != null) {
+                textReady.thenRun(() -> enableProgress.complete(true));
+            }
+            else if (!enableProgress.isDone() && isLoading == 0) {
+                textReady.thenRun(() -> {
+                    enableProgress.complete(true);
+                });
                 return;
             }
-//            if (!(/*"about:blank".equals(url) && */ignoreFirstEvents)) {
-                ProgressEvent event = new ProgressEvent(chromium);
-                event.display = chromium.getDisplay ();
-                event.widget = chromium;
-                event.current = MAX_PROGRESS;
-                event.current = isLoading == 1 ? 1 : MAX_PROGRESS;
-                event.total = MAX_PROGRESS;
-                if (isLoading == 1) {
-                	debugPrint("progress changed");
-	                for (ProgressListener listener : progressListeners) {
-//	                    if (isLoading == 1) {
-	                        listener.changed(event);
-//	                    }
-	                }
-                } else {
-	                textReady.thenRun(() -> {
-	              	  	debugPrint("progress completed"); 
-	                    chromium.getDisplay().asyncExec(() -> {
-	                    	for (ProgressListener listener : progressListeners) {
-	                    		listener.completed(event);
-	                    	}
-	                    });
-	                });
+            else if (!enableProgress.isDone()) {
+                return;
+            }
+            ProgressEvent event = new ProgressEvent(chromium);
+            event.display = chromium.getDisplay ();
+            event.widget = chromium;
+            event.current = MAX_PROGRESS;
+            event.current = isLoading == 1 ? 1 : MAX_PROGRESS;
+            event.total = MAX_PROGRESS;
+            if (isLoading == 1) {
+                debugPrint("progress changed");
+                for (ProgressListener listener : progressListeners) {
+                    listener.changed(event);
                 }
-//            }
+            } else {
+                textReady.thenRun(() -> {
+                	debugPrint("progress completed"); 
+                    chromium.getDisplay().asyncExec(() -> {
+                    	for (ProgressListener listener : progressListeners) {
+                    		listener.completed(event);
+                    	}
+                    });
+                });
+            }
         });
         loadHandler.on_load_end.set((self, browser, frame, http_status) -> {
 //        	debugPrint("on_load_end"); 
@@ -822,7 +818,7 @@ class Chromium extends WebBrowser {
         textVisitor = CEFFactory.newStringVisitor();
         textVisitor.visit.set((self, cefString) -> {
 //        	debugPrint("text visited");
-            String newtext = lib.cefswt_cefstring_to_java(cefString);
+            String newtext = cefString != null ? lib.cefswt_cefstring_to_java(cefString) : null;
             if (newtext != null) {
                 text = newtext;
             	debugPrint("text visited completed");
@@ -1334,8 +1330,8 @@ class Chromium extends WebBrowser {
     
     private void updateText() {
         if (browser != null && textVisitor != null) {
-            textReady = new CompletableFuture<String>();
             debugPrint("update text");
+            textReady = new CompletableFuture<String>();
             lib.cefswt_get_text(browser, textVisitor);
         }
     }
