@@ -483,9 +483,8 @@ class Chromium extends WebBrowser {
             Chromium.this.focusHandler = null;
             Chromium.this.lifeSpanHandler = null;
             // not always called on linux
-            String platform = SWT.getPlatform();
             disposingAny--;
-            if (("win32".equals(platform) || "cocoa".equals(platform)) && browsers.decrementAndGet() == 0 && shuttindDown) {
+            if (browsers.decrementAndGet() == 0 && shuttindDown) {
                 internalShutdown();
             }
         });
@@ -506,14 +505,10 @@ class Chromium extends WebBrowser {
                 }
             }
             
-            
-            String platform = SWT.getPlatform();
-            if (disposing && ("gtk".equals(platform)) && browsers.decrementAndGet() == 0 && shuttindDown) {
-                internalShutdown();
-            }
             if (!disposing) {
                 chromium.dispose();
             }
+            waitForClose(chromium.getDisplay());
             // do not send close notification to top level window
             // returning 0, cause the window to close 
             return 1;
@@ -625,6 +620,14 @@ class Chromium extends WebBrowser {
         clientHandler.get_life_span_handler.set(client -> {
             //DEBUG_CALLBACK("GetLifeSpanHandler");
             return lifeSpanHandler;
+        });
+    }
+
+    private void waitForClose(Display display) {
+        display.asyncExec(() -> {
+            if (browser != null) {
+                waitForClose(display);
+            }
         });
     }
     
@@ -1201,7 +1204,7 @@ class Chromium extends WebBrowser {
         EvalReturned callback = (loop, type, value) -> {
         	//debugPrint("eval retured: " +type + ":"+value.length()+":"+value);
         	if (loop == 1) {
-        		if (!(loopDisable && "cocoa".equals(SWT.getPlatform()))) {
+        		if (!(loopDisable && ("cocoa".equals(SWT.getPlatform()) || "gtk".equals(SWT.getPlatform())))) {
         			chromium.getDisplay().readAndDispatch();
         		}
         		if (!loopDisable) {

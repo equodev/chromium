@@ -157,6 +157,7 @@ public void test_evalute_Cookies () {
 
 	// Using JavaScript Cookie API on local (file) URL gives DOM Exception 18
 	browser.setUrl("http://www.eclipse.org/swt");
+	shell.open();
 	waitForPassCondition(loaded::get);
 
 	// Set the cookies
