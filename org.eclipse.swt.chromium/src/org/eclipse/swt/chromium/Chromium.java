@@ -508,7 +508,9 @@ class Chromium extends WebBrowser {
             if (!disposing) {
                 chromium.dispose();
             }
-            waitForClose(chromium.getDisplay());
+            if ("gtk".equals(SWT.getPlatform())) {
+            	waitForClose(chromium.getDisplay());
+            }
             // do not send close notification to top level window
             // returning 0, cause the window to close 
             return 1;
