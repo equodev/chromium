@@ -34,8 +34,8 @@ pub fn create_browser(canvas_hwnd: c_ulong, url: &str, jclient: &mut cef::_cef_c
         javascript_access_clipboard: cef::cef_state_t::STATE_DEFAULT,
         javascript_dom_paste: cef::cef_state_t::STATE_DEFAULT,
         plugins: cef::cef_state_t::STATE_DEFAULT,
-        universal_access_from_file_urls: cef::cef_state_t::STATE_DEFAULT,
-        file_access_from_file_urls: cef::cef_state_t::STATE_DEFAULT,
+        universal_access_from_file_urls: cef::cef_state_t::STATE_ENABLED,
+        file_access_from_file_urls: cef::cef_state_t::STATE_ENABLED,
         web_security: cef::cef_state_t::STATE_DEFAULT,
         image_loading: cef::cef_state_t::STATE_DEFAULT,
         image_shrink_standalone_to_fit: cef::cef_state_t::STATE_DEFAULT,
@@ -79,14 +79,18 @@ fn cef_window_info(hwnd: c_ulong, w: c_int, h: c_int) -> cef::_cef_window_info_t
 }
 
 #[cfg(target_os = "linux")]
-pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulong) {
-    use std::os::raw::{c_void};
+pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulong, x: c_int, y: c_int, w: c_int, h: c_int) {
+    use std::os::raw::{c_uint, c_void};
     unsafe {println!("orig window_info {} {:?}", hwnd, (*window_info)); };
-    let win = unsafe { gtk2::gtk_widget_get_window(hwnd as *mut c_void) };
-    println!("WIN: {:?}", win);
-    // let xid = unsafe { gtk2::gdk_x11_drawable_get_xid(win) };
-    // println!("XID: {:?}", xid);
-    // unsafe { (*window_info).parent_window = win };
+    unsafe { 
+        (*window_info).x = x as c_uint;
+        (*window_info).y = y as c_uint;
+        (*window_info).width = w as c_uint;
+        (*window_info).height = h as c_uint;
+        (*window_info).parent_window = if hwnd == 0 { 0 } else { gtk2::gdk_x11_drawable_get_xid(gtk2::gtk_widget_get_window(hwnd as *mut c_void)) };
+        (*window_info).windowless_rendering_enabled = 0;
+        (*window_info).window = 0;
+    }
     unsafe { println!("new window_info {:?}", (*window_info)); };
 }
 
@@ -109,10 +113,20 @@ fn cef_window_info(hwnd: c_ulong, w: c_int, h: c_int) -> cef::_cef_window_info_t
 }
 
 #[cfg(target_os = "macos")]
-pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulong) {
+pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulong, x: c_int, y: c_int, w: c_int, h: c_int) {
     use std::os::raw::{c_void};
     unsafe { println!("orig window_info {} {:?}", hwnd, (*window_info)); };
-    unsafe { (*window_info).parent_view = hwnd as *mut c_void };
+    unsafe { 
+        (*window_info).x = x;
+        (*window_info).y = y;
+        (*window_info).width = w;
+        (*window_info).height = h;
+        (*window_info).parent_view = hwnd as *mut c_void;
+        (*window_info).windowless_rendering_enabled = 0;
+        (*window_info).view = 0 as *mut c_void;
+        (*window_info).hidden = 0;
+        (*window_info).window_name = cef::cef_string_t { str: null_mut(),  length: 0,  dtor: Option::None };
+    };
     unsafe { println!("new window_info {:?}", (*window_info)); };
 }
 
@@ -139,8 +153,32 @@ fn cef_window_info(hwnd: c_ulong, w: c_int, h: c_int) -> cef::_cef_window_info_t
 }
 
 #[cfg(windows)]
-pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulong) {
-    unsafe { println!("orig window_info {} {:?}", hwnd, (*window_info)); };
-    unsafe { (*window_info).parent_window = hwnd as cef::win::HWND };
-    unsafe { println!("new window_info {:?}", (*window_info)); };
+pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulong, x: c_int, y: c_int, w: c_int, h: c_int) {
+    extern crate winapi;
+    unsafe {
+        //println!("orig window_info {} {:?}", hwnd, (*window_info));
+        if x != 0 {
+            (*window_info).x = x;
+        }
+        if y != 0 {
+            (*window_info).y = y;
+        }
+        if w != 0 {
+            (*window_info).width = w;
+        }
+        if h != 0 {
+            (*window_info).height = h;
+        }
+        (*window_info).parent_window = hwnd as cef::win::HWND;
+        (*window_info).windowless_rendering_enabled = 0;
+        (*window_info).window = 0 as cef::win::HWND;
+        (*window_info).ex_style = 0;
+        (*window_info).window_name = cef::cef_string_t { str: null_mut(),  length: 0,  dtor: Option::None };
+        if hwnd != 0 {
+            (*window_info).style = winapi::um::winuser::WS_CHILDWINDOW | winapi::um::winuser::WS_CLIPCHILDREN
+                | winapi::um::winuser::WS_CLIPSIBLINGS | winapi::um::winuser::WS_VISIBLE | winapi::um::winuser::WS_TABSTOP;
+        }
+        (*window_info).menu = 0 as cef::win::HMENU;
+        //println!("new window_info {:?}", (*window_info)); 
+    };
 }

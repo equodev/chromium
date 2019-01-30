@@ -1,7 +1,9 @@
 use std::net::{TcpListener, TcpStream};
 use std::io::{Read, Write};
 use std::ffi::{CString, CStr};
-use std::thread::{self, JoinHandle};
+use std::os::raw::{c_char, c_int};
+// use std::thread::{self, JoinHandle};
+use cef;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ReturnType {
@@ -112,38 +114,65 @@ fn serialize_null() {
     assert_eq!(CString::new("").unwrap(), unsafe{CString::from_raw(read_st.str_value)});
 }
 
-pub fn read_response() -> Result<(u16, JoinHandle<ReturnSt>), String> {
+pub fn wait_response(browser: *mut cef::cef_browser_t, 
+        msg: *mut cef::cef_process_message_t,
+        args: *mut cef::_cef_list_value_t,
+        target: cef::cef_process_id_t,
+        callback: Option<unsafe extern "C" fn(work: c_int, kind: ReturnType, value: *const c_char)>
+        ) -> Result<ReturnSt, String> {
     match get_available_port() {
         Some(port) => {
+            let s = unsafe {(*args).set_int.unwrap()(args, 0, port as i32) };
+            assert_eq!(s, 1);
+
             match TcpListener::bind(("127.0.0.1", port)) {
                 Ok(listener) => {
-                    //println!("new server, waiting response in :{:?}", port);
-                    let child = thread::spawn(move || {
-                        match listener.accept() {
-                            Ok((mut socket, addr)) => {
-                                println!("new client: {:?}", addr);
-                                
+                    let sent = unsafe {(*browser).send_process_message.unwrap()(browser, target, msg)};
+                    assert_eq!(sent, 1);
+
+                    println!("new server, waiting response in :{:?}", port);
+                    let mut res = None;
+                    listener.set_nonblocking(true).expect("Cannot set non-blocking");
+                    for stream in listener.incoming() {
+                        match stream {
+                            Ok(mut stream) => {
+                                println!("new client!");
                                 let mut buffer = Vec::new();
-                                match socket.read_to_end(&mut buffer) {
-                                    Ok(n) => {
-                                        println!("read from socket: {} {} {:?}", n, ::std::mem::size_of::<ReturnSt>(), buffer);
-                                        let ret = read_buffer(&buffer);
-                                        println!("st: {:?}", ret);
-                                        ret
-                                    },
-                                    Err(e) => {
-                                        println!("couldn't read from socket: {:?}", e);
-                                        panic!(e)
+                                loop {
+                                    match stream.read_to_end(&mut buffer) {
+                                        Ok(n) => {
+                                            println!("read from socket: {} {} {:?}", n, ::std::mem::size_of::<ReturnSt>(), buffer);
+                                            let ret = read_buffer(&buffer);
+                                            println!("st: {:?}", ret);
+                                            res = Some(Ok(ret));
+                                            break;
+                                        },
+                                        Err(ref e) if e.kind() == ::std::io::ErrorKind::WouldBlock => {
+
+                                        },
+                                        Err(e) => {
+                                            println!("couldn't read from socket: {:?}", e);
+                                            res = Some(Err(e.to_string()));
+                                            break;
+                                        }
                                     }
                                 }
                             },
-                            Err(e) => {
-                                println!("couldn't get client: {:?}", e);
-                                panic!(e)
+                            Err(_e) => { 
+                                // println!("couldn't get client: {:?}", e);
+                                unsafe {
+                                    if let Some(call) = callback {
+                                        call(1, ReturnType::Error, ::std::ptr::null());
+                                    }
+                                };
+                                unsafe { cef::cef_do_message_loop_work() };
                             }
+                        };
+                        if res.is_some() {
+                            break;
                         }
-                    });
-                    Ok((port, child))
+                    };
+                    res.unwrap()
                 },
                 Err(e) => {
                     println!("couldn't bind port: {:?}", e);

@@ -34,7 +34,7 @@ unsafe extern fn xioerror_handler_impl(_: *mut x11::xlib::Display) -> c_int {
 }
 
 #[no_mangle]
-pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char, version: *const c_char) {
+pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char, version: *const c_char, debug_port: c_int) {
     println!("DLL init");
     assert_eq!(unsafe{(*japp).base.size}, std::mem::size_of::<cef::_cef_app_t>());
     //println!("app {:?}", japp);
@@ -99,7 +99,7 @@ pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char
         resources_dir_path: resources_cef,
         locales_dir_path: locales_cef,
         pack_loading_disabled: 0,
-        remote_debugging_port: 0,
+        remote_debugging_port: debug_port,
         uncaught_exception_stack_size: 0,
         ignore_certificate_errors: 0,
         enable_net_security_expiration: 0,
@@ -275,15 +275,24 @@ pub extern fn cefswt_create_browser(hwnd: c_ulong, url: *const c_char, client: &
 }
 
 #[no_mangle]
-pub extern fn cefswt_set_window_info_parent(window_info: *mut cef::_cef_window_info_t, client: *mut *mut cef::_cef_client_t, jclient: &mut cef::_cef_client_t, hwnd: c_ulong) {
-    println!("cefswt_set_window_info_parent {:?} {}", window_info, hwnd);
-    unsafe { (*client) = jclient };
-    app::set_window_parent(window_info, hwnd);
+pub extern fn cefswt_set_window_info_parent(window_info: *mut cef::_cef_window_info_t, client: *mut *mut cef::_cef_client_t, jclient: &mut cef::_cef_client_t, hwnd: c_ulong, x: c_int, y: c_int, w: c_int, h: c_int) {
+    unsafe {
+        //println!("cefswt_set_window_info_parent {:?} {}", *window_info, hwnd);
+        (*client) = jclient;
+        app::set_window_parent(window_info, hwnd, x, y, w, h);
+        //println!("after cefswt_set_window_info_parent {:?} {}", *window_info, hwnd);
+    };
 }
 
 #[no_mangle]
-pub extern fn cefswt_do_message_loop_work() {
-    unsafe { cef::cef_do_message_loop_work() };
+pub extern fn cefswt_do_message_loop_work() -> c_int {
+    let result = std::panic::catch_unwind(|| {
+        unsafe { cef::cef_do_message_loop_work() };
+    });
+    match result {
+        Ok(_) => 1,
+        Err(_) => 0
+    }
 }
 
 #[no_mangle]
@@ -353,14 +362,49 @@ pub extern fn cefswt_close_browser(browser: *mut cef::cef_browser_t) {
 }
 
 #[no_mangle]
-pub extern fn cefswt_load_url(browser: *mut cef::cef_browser_t, url: *const c_char) {
+pub extern fn cefswt_load_url(browser: *mut cef::cef_browser_t, url: *const c_char, post_bytes: *const c_void, post_size: usize, headers: *const *const c_char, headers_size: usize) {
     let url = utils::str_from_c(url);
     let url_cef = utils::cef_string(url);
     println!("url: {:?}", url);
-    let get_frame = unsafe { (*browser).get_main_frame.expect("null get_main_frame") };
-    let main_frame = unsafe { get_frame(browser) };
-    let load_url = unsafe { (*main_frame).load_url.expect("null load_url") };
-    unsafe { load_url(main_frame, &url_cef) };
+    unsafe {
+        let get_frame = (*browser).get_main_frame.expect("null get_main_frame");
+        let main_frame = get_frame(browser);
+        if post_bytes.is_null() && headers.is_null() {
+            (*main_frame).load_url.unwrap()(main_frame, &url_cef);
+        } else {
+            let request = cef::cef_request_create();
+            (*request).set_url.unwrap()(request, &url_cef);
+            if !post_bytes.is_null() {
+                let post_data = cef::cef_post_data_create();
+                let post_element = cef::cef_post_data_element_create();
+                (*post_element).set_to_bytes.unwrap()(post_element, post_size, post_bytes);
+                (*post_data).add_element.unwrap()(post_data, post_element);
+
+                (*request).set_post_data.unwrap()(request, post_data);
+            }
+
+            if !headers.is_null() {
+                let map = cef::cef_string_multimap_alloc();
+
+                for i in 0..headers_size {
+                    let header = headers.wrapping_add(i);
+                    let ptr = header.read();
+
+                    let header_str = utils::str_from_c(ptr);
+                    let header: Vec<&str> = header_str.splitn(2, ':').collect();
+                    let key = header[0].trim();
+                    let value = header[1].trim();
+                    let key = utils::cef_string(key);
+                    let value = utils::cef_string(value);
+
+                    cef::cef_string_multimap_append(map, &key, &value);
+                }
+                (*request).set_header_map.unwrap()(request, map);
+            }
+
+            (*main_frame).load_request.unwrap()(main_frame, request);
+        }
+    }
 }
 
 #[no_mangle]
@@ -432,7 +476,8 @@ pub extern fn cefswt_execute(browser: *mut cef::cef_browser_t, text: *const c_ch
 }
 
 #[no_mangle]
-pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char, id: i32, callback: unsafe extern "C" fn(kind: socket::ReturnType, value: *const c_char)) -> c_int {
+pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char, id: i32,
+        callback: unsafe extern "C" fn(work: c_int, kind: socket::ReturnType, value: *const c_char)) -> c_int {
     let text_cef = utils::cef_string_from_c(text);
     let name = utils::cef_string("eval");
     unsafe {
@@ -442,21 +487,13 @@ pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char,
         assert_eq!(s, 1);
         let s = (*args).set_string.unwrap()(args, 2, &text_cef);
         assert_eq!(s, 1);
-        match socket::read_response() {
-            Ok((port, thread)) => {
-                let s = (*args).set_int.unwrap()(args, 0, port as i32);
-                assert_eq!(s, 1);
-
-                let sent = (*browser).send_process_message.unwrap()(browser, cef::cef_process_id_t::PID_RENDERER, msg);
-                assert_eq!(sent, 1);
-                // cef::cef_string_userfree_utf16_free(text_cef);
-                let rsp = thread.join();
-                let r = rsp.expect("Failed to read from socket");
-                callback(r.kind, r.str_value.as_ptr());
+        match socket::wait_response(browser, msg, args, cef::cef_process_id_t::PID_RENDERER, Some(callback)) {
+            Ok(r) => {
+                callback(0, r.kind, r.str_value.as_ptr());
                 1
             },
             Err(e) => {
-                println!("Failed to start socket server {:?}", e);
+                println!("Failed in socket server {:?}", e);
                 0
             }
         }
@@ -509,13 +546,13 @@ pub unsafe extern fn cefswt_function_id(message: *mut cef::cef_process_message_t
 }
 
 #[no_mangle]
-pub unsafe extern fn cefswt_function_arg(message: *mut cef::cef_process_message_t, index: i32, callback: unsafe extern "C" fn(kind: socket::ReturnType, value: *const c_char)) -> c_int {
+pub unsafe extern fn cefswt_function_arg(message: *mut cef::cef_process_message_t, index: i32, callback: unsafe extern "C" fn(work: c_int, kind: socket::ReturnType, value: *const c_char)) -> c_int {
     let args = (*message).get_argument_list.unwrap()(message);
     let kind = (*args).get_int.unwrap()(args, (1+index*2+1) as usize);
     let arg = (*args).get_string.unwrap()(args, (1+index*2+2) as usize);
     let cstr = utils::cstr_from_cef(arg);
     let kind = socket::ReturnType::from(kind);
-    callback(kind, cstr);
+    callback(0, kind, cstr);
     1
 }
 

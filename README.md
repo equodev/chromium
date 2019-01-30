@@ -50,6 +50,18 @@ Notes:
 
 	- ⚠️ On Linux, your first launch may fail due to a bug on CEF. You can workaround this by copying `icudtl.dat`, `natives_blob.bin` and `snapshot_blob.bin` from CEF folder to the `jre/bin` folder (e.g.: `/usr/lib/jvm/java-8-oracle/jre/bin/`). Those files should be siblings of the java executable file. Or use our CEF binaries repo which contains the fix.
 
+### Run SWT Browser Example
+
+- On Eclipse Photon, go to Welcome > Samples > SWT > Workbench views and standalone applications (install if asked to) > Finish wizard.
+- Install chromium feature from http://dl.maketechnology.io/chromium-swt/rls/repository
+- Install cef feature from http://dl.maketechnology.io/chromium-cef/rls/repository
+- Add `org.eclipse.swt.chromium` plugin dependency to _/org.eclipse.swt.examples/META-INF/MANIFEST.MF_ 
+- Open and modify `BrowserExample` class:
+  - Add `import import org.eclipse.swt.chromium.Browser;`
+  - Use FQNs `org.eclipse.swt.chromium.OpenWindowListener` and `org.eclipse.swt.chromium.WindowEvent` in lines 62 and 63. 
+- "run the sample" from the link in SWT Examples welcome view.
+- Once eclipse opens, go to Show View > Other > SWT Examples > Web Browser
+
 ## Build
 
 - Clone this repo.
@@ -62,6 +74,7 @@ Notes:
 - Or from eclipse run the single test class from bundle as Junit tests. (Note: you may need to change paths to .jars in local installation)
 
 Notes: Running with mvn has some test failing due accessing protected fields from same package in different bundes. This is a temporary until it gets merged to SWT.
+
 
 ## Status and Plan
 

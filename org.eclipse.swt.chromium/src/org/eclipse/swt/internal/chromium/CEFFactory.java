@@ -310,6 +310,19 @@ public class CEFFactory {
         public int intValue() {
             return value;
         }
+        
+        public static ReturnType from(String v) {
+        	try {
+        		int value = Integer.parseInt(v);
+        		for (ReturnType rt : ReturnType.values()) {
+        			if (rt.intValue() == value) {
+        				return rt;
+        			}
+        		}
+        	} catch (NumberFormatException e) {
+			}
+        	throw new IllegalArgumentException(v);
+        }
     }
 
     public static class FunctionSt extends Struct {
@@ -329,7 +342,7 @@ public class CEFFactory {
 
     public static interface EvalReturned {
         @Delegate
-        void invoke(ReturnType type, @Encoding("UTF8") String value);
+        void invoke(int loop, ReturnType type, @Encoding("UTF8") String value);
     }
 
 }

@@ -989,22 +989,22 @@ public class CEF {
       @Delegate
       int invoke(
           cef_life_span_handler_t self_,
-          jnr.ffi.Pointer browser,
+          @Direct jnr.ffi.Pointer browser,
           jnr.ffi.Pointer frame,
           cef_string_t target_url,
           cef_string_t target_frame_name,
           cef_window_open_disposition_t target_disposition,
           int user_gesture,
           cef_popup_features_t popupFeatures,
-          jnr.ffi.Pointer windowInfo,
-          jnr.ffi.Pointer client,
-          jnr.ffi.Pointer settings,
+          @Out jnr.ffi.Pointer windowInfo,
+          @Out jnr.ffi.Pointer client,
+          @Out jnr.ffi.Pointer settings,
           @Out int no_javascript_access);
     }
 
     public static interface on_after_created {
       @Delegate
-      void invoke(cef_life_span_handler_t self_, jnr.ffi.Pointer browser);
+      void invoke(cef_life_span_handler_t self_, @Direct jnr.ffi.Pointer browser);
     }
 
     public static interface do_close {
