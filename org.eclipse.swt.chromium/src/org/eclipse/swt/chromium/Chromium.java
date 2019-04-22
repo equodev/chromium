@@ -914,7 +914,7 @@ class Chromium extends WebBrowser {
     }
 
     private int browserFunctionCalled(CEF.cef_process_id_t source, Pointer processMessage) {
-        if (source != CEF.cef_process_id_t.PID_RENDERER || !jsEnabled) {
+        if (source != CEF.cef_process_id_t.PID_RENDERER || !jsEnabled || disposing || chromium == null || chromium.isDisposed()) {
             return 0;
         }
         FunctionSt fn = lib.cefswt_function_id(processMessage);
