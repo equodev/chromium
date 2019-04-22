@@ -1047,9 +1047,8 @@ class Chromium extends WebBrowser {
         String platform = SWT.getPlatform();
         if ("gtk".equals(platform)) {
             String gtk = System.getProperty("org.eclipse.swt.internal.gtk.version", "");
-            if (gtk.startsWith("3")) {
-                throw new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY, "Chromium Browser is not supported in GTK3 yet. "
-                        + "Set env var SWT_GTK3=0");
+            if (gtk.startsWith("2")) {
+                throw new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY, "Chromium Browser is no longer supported in GTK2. ");
             }
         }
 

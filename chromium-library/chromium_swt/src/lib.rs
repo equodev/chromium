@@ -14,7 +14,7 @@ use chromium::socket;
 
 mod app;
 #[cfg(target_os = "linux")]
-mod gtk2;
+mod gtk;
 
 use std::os::raw::{c_char, c_int, c_ulong, c_void};
 #[cfg(unix)]
@@ -581,10 +581,10 @@ pub extern fn cefswt_set_focus(browser: *mut cef::cef_browser_t, set: bool, pare
 
 #[cfg(target_os = "linux")]
 fn do_set_focus(parent: *mut c_void, focus: i32) {
-    let root = unsafe { gtk2::gtk_widget_get_toplevel(parent) };
+    let root = unsafe { gtk::gtk_widget_get_toplevel(parent) };
     println!("<<<<<<<< set_focus {} {:?} {:?}", focus, parent, root);
     // workaround to actually remove focus from cef inputs
-    unsafe { gtk2::gtk_window_present(root) };
+    unsafe { gtk::gtk_window_present(root) };
 }
 
 #[cfg(target_family = "windows")]
