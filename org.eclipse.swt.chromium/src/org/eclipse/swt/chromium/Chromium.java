@@ -384,11 +384,8 @@ class Chromium extends WebBrowser {
             @Override
             public void controlResized(ControlEvent e) {
                 if (!chromium.isDisposed() && browser != null) {
-                    if (chromium.getDisplay().getActiveShell() != chromium.getShell()) {
-//                      System.err.println("Ignore do_message_loop_work due inactive shell");
-                        return;
-                    }
                     Point size = getChromiumSize();
+                    debugPrint("size: " + size);
 					lib.cefswt_resized(browser,  size.x,  size.y);
                 }
             }
@@ -862,7 +859,7 @@ class Chromium extends WebBrowser {
             }
         });
         clientHandler.get_focus_handler.set(client -> {
-            debugPrint("GetFocusHandler");
+//            debugPrint("GetFocusHandler");
             return focusHandler;
         });
     }
