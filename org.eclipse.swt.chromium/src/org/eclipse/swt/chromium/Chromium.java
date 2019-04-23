@@ -853,6 +853,10 @@ class Chromium extends WebBrowser {
         focusHandler.on_got_focus.set((focusHandler, browser_1) -> {
             debugPrint("CALLBACK OnGotFocus");
             hasFocus = true;
+            if (chromium.getDisplay().getFocusControl() != null) {
+                chromium.setFocus();
+            }
+            browserFocus(true);
         });
         focusHandler.on_set_focus.set((focusHandler, browser_1, focusSource) -> {
             debugPrint("CALLBACK OnSetFocus " + focusSource);
