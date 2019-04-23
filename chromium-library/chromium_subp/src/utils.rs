@@ -28,15 +28,17 @@ pub fn prepare_args() -> cef::_cef_main_args_t {
         mp
     }).collect();
     if cfg!(target_os = "macos") {
-        let carg_rslt = CString::new("--disable-gpu-compositing");
-        let carg = carg_rslt.expect("cant create arg");
+        let carg = CString::new("--disable-gpu-compositing").expect("cant create arg");
         let mp = carg.into_raw();
         args.push(mp);
-        let carg_rslt = CString::new("--disable-accelerated-2d-canvas");
-        let carg = carg_rslt.expect("cant create arg");
+        let carg = CString::new("--disable-accelerated-2d-canvas").expect("cant create arg");
         let mp = carg.into_raw();
         args.push(mp);
         // println!("Force --disable-gpu-compositing");
+    } else {
+        let carg = CString::new("--enable-webgl-draft-extensions").expect("cant create arg");
+        let mp = carg.into_raw();
+        args.push(mp);
     }
 
     let args_size = args.len() as i32;
