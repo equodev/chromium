@@ -227,6 +227,7 @@ fn swizzle_send_event() {
 
 #[cfg(target_os = "windows")]
 fn do_initialize(main_args: cef::_cef_main_args_t, settings: cef::_cef_settings_t, app_raw: *mut cef::_cef_app_t) {
+    cef::cef_enable_highdpi_support();
     unsafe { cef::cef_initialize(&main_args, &settings, &mut (*app_raw), std::ptr::null_mut()) };
 }
 
