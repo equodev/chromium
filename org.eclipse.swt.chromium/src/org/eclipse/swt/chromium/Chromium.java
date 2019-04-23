@@ -1399,7 +1399,7 @@ class Chromium extends WebBrowser {
 
     @Override
     public boolean setText(String html, boolean trusted) {
-        String texturl = DATA_TEXT_URL + Base64.getEncoder().encodeToString(html.getBytes(StandardCharsets.ISO_8859_1));
+        String texturl = DATA_TEXT_URL + Base64.getEncoder().encodeToString(html.getBytes(StandardCharsets.UTF_8));
         return setUrl(texturl, null, null);
     }
     
