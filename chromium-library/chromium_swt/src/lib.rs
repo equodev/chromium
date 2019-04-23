@@ -609,6 +609,11 @@ pub extern fn cefswt_dialog_close(callback: *mut cef::_cef_jsdialog_callback_t, 
 }
 
 #[no_mangle]
+pub extern fn cefswt_context_menu_cancel(callback: *mut cef::_cef_run_context_menu_callback_t) {
+    unsafe { (*callback).cancel.unwrap()(callback) };
+}
+
+#[no_mangle]
 pub extern fn cefswt_set_cookie(jurl: *const c_char, jname: *const c_char, jvalue: *const c_char, jdomain: *const c_char, jpath: *const c_char, secure: i32, httponly: i32, max_age: f64) -> c_int {
     let manager = unsafe { cef::cef_cookie_manager_get_global_manager(std::ptr::null_mut()) };
     let url = utils::cef_string_from_c(jurl);

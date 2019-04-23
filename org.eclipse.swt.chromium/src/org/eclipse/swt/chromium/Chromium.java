@@ -109,6 +109,7 @@ class Chromium extends WebBrowser {
     private CEF.cef_display_handler_t displayHandler;
     private CEF.cef_request_handler_t requestHandler;
     private CEF.cef_jsdialog_handler_t jsDialogHandler;
+    private CEF.cef_context_menu_handler_t contextMenuHandler;
     private CEF.cef_string_visitor_t  textVisitor;
     private FocusListener focusListener;
     private String url;
@@ -376,6 +377,7 @@ class Chromium extends WebBrowser {
         set_display_handler();
         set_request_handler();
         set_jsdialog_handler();
+        set_context_menu_handler();
         clientHandler.on_process_message_received.set((c, browser_1, source, processMessage) -> {
             return browserFunctionCalled(source, processMessage);
         });
@@ -486,6 +488,7 @@ class Chromium extends WebBrowser {
             Chromium.this.displayHandler = null;
             Chromium.this.requestHandler = null;
             Chromium.this.jsDialogHandler = null;
+            Chromium.this.contextMenuHandler = null;
             // not always called on linux
             disposingAny--;
             if (browsers.decrementAndGet() == 0 && shuttindDown) {
@@ -811,6 +814,25 @@ class Chromium extends WebBrowser {
         });
     }
     
+    private void set_context_menu_handler() {
+        contextMenuHandler = CEFFactory.newContextMenuHandler();
+        contextMenuHandler.on_before_context_menu.set((self, browser, frame, params, model) -> {
+            debugPrint("on_before_context_menu");
+        });
+        contextMenuHandler.run_context_menu.set((self, browser, frame, params, model, callback) -> {
+            debugPrint("run_context_menu");
+            if (chromium.getMenu() != null) {
+                chromium.getMenu().setVisible(true);
+                lib.cefswt_context_menu_cancel(callback);
+                return 1;
+            }
+            return 0;
+        });
+        clientHandler.get_context_menu_handler.set(client -> {
+            return contextMenuHandler;
+        });
+    }
+    
     private void set_text_visitor() {
         textVisitor = CEFFactory.newStringVisitor();
         textVisitor.visit.set((self, cefString) -> {
@@ -896,7 +918,7 @@ class Chromium extends WebBrowser {
 
     protected void initializeClientHandler(CEF.cef_client_t client) {
         // callbacks
-        client.get_context_menu_handler.set((c) -> debug("get_context_menu_handler"));
+        client.get_context_menu_handler.set((c) -> null);
         client.get_dialog_handler.set((c) -> debug("get_dialog_handler"));
         client.get_download_handler.set((c) -> debug("get_download_handler"));
         client.get_drag_handler.set((c) -> debug("get_drag_handler"));
@@ -1478,6 +1500,8 @@ class Chromium extends WebBrowser {
         @Encoding("UTF8") String cefswt_request_to_java(Pointer request);
 
         void cefswt_dialog_close(Pointer callback, int i, CEF.cef_string_t default_prompt_text);
+
+        void cefswt_context_menu_cancel(Pointer callback);
 
         boolean cefswt_set_cookie(@Encoding("UTF8") String url, @Encoding("UTF8") String name, @Encoding("UTF8") String value, @Encoding("UTF8") String domain, @Encoding("UTF8") String path, int secure, int httpOnly, double maxAge);
 
