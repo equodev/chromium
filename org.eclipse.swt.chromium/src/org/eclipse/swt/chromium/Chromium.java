@@ -1469,7 +1469,7 @@ class Chromium extends WebBrowser {
 
         @Encoding("UTF8") String cefswt_get_url(Pointer browser);
 
-        @Encoding("UTF8") String cefswt_get_text(Pointer browser, CEF.cef_string_visitor_t visitor);
+        void cefswt_get_text(Pointer browser, CEF.cef_string_visitor_t visitor);
 
         void cefswt_resized(Pointer browser, int width, int height);
 
