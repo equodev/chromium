@@ -2,7 +2,7 @@
 <feature
       id="org.eclipse.swt.chromium.feature"
       label="Chromium SWT Browser Feature"
-      version="0.8.1.qualifier"
+      version="0.9.0.qualifier"
       provider-name="Make Technology"
       os="linux,macosx,win32"
       ws="cocoa,gtk,win32"
