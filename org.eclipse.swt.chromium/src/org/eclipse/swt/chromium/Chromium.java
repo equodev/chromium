@@ -387,7 +387,6 @@ class Chromium extends WebBrowser {
             public void controlResized(ControlEvent e) {
                 if (!chromium.isDisposed() && browser != null) {
                     Point size = getChromiumSize();
-                    debugPrint("size: " + size);
 					lib.cefswt_resized(browser,  size.x,  size.y);
                 }
             }
