@@ -97,7 +97,7 @@ fn serialize_string() {
     
     assert_eq!(ReturnType::Str, read_st.kind);
     // assert_eq!(7, read_st.length);
-    assert_eq!(CString::new("o la la").unwrap(), unsafe{CString::from_raw(read_st.str_value)});
+    assert_eq!(CString::new("o la la").unwrap(), read_st.str_value);
 }
 
 #[test]
@@ -111,14 +111,14 @@ fn serialize_null() {
     
     assert_eq!(ReturnType::Null, read_st.kind);
     // assert_eq!(7, read_st.length);
-    assert_eq!(CString::new("").unwrap(), unsafe{CString::from_raw(read_st.str_value)});
+    assert_eq!(CString::new("").unwrap(), read_st.str_value);
 }
 
 pub fn wait_response(browser: *mut cef::cef_browser_t, 
         msg: *mut cef::cef_process_message_t,
         args: *mut cef::_cef_list_value_t,
         target: cef::cef_process_id_t,
-        callback: Option<unsafe extern "C" fn(work: c_int, kind: ReturnType, value: *const c_char)>
+        callback: Option<unsafe extern "C" fn(work: c_int, kind: c_int, value: *const c_char)>
         ) -> Result<ReturnSt, String> {
     match TcpListener::bind(("127.0.0.1", 0)) {
         Ok(listener) => {
@@ -160,7 +160,7 @@ pub fn wait_response(browser: *mut cef::cef_browser_t,
                         // println!("couldn't get client: {:?}", e);
                         unsafe {
                             if let Some(call) = callback {
-                                call(1, ReturnType::Error, ::std::ptr::null());
+                                call(1, ReturnType::Error as i32, ::std::ptr::null());
                             }
                         };
                         unsafe { cef::cef_do_message_loop_work() };

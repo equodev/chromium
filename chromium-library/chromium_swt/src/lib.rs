@@ -227,7 +227,7 @@ fn swizzle_send_event() {
 
 #[cfg(target_os = "windows")]
 fn do_initialize(main_args: cef::_cef_main_args_t, settings: cef::_cef_settings_t, app_raw: *mut cef::_cef_app_t) {
-    cef::cef_enable_highdpi_support();
+    unsafe { cef::cef_enable_highdpi_support() };
     unsafe { cef::cef_initialize(&main_args, &settings, &mut (*app_raw), std::ptr::null_mut()) };
 }
 
@@ -478,7 +478,7 @@ pub extern fn cefswt_execute(browser: *mut cef::cef_browser_t, text: *const c_ch
 
 #[no_mangle]
 pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char, id: i32,
-        callback: unsafe extern "C" fn(work: c_int, kind: socket::ReturnType, value: *const c_char)) -> c_int {
+        callback: unsafe extern "C" fn(work: c_int, kind: c_int, value: *const c_char)) -> c_int {
     let text_cef = utils::cef_string_from_c(text);
     let name = utils::cef_string("eval");
     unsafe {
@@ -490,7 +490,7 @@ pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char,
         assert_eq!(s, 1);
         match socket::wait_response(browser, msg, args, cef::cef_process_id_t::PID_RENDERER, Some(callback)) {
             Ok(r) => {
-                callback(0, r.kind, r.str_value.as_ptr());
+                callback(0, r.kind as i32, r.str_value.as_ptr());
                 1
             },
             Err(e) => {
@@ -547,13 +547,13 @@ pub unsafe extern fn cefswt_function_id(message: *mut cef::cef_process_message_t
 }
 
 #[no_mangle]
-pub unsafe extern fn cefswt_function_arg(message: *mut cef::cef_process_message_t, index: i32, callback: unsafe extern "C" fn(work: c_int, kind: socket::ReturnType, value: *const c_char)) -> c_int {
+pub unsafe extern fn cefswt_function_arg(message: *mut cef::cef_process_message_t, index: i32, callback: unsafe extern "C" fn(work: c_int, kind: c_int, value: *const c_char)) -> c_int {
     let args = (*message).get_argument_list.unwrap()(message);
     let kind = (*args).get_int.unwrap()(args, (1+index*2+1) as usize);
     let arg = (*args).get_string.unwrap()(args, (1+index*2+2) as usize);
     let cstr = utils::cstr_from_cef(arg);
     let kind = socket::ReturnType::from(kind);
-    callback(0, kind, cstr);
+    callback(0, kind as i32, cstr);
     1
 }
 
