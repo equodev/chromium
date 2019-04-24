@@ -807,6 +807,7 @@ class Chromium extends WebBrowser {
             }
             int open = box.open();
             lib.cefswt_dialog_close(callback, open == SWT.OK || open == SWT.YES ? 1 : 0, default_prompt_text);
+            chromium.getShell().forceActive();
             return 1;
         });
         clientHandler.get_jsdialog_handler.set(client -> {
