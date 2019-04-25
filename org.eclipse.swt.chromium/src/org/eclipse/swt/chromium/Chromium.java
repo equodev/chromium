@@ -69,7 +69,7 @@ import org.eclipse.swt.internal.chromium.ResourceExpander;
 
 class Chromium extends WebBrowser {
 	private static final String DATA_TEXT_URL = "data:text/html;base64,";
-	private static final String VERSION = "0801";
+	private static final String VERSION = "0900";
     private static final String CEFVERSION = "3071";
     private static final String SHARED_LIB_V = "chromium_swt-"+VERSION;
     private static final int MAX_PROGRESS = 100;
@@ -109,6 +109,7 @@ class Chromium extends WebBrowser {
     private CEF.cef_display_handler_t displayHandler;
     private CEF.cef_request_handler_t requestHandler;
     private CEF.cef_jsdialog_handler_t jsDialogHandler;
+    private CEF.cef_context_menu_handler_t contextMenuHandler;
     private CEF.cef_string_visitor_t  textVisitor;
     private FocusListener focusListener;
     private String url;
@@ -376,6 +377,7 @@ class Chromium extends WebBrowser {
         set_display_handler();
         set_request_handler();
         set_jsdialog_handler();
+        set_context_menu_handler();
         clientHandler.on_process_message_received.set((c, browser_1, source, processMessage) -> {
             return browserFunctionCalled(source, processMessage);
         });
@@ -384,10 +386,6 @@ class Chromium extends WebBrowser {
             @Override
             public void controlResized(ControlEvent e) {
                 if (!chromium.isDisposed() && browser != null) {
-                    if (chromium.getDisplay().getActiveShell() != chromium.getShell()) {
-//                      System.err.println("Ignore do_message_loop_work due inactive shell");
-                        return;
-                    }
                     Point size = getChromiumSize();
 					lib.cefswt_resized(browser,  size.x,  size.y);
                 }
@@ -489,6 +487,7 @@ class Chromium extends WebBrowser {
             Chromium.this.displayHandler = null;
             Chromium.this.requestHandler = null;
             Chromium.this.jsDialogHandler = null;
+            Chromium.this.contextMenuHandler = null;
             // not always called on linux
             disposingAny--;
             if (browsers.decrementAndGet() == 0 && shuttindDown) {
@@ -807,10 +806,30 @@ class Chromium extends WebBrowser {
             }
             int open = box.open();
             lib.cefswt_dialog_close(callback, open == SWT.OK || open == SWT.YES ? 1 : 0, default_prompt_text);
+            chromium.getShell().forceActive();
             return 1;
         });
         clientHandler.get_jsdialog_handler.set(client -> {
             return jsDialogHandler;
+        });
+    }
+    
+    private void set_context_menu_handler() {
+        contextMenuHandler = CEFFactory.newContextMenuHandler();
+        contextMenuHandler.on_before_context_menu.set((self, browser, frame, params, model) -> {
+            debugPrint("on_before_context_menu");
+        });
+        contextMenuHandler.run_context_menu.set((self, browser, frame, params, model, callback) -> {
+            debugPrint("run_context_menu");
+            if (chromium.getMenu() != null) {
+                chromium.getMenu().setVisible(true);
+                lib.cefswt_context_menu_cancel(callback);
+                return 1;
+            }
+            return 0;
+        });
+        clientHandler.get_context_menu_handler.set(client -> {
+            return contextMenuHandler;
         });
     }
     
@@ -834,6 +853,10 @@ class Chromium extends WebBrowser {
         focusHandler.on_got_focus.set((focusHandler, browser_1) -> {
             debugPrint("CALLBACK OnGotFocus");
             hasFocus = true;
+            if (chromium.getDisplay().getFocusControl() != null) {
+                chromium.setFocus();
+            }
+            browserFocus(true);
         });
         focusHandler.on_set_focus.set((focusHandler, browser_1, focusSource) -> {
             debugPrint("CALLBACK OnSetFocus " + focusSource);
@@ -862,7 +885,7 @@ class Chromium extends WebBrowser {
             }
         });
         clientHandler.get_focus_handler.set(client -> {
-            debugPrint("GetFocusHandler");
+//            debugPrint("GetFocusHandler");
             return focusHandler;
         });
     }
@@ -899,7 +922,7 @@ class Chromium extends WebBrowser {
 
     protected void initializeClientHandler(CEF.cef_client_t client) {
         // callbacks
-        client.get_context_menu_handler.set((c) -> debug("get_context_menu_handler"));
+        client.get_context_menu_handler.set((c) -> null);
         client.get_dialog_handler.set((c) -> debug("get_dialog_handler"));
         client.get_download_handler.set((c) -> debug("get_download_handler"));
         client.get_drag_handler.set((c) -> debug("get_drag_handler"));
@@ -914,7 +937,7 @@ class Chromium extends WebBrowser {
     }
 
     private int browserFunctionCalled(CEF.cef_process_id_t source, Pointer processMessage) {
-        if (source != CEF.cef_process_id_t.PID_RENDERER || !jsEnabled) {
+        if (source != CEF.cef_process_id_t.PID_RENDERER || !jsEnabled || disposing || chromium == null || chromium.isDisposed()) {
             return 0;
         }
         FunctionSt fn = lib.cefswt_function_id(processMessage);
@@ -1047,9 +1070,8 @@ class Chromium extends WebBrowser {
         String platform = SWT.getPlatform();
         if ("gtk".equals(platform)) {
             String gtk = System.getProperty("org.eclipse.swt.internal.gtk.version", "");
-            if (gtk.startsWith("3")) {
-                throw new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY, "Chromium Browser is not supported in GTK3 yet. "
-                        + "Set env var SWT_GTK3=0");
+            if (gtk.startsWith("2")) {
+                throw new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY, "Chromium Browser is no longer supported in GTK2. ");
             }
         }
 
@@ -1377,7 +1399,7 @@ class Chromium extends WebBrowser {
 
     @Override
     public boolean setText(String html, boolean trusted) {
-        String texturl = DATA_TEXT_URL + Base64.getEncoder().encodeToString(html.getBytes(StandardCharsets.ISO_8859_1));
+        String texturl = DATA_TEXT_URL + Base64.getEncoder().encodeToString(html.getBytes(StandardCharsets.UTF_8));
         return setUrl(texturl, null, null);
     }
     
@@ -1447,7 +1469,7 @@ class Chromium extends WebBrowser {
 
         @Encoding("UTF8") String cefswt_get_url(Pointer browser);
 
-        @Encoding("UTF8") String cefswt_get_text(Pointer browser, CEF.cef_string_visitor_t visitor);
+        void cefswt_get_text(Pointer browser, CEF.cef_string_visitor_t visitor);
 
         void cefswt_resized(Pointer browser, int width, int height);
 
@@ -1482,6 +1504,8 @@ class Chromium extends WebBrowser {
         @Encoding("UTF8") String cefswt_request_to_java(Pointer request);
 
         void cefswt_dialog_close(Pointer callback, int i, CEF.cef_string_t default_prompt_text);
+
+        void cefswt_context_menu_cancel(Pointer callback);
 
         boolean cefswt_set_cookie(@Encoding("UTF8") String url, @Encoding("UTF8") String name, @Encoding("UTF8") String value, @Encoding("UTF8") String domain, @Encoding("UTF8") String path, int secure, int httpOnly, double maxAge);
 

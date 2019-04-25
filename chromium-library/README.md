@@ -6,7 +6,7 @@
 
 - Rust (https://www.rust-lang.org/en-US/install.html)
 
-- Download CEF binary distrubution (minimal is enough for release builds), unzip it and rename to ./chromium_subp/cef_[os]/ (Where [os]=linux|osx|winows)
+- Download CEF binary distrubution (minimal is enough for release builds), unzip it and rename to ./chromium_subp/cef_[os]/ (Where [os]=linux|osx|windows)
 
 ### Build
 

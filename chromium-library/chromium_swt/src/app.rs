@@ -1,7 +1,7 @@
 use cef;
 use utils;
 #[cfg(target_os = "linux")]
-use gtk2;
+use gtk;
 
 use std::os::raw::{c_ulong, c_int};
 use std::mem::{size_of};
@@ -61,18 +61,39 @@ pub fn create_browser(canvas_hwnd: c_ulong, url: &str, jclient: &mut cef::_cef_c
     browser
 }
 
+#[cfg(target_os = "linux")]
+use std::os::raw::{c_void};
+#[cfg(target_os = "linux")]
+fn override_system_visual(visual: *mut c_void) {
+    unsafe {
+        let xvisual = gtk::gdk_x11_visual_get_xvisual(visual);
+        //println!("xvisualid: {:?}", (*xvisual).visualid);
+        cef_override_system_visual((*xvisual).visualid);
+    }
+}
+
+#[cfg(target_os = "linux")]
+extern "C" {
+    pub fn cef_override_system_visual(visual_id: c_ulong);
+}
 
 #[cfg(target_os = "linux")]
 fn cef_window_info(hwnd: c_ulong, w: c_int, h: c_int) -> cef::_cef_window_info_t {
     use std::os::raw::{c_uint, c_void};
-    let window_info = cef::_cef_window_info_t {
-        x: 0,
-        y: 0,
-        width: w as c_uint,
-        height: h as c_uint,
-        parent_window: unsafe {gtk2::gdk_x11_drawable_get_xid(gtk2::gtk_widget_get_window(hwnd as *mut c_void))},
-        windowless_rendering_enabled: 0,
-        window: 0
+    let window_info = unsafe {
+        let visual = gtk::gtk_widget_get_visual(hwnd as *mut c_void);
+        override_system_visual(visual);
+        let parent_win = gtk::gdk_x11_window_get_xid(gtk::gtk_widget_get_window(hwnd as *mut c_void));
+        let window_info = cef::_cef_window_info_t {
+            x: 0,
+            y: 0,
+            width: w as c_uint,
+            height: h as c_uint,
+            parent_window: parent_win,
+            windowless_rendering_enabled: 0,
+            window: 0
+        };
+        window_info
     };
     println!("parent {}", window_info.parent_window);
     window_info
@@ -87,7 +108,12 @@ pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulon
         (*window_info).y = y as c_uint;
         (*window_info).width = w as c_uint;
         (*window_info).height = h as c_uint;
-        (*window_info).parent_window = if hwnd == 0 { 0 } else { gtk2::gdk_x11_drawable_get_xid(gtk2::gtk_widget_get_window(hwnd as *mut c_void)) };
+        (*window_info).parent_window = if hwnd == 0 { 0 } else {
+            let visual = gtk::gtk_widget_get_visual(hwnd as *mut c_void);
+            override_system_visual(visual);
+
+            gtk::gdk_x11_window_get_xid(gtk::gtk_widget_get_window(hwnd as *mut c_void)) 
+        };
         (*window_info).windowless_rendering_enabled = 0;
         (*window_info).window = 0;
     }

@@ -52,8 +52,9 @@ fn link() {
   }
 
   if cfg!(target_os = "linux") {
-    println!("cargo:rustc-link-lib=gtk-x11-2.0");
-    println!("cargo:rustc-link-lib=gdk-x11-2.0");
+    // println!("cargo:rustc-link-lib=gtk-x11-2.0");
+    // println!("cargo:rustc-link-lib=gdk-x11-2.0");
+    // println!("cargo:rustc-link-lib=gtk-3.so.0");
     println!("cargo:rustc-link-lib=X11");
   }
 
@@ -184,6 +185,7 @@ fn gen_java_cef(cef_path: std::path::Display) {
     .whitelist_type("cef_urlrequest_status_t")
     .whitelist_type("cef_return_value_t")
     .whitelist_type("cef_jsdialog_type_t")
+    .whitelist_type("cef_event_flags_t")
     // .whitelist_type("_cef_browser_t")
     // .whitelist_type("_cef_browser_host_t")
     // .whitelist_type("_cef_frame_t")
@@ -224,7 +226,10 @@ fn gen_java_cef(cef_path: std::path::Display) {
     .opaque_type("_cef_drag_handler_t")
     .opaque_type("_cef_download_handler_t")
     .opaque_type("_cef_dialog_handler_t")
-    .opaque_type("_cef_context_menu_handler_t")
+    .whitelist_type("_cef_context_menu_handler_t")
+    .opaque_type("_cef_context_menu_params_t")
+    .opaque_type("_cef_menu_model_t")
+    .opaque_type("_cef_run_context_menu_callback_t")
     .opaque_type("_cef_frame_t")
     .whitelist_type("_cef_popup_features_t")
     .opaque_type("_cef_window_info_t")
