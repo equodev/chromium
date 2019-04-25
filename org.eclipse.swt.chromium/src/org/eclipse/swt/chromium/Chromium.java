@@ -16,6 +16,7 @@ import jnr.ffi.provider.jffi.NativeRuntime;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.net.HttpCookie;
 import java.net.URL;
@@ -986,14 +987,13 @@ class Chromium extends WebBrowser {
             returnStr = ret.toString();
         } else if (ret.getClass().isArray()) {
             returnType = ReturnType.Array;
-            Object[] array = (Object[]) ret;
             StringBuilder buffer = new StringBuilder();
             buffer.append("\"");
-            for (int i = 0; i < array.length; i++) {
+            for (int i = 0; i < Array.getLength(ret); i++) {
                 if (i > 0) {
                     buffer.append(";");
                 }
-                Object[] arrayElem = convertType(array[i]);
+                Object[] arrayElem = convertType(Array.get(ret, i));
                 buffer.append("'");
                 buffer.append(((ReturnType) arrayElem[0]).intValue());
                 buffer.append(",");
