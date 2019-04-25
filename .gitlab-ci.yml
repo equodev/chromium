@@ -13,7 +13,7 @@ build:
   image: maven:3.5-jdk-8-alpine
   stage: build
   script:
-    - SWT_GTK3=0 mvn clean verify -Dmaven.test.failure.ignore=true -DskipTests
+    - mvn clean verify -Dmaven.test.failure.ignore=true -DskipTests
   artifacts:
     paths:
     - org.eclipse.swt.chromium.tests/target/surefire-reports
