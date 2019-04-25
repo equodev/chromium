@@ -37,7 +37,7 @@ Change your java import to use `import org.eclipse.swt.chromium.Browser;`. It fo
 
 Notes:
 
-  - On linux it works only with GTK2 for now.
+  - ~~On linux it works only with GTK2 for now~~. Since 0.9.0 it works with GTK3, with CEF binaries repository which has some patches on CEF for gtk3.
 
 	- Make sure you enable the following bundles and their dependencies in your run config:
         - com.github.jnr.ffi
