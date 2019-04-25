@@ -156,6 +156,12 @@ public class CEFFactory {
         setBase(st, st.base);
         return st;
     }
+    
+    public static CEF.cef_context_menu_handler_t newContextMenuHandler() {
+        CEF.cef_context_menu_handler_t st = new CEF.cef_context_menu_handler_t(RUNTIME);
+        setBase(st, st.base);
+        return st;
+    }
 
     public static CEF.cef_string_visitor_t newStringVisitor() {
         CEF.cef_string_visitor_t st = new CEF.cef_string_visitor_t(RUNTIME);

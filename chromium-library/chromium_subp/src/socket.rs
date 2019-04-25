@@ -97,7 +97,7 @@ fn serialize_string() {
     
     assert_eq!(ReturnType::Str, read_st.kind);
     // assert_eq!(7, read_st.length);
-    assert_eq!(CString::new("o la la").unwrap(), unsafe{CString::from_raw(read_st.str_value)});
+    assert_eq!(CString::new("o la la").unwrap(), read_st.str_value);
 }
 
 #[test]
@@ -111,77 +111,70 @@ fn serialize_null() {
     
     assert_eq!(ReturnType::Null, read_st.kind);
     // assert_eq!(7, read_st.length);
-    assert_eq!(CString::new("").unwrap(), unsafe{CString::from_raw(read_st.str_value)});
+    assert_eq!(CString::new("").unwrap(), read_st.str_value);
 }
 
 pub fn wait_response(browser: *mut cef::cef_browser_t, 
         msg: *mut cef::cef_process_message_t,
         args: *mut cef::_cef_list_value_t,
         target: cef::cef_process_id_t,
-        callback: Option<unsafe extern "C" fn(work: c_int, kind: ReturnType, value: *const c_char)>
+        callback: Option<unsafe extern "C" fn(work: c_int, kind: c_int, value: *const c_char)>
         ) -> Result<ReturnSt, String> {
-    match get_available_port() {
-        Some(port) => {
+    match TcpListener::bind(("127.0.0.1", 0)) {
+        Ok(listener) => {
+            let port = listener.local_addr().unwrap().port();
             let s = unsafe {(*args).set_int.unwrap()(args, 0, port as i32) };
             assert_eq!(s, 1);
+            let sent = unsafe {(*browser).send_process_message.unwrap()(browser, target, msg)};
+            assert_eq!(sent, 1);
 
-            match TcpListener::bind(("127.0.0.1", port)) {
-                Ok(listener) => {
-                    let sent = unsafe {(*browser).send_process_message.unwrap()(browser, target, msg)};
-                    assert_eq!(sent, 1);
+            println!("new server, waiting response in :{:?}", port);
+            let mut res = None;
+            listener.set_nonblocking(true).expect("Cannot set non-blocking");
+            for stream in listener.incoming() {
+                match stream {
+                    Ok(mut stream) => {
+                        println!("new client!");
+                        let mut buffer = Vec::new();
+                        loop {
+                            match stream.read_to_end(&mut buffer) {
+                                Ok(n) => {
+                                    println!("read from socket: {} {} {:?}", n, ::std::mem::size_of::<ReturnSt>(), buffer);
+                                    let ret = read_buffer(&buffer);
+                                    println!("st: {:?}", ret);
+                                    res = Some(Ok(ret));
+                                    break;
+                                },
+                                Err(ref e) if e.kind() == ::std::io::ErrorKind::WouldBlock => {
 
-                    println!("new server, waiting response in :{:?}", port);
-                    let mut res = None;
-                    listener.set_nonblocking(true).expect("Cannot set non-blocking");
-                    for stream in listener.incoming() {
-                        match stream {
-                            Ok(mut stream) => {
-                                println!("new client!");
-                                let mut buffer = Vec::new();
-                                loop {
-                                    match stream.read_to_end(&mut buffer) {
-                                        Ok(n) => {
-                                            println!("read from socket: {} {} {:?}", n, ::std::mem::size_of::<ReturnSt>(), buffer);
-                                            let ret = read_buffer(&buffer);
-                                            println!("st: {:?}", ret);
-                                            res = Some(Ok(ret));
-                                            break;
-                                        },
-                                        Err(ref e) if e.kind() == ::std::io::ErrorKind::WouldBlock => {
-
-                                        },
-                                        Err(e) => {
-                                            println!("couldn't read from socket: {:?}", e);
-                                            res = Some(Err(e.to_string()));
-                                            break;
-                                        }
-                                    }
+                                },
+                                Err(e) => {
+                                    println!("couldn't read from socket: {:?}", e);
+                                    res = Some(Err(e.to_string()));
+                                    break;
                                 }
-                            },
-                            Err(_e) => { 
-                                // println!("couldn't get client: {:?}", e);
-                                unsafe {
-                                    if let Some(call) = callback {
-                                        call(1, ReturnType::Error, ::std::ptr::null());
-                                    }
-                                };
-                                unsafe { cef::cef_do_message_loop_work() };
+                            }
+                        }
+                    },
+                    Err(_e) => { 
+                        // println!("couldn't get client: {:?}", e);
+                        unsafe {
+                            if let Some(call) = callback {
+                                call(1, ReturnType::Error as i32, ::std::ptr::null());
                             }
                         };
-                        if res.is_some() {
-                            break;
-                        }
-                    };
-                    res.unwrap()
-                },
-                Err(e) => {
-                    println!("couldn't bind port: {:?}", e);
-                    Err(e.to_string())
+                        unsafe { cef::cef_do_message_loop_work() };
+                    }
+                };
+                if res.is_some() {
+                    break;
                 }
-            }
+            };
+            res.unwrap()
         },
-        None => {
-            Err("no ports available".to_string())
+        Err(e) => {
+            println!("couldn't bind port: {:?}", e);
+            Err(e.to_string())
         }
     }
 }
@@ -196,17 +189,5 @@ pub fn socket_client(port: u16, ret: CString, ret_type: ReturnType) -> i32 {
             println!("Cannot connect to renderer socket {:?}", e);
             0
         }
-    }
-}
-
-fn get_available_port() -> Option<u16> {
-    (8001..9999)
-        .find(|port| port_is_available(*port))
-}
-
-fn port_is_available(port: u16) -> bool {
-    match TcpListener::bind(("127.0.0.1", port)) {
-        Ok(_) => true,
-        Err(_) => false,
     }
 }

@@ -14,7 +14,7 @@ use chromium::socket;
 
 mod app;
 #[cfg(target_os = "linux")]
-mod gtk2;
+mod gtk;
 
 use std::os::raw::{c_char, c_int, c_ulong, c_void};
 #[cfg(unix)]
@@ -227,6 +227,7 @@ fn swizzle_send_event() {
 
 #[cfg(target_os = "windows")]
 fn do_initialize(main_args: cef::_cef_main_args_t, settings: cef::_cef_settings_t, app_raw: *mut cef::_cef_app_t) {
+    unsafe { cef::cef_enable_highdpi_support() };
     unsafe { cef::cef_initialize(&main_args, &settings, &mut (*app_raw), std::ptr::null_mut()) };
 }
 
@@ -477,7 +478,7 @@ pub extern fn cefswt_execute(browser: *mut cef::cef_browser_t, text: *const c_ch
 
 #[no_mangle]
 pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char, id: i32,
-        callback: unsafe extern "C" fn(work: c_int, kind: socket::ReturnType, value: *const c_char)) -> c_int {
+        callback: unsafe extern "C" fn(work: c_int, kind: c_int, value: *const c_char)) -> c_int {
     let text_cef = utils::cef_string_from_c(text);
     let name = utils::cef_string("eval");
     unsafe {
@@ -489,7 +490,7 @@ pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char,
         assert_eq!(s, 1);
         match socket::wait_response(browser, msg, args, cef::cef_process_id_t::PID_RENDERER, Some(callback)) {
             Ok(r) => {
-                callback(0, r.kind, r.str_value.as_ptr());
+                callback(0, r.kind as i32, r.str_value.as_ptr());
                 1
             },
             Err(e) => {
@@ -546,13 +547,13 @@ pub unsafe extern fn cefswt_function_id(message: *mut cef::cef_process_message_t
 }
 
 #[no_mangle]
-pub unsafe extern fn cefswt_function_arg(message: *mut cef::cef_process_message_t, index: i32, callback: unsafe extern "C" fn(work: c_int, kind: socket::ReturnType, value: *const c_char)) -> c_int {
+pub unsafe extern fn cefswt_function_arg(message: *mut cef::cef_process_message_t, index: i32, callback: unsafe extern "C" fn(work: c_int, kind: c_int, value: *const c_char)) -> c_int {
     let args = (*message).get_argument_list.unwrap()(message);
     let kind = (*args).get_int.unwrap()(args, (1+index*2+1) as usize);
     let arg = (*args).get_string.unwrap()(args, (1+index*2+2) as usize);
     let cstr = utils::cstr_from_cef(arg);
     let kind = socket::ReturnType::from(kind);
-    callback(0, kind, cstr);
+    callback(0, kind as i32, cstr);
     1
 }
 
@@ -581,10 +582,10 @@ pub extern fn cefswt_set_focus(browser: *mut cef::cef_browser_t, set: bool, pare
 
 #[cfg(target_os = "linux")]
 fn do_set_focus(parent: *mut c_void, focus: i32) {
-    let root = unsafe { gtk2::gtk_widget_get_toplevel(parent) };
+    let root = unsafe { gtk::gtk_widget_get_toplevel(parent) };
     println!("<<<<<<<< set_focus {} {:?} {:?}", focus, parent, root);
     // workaround to actually remove focus from cef inputs
-    unsafe { gtk2::gtk_window_present(root) };
+    unsafe { gtk::gtk_window_present(root) };
 }
 
 #[cfg(target_family = "windows")]
@@ -605,6 +606,11 @@ pub extern fn cefswt_is_same(browser: *mut cef::cef_browser_t, that: *mut cef::c
 #[no_mangle]
 pub extern fn cefswt_dialog_close(callback: *mut cef::_cef_jsdialog_callback_t, success: c_int, prompt: *mut cef::cef_string_t) {
     unsafe { (*callback).cont.unwrap()(callback, success, prompt) };
+}
+
+#[no_mangle]
+pub extern fn cefswt_context_menu_cancel(callback: *mut cef::_cef_run_context_menu_callback_t) {
+    unsafe { (*callback).cancel.unwrap()(callback) };
 }
 
 #[no_mangle]

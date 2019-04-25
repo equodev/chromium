@@ -339,6 +339,33 @@ public class CEF {
     }
   }
 
+  public enum cef_event_flags_t implements IntegerEnum {
+    EVENTFLAG_NONE(0x0),
+    EVENTFLAG_CAPS_LOCK_ON(0x1),
+    EVENTFLAG_SHIFT_DOWN(0x2),
+    EVENTFLAG_CONTROL_DOWN(0x4),
+    EVENTFLAG_ALT_DOWN(0x8),
+    EVENTFLAG_LEFT_MOUSE_BUTTON(0x10),
+    EVENTFLAG_MIDDLE_MOUSE_BUTTON(0x20),
+    EVENTFLAG_RIGHT_MOUSE_BUTTON(0x40),
+    EVENTFLAG_COMMAND_DOWN(0x80),
+    EVENTFLAG_NUM_LOCK_ON(0x100),
+    EVENTFLAG_IS_KEY_PAD(0x200),
+    EVENTFLAG_IS_LEFT(0x400),
+    EVENTFLAG_IS_RIGHT(0x800),
+    ;
+    private int nativeInt;
+
+    private cef_event_flags_t(int nativeInt) {
+      this.nativeInt = nativeInt;
+    }
+
+    @Override
+    public int intValue() {
+      return nativeInt;
+    }
+  }
+
   public enum cef_focus_source_t implements IntegerEnum {
     FOCUS_SOURCE_NAVIGATION(0),
     FOCUS_SOURCE_SYSTEM(1),
@@ -708,6 +735,95 @@ public class CEF {
     }
 
     public cef_app_t(jnr.ffi.Runtime runtime) {
+      super(runtime);
+    }
+  }
+  ///
+  /// Implement this structure to handle context menu events. The functions of this
+  /// structure will be called on the UI thread.
+  ///
+  public static class cef_context_menu_handler_t extends Struct {
+    static {
+      mapTypeForClosure(cef_context_menu_handler_t.class);
+    }
+    ///
+    /// Base structure.
+    ///
+    public cef_base_ref_counted_t base = inner(new cef_base_ref_counted_t(getRuntime()));
+    ///
+    /// Called before a context menu is displayed. |params| provides information
+    /// about the context menu state. |model| initially contains the default
+    /// context menu. The |model| can be cleared to show no context menu or
+    /// modified to show a custom menu. Do not keep references to |params| or
+    /// |model| outside of this callback.
+    ///
+    public Function<on_before_context_menu> on_before_context_menu =
+        function(on_before_context_menu.class);
+    ///
+    /// Called to allow custom display of the context menu. |params| provides
+    /// information about the context menu state. |model| contains the context menu
+    /// model resulting from OnBeforeContextMenu. For custom display return true
+    /// (1) and execute |callback| either synchronously or asynchronously with the
+    /// selected command ID. For default display return false (0). Do not keep
+    /// references to |params| or |model| outside of this callback.
+    ///
+    public Function<run_context_menu> run_context_menu = function(run_context_menu.class);
+    ///
+    /// Called to execute a command selected from the context menu. Return true (1)
+    /// if the command was handled or false (0) for the default implementation. See
+    /// cef_menu_id_t for the command ids that have default implementations. All
+    /// user-defined command ids should be between MENU_ID_USER_FIRST and
+    /// MENU_ID_USER_LAST. |params| will have the same values as what was passed to
+    /// on_before_context_menu(). Do not keep a reference to |params| outside of
+    /// this callback.
+    ///
+    public Function<on_context_menu_command> on_context_menu_command =
+        function(on_context_menu_command.class);
+    ///
+    /// Called when the context menu is dismissed irregardless of whether the menu
+    /// was NULL or a command was selected.
+    ///
+    public Function<on_context_menu_dismissed> on_context_menu_dismissed =
+        function(on_context_menu_dismissed.class);
+
+    public static interface on_before_context_menu {
+      @Delegate
+      void invoke(
+          cef_context_menu_handler_t self_,
+          jnr.ffi.Pointer browser,
+          jnr.ffi.Pointer frame,
+          jnr.ffi.Pointer params,
+          jnr.ffi.Pointer model);
+    }
+
+    public static interface run_context_menu {
+      @Delegate
+      int invoke(
+          cef_context_menu_handler_t self_,
+          jnr.ffi.Pointer browser,
+          jnr.ffi.Pointer frame,
+          jnr.ffi.Pointer params,
+          jnr.ffi.Pointer model,
+          jnr.ffi.Pointer callback);
+    }
+
+    public static interface on_context_menu_command {
+      @Delegate
+      int invoke(
+          cef_context_menu_handler_t self_,
+          jnr.ffi.Pointer browser,
+          jnr.ffi.Pointer frame,
+          jnr.ffi.Pointer params,
+          int command_id,
+          cef_event_flags_t event_flags);
+    }
+
+    public static interface on_context_menu_dismissed {
+      @Delegate
+      void invoke(cef_context_menu_handler_t self_, jnr.ffi.Pointer browser, jnr.ffi.Pointer frame);
+    }
+
+    public cef_context_menu_handler_t(jnr.ffi.Runtime runtime) {
       super(runtime);
     }
   }
@@ -1542,7 +1658,7 @@ public class CEF {
 
     public static interface get_context_menu_handler {
       @Delegate
-      jnr.ffi.Pointer invoke(cef_client_t self_);
+      cef_context_menu_handler_t invoke(cef_client_t self_);
     }
 
     public static interface get_dialog_handler {
