@@ -392,7 +392,7 @@ unsafe fn map_type(kind: socket::ReturnType, str_value: &str) -> Result<*mut cef
             let array = cef::cef_v8value_create_array(v.len() as i32);
             for i in 0..v.len() {
                 let elem_unquoted = v[i].get(1..v[i].len()-1).expect("elem not quoted");
-                let parts = split(elem_unquoted, '\'', ',');
+                let parts = splitn(elem_unquoted, 2, '\'', ',');
                 let elem_type = socket::ReturnType::from(parts[0].parse::<i32>().unwrap());
                 let elem_value = map_type(elem_type, parts[1]);
                 let s = (*array).set_value_byindex.unwrap()(array, i as i32, elem_value.expect("invalid elem type"));
@@ -409,7 +409,20 @@ unsafe fn map_type(kind: socket::ReturnType, str_value: &str) -> Result<*mut cef
 
 fn split<'a>(rstr: &'a str, quote: char, sep: char) -> Vec<&'a str> {
     let mut in_string = false;
-    let v: Vec<&str> = rstr.split(|c| {
+    let v: Vec<&str> = rstr.split_terminator(|c| {
+        if c == quote && in_string {
+            in_string = false;
+        } else if c == quote && !in_string {
+            in_string = true;
+        } 
+        c == sep && !in_string
+    }).collect();
+    v
+}
+
+fn splitn<'a>(rstr: &'a str, max: usize, quote: char, sep: char) -> Vec<&'a str> {
+    let mut in_string = false;
+    let v: Vec<&str> = rstr.splitn(max, |c| {
         if c == quote && in_string {
             in_string = false;
         } else if c == quote && !in_string {

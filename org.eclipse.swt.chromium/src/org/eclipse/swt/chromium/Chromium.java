@@ -16,6 +16,7 @@ import jnr.ffi.provider.jffi.NativeRuntime;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.net.HttpCookie;
 import java.net.URL;
@@ -69,7 +70,7 @@ import org.eclipse.swt.internal.chromium.ResourceExpander;
 
 class Chromium extends WebBrowser {
 	private static final String DATA_TEXT_URL = "data:text/html;base64,";
-	private static final String VERSION = "0900";
+	private static final String VERSION = "0901";
     private static final String CEFVERSION = "3071";
     private static final String SHARED_LIB_V = "chromium_swt-"+VERSION;
     private static final int MAX_PROGRESS = 100;
@@ -986,14 +987,13 @@ class Chromium extends WebBrowser {
             returnStr = ret.toString();
         } else if (ret.getClass().isArray()) {
             returnType = ReturnType.Array;
-            Object[] array = (Object[]) ret;
             StringBuilder buffer = new StringBuilder();
             buffer.append("\"");
-            for (int i = 0; i < array.length; i++) {
+            for (int i = 0; i < Array.getLength(ret); i++) {
                 if (i > 0) {
                     buffer.append(";");
                 }
-                Object[] arrayElem = convertType(array[i]);
+                Object[] arrayElem = convertType(Array.get(ret, i));
                 buffer.append("'");
                 buffer.append(((ReturnType) arrayElem[0]).intValue());
                 buffer.append(",");
@@ -1399,7 +1399,7 @@ class Chromium extends WebBrowser {
 
     @Override
     public boolean setText(String html, boolean trusted) {
-        String texturl = DATA_TEXT_URL + Base64.getEncoder().encodeToString(html.getBytes(StandardCharsets.UTF_8));
+        String texturl = DATA_TEXT_URL + Base64.getEncoder().encodeToString(html.getBytes());
         return setUrl(texturl, null, null);
     }
     

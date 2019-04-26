@@ -1,6 +1,6 @@
 [package]
 name = "chromium"
-version = "0.9.0"
+version = "0.9.1"
 authors = ["Make Technology <http://maketechnology.io>", "Guillermo Zunino <guillez@gmail.com>"]
 
 [profile.release]
