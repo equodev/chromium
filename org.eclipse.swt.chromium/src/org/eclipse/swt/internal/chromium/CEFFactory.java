@@ -99,25 +99,47 @@ public class CEFFactory {
         }
     }
 
-    public static CEF.cef_app_t newApp() {
-        mapTypeForClosure(CEF.cef_string_utf16_t.class);
-        mapTypeForClosure(CEF.cef_string_t.class);
-        mapTypeForClosure(CEF.cef_popup_features_t.class);
-        mapTypeForClosure(CEF.cef_cookie_t.class);
-        CEF.cef_app_t st = new CEF.cef_app_t(RUNTIME);
-        setBase(st, st.base);
+//    public static CEF.cef_app_t newApp() {
+//        mapTypeForClosure(CEF.cef_string_utf16_t.class);
+//        mapTypeForClosure(CEF.cef_string_t.class);
+//        mapTypeForClosure(CEF.cef_popup_features_t.class);
+//        mapTypeForClosure(CEF.cef_cookie_t.class);
+//        CEF.cef_app_t st = new CEF.cef_app_t(RUNTIME);
+//        setBase(st, st.base);
+//        return st;
+//    }
+
+    public static cef_app_t newApp() {
+        cef_app_t st = new cef_app_t();
+        st.get_render_process_handler = 0;
+        st.on_before_command_line_processing = 0;
+        st.get_resource_bundle_handler = 0;
+        st.on_register_custom_schemes = 0;
+        st.base = setBase(st, cef_app_t.sizeof);
         return st;
     }
 
-    public static CEF.cef_browser_process_handler_t newBrowserProcessHandler() {
-        CEF.cef_browser_process_handler_t st = new CEF.cef_browser_process_handler_t(RUNTIME);
-        setBase(st, st.base);
+//    public static CEF.cef_browser_process_handler_t newBrowserProcessHandler() {
+//        CEF.cef_browser_process_handler_t st = new CEF.cef_browser_process_handler_t(RUNTIME);
+//        setBase(st, st.base);
+//        return st;
+//    }
+
+    public static cef_browser_process_handler_t newBrowserProcessHandler() {
+        cef_browser_process_handler_t st = new cef_browser_process_handler_t();
+        st.base = setBase(st, cef_browser_process_handler_t.sizeof);
         return st;
     }
 
-    public static CEF.cef_client_t newClient() {
-        CEF.cef_client_t st = new CEF.cef_client_t(RUNTIME);
-        setBase(st, st.base);
+//    public static CEF.cef_client_t newClient() {
+//        CEF.cef_client_t st = new CEF.cef_client_t(RUNTIME);
+//        setBase(st, st.base);
+//        return st;
+//    }
+
+    public static cef_client_t newClient() {
+        cef_client_t st = new cef_client_t();
+        st.base = setBase(st, cef_client_t.sizeof);
         return st;
     }
 
@@ -127,11 +149,17 @@ public class CEFFactory {
         return st;
     }
 
-    public static CEF.cef_life_span_handler_t newLifeSpanHandler() {
-        CEF.cef_life_span_handler_t st = new CEF.cef_life_span_handler_t(RUNTIME);
-        setBase(st, st.base);
+    public static cef_life_span_handler_t newLifeSpanHandler() {
+        cef_life_span_handler_t st = new cef_life_span_handler_t();
+        st.base = setBase(st, cef_life_span_handler_t.sizeof);
         return st;
     }
+
+//    public static CEF.cef_life_span_handler_t newLifeSpanHandler() {
+//        CEF.cef_life_span_handler_t st = new CEF.cef_life_span_handler_t(RUNTIME);
+//        setBase(st, st.base);
+//        return st;
+//    }
 
     public static CEF.cef_load_handler_t newLoadHandler() {
         CEF.cef_load_handler_t st = new CEF.cef_load_handler_t(RUNTIME);
@@ -175,6 +203,17 @@ public class CEFFactory {
         return st;
     }
 
+    private static org.eclipse.swt.internal.chromium.cef_base_ref_counted_t setBase(Object st, int sizeof) {
+        System.out.println("J:SIZEOF:" + st.getClass().getSimpleName() + ":" + sizeof);
+        org.eclipse.swt.internal.chromium.cef_base_ref_counted_t base = new org.eclipse.swt.internal.chromium.cef_base_ref_counted_t();
+        base.size = sizeof;
+        base.add_ref = 0;
+        base.has_one_ref = 0;
+        base.release = 0;
+//        base.name = st.getClass().getSimpleName();
+        return base;
+    }
+    
     private static void setBase(Struct st, cef_base_ref_counted_t base) {
         directMemoryForStruct(st);
         setBaseRefCounting(st, base);

@@ -1,33 +1,19 @@
 package org.eclipse.swt.chromium;
 
-import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.MessageBox;
-import org.eclipse.swt.widgets.Widget;
-
-import jnr.ffi.LibraryLoader;
-import jnr.ffi.Pointer;
-import jnr.ffi.annotations.Direct;
-import jnr.ffi.annotations.Encoding;
-import jnr.ffi.provider.ClosureManager;
-import jnr.ffi.provider.jffi.NativeRuntime;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.net.HttpCookie;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Enumeration;
 import java.util.List;
@@ -41,24 +27,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
-import org.eclipse.swt.browser.CloseWindowListener;
-import org.eclipse.swt.browser.LocationEvent;
-import org.eclipse.swt.browser.LocationListener;
-import org.eclipse.swt.browser.ProgressEvent;
-import org.eclipse.swt.browser.ProgressListener;
-import org.eclipse.swt.browser.StatusTextEvent;
-import org.eclipse.swt.browser.StatusTextListener;
-import org.eclipse.swt.browser.TitleEvent;
-import org.eclipse.swt.browser.TitleListener;
-import org.eclipse.swt.browser.VisibilityWindowListener;
-import org.eclipse.swt.events.ControlAdapter;
-import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.internal.C;
+import org.eclipse.swt.internal.Callback;
 import org.eclipse.swt.internal.DPIUtil;
 import org.eclipse.swt.internal.Library;
 import org.eclipse.swt.internal.chromium.CEF;
@@ -66,15 +42,32 @@ import org.eclipse.swt.internal.chromium.CEFFactory;
 import org.eclipse.swt.internal.chromium.CEFFactory.EvalReturned;
 import org.eclipse.swt.internal.chromium.CEFFactory.FunctionSt;
 import org.eclipse.swt.internal.chromium.CEFFactory.ReturnType;
+import org.eclipse.swt.internal.chromium.ChromiumLib;
 import org.eclipse.swt.internal.chromium.ResourceExpander;
+import org.eclipse.swt.internal.chromium.cef_app_t;
+import org.eclipse.swt.internal.chromium.cef_browser_process_handler_t;
+import org.eclipse.swt.internal.chromium.cef_client_t;
+import org.eclipse.swt.internal.chromium.cef_life_span_handler_t;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Widget;
+
+import jnr.ffi.LibraryLoader;
+import jnr.ffi.Pointer;
+import jnr.ffi.annotations.Direct;
+import jnr.ffi.annotations.Encoding;
+import jnr.ffi.provider.ClosureManager;
+import jnr.ffi.provider.jffi.NativeRuntime;
 
 class Chromium extends WebBrowser {
 	private static final String DATA_TEXT_URL = "data:text/html;base64,";
 	private static final String VERSION = "0901";
     private static final String CEFVERSION = "3071";
-    private static final String SHARED_LIB_V = "chromium_swt-"+VERSION;
+//    private static final String SHARED_LIB_V = "chromium_swt-"+VERSION;
+    private static final String SHARED_LIB_V = "chromium_swt";
     private static final int MAX_PROGRESS = 100;
-    private static final int LOOP = 50;
+    private static final int LOOP = 5000;
 //    private static final String SUBP = "chromium_subp";
 //    private static final String SUBP_V = "chromium_subp-"+VERSION;
     
@@ -89,8 +82,8 @@ class Chromium extends WebBrowser {
     private static String cefrustPath;
     private static AtomicInteger browsers = new AtomicInteger(0);
     private static CompletableFuture<Boolean> cefInitilized;
-    private static CEF.cef_app_t app;
-    private static CEF.cef_browser_process_handler_t browserProcessHandler;
+    private static cef_app_t app;
+    private static cef_browser_process_handler_t browserProcessHandler;
     private static boolean shuttindDown;
     private static CEF.cef_cookie_visitor_t cookieVisitor;
     private static CompletableFuture<Boolean> cookieVisited;
@@ -103,9 +96,9 @@ class Chromium extends WebBrowser {
 
     private long hwnd;
     private Pointer browser;
-    private CEF.cef_client_t clientHandler;
+    private cef_client_t clientHandler;
     private CEF.cef_focus_handler_t focusHandler;
-    private CEF.cef_life_span_handler_t lifeSpanHandler;
+    private cef_life_span_handler_t lifeSpanHandler;
     private CEF.cef_load_handler_t loadHandler;
     private CEF.cef_display_handler_t displayHandler;
     private CEF.cef_request_handler_t requestHandler;
@@ -229,56 +222,67 @@ class Chromium extends WebBrowser {
             if (app == null) {
                 CEFFactory.create();
                 app = CEFFactory.newApp();
-                browserProcessHandler = CEFFactory.newBrowserProcessHandler();
                 cefInitilized = new CompletableFuture<>();
-                browserProcessHandler.on_context_initialized.set(browserProcessHandler -> {
-                    debugPrint("OnContextInitialized");
-                    
-                    cefInitilized.complete(true);
-                });
-                Runnable runnable = () -> { 
-                    if (lib == null || display.isDisposed() /*|| display.getActiveShell() != getShell()*/) {
-                        //System.err.println("Ignore do_message_loop_work due inactive shell");
-                        return;
-                    }
-//                    debug("WORK PUMP");
-                    safe_loop_work();
-                };
-                browserProcessHandler.on_schedule_message_pump_work.set((pbrowserProcessHandler, delay) -> {
-                    if (lib == null || display.isDisposed() || browsers.get() <= 0 || pumpDisable || disposingAny > 0)
-                        return;
-//                    debugPrint("pump "+delay);
-                    Runnable scheduleWork = () -> {
-                    	restartLoop(display, delay);
-                    	display.timerExec(-1, runnable);
-//    	                        debug("WORK PUMP DELAYED");
-                    	display.timerExec(delay, runnable);
-                    };
-                    if (Display.getCurrent() != null) {
-                    	if (delay <= 0) {
-                    		restartLoop(display, 0);
-//                        	debug("WORK PUMP NOW");
-                			display.asyncExec(runnable);
-                    	} else {
-                    		scheduleWork.run();
-                    	}
-                    } else {
-                    	if (delay <= 0) {
-                    		display.asyncExec(() -> {
-                    			restartLoop(display, 0);
-//                                debug("WORK PUMP ALMOST NOW");
-    	                        runnable.run();
-                    		});
-                    	} else {
-							display.asyncExec(scheduleWork);
-                    	}
-                    }
-                });
+//                browserProcessHandler = CEFFactory.newBrowserProcessHandler();
+//                browserProcessHandler.on_context_initialized_cb = new Callback(this, "on_context_initialized", void.class, new Type[] {long.class});
+//                browserProcessHandler.on_context_initialized = browserProcessHandler.on_context_initialized_cb.getAddress();
+//                browserProcessHandler.on_schedule_message_pump_work_cb = new Callback(this, "on_schedule_message_pump_work", void.class, new Type[] {long.class, int.class});
+//                browserProcessHandler.on_schedule_message_pump_work = browserProcessHandler.on_schedule_message_pump_work_cb.getAddress();
+//              
+//                app.get_browser_process_handler_cb = new Callback(this, "get_browser_process_handler", long.class, new Type[] {long.class});
+//                app.get_browser_process_handler = app.get_browser_process_handler_cb.getAddress();
+              
+//                app.browserProcessHandlerPtr = C.malloc (cef_browser_process_handler_t.sizeof);
+//                ChromiumLib.memmove(app.browserProcessHandlerPtr, browserProcessHandler, cef_browser_process_handler_t.sizeof);
+
+//                browserProcessHandler.on_context_initialized.set(browserProcessHandler -> {
+//                    debugPrint("OnContextInitialized");
+//                    
+//                    cefInitilized.complete(true);
+//                });
+//                Runnable runnable = () -> { 
+//                    if (lib == null || display.isDisposed() /*|| display.getActiveShell() != getShell()*/) {
+//                        //System.err.println("Ignore do_message_loop_work due inactive shell");
+//                        return;
+//                    }
+////                    debug("WORK PUMP");
+//                    safe_loop_work();
+//                };
+//                browserProcessHandler.on_schedule_message_pump_work.set((pbrowserProcessHandler, delay) -> {
+//                    if (lib == null || display.isDisposed() || browsers.get() <= 0 || pumpDisable || disposingAny > 0)
+//                        return;
+////                    debugPrint("pump "+delay);
+//                    Runnable scheduleWork = () -> {
+//                    	restartLoop(display, delay);
+//                    	display.timerExec(-1, runnable);
+////    	                        debug("WORK PUMP DELAYED");
+//                    	display.timerExec(delay, runnable);
+//                    };
+//                    if (Display.getCurrent() != null) {
+//                    	if (delay <= 0) {
+//                    		restartLoop(display, 0);
+////                        	debug("WORK PUMP NOW");
+//                			display.asyncExec(runnable);
+//                    	} else {
+//                    		scheduleWork.run();
+//                    	}
+//                    } else {
+//                    	if (delay <= 0) {
+//                    		display.asyncExec(() -> {
+//                    			restartLoop(display, 0);
+////                                debug("WORK PUMP ALMOST NOW");
+//    	                        runnable.run();
+//                    		});
+//                    	} else {
+//							display.asyncExec(scheduleWork);
+//                    	}
+//                    }
+//                });
                 
-                app.get_browser_process_handler.set(appPtr -> {
-//                    debugPrint("GetBrowserProcessHandler");
-                    return browserProcessHandler;
-                });
+//                app.get_browser_process_handler.set(appPtr -> {
+////                    debugPrint("GetBrowserProcessHandler");
+//                    return browserProcessHandler;
+//                });
                 System.out.println("cefrust.path: " + cefrustPath);
                 int debugPort = 0;
                 try {
@@ -286,7 +290,7 @@ class Chromium extends WebBrowser {
                 } catch (NumberFormatException e) {
                 	debugPort = 0;
                 }
-                lib.cefswt_init(app, cefrustPath, VERSION, debugPort);
+                ChromiumLib.cefswt_init(app, cefrustPath, VERSION, debugPort);
             }
         }
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -305,15 +309,77 @@ class Chromium extends WebBrowser {
         });
     }
 
+    long get_browser_process_handler(long app) {
+    	ChromiumLib.lock.lock();
+    	try {
+        debugPrint("GetBrowserProcessHandler");
+        return Chromium.app.browserProcessHandlerPtr;
+    	} finally {
+            ChromiumLib.lock.unlock();
+        }
+    }
+
+    void on_context_initialized(long browserProcessHandler) {
+    	ChromiumLib.lock.lock();
+    	try {
+        debugPrint("OnContextInitialized");
+        cefInitilized.complete(true);
+    	} finally {
+            ChromiumLib.lock.unlock();
+        }
+    }
+
+    Runnable runnable = () -> { 
+        if (this.chromium.getDisplay().isDisposed() /*|| display.getActiveShell() != getShell()*/) {
+            //System.err.println("Ignore do_message_loop_work due inactive shell");
+            return;
+        }
+//        debug("WORK PUMP");
+        safe_loop_work();
+    };
+    
+    void on_schedule_message_pump_work(long pbrowserProcessHandler, int delay) {
+        Display display = this.chromium.getDisplay();
+        if (display.isDisposed() || browsers.get() <= 0 || pumpDisable || disposingAny > 0)
+            return;
+        debugPrint("pump "+delay);
+        Runnable scheduleWork = () -> {
+            restartLoop(display, delay);
+            display.timerExec(-1, runnable);
+//                  debug("WORK PUMP DELAYED");
+            display.timerExec(delay, runnable);
+        };
+        if (Display.getCurrent() != null) {
+            if (delay <= 0) {
+                restartLoop(display, 0);
+//              debug("WORK PUMP NOW");
+                display.asyncExec(runnable);
+            } else {
+                scheduleWork.run();
+            }
+        } else {
+            if (delay <= 0) {
+                display.asyncExec(() -> {
+                    restartLoop(display, 0);
+//                    debug("WORK PUMP ALMOST NOW");
+                    runnable.run();
+                });
+            } else {
+                display.asyncExec(scheduleWork);
+            }
+        }
+    }
+
     private static void safe_loop_work() {
-        if (browsers.get() > 0 && !loopDisable) {
-        	if (lib.cefswt_do_message_loop_work() == 0) {
-        	    System.err.println("error looping");
-        	}
+//        if (browsers.get() > 0 && !loopDisable) {
+        	ChromiumLib._cefswt_do_message_loop_work();
+//        	if (ChromiumLib.cefswt_do_message_loop_work() == 0) {
+//        	    System.err.println("error looping");
+//        	}
         	if (pumpDisable == true) {
         	    pumpDisable = false;
         	}
-        }
+//        }
     }
 
 	private void restartLoop(Display display, int ms) {
@@ -369,29 +435,29 @@ class Chromium extends WebBrowser {
         focusListener = new CefFocusListener();
         chromium.addFocusListener(focusListener);
 
-        set_text_visitor();
+//        set_text_visitor();
         clientHandler = CEFFactory.newClient();
-        initializeClientHandler(clientHandler);
-        set_focus_handler();
-        set_life_span_handler();
-        set_load_handler();
-        set_display_handler();
-        set_request_handler();
-        set_jsdialog_handler();
-        set_context_menu_handler();
-        clientHandler.on_process_message_received.set((c, browser_1, source, processMessage) -> {
-            return browserFunctionCalled(source, processMessage);
-        });
+//        initializeClientHandler(clientHandler);
+//        set_focus_handler();
+//        set_life_span_handler();
+//        set_load_handler();
+//        set_display_handler();
+//        set_request_handler();
+//        set_jsdialog_handler();
+//        set_context_menu_handler();
+//        clientHandler.on_process_message_received.set((c, browser_1, source, processMessage) -> {
+//            return browserFunctionCalled(source, processMessage);
+//        });
 
-        chromium.addControlListener(new ControlAdapter() {
-            @Override
-            public void controlResized(ControlEvent e) {
-                if (!chromium.isDisposed() && browser != null) {
-                    Point size = getChromiumSize();
-					lib.cefswt_resized(browser,  size.x,  size.y);
-                }
-            }
-        });
+//        chromium.addControlListener(new ControlAdapter() {
+//            @Override
+//            public void controlResized(ControlEvent e) {
+//                if (!chromium.isDisposed() && browser != null) {
+//                    Point size = getChromiumSize();
+//					lib.cefswt_resized(browser,  size.x,  size.y);
+//                }
+//            }
+//        });
 	}
 
     private void createBrowser() {
@@ -404,7 +470,10 @@ class Chromium extends WebBrowser {
         int cefBgColor = cefColor(bgColor.getAlpha(), bgColor.getRed(), bgColor.getGreen(), bgColor.getBlue());
 
         final org.eclipse.swt.graphics.Point size = getChromiumSize();
-        lib.cefswt_create_browser(hwnd, url, clientHandler, size.x, size.y, jsEnabledOnNextPage ? 1 : 0, cefBgColor);
+        ChromiumLib._cefswt_create_browser(hwnd, url, clientHandler, size.x, size.y, jsEnabledOnNextPage ? 1 : 0, cefBgColor);
+        debugPrint("STARTING MSG LOOP");
+        doMessageLoop(display);
+
     }
 
     private void createPopup(Pointer windowInfo, Pointer client, WindowEvent event) {
@@ -428,43 +497,43 @@ class Chromium extends WebBrowser {
         Point size = chromium.getParent().getSize();
         size = DPIUtil.autoScaleUp(size);
 
-    	lib.cefswt_set_window_info_parent(windowInfo, client, clientHandler, popupHandle, 0, 0, size.x, size.y);
+//    	lib.cefswt_set_window_info_parent(windowInfo, client, clientHandler, popupHandle, 0, 0, size.x, size.y);
     	debugPrint("reparent popup");
 	}
     
-    private void createDefaultPopup(Pointer windowInfo, Pointer client, WindowEvent event) {
-//    	CEF.cef_client_t nullHandler = null;
-        CEF.cef_client_t nullHandler = CEFFactory.newClient();
-        initializeClientHandler(nullHandler);
-        CEF.cef_life_span_handler_t popupHandler = CEFFactory.newLifeSpanHandler();
-        popupHandler.on_after_created.set((self, browser) -> {
-            debug("popup on_after_created");
-            try {
-                // not sleeping here causes deadlock with multiple window.open
-                Thread.sleep(LOOP);
-            } catch (InterruptedException e) {
-            }
-        });
-        popupHandler.on_before_close.set((plifeSpanHandler, browser) -> {
-            debug("popup OnBeforeClose");
-            popupHandlers.remove(nullHandler);
-            popupHandlers.remove(popupHandler);
-            disposingAny--;
-        });
-        popupHandler.do_close.set((plifeSpanHandler, browser) -> {
-            debug("popup DoClose");
-            disposingAny++;
-            return 0;
-        });
-
-        nullHandler.get_life_span_handler.set(self -> {
-            return popupHandler;
-        });
-        popupHandlers.add(popupHandler);
-        popupHandlers.add(nullHandler);
-		lib.cefswt_set_window_info_parent(windowInfo, client, nullHandler, 0, event.location.x, event.location.y, event.size.x, event.size.y);
-    	debugPrint("default popup");
-    }
+//    private void createDefaultPopup(Pointer windowInfo, Pointer client, WindowEvent event) {
+////    	CEF.cef_client_t nullHandler = null;
+//        cef_client_t nullHandler = CEFFactory.newClient();
+////        initializeClientHandler(nullHandler);
+//        CEF.cef_life_span_handler_t popupHandler = CEFFactory.newLifeSpanHandler();
+//        popupHandler.on_after_created.set((self, browser) -> {
+//            debug("popup on_after_created");
+//            try {
+//                // not sleeping here causes deadlock with multiple window.open
+//                Thread.sleep(LOOP);
+//            } catch (InterruptedException e) {
+//            }
+//        });
+//        popupHandler.on_before_close.set((plifeSpanHandler, browser) -> {
+//            debug("popup OnBeforeClose");
+//            popupHandlers.remove(nullHandler);
+//            popupHandlers.remove(popupHandler);
+//            disposingAny--;
+//        });
+//        popupHandler.do_close.set((plifeSpanHandler, browser) -> {
+//            debug("popup DoClose");
+//            disposingAny++;
+//            return 0;
+//        });
+//
+////        nullHandler.get_life_span_handler.set(self -> {
+////            return popupHandler;
+////        });
+//        popupHandlers.add(popupHandler);
+////        popupHandlers.add(nullHandler);
+////		lib.cefswt_set_window_info_parent(windowInfo, client, nullHandler, 0, event.location.x, event.location.y, event.size.x, event.size.y);
+//    	debugPrint("default popup");
+//    }
     
     private int cefColor(int a, int r, int g, int b) {
     	return (a << 24) | (r << 16) | (g << 8) | (b << 0);
@@ -477,159 +546,249 @@ class Chromium extends WebBrowser {
 
     private void set_life_span_handler() {
         lifeSpanHandler = CEFFactory.newLifeSpanHandler();
-        lifeSpanHandler.on_before_close.set((plifeSpanHandler, browser) -> {
-            debugPrint("OnBeforeClose");
-            lib.cefswt_free(browser);
-            Chromium.this.browser = null;
-            Chromium.this.clientHandler = null;
-            Chromium.this.focusHandler = null;
-            Chromium.this.lifeSpanHandler = null;
-            Chromium.this.loadHandler = null;
-            Chromium.this.displayHandler = null;
-            Chromium.this.requestHandler = null;
-            Chromium.this.jsDialogHandler = null;
-            Chromium.this.contextMenuHandler = null;
-            // not always called on linux
-            disposingAny--;
-            if (browsers.decrementAndGet() == 0 && shuttindDown) {
-                internalShutdown();
-            }
-        });
-        lifeSpanHandler.do_close.set((plifeSpanHandler, browser) -> {
-            //lifeSpanHandler.base.ref++;
-            if (!lib.cefswt_is_same(Chromium.this.browser, browser)) {
-            	debugPrint("DoClose popup:" + Chromium.this.browser+":"+browser);
-            	return 0;
-            }
-            debugPrint("DoClose");
-            if (!disposing && !chromium.isDisposed() && closeWindowListeners != null) {
-                org.eclipse.swt.browser.WindowEvent event = new org.eclipse.swt.browser.WindowEvent(chromium);
-                event.display = chromium.getDisplay ();
-                event.widget = chromium;
-//                event.browser = chromium;
-                for (CloseWindowListener listener : closeWindowListeners) {
-                    listener.close(event);
-                }
-            }
-            
-            if (!disposing) {
-                chromium.dispose();
-            }
-            if ("gtk".equals(SWT.getPlatform())) {
-            	waitForClose(chromium.getDisplay());
-            }
-            // do not send close notification to top level window
-            // returning 0, cause the window to close 
-            return 1;
-        });
-        lifeSpanHandler.on_after_created.set((self, browser) -> {
-            if (chromium.isDisposed() || visibilityWindowListeners == null) return;
-            debugPrint("on_after_created " + browser);
-            if (browser != null) {
-            	Chromium.this.browser = browser;
-                browsers.incrementAndGet();
-                if (this.isPopup == null) {
-                	final org.eclipse.swt.graphics.Point size = getChromiumSize();
-                	lib.cefswt_resized(browser, size.x,  size.y);
-                }
-                if (this.isPopup != null && this.url != null) {
-                	debugPrint("load url after created");
-                	doSetUrlPost(browser, url, postData, headers);
-                }
-                else if (!"about:blank".equals(this.url)) {
-                	enableProgress.complete(true);
-                }
-            }
-            created.complete(true);
+//        lifeSpanHandler.on_before_close_cb = new Callback(this, "on_before_close", void.class, new Type[] {long.class, long.class});
+//        lifeSpanHandler.on_before_close = lifeSpanHandler.on_before_close_cb.getAddress();
+//        lifeSpanHandler.do_close_cb = new Callback(this, "do_close", int.class, new Type[] {long.class, long.class});
+//        lifeSpanHandler.do_close = lifeSpanHandler.do_close_cb.getAddress();
+        lifeSpanHandler.on_after_created_cb = new Callback(this, "on_after_created", void.class, new Type[] {long.class, long.class});
+        lifeSpanHandler.on_after_created = lifeSpanHandler.on_after_created_cb.getAddress();
+//        lifeSpanHandler.on_before_popup_cb = new Callback(this, "on_before_popup", int.class, new Type[] {long.class, long.class, long.class,
+//                long.class, long.class, int.class,
+//                int.class, long.class, long.class,
+//                long.class, long.class, int.class});
+//        lifeSpanHandler.on_before_popup = lifeSpanHandler.on_before_popup_cb.getAddress();
+        
+        clientHandler.getLifeSpanHandlerCB = new Callback(this, "get_life_span_handler", long.class, new Type[] {long.class});
+        clientHandler.get_life_span_handler = clientHandler.getLifeSpanHandlerCB.getAddress();
+        clientHandler.lifeSpanHandlerPtr = C.malloc (cef_life_span_handler_t.sizeof);
+        ChromiumLib.memmove(clientHandler.lifeSpanHandlerPtr, lifeSpanHandler, cef_life_span_handler_t.sizeof);
+    }
+    
+    long get_life_span_handler(long client) {
+        debugPrint("GetLifeSpanHandler");
+        return clientHandler.lifeSpanHandlerPtr;
+    }
 
-            if (browsers.get() == 1) {
-                debugPrint("STARTING MSG LOOP");
-                final Display display = chromium.getDisplay();
-                doMessageLoop(display);
-            }
-            
-//            chromium.getDisplay().asyncExec(() -> {
-                debugPrint("on_after_created handling " + browser);
-                if (chromium == null || chromium.isDisposed() || visibilityWindowListeners == null) return;
-                org.eclipse.swt.browser.WindowEvent event = new org.eclipse.swt.browser.WindowEvent(chromium);
-                event.display = chromium.getDisplay ();
-                event.widget = chromium;
-                event.size = new Point(0,0);
-                event.location = new Point(0,0);
-                if (isPopup != null) {
-                    event.size = isPopup.size;
-                    event.location = isPopup.location;
-                    event.addressBar = isPopup.addressBar;
-                    event.menuBar = isPopup.menuBar;
-                    event.statusBar = isPopup.statusBar;
-                    event.toolBar = isPopup.toolBar;
-                    
-                    if (event.size != null && !event.size.equals(new Point(0,0))) {
-                          Point size = event.size;
-                          chromium.getShell().setSize(chromium.getShell().computeSize(size.x, size.y));
-                    }
-
-                    for (VisibilityWindowListener listener : visibilityWindowListeners) {
-                    	listener.show(event);
-                    }
-                    try {
-                        // not sleeping here causes deadlock with multiple window.open
-                        Thread.sleep(LOOP);
-                    } catch (InterruptedException e) {
-                    }
-                }
+//    private void set_life_span_handler() {
+//        lifeSpanHandler = CEFFactory.newLifeSpanHandler();
+//        lifeSpanHandler.on_before_close.set((plifeSpanHandler, browser) -> {
+//            debugPrint("OnBeforeClose");
+//            lib.cefswt_free(browser);
+//            Chromium.this.browser = null;
+//            Chromium.this.clientHandler = null;
+//            Chromium.this.focusHandler = null;
+//            Chromium.this.lifeSpanHandler = null;
+//            Chromium.this.loadHandler = null;
+//            Chromium.this.displayHandler = null;
+//            Chromium.this.requestHandler = null;
+//            Chromium.this.jsDialogHandler = null;
+//            Chromium.this.contextMenuHandler = null;
+//            // not always called on linux
+//            disposingAny--;
+//            if (browsers.decrementAndGet() == 0 && shuttindDown) {
+//                internalShutdown();
+//            }
+//        });
+//        lifeSpanHandler.do_close.set((plifeSpanHandler, browser) -> {
+//            //lifeSpanHandler.base.ref++;
+//            if (!lib.cefswt_is_same(Chromium.this.browser, browser)) {
+//            	debugPrint("DoClose popup:" + Chromium.this.browser+":"+browser);
+//            	return 0;
+//            }
+//            debugPrint("DoClose");
+//            if (!disposing && !chromium.isDisposed() && closeWindowListeners != null) {
+//                org.eclipse.swt.browser.WindowEvent event = new org.eclipse.swt.browser.WindowEvent(chromium);
+//                event.display = chromium.getDisplay ();
+//                event.widget = chromium;
+////                event.browser = chromium;
+//                for (CloseWindowListener listener : closeWindowListeners) {
+//                    listener.close(event);
+//                }
+//            }
+//            
+//            if (!disposing) {
+//                chromium.dispose();
+//            }
+//            if ("gtk".equals(SWT.getPlatform())) {
+//            	waitForClose(chromium.getDisplay());
+//            }
+//            // do not send close notification to top level window
+//            // returning 0, cause the window to close 
+//            return 1;
+//        });
+//        lifeSpanHandler.on_after_created.set((self, browser) -> {
+//            if (chromium.isDisposed() || visibilityWindowListeners == null) return;
+//            debugPrint("on_after_created " + browser);
+//            if (browser != null) {
+//            	Chromium.this.browser = browser;
+//                browsers.incrementAndGet();
+//                if (this.isPopup == null) {
+//                	final org.eclipse.swt.graphics.Point size = getChromiumSize();
+//                	lib.cefswt_resized(browser, size.x,  size.y);
+//                }
+//                if (this.isPopup != null && this.url != null) {
+//                	debugPrint("load url after created");
+//                	doSetUrlPost(browser, url, postData, headers);
+//                }
+//                else if (!"about:blank".equals(this.url)) {
+//                	enableProgress.complete(true);
+//                }
+//            }
+//            created.complete(true);
+//
+//            if (browsers.get() == 1) {
+//                debugPrint("STARTING MSG LOOP");
+//                final Display display = chromium.getDisplay();
+//                doMessageLoop(display);
+//            }
+//            
+////            chromium.getDisplay().asyncExec(() -> {
+//                debugPrint("on_after_created handling " + browser);
+//                if (chromium == null || chromium.isDisposed() || visibilityWindowListeners == null) return;
+//                org.eclipse.swt.browser.WindowEvent event = new org.eclipse.swt.browser.WindowEvent(chromium);
+//                event.display = chromium.getDisplay ();
+//                event.widget = chromium;
+//                event.size = new Point(0,0);
+//                event.location = new Point(0,0);
+//                if (isPopup != null) {
+//                    event.size = isPopup.size;
+//                    event.location = isPopup.location;
+//                    event.addressBar = isPopup.addressBar;
+//                    event.menuBar = isPopup.menuBar;
+//                    event.statusBar = isPopup.statusBar;
+//                    event.toolBar = isPopup.toolBar;
+//                    
+//                    if (event.size != null && !event.size.equals(new Point(0,0))) {
+//                          Point size = event.size;
+//                          chromium.getShell().setSize(chromium.getShell().computeSize(size.x, size.y));
+//                    }
+//
+//                    for (VisibilityWindowListener listener : visibilityWindowListeners) {
+//                    	listener.show(event);
+//                    }
+//                    try {
+//                        // not sleeping here causes deadlock with multiple window.open
+//                        Thread.sleep(LOOP);
+//                    } catch (InterruptedException e) {
+//                    }
+//                }
+////            });
+//        });
+//        lifeSpanHandler.on_before_popup.set((self, browser, frame,
+//                target_url, target_frame_name, target_disposition,
+//                user_gesture, popupFeatures, windowInfo,
+//                client, settings, no_javascript_access) -> {
+//            debugPrint("on_before_popup " + browser);
+//            if (chromium.isDisposed()) 
+//                return 1;
+//            if (openWindowListeners == null) 
+//                return 0;
+//            loopDisable = true;
+//            pumpDisable = true;
+//
+//            WindowEvent event = new WindowEvent(chromium);
+//            
+//            chromium.getDisplay().syncExec(() -> {
+//                debugPrint("on_before_popup syncExec" + browser);
+//                event.display = chromium.getDisplay ();
+//                event.widget = chromium;
+//                event.required = false;
+//                event.addressBar = popupFeatures.locationBarVisible.get() == 1;
+//                event.menuBar = popupFeatures.menuBarVisible.get() == 1;
+//                event.statusBar = popupFeatures.statusBarVisible.get() == 1;
+//                event.toolBar = popupFeatures.toolBarVisible.get() == 1;
+//                int x = popupFeatures.xSet.get() == 1 ? popupFeatures.x.get() : 0 ;
+//                int y = popupFeatures.ySet.get() == 1 ? popupFeatures.y.get() : 0 ;
+//                event.location = new Point(x, y);
+//                int width = popupFeatures.widthSet.get() == 1 ? popupFeatures.width.get() : 0;
+//                int height = popupFeatures.heightSet.get() == 1 ? popupFeatures.height.get() : 0;
+//                event.size = new Point(width, height);
+//
+//            	for (OpenWindowListener listener : openWindowListeners) {
+//                    listener.open(event);
+//                }
+//                
+//                if (event.browser != null) {
+//                	event.browser.webBrowser.createPopup(windowInfo, client, event);
+//                } else {
+//                	createDefaultPopup(windowInfo, client, event);
+//                }
 //            });
-        });
-        lifeSpanHandler.on_before_popup.set((self, browser, frame,
-                target_url, target_frame_name, target_disposition,
-                user_gesture, popupFeatures, windowInfo,
-                client, settings, no_javascript_access) -> {
-            debugPrint("on_before_popup " + browser);
-            if (chromium.isDisposed()) 
-                return 1;
-            if (openWindowListeners == null) 
-                return 0;
-            loopDisable = true;
-            pumpDisable = true;
+//            loopDisable = false;
+//
+//            if (event.browser == null && event.required)
+//                return 1;
+//            return 0;
+//        });
+//        clientHandler.get_life_span_handler.set(client -> {
+//            //DEBUG_CALLBACK("GetLifeSpanHandler");
+//            return lifeSpanHandler;
+//        });
+//    }
 
-            WindowEvent event = new WindowEvent(chromium);
-            
-            chromium.getDisplay().syncExec(() -> {
-                debugPrint("on_before_popup syncExec" + browser);
-                event.display = chromium.getDisplay ();
-                event.widget = chromium;
-                event.required = false;
-                event.addressBar = popupFeatures.locationBarVisible.get() == 1;
-                event.menuBar = popupFeatures.menuBarVisible.get() == 1;
-                event.statusBar = popupFeatures.statusBarVisible.get() == 1;
-                event.toolBar = popupFeatures.toolBarVisible.get() == 1;
-                int x = popupFeatures.xSet.get() == 1 ? popupFeatures.x.get() : 0 ;
-                int y = popupFeatures.ySet.get() == 1 ? popupFeatures.y.get() : 0 ;
-                event.location = new Point(x, y);
-                int width = popupFeatures.widthSet.get() == 1 ? popupFeatures.width.get() : 0;
-                int height = popupFeatures.heightSet.get() == 1 ? popupFeatures.height.get() : 0;
-                event.size = new Point(width, height);
+    void on_after_created(long self, long browser) {
+    	try {
+    		ChromiumLib.lock.lock();
+        if (chromium.isDisposed() || visibilityWindowListeners == null) return;
+        debugPrint("on_after_created " + browser);
+        if (browser != 0) {
+//            Chromium.this.browser = browser;
+            browsers.incrementAndGet();
+            if (this.isPopup == null) {
+                final org.eclipse.swt.graphics.Point size = getChromiumSize();
+//              lib.cefswt_resized(browser, size.x,  size.y);
+//                ChromiumLib.cefswt_resized(browser, size.x,  size.y);
+            }
+//            if (this.isPopup != null && this.url != null) {
+//                debugPrint("load url after created");
+//                doSetUrlPost(browser, url, postData, headers);
+//            }
+            else if (!"about:blank".equals(this.url)) {
+                enableProgress.complete(true);
+            }
+        }
+        created.complete(true);
 
-            	for (OpenWindowListener listener : openWindowListeners) {
-                    listener.open(event);
-                }
-                
-                if (event.browser != null) {
-                	event.browser.webBrowser.createPopup(windowInfo, client, event);
-                } else {
-                	createDefaultPopup(windowInfo, client, event);
-                }
-            });
-            loopDisable = false;
-
-            if (event.browser == null && event.required)
-                return 1;
-            return 0;
-        });
-        clientHandler.get_life_span_handler.set(client -> {
-            //DEBUG_CALLBACK("GetLifeSpanHandler");
-            return lifeSpanHandler;
-        });
+        if (browsers.get() == 1) {
+            debugPrint("STARTING MSG LOOP");
+            final Display display = chromium.getDisplay();
+            doMessageLoop(display);
+        }
+        
+////        chromium.getDisplay().asyncExec(() -> {
+//            debugPrint("on_after_created handling " + browser);
+//            if (chromium == null || chromium.isDisposed() || visibilityWindowListeners == null) return;
+//            org.eclipse.swt.browser.WindowEvent event = new org.eclipse.swt.browser.WindowEvent(chromium);
+//            event.display = chromium.getDisplay ();
+//            event.widget = chromium;
+//            event.size = new Point(0,0);
+//            event.location = new Point(0,0);
+//            if (isPopup != null) {
+//                event.size = isPopup.size;
+//                event.location = isPopup.location;
+//                event.addressBar = isPopup.addressBar;
+//                event.menuBar = isPopup.menuBar;
+//                event.statusBar = isPopup.statusBar;
+//                event.toolBar = isPopup.toolBar;
+//                
+//                if (event.size != null && !event.size.equals(new Point(0,0))) {
+//                      Point size = event.size;
+//                      chromium.getShell().setSize(chromium.getShell().computeSize(size.x, size.y));
+//                }
+//
+//                for (VisibilityWindowListener listener : visibilityWindowListeners) {
+//                    listener.show(event);
+//                }
+//                try {
+//                    // not sleeping here causes deadlock with multiple window.open
+//                    Thread.sleep(LOOP);
+//                } catch (InterruptedException e) {
+//                }
+//            }
+////        });
+    	} finally {
+    		ChromiumLib.lock.unlock();
+    	}
     }
 
     private void waitForClose(Display display) {
@@ -640,199 +799,199 @@ class Chromium extends WebBrowser {
         });
     }
     
-	private void set_load_handler() {
-        loadHandler = CEFFactory.newLoadHandler();
-        loadHandler.on_loading_state_change.set((self_, browser, isLoading, canGoBack, canGoForward) -> {
-            debugPrint("on_loading_state_change " + isLoading);
-            Chromium.this.canGoBack = canGoBack == 1;
-            Chromium.this.canGoForward = canGoForward == 1;
-            if (chromium.isDisposed() || progressListeners == null) return;
-            updateText();
-            if (isPopup != null) {
-                textReady.thenRun(() -> enableProgress.complete(true));
-            }
-            else if (!enableProgress.isDone() && isLoading == 0) {
-                textReady.thenRun(() -> {
-                    enableProgress.complete(true);
-                });
-                return;
-            }
-            else if (!enableProgress.isDone()) {
-                return;
-            }
-            ProgressEvent event = new ProgressEvent(chromium);
-            event.display = chromium.getDisplay ();
-            event.widget = chromium;
-            event.current = MAX_PROGRESS;
-            event.current = isLoading == 1 ? 1 : MAX_PROGRESS;
-            event.total = MAX_PROGRESS;
-            if (isLoading == 1) {
-                debugPrint("progress changed");
-                for (ProgressListener listener : progressListeners) {
-                    listener.changed(event);
-                }
-            } else {
-                textReady.thenRun(() -> {
-                	debugPrint("progress completed"); 
-                    chromium.getDisplay().asyncExec(() -> {
-                    	for (ProgressListener listener : progressListeners) {
-                    		listener.completed(event);
-                    	}
-                    });
-                });
-            }
-        });
-        loadHandler.on_load_end.set((self, browser, frame, http_status) -> {
-//        	debugPrint("on_load_end"); 
-//        	if (chromium.isDisposed() || progressListeners == null) return;
-        });
-        clientHandler.get_load_handler.set(client -> {
-            return loadHandler;
-        });
-    }
-
-    private void set_display_handler() {
-        displayHandler = CEFFactory.newDisplayHandler();
-        displayHandler.on_title_change.set((self, browser, title) -> {
-            if (chromium.isDisposed() || titleListeners == null) return;
-            String str = getPlainUrl(lib.cefswt_cefstring_to_java(title));
-            debugPrint("on_title_change: " + str);
-            TitleEvent event = new TitleEvent(chromium);
-            event.display = chromium.getDisplay ();
-            event.widget = chromium;
-            event.title = str;
-            for (TitleListener listener : titleListeners) {
-                listener.changed(event);
-            }
-        });
-        displayHandler.on_address_change.set((self, browser, frame, url) -> {
-//        	debugPrint("on_address_change");
-        	if (chromium.isDisposed() || locationListeners == null) return;
-            LocationEvent event = new LocationEvent(chromium);
-            event.display = chromium.getDisplay();
-            event.widget = chromium;
-            event.doit = true;
-            event.location = getPlainUrl(lib.cefswt_cefstring_to_java(url));
-            event.top = lib.cefswt_is_main_frame(frame);
-            if (!enableProgress.isDone()) {
-                debugPrint("!on_address_change to " + event.location + " " + (event.top ? "main" : "!main"));
-            	return;
-            }
-//            if (!("about:blank".equals(event.location) && ignoreFirstEvents)) {
-                debugPrint("on_address_change to " + event.location + " " + (event.top ? "main" : "!main"));
-            chromium.getDisplay().asyncExec(() -> {
-            	for (LocationListener listener : locationListeners) {
-            		listener.changed(event);
-            	}
-            });    
+//	private void set_load_handler() {
+//        loadHandler = CEFFactory.newLoadHandler();
+//        loadHandler.on_loading_state_change.set((self_, browser, isLoading, canGoBack, canGoForward) -> {
+//            debugPrint("on_loading_state_change " + isLoading);
+//            Chromium.this.canGoBack = canGoBack == 1;
+//            Chromium.this.canGoForward = canGoForward == 1;
+//            if (chromium.isDisposed() || progressListeners == null) return;
+//            updateText();
+//            if (isPopup != null) {
+//                textReady.thenRun(() -> enableProgress.complete(true));
 //            }
-        });
-        displayHandler.on_status_message.set((self, browser, status) -> {
-            if (chromium.isDisposed() || statusTextListeners == null) return;
-            String str = lib.cefswt_cefstring_to_java(status);
-            StatusTextEvent event = new StatusTextEvent(chromium);
-            event.display = chromium.getDisplay ();
-            event.widget = chromium;
-            event.text = str;
-            for (StatusTextListener listener : statusTextListeners) {
-                listener.changed(event);
-            }
-        });
-        clientHandler.get_display_handler.set(client -> {
-            return displayHandler;
-        });
-    }
+//            else if (!enableProgress.isDone() && isLoading == 0) {
+//                textReady.thenRun(() -> {
+//                    enableProgress.complete(true);
+//                });
+//                return;
+//            }
+//            else if (!enableProgress.isDone()) {
+//                return;
+//            }
+//            ProgressEvent event = new ProgressEvent(chromium);
+//            event.display = chromium.getDisplay ();
+//            event.widget = chromium;
+//            event.current = MAX_PROGRESS;
+//            event.current = isLoading == 1 ? 1 : MAX_PROGRESS;
+//            event.total = MAX_PROGRESS;
+//            if (isLoading == 1) {
+//                debugPrint("progress changed");
+//                for (ProgressListener listener : progressListeners) {
+//                    listener.changed(event);
+//                }
+//            } else {
+//                textReady.thenRun(() -> {
+//                	debugPrint("progress completed"); 
+//                    chromium.getDisplay().asyncExec(() -> {
+//                    	for (ProgressListener listener : progressListeners) {
+//                    		listener.completed(event);
+//                    	}
+//                    });
+//                });
+//            }
+//        });
+//        loadHandler.on_load_end.set((self, browser, frame, http_status) -> {
+////        	debugPrint("on_load_end"); 
+////        	if (chromium.isDisposed() || progressListeners == null) return;
+//        });
+//        clientHandler.get_load_handler.set(client -> {
+//            return loadHandler;
+//        });
+//    }
+
+//    private void set_display_handler() {
+//        displayHandler = CEFFactory.newDisplayHandler();
+//        displayHandler.on_title_change.set((self, browser, title) -> {
+//            if (chromium.isDisposed() || titleListeners == null) return;
+//            String str = getPlainUrl(lib.cefswt_cefstring_to_java(title));
+//            debugPrint("on_title_change: " + str);
+//            TitleEvent event = new TitleEvent(chromium);
+//            event.display = chromium.getDisplay ();
+//            event.widget = chromium;
+//            event.title = str;
+//            for (TitleListener listener : titleListeners) {
+//                listener.changed(event);
+//            }
+//        });
+//        displayHandler.on_address_change.set((self, browser, frame, url) -> {
+////        	debugPrint("on_address_change");
+//        	if (chromium.isDisposed() || locationListeners == null) return;
+//            LocationEvent event = new LocationEvent(chromium);
+//            event.display = chromium.getDisplay();
+//            event.widget = chromium;
+//            event.doit = true;
+//            event.location = getPlainUrl(lib.cefswt_cefstring_to_java(url));
+//            event.top = lib.cefswt_is_main_frame(frame);
+//            if (!enableProgress.isDone()) {
+//                debugPrint("!on_address_change to " + event.location + " " + (event.top ? "main" : "!main"));
+//            	return;
+//            }
+////            if (!("about:blank".equals(event.location) && ignoreFirstEvents)) {
+//                debugPrint("on_address_change to " + event.location + " " + (event.top ? "main" : "!main"));
+//            chromium.getDisplay().asyncExec(() -> {
+//            	for (LocationListener listener : locationListeners) {
+//            		listener.changed(event);
+//            	}
+//            });    
+////            }
+//        });
+//        displayHandler.on_status_message.set((self, browser, status) -> {
+//            if (chromium.isDisposed() || statusTextListeners == null) return;
+//            String str = lib.cefswt_cefstring_to_java(status);
+//            StatusTextEvent event = new StatusTextEvent(chromium);
+//            event.display = chromium.getDisplay ();
+//            event.widget = chromium;
+//            event.text = str;
+//            for (StatusTextListener listener : statusTextListeners) {
+//                listener.changed(event);
+//            }
+//        });
+//        clientHandler.get_display_handler.set(client -> {
+//            return displayHandler;
+//        });
+//    }
     
-    private void set_request_handler() {
-        requestHandler = CEFFactory.newRequestHandler();
-        requestHandler.on_before_browse.set((self, browser, frame, request, is_redirect) -> {
-            if (chromium.isDisposed() || locationListeners == null) return 0;
-            if (lib.cefswt_is_main_frame(frame)) {
-	            LocationEvent event = new LocationEvent(chromium);
-	            event.display = chromium.getDisplay();
-	            event.widget = chromium;
-	            event.doit = true;
-	            event.location = lib.cefswt_request_to_java(request);
-	            debugPrint("on_before_browse:" + event.location);
-	            try {
-	            	loopDisable = true;
-	            	for (LocationListener listener : locationListeners) {
-	            		listener.changing(event);
-	            	}
-	            } finally {
-	            	loopDisable = false;	            	
-	            }
-	            if (!event.doit) {
-	            	debugPrint("canceled nav, dependats:"+enableProgress.getNumberOfDependents());
-	            	enableProgress = new CompletableFuture<>();
-	            }
-	            return event.doit ? 0 : 1;
-            }
-            return 0;
-        });
-        clientHandler.get_request_handler.set(client -> {
-            return requestHandler;
-        });
-    }
+//    private void set_request_handler() {
+//        requestHandler = CEFFactory.newRequestHandler();
+//        requestHandler.on_before_browse.set((self, browser, frame, request, is_redirect) -> {
+//            if (chromium.isDisposed() || locationListeners == null) return 0;
+//            if (lib.cefswt_is_main_frame(frame)) {
+//	            LocationEvent event = new LocationEvent(chromium);
+//	            event.display = chromium.getDisplay();
+//	            event.widget = chromium;
+//	            event.doit = true;
+//	            event.location = lib.cefswt_request_to_java(request);
+//	            debugPrint("on_before_browse:" + event.location);
+//	            try {
+//	            	loopDisable = true;
+//	            	for (LocationListener listener : locationListeners) {
+//	            		listener.changing(event);
+//	            	}
+//	            } finally {
+//	            	loopDisable = false;	            	
+//	            }
+//	            if (!event.doit) {
+//	            	debugPrint("canceled nav, dependats:"+enableProgress.getNumberOfDependents());
+//	            	enableProgress = new CompletableFuture<>();
+//	            }
+//	            return event.doit ? 0 : 1;
+//            }
+//            return 0;
+//        });
+//        clientHandler.get_request_handler.set(client -> {
+//            return requestHandler;
+//        });
+//    }
     
-    private void set_jsdialog_handler() {
-        if (!"gtk".equals(SWT.getPlatform())) {
-            return;
-        }
-        jsDialogHandler = CEFFactory.newJsDialogHandler();
-        jsDialogHandler.on_jsdialog.set((self_, browser, origin_url, dialog_type, message_text, default_prompt_text, callback, suppress_message) -> {
-            if (chromium.isDisposed()) return 0;
-            
-            int style = SWT.ICON_WORKING;
-            switch (dialog_type) {
-            case JSDIALOGTYPE_ALERT:
-                style = SWT.ICON_INFORMATION;
-                break;
-            case JSDIALOGTYPE_CONFIRM:
-                style = SWT.ICON_WARNING;
-                break;
-            case JSDIALOGTYPE_PROMPT:
-                style = SWT.ICON_QUESTION | SWT.YES | SWT.NO;
-                break;
-            }
-            String url = lib.cefswt_cefstring_to_java(origin_url);
-            String msg = lib.cefswt_cefstring_to_java(message_text);
-            String prompt = lib.cefswt_cefstring_to_java(default_prompt_text);
-            MessageBox box = new MessageBox(chromium.getShell(), style);
-            box.setText(getPlainUrl(url));
-            if (prompt != null) {
-                box.setMessage(msg);
-            } else {
-                box.setMessage(msg);
-            }
-            int open = box.open();
-            lib.cefswt_dialog_close(callback, open == SWT.OK || open == SWT.YES ? 1 : 0, default_prompt_text);
-            chromium.getShell().forceActive();
-            return 1;
-        });
-        clientHandler.get_jsdialog_handler.set(client -> {
-            return jsDialogHandler;
-        });
-    }
+//    private void set_jsdialog_handler() {
+//        if (!"gtk".equals(SWT.getPlatform())) {
+//            return;
+//        }
+//        jsDialogHandler = CEFFactory.newJsDialogHandler();
+//        jsDialogHandler.on_jsdialog.set((self_, browser, origin_url, dialog_type, message_text, default_prompt_text, callback, suppress_message) -> {
+//            if (chromium.isDisposed()) return 0;
+//            
+//            int style = SWT.ICON_WORKING;
+//            switch (dialog_type) {
+//            case JSDIALOGTYPE_ALERT:
+//                style = SWT.ICON_INFORMATION;
+//                break;
+//            case JSDIALOGTYPE_CONFIRM:
+//                style = SWT.ICON_WARNING;
+//                break;
+//            case JSDIALOGTYPE_PROMPT:
+//                style = SWT.ICON_QUESTION | SWT.YES | SWT.NO;
+//                break;
+//            }
+//            String url = lib.cefswt_cefstring_to_java(origin_url);
+//            String msg = lib.cefswt_cefstring_to_java(message_text);
+//            String prompt = lib.cefswt_cefstring_to_java(default_prompt_text);
+//            MessageBox box = new MessageBox(chromium.getShell(), style);
+//            box.setText(getPlainUrl(url));
+//            if (prompt != null) {
+//                box.setMessage(msg);
+//            } else {
+//                box.setMessage(msg);
+//            }
+//            int open = box.open();
+//            lib.cefswt_dialog_close(callback, open == SWT.OK || open == SWT.YES ? 1 : 0, default_prompt_text);
+//            chromium.getShell().forceActive();
+//            return 1;
+//        });
+//        clientHandler.get_jsdialog_handler.set(client -> {
+//            return jsDialogHandler;
+//        });
+//    }
     
-    private void set_context_menu_handler() {
-        contextMenuHandler = CEFFactory.newContextMenuHandler();
-        contextMenuHandler.on_before_context_menu.set((self, browser, frame, params, model) -> {
-            debugPrint("on_before_context_menu");
-        });
-        contextMenuHandler.run_context_menu.set((self, browser, frame, params, model, callback) -> {
-            debugPrint("run_context_menu");
-            if (chromium.getMenu() != null) {
-                chromium.getMenu().setVisible(true);
-                lib.cefswt_context_menu_cancel(callback);
-                return 1;
-            }
-            return 0;
-        });
-        clientHandler.get_context_menu_handler.set(client -> {
-            return contextMenuHandler;
-        });
-    }
+//    private void set_context_menu_handler() {
+//        contextMenuHandler = CEFFactory.newContextMenuHandler();
+//        contextMenuHandler.on_before_context_menu.set((self, browser, frame, params, model) -> {
+//            debugPrint("on_before_context_menu");
+//        });
+//        contextMenuHandler.run_context_menu.set((self, browser, frame, params, model, callback) -> {
+//            debugPrint("run_context_menu");
+//            if (chromium.getMenu() != null) {
+//                chromium.getMenu().setVisible(true);
+//                lib.cefswt_context_menu_cancel(callback);
+//                return 1;
+//            }
+//            return 0;
+//        });
+//        clientHandler.get_context_menu_handler.set(client -> {
+//            return contextMenuHandler;
+//        });
+//    }
     
     private void set_text_visitor() {
         textVisitor = CEFFactory.newStringVisitor();
@@ -849,47 +1008,47 @@ class Chromium extends WebBrowser {
         });
     }
 
-    private void set_focus_handler() {
-        focusHandler = CEFFactory.newFocusHandler();
-        focusHandler.on_got_focus.set((focusHandler, browser_1) -> {
-            debugPrint("CALLBACK OnGotFocus");
-            hasFocus = true;
-            if (chromium.getDisplay().getFocusControl() != null) {
-                chromium.setFocus();
-            }
-            browserFocus(true);
-        });
-        focusHandler.on_set_focus.set((focusHandler, browser_1, focusSource) -> {
-            debugPrint("CALLBACK OnSetFocus " + focusSource);
-            if (ignoreFirstFocus) {
-            	ignoreFirstFocus  = false;
-            	return 1;
-            }
-            return 0;
-        });
-        focusHandler.on_take_focus.set((focusHandler, browser_1, next) -> {
-            debugPrint("CALLBACK OnTakeFocus " + next);
-            hasFocus = false;
-            Control[] tabOrder = chromium.getParent().getTabList();
-            if (tabOrder.length == 0)
-                tabOrder = chromium.getParent().getChildren();
-            int indexOf = Arrays.asList(tabOrder).indexOf(chromium);
-            if (indexOf != -1) {
-                int newIndex = (next == 1) ? indexOf + 1 : indexOf - 1;
-                if (newIndex > 0 && newIndex < tabOrder.length && !tabOrder[newIndex].isDisposed()) {
-                    tabOrder[newIndex].setFocus();
-                    return;
-                }
-            }
-            if (!chromium.getParent().isDisposed()) {
-                chromium.getParent().setFocus();
-            }
-        });
-        clientHandler.get_focus_handler.set(client -> {
-//            debugPrint("GetFocusHandler");
-            return focusHandler;
-        });
-    }
+//    private void set_focus_handler() {
+//        focusHandler = CEFFactory.newFocusHandler();
+//        focusHandler.on_got_focus.set((focusHandler, browser_1) -> {
+//            debugPrint("CALLBACK OnGotFocus");
+//            hasFocus = true;
+//            if (chromium.getDisplay().getFocusControl() != null) {
+//                chromium.setFocus();
+//            }
+//            browserFocus(true);
+//        });
+//        focusHandler.on_set_focus.set((focusHandler, browser_1, focusSource) -> {
+//            debugPrint("CALLBACK OnSetFocus " + focusSource);
+//            if (ignoreFirstFocus) {
+//            	ignoreFirstFocus  = false;
+//            	return 1;
+//            }
+//            return 0;
+//        });
+//        focusHandler.on_take_focus.set((focusHandler, browser_1, next) -> {
+//            debugPrint("CALLBACK OnTakeFocus " + next);
+//            hasFocus = false;
+//            Control[] tabOrder = chromium.getParent().getTabList();
+//            if (tabOrder.length == 0)
+//                tabOrder = chromium.getParent().getChildren();
+//            int indexOf = Arrays.asList(tabOrder).indexOf(chromium);
+//            if (indexOf != -1) {
+//                int newIndex = (next == 1) ? indexOf + 1 : indexOf - 1;
+//                if (newIndex > 0 && newIndex < tabOrder.length && !tabOrder[newIndex].isDisposed()) {
+//                    tabOrder[newIndex].setFocus();
+//                    return;
+//                }
+//            }
+//            if (!chromium.getParent().isDisposed()) {
+//                chromium.getParent().setFocus();
+//            }
+//        });
+//        clientHandler.get_focus_handler.set(client -> {
+////            debugPrint("GetFocusHandler");
+//            return focusHandler;
+//        });
+//    }
     
     @Override
     public boolean isFocusControl() {
@@ -901,7 +1060,7 @@ class Chromium extends WebBrowser {
         loopWork = new Runnable() {
             public void run() {
                 if (lib != null && !display.isDisposed()) {
-                	//debug("WORK CLOCK");
+                	debug("WORK CLOCK");
                 	safe_loop_work();
                 	display.timerExec(LOOP, loopWork);
                 } else {
@@ -1066,6 +1225,7 @@ class Chromium extends WebBrowser {
     }
 
     private static Lib loadLib() {
+        ChromiumLib.class.getName();
         fixJNRClosureClassLoader();
         String platform = SWT.getPlatform();
         if ("gtk".equals(platform)) {
