@@ -7,7 +7,8 @@ public class cef_base_ref_counted_t {
     ///
     /// Size of the data structure.
     ///
-    public long size;
+	/** @field cast=(size_t) */
+    public int size;
     ///
     /// Called to increment the reference count for the object. Should be
     /// called

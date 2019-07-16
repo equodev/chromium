@@ -4,7 +4,7 @@ version = "0.9.1"
 authors = ["Make Technology <http://maketechnology.io>", "Guillermo Zunino <guillez@gmail.com>"]
 
 [lib]
-name = "chromium_swt"
+name = "chromium_swt_0901"
 crate-type = ["dylib"]
 
 [profile.release]

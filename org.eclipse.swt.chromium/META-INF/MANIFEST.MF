@@ -5,10 +5,6 @@ Bundle-SymbolicName: org.eclipse.swt.chromium
 Bundle-Version: 0.9.1.qualifier
 Bundle-Vendor: Make Technology
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
-Require-Bundle: org.eclipse.swt,
- com.github.jnr.ffi,
- com.github.jnr.jffi,
- jnr.x86asm,
- org.objectweb.asm
+Require-Bundle: org.eclipse.swt
 Export-Package: org.eclipse.swt.chromium
 Automatic-Module-Name: org.eclipse.swt.chromium

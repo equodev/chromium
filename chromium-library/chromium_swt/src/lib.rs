@@ -302,10 +302,10 @@ pub extern fn cefswt_free(obj: *mut cef::cef_browser_t) {
     unsafe {
         assert_eq!((*obj).base.size, std::mem::size_of::<cef::_cef_browser_t>());
 
-        let rls_fn = (*obj).base.release.expect("null release");
+        // let rls_fn = (*obj).base.release.expect("null release");
         // println!("call rls");
-        let refs = rls_fn(obj as *mut cef::_cef_base_ref_counted_t);
-        assert_eq!(refs, 1);
+        // let refs = rls_fn(obj as *mut cef::_cef_base_ref_counted_t);
+        // assert_eq!(refs, 1);
     }
 
     println!("freed");
@@ -363,7 +363,7 @@ pub extern fn cefswt_close_browser(browser: *mut cef::cef_browser_t) {
 }
 
 #[no_mangle]
-pub extern fn cefswt_load_url(browser: *mut cef::cef_browser_t, url: *const c_char, post_bytes: *const c_void, post_size: usize, headers: *const *const c_char, headers_size: usize) {
+pub extern fn cefswt_load_url(browser: *mut cef::cef_browser_t, url: *const c_char, post_bytes: *const c_void, post_size: usize, headers: *const c_char, headers_size: usize) {
     let url = utils::str_from_c(url);
     let url_cef = utils::cef_string(url);
     println!("url: {:?}", url);
@@ -387,11 +387,14 @@ pub extern fn cefswt_load_url(browser: *mut cef::cef_browser_t, url: *const c_ch
             if !headers.is_null() {
                 let map = cef::cef_string_multimap_alloc();
 
+                let headers = utils::str_from_c(headers);
+                let headers: Vec<&str> = headers.splitn(headers_size, "::").collect();
                 for i in 0..headers_size {
-                    let header = headers.wrapping_add(i);
-                    let ptr = header.read();
+                    // let header = headers.wrapping_add(i);
+                    // let ptr = header.read();
 
-                    let header_str = utils::str_from_c(ptr);
+                    // let header_str = utils::str_from_c(ptr);
+                    let header_str = headers[i];
                     let header: Vec<&str> = header_str.splitn(2, ':').collect();
                     let key = header[0].trim();
                     let value = header[1].trim();
@@ -420,7 +423,8 @@ pub extern fn cefswt_get_url(browser: *mut cef::cef_browser_t) -> *mut c_char {
 
 #[no_mangle]
 pub extern fn cefswt_cefstring_to_java(cefstring: *mut cef::cef_string_t) -> *const c_char {
-    utils::cstr_from_cef(cefstring)
+    let r = utils::cstr_from_cef(cefstring);
+    r
 }
 
 #[no_mangle]
@@ -428,6 +432,13 @@ pub extern fn cefswt_request_to_java(request: *mut cef::cef_request_t) -> *mut c
     let url = unsafe { (*request).get_url.expect("null get_url")(request) };
     let cstr = utils::cstr_from_cef(url);
     unsafe { cef::cef_string_userfree_utf16_free(url) };
+    cstr
+}
+
+#[no_mangle]
+pub extern fn cefswt_cookie_to_java(cookie: *mut cef::_cef_cookie_t) -> *mut c_char {
+    let name = unsafe { (*cookie).name };
+    let cstr = utils::cstr_from_cef(&name);
     cstr
 }
 
@@ -527,23 +538,29 @@ pub struct FunctionSt {
 }
 
 #[no_mangle]
-pub unsafe extern fn cefswt_function_id(message: *mut cef::cef_process_message_t) -> *const FunctionSt {
+pub unsafe extern fn cefswt_function_id(message: *mut cef::cef_process_message_t, st: *mut FunctionSt) {
     let valid = (*message).is_valid.unwrap()(message);
     let name = (*message).get_name.unwrap()(message);
-    let mut st = FunctionSt {id: -1, args: 0, port: 0};
+    // let mut st = FunctionSt {id: -1, args: 0, port: 0};
+    (*st).id = -1;
+    (*st).args = 0;
+    (*st).port = 0;
     if valid == 1 && cef::cef_string_utf16_cmp(&utils::cef_string("function_call"), name) == 0 {
         let args = (*message).get_argument_list.unwrap()(message);
         let args_len = (*args).get_size.unwrap()(args);
         let port = (*args).get_int.unwrap()(args, 0);
-        st = FunctionSt {
-            id: (*args).get_int.unwrap()(args, 1),
-            args: (args_len-1) / 2,
-            port
-        };
+        // st = FunctionSt {
+        //     id: (*args).get_int.unwrap()(args, 1),
+        //     args: (args_len-1) / 2,
+        //     port
+        // };
+        (*st).id = (*args).get_int.unwrap()(args, 1);
+        (*st).args = (args_len-1) / 2;
+        (*st).port = port; 
     }
-    let r = Box::new(st);
-    let r = Box::into_raw(r);
-    return r;
+    // let r = Box::new(st);
+    // let r = Box::into_raw(r);
+    // return r;
 }
 
 #[no_mangle]

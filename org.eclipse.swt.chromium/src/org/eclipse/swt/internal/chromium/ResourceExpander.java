@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.util.function.Function;
 
 import org.eclipse.swt.internal.Library;
+import org.eclipse.swt.internal.Platform;
 
 // TODO: copied from org.eclipse.swt.internal.Library, when merged into SWT thi
 // can be removed by allowing findResource to not look into internal OSGi resource url
@@ -56,7 +57,9 @@ public class ResourceExpander {
                                                                                  //       subdir  e.g:  subdir
         String maybeSubDirPath = subDir != null ? subDir + SEPARATOR : "";       //               e.g:  subdir/  or ""
         String maybeSubDirPathWithPrefix = subDir != null ? SEPARATOR + maybeSubDirPath : ""; //  e.g: /subdir/  or ""
-        final String finalResourceName = resourceName;
+    	final String finalResourceName = mapResourceName ?
+    			System.mapLibraryName(resourceName + "-" + Platform.PLATFORM) // e.g libMyLib-gtk-3826.so
+    			: resourceName;
 
         // 1) Look for the resource in the java/swt library path(s)
         // This code commonly finds the resource if the swt project is a required project and the swt binary (for your platform)
