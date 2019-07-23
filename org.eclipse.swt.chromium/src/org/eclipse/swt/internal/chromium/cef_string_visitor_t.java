@@ -20,6 +20,8 @@ public class cef_string_visitor_t {
     public long ptr;
     /** @field flags=no_gen */
 	public Callback visit_cb;
+	/** @field flags=no_gen */
+	public int refs;
 
     public static final int sizeof = ChromiumLib.cef_string_visitor_t_sizeof();
   }

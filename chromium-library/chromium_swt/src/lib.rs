@@ -312,6 +312,14 @@ pub extern fn cefswt_free(obj: *mut cef::cef_browser_t) {
 }
 
 #[no_mangle]
+pub extern fn cefswt_get_id(browser: *mut cef::cef_browser_t) -> c_int {
+    unsafe {
+        let get_id = (*browser).get_identifier.unwrap();
+        get_id(browser)
+    }
+}
+
+#[no_mangle]
 pub extern fn cefswt_resized(browser: *mut cef::cef_browser_t, width: i32, height: i32) {
     //println!("Calling resized {}:{}", width, height);
 

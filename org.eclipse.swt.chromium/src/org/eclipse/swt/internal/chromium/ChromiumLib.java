@@ -12,7 +12,7 @@ public class ChromiumLib extends C {
     /**
      * @param clientHandler cast=(void *)
      */
-    public static final native void cefswt_create_browser(long hwnd, String url, long clientHandler, int w, int h, int js, int cefBgColor);
+    public static final native long cefswt_create_browser(long hwnd, String url, long clientHandler, int w, int h, int js, int cefBgColor);
 
     public static final native int cefswt_do_message_loop_work();
 
@@ -20,6 +20,11 @@ public class ChromiumLib extends C {
      * @param browser cast=(void *)
      */
     public static final native void cefswt_load_url(long browser, String url, byte[] bytes, int length, String headers, int length2);
+
+    /**
+     * @param browser cast=(void *)
+     */
+    public static final native int cefswt_get_id(long browser);
 
     /**
      * @param browser cast=(void *)
