@@ -499,7 +499,7 @@ class Chromium extends WebBrowser {
         }
         popupHandlers++;
 
-        ChromiumLib.cefswt_set_window_info_parent(windowInfo, client, popupClientHandler.ptr, 0, event.location.x, event.location.y, event.size.x, event.size.y);
+        ChromiumLib.cefswt_set_window_info_parent(windowInfo, client, popupClientHandler.ptr, 0, event.location != null ? event.location.x : 0, event.location != null ? event.location.y : 0, event.size != null ? event.size.x : 0, event.size != null ? event.size.y : 0);
     }
    
     static long popup_get_life_span_handler(long client) {
@@ -529,12 +529,12 @@ class Chromium extends WebBrowser {
     		popupLifeSpanHandler = null;
     		
     		disposeCallback(popupClientHandler.get_life_span_handler_cb);
-    		C.free(popupClientHandler.ptr);
+    		freeDelayed(popupClientHandler.ptr);
     		popupClientHandler = null;
     	}
     	disposingAny--;
     }
-    
+
     static int popup_do_close(long plifeSpanHandler, long browser) {
     	debug("popup DoClose");
     	disposingAny++;
@@ -841,10 +841,10 @@ class Chromium extends WebBrowser {
 		  event.toolBar = popupFeatures.toolBarVisible == 1;
 		  int x = popupFeatures.xSet == 1 ? popupFeatures.x : 0 ;
 		  int y = popupFeatures.ySet == 1 ? popupFeatures.y : 0 ;
-		  event.location = new Point(x, y);
+		  event.location = popupFeatures.xSet == 1 || popupFeatures.ySet == 1 ? new Point(x, y) : null;
 		  int width = popupFeatures.widthSet == 1 ? popupFeatures.width : 0;
 		  int height = popupFeatures.heightSet == 1 ? popupFeatures.height : 0;
-		  event.size = new Point(width, height);
+		  event.size = popupFeatures.widthSet == 1 || popupFeatures.heightSet == 1 ? new Point(width, height) : null;
 		
 		  for (OpenWindowListener listener : openWindowListeners) {
 		      listener.open(event);
@@ -1212,7 +1212,7 @@ class Chromium extends WebBrowser {
 	private void freeTextVisitor() {
 		debugPrint("free text visitor");
 		disposeCallback(textVisitor.visit_cb);
-		C.free(textVisitor.ptr);
+		freeDelayed(textVisitor.ptr);
 		textVisitor = null;
 	}
 	
@@ -1854,7 +1854,11 @@ class Chromium extends WebBrowser {
 		return c;
 	}
     
-//    static int cbs = 0;
+    private static void freeDelayed(long ptr) {
+        Display.getDefault().asyncExec(() -> C.free(ptr));
+    }
+
+    //    static int cbs = 0;
     static long checkGetAddress(Callback cb) {
     	long address = cb.getAddress();
 //    	cbs++;
