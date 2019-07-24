@@ -478,24 +478,25 @@ class Chromium extends WebBrowser {
     	debug("Registering chromium default popup " + instance);
 
         if (popupHandlers == 0) {
-        	popupClientHandler = CEFFactory.newClient();
         	popupLifeSpanHandler = CEFFactory.newLifeSpanHandler();
         	popupLifeSpanHandler.on_after_created_cb = new Callback(Chromium.class, "popup_on_after_created", void.class, new Type[] {long.class, long.class});
         	popupLifeSpanHandler.on_after_created = checkGetAddress(popupLifeSpanHandler.on_after_created_cb);
-        	
         	popupLifeSpanHandler.on_before_close_cb = new Callback(Chromium.class, "popup_on_before_close",  void.class, new Type[] {long.class, long.class});
         	popupLifeSpanHandler.on_before_close = checkGetAddress(popupLifeSpanHandler.on_before_close_cb);
-        	
         	popupLifeSpanHandler.do_close_cb = new Callback(Chromium.class, "popup_do_close", int.class, new Type[] {long.class, long.class});
         	popupLifeSpanHandler.do_close = checkGetAddress(popupLifeSpanHandler.do_close_cb);
         	
-        	popupClientHandler.get_life_span_handler_cb = new Callback(Chromium.class, "popup_get_life_span_handler", long.class, new Type[] {long.class});
-        	popupClientHandler.get_life_span_handler = checkGetAddress(popupClientHandler.get_life_span_handler_cb);
         	popupLifeSpanHandler.ptr = C.malloc (cef_life_span_handler_t.sizeof);
         	ChromiumLib.memmove(popupLifeSpanHandler.ptr, popupLifeSpanHandler, cef_life_span_handler_t.sizeof);
+
+        	if (popupClientHandler == null) {
+        		popupClientHandler = CEFFactory.newClient();
+        		popupClientHandler.get_life_span_handler_cb = new Callback(Chromium.class, "popup_get_life_span_handler", long.class, new Type[] {long.class});
+        		popupClientHandler.get_life_span_handler = checkGetAddress(popupClientHandler.get_life_span_handler_cb);
         	
-        	popupClientHandler.ptr = C.malloc(cef_client_t.sizeof);
-        	ChromiumLib.memmove(popupClientHandler.ptr, popupClientHandler, cef_client_t.sizeof);
+        		popupClientHandler.ptr = C.malloc(cef_client_t.sizeof);
+        		ChromiumLib.memmove(popupClientHandler.ptr, popupClientHandler, cef_client_t.sizeof);
+        	}
         }
         popupHandlers++;
 
@@ -527,10 +528,6 @@ class Chromium extends WebBrowser {
     		disposeCallback(popupLifeSpanHandler.on_before_close_cb);
     		C.free(popupLifeSpanHandler.ptr);
     		popupLifeSpanHandler = null;
-    		
-    		disposeCallback(popupClientHandler.get_life_span_handler_cb);
-    		freeDelayed(popupClientHandler.ptr);
-    		popupClientHandler = null;
     	}
     	disposingAny--;
     }
@@ -689,7 +686,12 @@ class Chromium extends WebBrowser {
 	        C.free(contextMenuHandler.ptr);
 	        contextMenuHandler = null;
         }
-        
+        if (popupClientHandler != null) {
+        	disposeCallback(popupClientHandler.get_life_span_handler_cb);
+        	C.free(popupClientHandler.ptr);
+        	popupClientHandler = null;
+        }
+
         debug("all dipsosed");
 	}
 
@@ -1665,7 +1667,7 @@ class Chromium extends WebBrowser {
         Object[] ret = new Object[1];
         EvalReturned callback = (loop, type, valuePtr) -> {
         	if (loop == 1) {
-        		debugPrint("eval retured: " +type + ":"+valuePtr);
+        		//debugPrint("eval retured: " +type + ":"+valuePtr);
         		if (!(loopDisable && ("cocoa".equals(SWT.getPlatform()) || "gtk".equals(SWT.getPlatform())))) {
         			chromium.getDisplay().readAndDispatch();
         		}
