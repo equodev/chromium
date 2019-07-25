@@ -152,6 +152,11 @@ public class ChromiumLib extends C {
      */
     public static final native void cefswt_context_menu_cancel(long callback);
 
+    /**
+     * @param callback cast=(void *)
+     */
+    public static final native void cefswt_auth_callback(long callback, String user, String password, int cont);
+    
     public static final native void cefswt_shutdown();
 
     public static final native boolean cefswt_set_cookie(String url, String name, String value, String domain, String path, int secure, int httpOnly, double maxAge);
@@ -282,4 +287,5 @@ public class ChromiumLib extends C {
      * @param size cast=(size_t)
      */
     public static final native void memmove (cef_popup_features_t dest, long src, int size);
+
 }

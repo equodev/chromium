@@ -7,6 +7,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.net.HttpCookie;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
@@ -30,6 +31,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTError;
 import org.eclipse.swt.SWTException;
+import org.eclipse.swt.browser.AuthenticationEvent;
+import org.eclipse.swt.browser.AuthenticationListener;
 import org.eclipse.swt.browser.CloseWindowListener;
 import org.eclipse.swt.browser.LocationEvent;
 import org.eclipse.swt.browser.LocationListener;
@@ -71,10 +74,19 @@ import org.eclipse.swt.internal.chromium.cef_load_handler_t;
 import org.eclipse.swt.internal.chromium.cef_popup_features_t;
 import org.eclipse.swt.internal.chromium.cef_request_handler_t;
 import org.eclipse.swt.internal.chromium.cef_string_visitor_t;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.MessageBox;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Widget;
 
 class Chromium extends WebBrowser {
@@ -673,6 +685,7 @@ class Chromium extends WebBrowser {
         }
         if (requestHandler != null) {
         	disposeCallback(requestHandler.on_before_browse_cb);
+        	disposeCallback(requestHandler.get_auth_credentials_cb);
         	C.free(requestHandler.ptr);
         	requestHandler = null;
         }
@@ -1034,6 +1047,8 @@ class Chromium extends WebBrowser {
         requestHandler = CEFFactory.newRequestHandler();
         requestHandler.on_before_browse_cb = new Callback(Chromium.class, "on_before_browse", int.class, new Type[] {long.class, long.class, long.class, long.class, int.class});
         requestHandler.on_before_browse = checkGetAddress(requestHandler.on_before_browse_cb);
+        requestHandler.get_auth_credentials_cb = new Callback(Chromium.class, "get_auth_credentials", int.class, new Type[] {long.class, long.class, long.class, int.class, long.class, int.class, long.class, long.class, long.class});
+        requestHandler.get_auth_credentials = checkGetAddress(requestHandler.get_auth_credentials_cb);
 
         clientHandler.get_request_handler_cb = new Callback(Chromium.class, "get_request_handler", long.class, new Type[] {long.class});
         clientHandler.get_request_handler = checkGetAddress(clientHandler.get_request_handler_cb);
@@ -1078,6 +1093,116 @@ class Chromium extends WebBrowser {
             return event.doit ? 0 : 1;
         }
         return 0;
+	}
+
+    static int get_auth_credentials(long self, long browser, long frame, int isProxy, long host, int port, long realm, long scheme, long callback) {
+    	int id = ChromiumLib.cefswt_get_id(browser);
+//    	debug("on_before_browse: " + id);
+    	return safeGeInstance(id).get_auth_credentials(browser, frame, host, port, realm, callback);
+    }
+    
+	private int get_auth_credentials(long browser2, long frame, long host, int port, long realm, long callback) {
+		if (isDisposed()) return 0;
+		
+        AuthenticationEvent event = new AuthenticationEvent(chromium);
+        event.display = chromium.getDisplay();
+        event.widget = chromium;
+        event.doit = true;
+        String protocol = "http";
+        try {
+        	URL u = new URL(this.url);
+        	protocol = u.getProtocol();
+        } catch (MalformedURLException e) {
+        }
+        String hostStr = host != 0 ? ChromiumLib.cefswt_cefstring_to_java(host) : "";
+        String realmStr = realm != 0 ? ChromiumLib.cefswt_cefstring_to_java(realm) : null;
+		event.location = protocol + "://" + hostStr;
+        debugPrint("get_auth_credentials:" + event.location);
+        chromium.getDisplay().syncExec(() -> {
+	        for (AuthenticationListener listener : authenticationListeners) {
+	    		listener.authenticate(event);
+	    	}
+	        if (event.doit == true && event.user == null && event.password == null) {
+	        	new AuthDialog(chromium.getShell()).open(event, realmStr);
+	        }
+        });
+        ChromiumLib.cefswt_auth_callback(callback, event.user, event.password, event.doit ? 1 : 0);
+        return event.doit ? 1 : 0;
+	}
+	
+	class AuthDialog extends Dialog {
+
+		public AuthDialog(Shell parent) {
+			super(parent);
+		}
+		
+		public void open(AuthenticationEvent authEvent, String realm) {
+			Shell parent = getParent();
+			Shell shell = new Shell(parent, SWT.DIALOG_TRIM | SWT.RESIZE | SWT.APPLICATION_MODAL);
+			shell.setText("Authentication Required");
+			GridLayout layout = new GridLayout(2, false);
+			layout.marginHeight = 10;
+			layout.marginWidth = 10;
+			shell.setLayout(layout);
+			
+			Label info = new Label(shell, SWT.WRAP);
+			StringBuilder infoText = new StringBuilder(authEvent.location);
+			infoText.append(" is requesting you username and password.");
+			if (realm != null) {
+				infoText.append(" The site says: \"").append(realm).append("\"");
+			}
+			info.setText(infoText.toString());
+			info.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+
+			Label label1 = new Label(shell, SWT.NONE);
+			label1.setText("User Name: ");
+			Text username = new Text(shell, SWT.SINGLE | SWT.BORDER);
+			username.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+
+			Label label2 = new Label(shell, SWT.NONE);
+			label2.setText("Password: ");
+			Text password = new Text(shell, SWT.SINGLE | SWT.BORDER);
+			password.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+			password.setEchoChar('*');
+			
+			Composite bar = new Composite(shell, SWT.NONE);
+			bar.setLayoutData(new GridData(SWT.END, SWT.END, false, true, 2, 1));
+			bar.setLayout(new GridLayout(2, true));
+
+			Button cancelButton = new Button(bar, SWT.PUSH);
+			cancelButton.setText("Cancel");
+			cancelButton.addListener(SWT.Selection, new Listener() {
+				public void handleEvent(Event event) {
+					authEvent.doit = false;
+					shell.close();
+				}
+			});
+			GridData cancelData = new GridData(SWT.CENTER, SWT.END, false, false);
+			cancelData.widthHint = 80;
+			cancelButton.setLayoutData(cancelData);
+
+			Button okButton = new Button(bar, SWT.PUSH);
+			okButton.setText("Ok");
+			okButton.addListener(SWT.Selection, new Listener() {
+				public void handleEvent(Event event) {
+					authEvent.user = username.getText();
+					authEvent.password = password.getText();
+					shell.close();
+				}
+			});
+			GridData okData = new GridData(SWT.CENTER, SWT.END, false, false);
+			okData.minimumWidth = SWT.DEFAULT;
+			okData.widthHint = 80;
+			okButton.setLayoutData(okData);
+
+			shell.pack();
+			shell.open();
+			Display display = parent.getDisplay();
+			while (!shell.isDisposed()) {
+				if (!display.readAndDispatch())
+					display.sleep();
+			}
+		}
 	}
 
 	private static void set_jsdialog_handler() {
