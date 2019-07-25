@@ -22,20 +22,20 @@ use std::collections::HashMap;
 
 #[cfg(target_os = "linux")]
 unsafe extern fn xerror_handler_impl(_: *mut x11::xlib::Display, event: *mut x11::xlib::XErrorEvent) -> c_int {
-    print!("X error received: ");
-    println!("type {}, serial {}, error_code {}, request_code {}, minor_code {}",
-        (*event).type_, (*event).serial, (*event).error_code, (*event).request_code, (*event).minor_code);
+    //print!("X error received: ");
+    //println!("type {}, serial {}, error_code {}, request_code {}, minor_code {}",
+    //    (*event).type_, (*event).serial, (*event).error_code, (*event).request_code, (*event).minor_code);
     0
 }
 #[cfg(target_os = "linux")]
 unsafe extern fn xioerror_handler_impl(_: *mut x11::xlib::Display) -> c_int {
-    println!("XUI error received");
+    //println!("XUI error received");
     0
 }
 
 #[no_mangle]
 pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char, version: *const c_char, debug_port: c_int) {
-    println!("DLL init");
+    //println!("DLL init");
     assert_eq!(unsafe{(*japp).base.size}, std::mem::size_of::<cef::_cef_app_t>());
     //println!("app {:?}", japp);
 
@@ -107,7 +107,7 @@ pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char
         accept_language_list: utils::cef_string_empty()
     };
 
-    println!("Calling cef_initialize");
+    //println!("Calling cef_initialize");
     do_initialize(main_args, settings, japp);
 }
 
@@ -308,7 +308,7 @@ pub extern fn cefswt_free(obj: *mut cef::cef_browser_t) {
         // assert_eq!(refs, 1);
     }
 
-    println!("freed");
+    //println!("freed");
 }
 
 #[no_mangle]
@@ -374,7 +374,7 @@ pub extern fn cefswt_close_browser(browser: *mut cef::cef_browser_t) {
 pub extern fn cefswt_load_url(browser: *mut cef::cef_browser_t, url: *const c_char, post_bytes: *const c_void, post_size: usize, headers: *const c_char, headers_size: usize) {
     let url = utils::str_from_c(url);
     let url_cef = utils::cef_string(url);
-    println!("url: {:?}", url);
+    //println!("url: {:?}", url);
     unsafe {
         let get_frame = (*browser).get_main_frame.expect("null get_main_frame");
         let main_frame = get_frame(browser);
@@ -512,8 +512,8 @@ pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char,
                 callback(0, r.kind as i32, r.str_value.as_ptr());
                 1
             },
-            Err(e) => {
-                println!("Failed in socket server {:?}", e);
+            Err(_e) => {
+                //println!("Failed in socket server {:?}", e);
                 0
             }
         }
@@ -598,7 +598,7 @@ pub extern fn cefswt_set_focus(browser: *mut cef::cef_browser_t, set: bool, pare
     } else {
         0
     };
-    println!("<<<<<<<< set_focus {}", focus);
+    //println!("<<<<<<<< set_focus {}", focus);
     unsafe { focus_fn(browser_host, focus) };
     if !set && parent as c_ulong != 0 {
         do_set_focus(parent, focus);
@@ -608,7 +608,7 @@ pub extern fn cefswt_set_focus(browser: *mut cef::cef_browser_t, set: bool, pare
 #[cfg(target_os = "linux")]
 fn do_set_focus(parent: *mut c_void, focus: i32) {
     let root = unsafe { gtk::gtk_widget_get_toplevel(parent) };
-    println!("<<<<<<<< set_focus {} {:?} {:?}", focus, parent, root);
+    //println!("<<<<<<<< set_focus {} {:?} {:?}", focus, parent, root);
     // workaround to actually remove focus from cef inputs
     unsafe { gtk::gtk_window_present(root) };
 }
@@ -636,6 +636,19 @@ pub extern fn cefswt_dialog_close(callback: *mut cef::_cef_jsdialog_callback_t, 
 #[no_mangle]
 pub extern fn cefswt_context_menu_cancel(callback: *mut cef::_cef_run_context_menu_callback_t) {
     unsafe { (*callback).cancel.unwrap()(callback) };
+}
+
+#[no_mangle]
+pub extern fn cefswt_auth_callback(callback: *mut cef::_cef_auth_callback_t, juser: *const c_char, jpass: *const c_char, cont: c_int) {
+    unsafe {
+        if cont == 1 {
+            let user = utils::cef_string_from_c(juser);
+            let pass = utils::cef_string_from_c(jpass);
+            (*callback).cont.unwrap()(callback, &user, &pass)
+        } else {
+            (*callback).cancel.unwrap()(callback) 
+        }
+    };
 }
 
 #[no_mangle]
@@ -693,7 +706,7 @@ pub extern fn cefswt_delete_cookies() {
 
 #[no_mangle]
 pub extern fn cefswt_shutdown() {
-    println!("r: Calling cef_shutdown");
+    //println!("r: Calling cef_shutdown");
     // Shut down CEF.
     unsafe { cef::cef_shutdown() };
     // println!("r: After Calling cef_shutdown");

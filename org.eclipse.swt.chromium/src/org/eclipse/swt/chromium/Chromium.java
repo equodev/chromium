@@ -97,6 +97,7 @@ class Chromium extends WebBrowser {
     private static final String JNI_LIB_V = "swt-chromium-"+VERSION;
     private static final int MAX_PROGRESS = 100;
     private static final int LOOP = 75;
+    private static final boolean debug = Boolean.valueOf(System.getProperty("swt.chromium.debug", "false"));
     
     static {
         lib = loadLib();
@@ -237,14 +238,16 @@ class Chromium extends WebBrowser {
 		chromium.addPaintListener(paintListener);
     }
 
-    private Object debugPrint(String log) {
-        System.out.println("J"+instance + ":" + Thread.currentThread().getName() +":" + log + (this.url != null ? " (" + getPlainUrl(this.url) + ")" : " empty-url"));
-        return null;
-    }
+    private void debugPrint(String log) {
+    	if (debug) {
+    		System.out.println("J"+instance + ":" + Thread.currentThread().getName() +":" + log + (this.url != null ? " (" + getPlainUrl(this.url) + ")" : " empty-url"));
+    	}
+	}
     
-    private static Object debug(String log) {
-        System.out.println("J:" + log);
-        return null;
+    private static void debug(String log) {
+    	if (debug) {
+    		System.out.println("J:" + log);
+    	}
     }
 
     private void initCEF(Display display) {
@@ -265,7 +268,6 @@ class Chromium extends WebBrowser {
                 browserProcessHandler.ptr = C.malloc (cef_browser_process_handler_t.sizeof);
                 ChromiumLib.memmove(browserProcessHandler.ptr, browserProcessHandler, cef_browser_process_handler_t.sizeof);
 
-                System.out.println("cefrust.path: " + cefrustPath);
                 int debugPort = 0;
                 try {
                 	debugPort = Integer.parseInt(System.getProperty("org.eclipse.swt.chromium.remote-debugging-port", "0"));
@@ -356,7 +358,7 @@ class Chromium extends WebBrowser {
         if (browsers.get() > 0 && !loopDisable) {
 //        	debug("safe_loop_work "+from);
         	if (ChromiumLib.cefswt_do_message_loop_work() == 0) {
-        	    System.err.println("error looping");
+        	    System.err.println("error looping chromium");
         	}
         	if (pumpDisable == true) {
         	    pumpDisable = false;
@@ -916,7 +918,7 @@ class Chromium extends WebBrowser {
     	safeGeInstance(id).on_loading_state_change(browser, isLoading, canGoBack, canGoForward);
     }
 
-    private void on_loading_state_change(long browser2, int isLoading, int canGoBack, int canGoForward) {
+    private void on_loading_state_change(long browser, int isLoading, int canGoBack, int canGoForward) {
     	Chromium.this.canGoBack = canGoBack == 1;
     	Chromium.this.canGoForward = canGoForward == 1;
     	if (isDisposed() || progressListeners == null) return;
@@ -1471,7 +1473,6 @@ class Chromium extends WebBrowser {
             int arg = i;
             EvalReturned callback = (loop, type, valuePtr) -> {
             	if (loop == 1) {
-            		System.out.println("DISPATCH");
             		chromium.getDisplay().readAndDispatch();
             	} else {
         			String value = ChromiumLib.cefswt_cstring_to_java(valuePtr);
@@ -1997,9 +1998,6 @@ class Chromium extends WebBrowser {
     }
     
     static void disposeCallback(Callback cb) {
-    	if (cb == null) {
-    		System.err.println("NULL CALLBACK ");
-    	}
     	if (cb != null) {
     		cb.dispose();
     	}

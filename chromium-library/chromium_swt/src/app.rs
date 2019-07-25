@@ -8,7 +8,7 @@ use std::mem::{size_of};
 use std::ptr::{null_mut};
 
 pub fn create_browser(canvas_hwnd: c_ulong, url: &str, jclient: &mut cef::_cef_client_t, w: c_int, h: c_int, js: c_int, bg: cef::cef_color_t) -> *mut cef::cef_browser_t {
-    println!("create_browser in {}", canvas_hwnd);
+    //println!("create_browser in {}", canvas_hwnd);
 
     let window_info = cef_window_info(canvas_hwnd, w, h);
     // Browser settings.
@@ -52,7 +52,7 @@ pub fn create_browser(canvas_hwnd: c_ulong, url: &str, jclient: &mut cef::_cef_c
     let url_cef = utils::cef_string(url);
 
     // Create browser.
-    println!("Calling cef_browser_host_create_browser");
+    //println!("Calling cef_browser_host_create_browser");
     //if unsafe { cef::cef_browser_host_create_browser(&window_info, client, &url_cef, &browser_settings, null_mut()) } != 1 {
         //println!("Failed calling browserHostCreateBrowser");
     //}
@@ -95,14 +95,14 @@ fn cef_window_info(hwnd: c_ulong, w: c_int, h: c_int) -> cef::_cef_window_info_t
         };
         window_info
     };
-    println!("parent {}", window_info.parent_window);
+    //println!("parent {}", window_info.parent_window);
     window_info
 }
 
 #[cfg(target_os = "linux")]
 pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulong, x: c_int, y: c_int, w: c_int, h: c_int) {
     use std::os::raw::{c_uint, c_void};
-    unsafe {println!("orig window_info {} {:?}", hwnd, (*window_info)); };
+    //unsafe {println!("orig window_info {} {:?}", hwnd, (*window_info)); };
     unsafe { 
         (*window_info).x = x as c_uint;
         (*window_info).y = y as c_uint;
@@ -117,7 +117,7 @@ pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulon
         (*window_info).windowless_rendering_enabled = 0;
         (*window_info).window = 0;
     }
-    unsafe { println!("new window_info {:?}", (*window_info)); };
+    //unsafe { println!("new window_info {:?}", (*window_info)); };
 }
 
 #[cfg(target_os = "macos")]
@@ -134,14 +134,14 @@ fn cef_window_info(hwnd: c_ulong, w: c_int, h: c_int) -> cef::_cef_window_info_t
         hidden: 0,
         window_name: cef::cef_string_t { str: null_mut(),  length: 0,  dtor: Option::None }
     };
-    println!("parent {:?}", window_info.parent_view);
+    //println!("parent {:?}", window_info.parent_view);
     window_info
 }
 
 #[cfg(target_os = "macos")]
 pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulong, x: c_int, y: c_int, w: c_int, h: c_int) {
     use std::os::raw::{c_void};
-    unsafe { println!("orig window_info {} {:?}", hwnd, (*window_info)); };
+    //unsafe { println!("orig window_info {} {:?}", hwnd, (*window_info)); };
     unsafe { 
         (*window_info).x = x;
         (*window_info).y = y;
@@ -153,7 +153,7 @@ pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: c_ulon
         (*window_info).hidden = 0;
         (*window_info).window_name = cef::cef_string_t { str: null_mut(),  length: 0,  dtor: Option::None };
     };
-    unsafe { println!("new window_info {:?}", (*window_info)); };
+    //unsafe { println!("new window_info {:?}", (*window_info)); };
 }
 
 #[cfg(windows)]
@@ -174,7 +174,7 @@ fn cef_window_info(hwnd: c_ulong, w: c_int, h: c_int) -> cef::_cef_window_info_t
             | winapi::um::winuser::WS_CLIPSIBLINGS | winapi::um::winuser::WS_VISIBLE | winapi::um::winuser::WS_TABSTOP,
         menu: 0 as cef::win::HMENU
     };
-    println!("parent {:?}", window_info.parent_window);
+    //println!("parent {:?}", window_info.parent_window);
     window_info
 }
 
