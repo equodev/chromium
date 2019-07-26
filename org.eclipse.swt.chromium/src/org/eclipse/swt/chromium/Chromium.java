@@ -479,8 +479,11 @@ class Chromium extends WebBrowser {
         prepareBrowser();
     	long popupHandle =  hwnd;
     	debugPrint("popup will use hwnd:"+popupHandle);
-        Point size = chromium.getParent().getSize();
-        size = DPIUtil.autoScaleUp(size);
+    	Point size = new Point(0, 0);
+    	if ("gtk".equals(SWT.getPlatform())) {
+        	size = chromium.getParent().getSize();
+        	size = DPIUtil.autoScaleUp(size);
+    	}
 
     	ChromiumLib.cefswt_set_window_info_parent(windowInfo, client, clientHandler.ptr, popupHandle, 0, 0, size.x, size.y);
     	debugPrint("reparent popup");
@@ -558,6 +561,9 @@ class Chromium extends WebBrowser {
 
     private Point getChromiumSize() {
     	Point size = chromium.getSize();
+    	if ("cocoa".equals(SWT.getPlatform())) {
+    		return size;
+    	}
     	return DPIUtil.autoScaleUp(size);
     }
 
