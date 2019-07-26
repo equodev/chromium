@@ -58,7 +58,7 @@ public class ResourceExpander {
         String maybeSubDirPath = subDir != null ? subDir + SEPARATOR : "";       //               e.g:  subdir/  or ""
         String maybeSubDirPathWithPrefix = subDir != null ? SEPARATOR + maybeSubDirPath : ""; //  e.g: /subdir/  or ""
     	final String finalResourceName = mapResourceName ?
-    			System.mapLibraryName(resourceName + "-" + Platform.PLATFORM) // e.g libMyLib-gtk-3826.so
+    			System.mapLibraryName(resourceName + "-" + SWT.getPlatform()) // e.g libMyLib-gtk-3826.so
     			: resourceName;
 
         // 1) Look for the resource in the java/swt library path(s)
@@ -116,7 +116,7 @@ public class ResourceExpander {
                 }
             }
         }
-        throw new UnsatisfiedLinkError("Could not find resource" + resourceName +  (subDir != null ? " (in subdirectory: " + subDir + " )" : ""));
+        throw new UnsatisfiedLinkError("Could not find resource " + finalResourceName +  (subDir != null ? " (in subdirectory: " + subDir + " )" : ""));
     }
     
     /**
