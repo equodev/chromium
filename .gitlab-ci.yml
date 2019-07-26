@@ -38,7 +38,7 @@ publish:
   - cp -r org.eclipse.swt.chromium.repository/target/repository public
   - du -h -s public || true
   - mc config host add do https://ams3.digitaloceanspaces.com "$DO_KEY" "$DO_SECRET" --lookup auto
-  - mc mb -p do/$DO_BUCKET
+#  - mc mb -p do/$DO_BUCKET
   - mc mirror --overwrite --remove public/repository do/$DO_BUCKET/rls/repository/
   - current=$(date -u +"%FT%T.%3NZ")
   - echo "current $current"
