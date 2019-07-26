@@ -210,6 +210,7 @@ class Chromium extends WebBrowser {
 
     public void destroyFunction (BrowserFunction function) {
         checkBrowser();
+        deregisterFunction (function);
     }
     
     @Override
@@ -928,7 +929,16 @@ class Chromium extends WebBrowser {
     	Chromium.this.canGoBack = canGoBack == 1;
     	Chromium.this.canGoForward = canGoForward == 1;
     	if (isDisposed() || progressListeners == null) return;
-		updateText();
+    	if (isLoading == 0) {
+        	for (BrowserFunction function : functions.values()) {
+                if (function.index != 0) {
+                    if (!ChromiumLib.cefswt_function(browser, function.name, function.index)) {
+                        throw new SWTException("Cannot create BrowserFunction");
+                    }
+                }
+            }
+    	}
+    	updateText();
     	if (isPopup != null) {
     		textReady.thenRun(() -> enableProgress.complete(true));
     	}
