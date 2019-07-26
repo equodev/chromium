@@ -13,7 +13,7 @@ pub fn subp_path(cwd: &::std::path::Path, version: &str) -> String {
         cwd.join(format!("chromium_subp-{}", version)) 
     };
     let subp = subp_path.to_str().unwrap();
-    println!("subp: {:?}", subp);
+    //println!("subp: {:?}", subp);
     String::from(subp)
 }
 

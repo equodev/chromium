@@ -25,7 +25,7 @@ An eclipse P2 repository is available with the bundle and fragments for Linux, W
 1- Chromium Browser Widget repository (EPL): 
   http://dl.maketechnology.io/chromium-swt/rls/repository
 
-2- Third party dependencies (JNR, ASM) are available at eclipse repository (EPL):
+2- ~~Third party dependencies (JNR, ASM) are available at eclipse repository (EPL)~~ (No dependencies since 0.10.0):
   http://download.eclipse.org/releases/photon
 
 3- CEF Binaries (Optional) required to run can be manually copied to ~/.swt/lib/[os]/x86_64/ or you can use this repository which provides a feature and per platform fragments with CEF binaries and resources.
@@ -40,9 +40,9 @@ Notes:
   - ~~On linux it works only with GTK2 for now~~. Since 0.9.0 it works with GTK3, with CEF binaries repository which has some patches on CEF for gtk3.
 
 	- Make sure you enable the following bundles and their dependencies in your run config:
-        - com.github.jnr.ffi
-        - com.github.jnr.jffi
-        - com.github.jnr.jffi.native (fragment)
+        - ~~com.github.jnr.ffi~~
+        - ~~com.github.jnr.jffi~~
+        - ~~com.github.jnr.jffi.native (fragment)~~
         - org.eclipse.swt.chromium
         - org.eclipse.swt.[ws].[os].x86_64 (fragment)
 

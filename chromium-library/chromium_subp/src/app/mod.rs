@@ -91,7 +91,7 @@ impl RenderProcessHandler {
             context: *mut cef::_cef_v8context_t,
         ) {
             if (*frame).is_main.unwrap()(frame) == 1 {
-                println!("CONTEXT CREATED");
+                //println!("CONTEXT CREATED");
                 let rph = self_ as *mut RenderProcessHandler;
                 
                 (*rph).function_handler = Option::Some(V8Handler::new(browser));
@@ -130,7 +130,7 @@ impl RenderProcessHandler {
                     1
                 }
                 else if cef::cef_string_utf16_cmp(&utils::cef_string("function"), name) == 0 {
-                    println!("RECEIVED FUNCTION MSG {:?} {} {}", source_process, cef::cef_currently_on(cef::cef_thread_id_t::TID_IO), cef::cef_currently_on(cef::cef_thread_id_t::TID_RENDERER));
+                    //println!("RECEIVED FUNCTION MSG {:?} {} {}", source_process, cef::cef_currently_on(cef::cef_thread_id_t::TID_IO), cef::cef_currently_on(cef::cef_thread_id_t::TID_RENDERER));
 
                     let args = (*message).get_argument_list.unwrap()(message);
                     let id = (*args).get_int.unwrap()(args, 0);
@@ -189,7 +189,7 @@ fn register_function(id: c_int, name: *mut cef::cef_string_t, global: *mut cef::
 }
 
 unsafe fn handle_eval(browser: *mut cef::_cef_browser_t, message: *mut cef::_cef_process_message_t) {
-    println!("RECEIVED EVAL MSG");
+    //println!("RECEIVED EVAL MSG");
     let args = (*message).get_argument_list.unwrap()(message);
     let port = (*args).get_int.unwrap()(args, 0) as u16;
     let id = (*args).get_int.unwrap()(args, 1);
@@ -203,7 +203,7 @@ unsafe fn handle_eval(browser: *mut cef::_cef_browser_t, message: *mut cef::_cef
 
     let s = (*context).eval.unwrap()(context, code, &url_cef, 1, &mut ret, &mut ex);
     if s == 0 {
-        println!("Eval errored");
+        //println!("Eval errored");
 
         let ret_str_cef = (*ex).get_message.unwrap()(ex);
         let ret_str = utils::cstr_from_cef(ret_str_cef);
@@ -211,7 +211,7 @@ unsafe fn handle_eval(browser: *mut cef::_cef_browser_t, message: *mut cef::_cef
         socket::socket_client(port, ret_str.to_owned(), socket::ReturnType::Error);
         cef::cef_string_userfree_utf16_free(ret_str_cef);
     } else {
-        println!("Eval succeded {:?}", ret);
+        //println!("Eval succeded {:?}", ret);
 
         let (ret_str, kind) = convert_type(ret, id, context);
         socket::socket_client(port, ret_str, kind);
@@ -337,7 +337,7 @@ impl V8Handler {
                     let s = (*args).set_string.unwrap()(args, 1+i*2+2, &strval);
                     assert_eq!(s, 1);
                 } else {
-                    println!("ARG {} is NULL", i);
+                    //println!("ARG {} is NULL", i);
                 }
             }
 
@@ -353,8 +353,8 @@ impl V8Handler {
                         }
                     }
                 },
-                Err(e) => {
-                    println!("socket server error {:?}", e);
+                Err(_e) => {
+                    //println!("socket server error {:?}", e);
                     *exception = utils::cef_string("socket server panic");
                 }
             };
@@ -401,7 +401,7 @@ unsafe fn map_type(kind: socket::ReturnType, str_value: &str) -> Result<*mut cef
             Ok(array)
         },
         _ => {
-            println!("unsupported {:?}", kind);
+            //println!("unsupported {:?}", kind);
             Err(str_value)
         }
     }
