@@ -21,7 +21,7 @@ use std::os::raw::{c_char, c_int, c_ulong, c_void};
 use std::collections::HashMap;
 
 #[cfg(target_os = "linux")]
-unsafe extern fn xerror_handler_impl(_: *mut x11::xlib::Display, event: *mut x11::xlib::XErrorEvent) -> c_int {
+unsafe extern fn xerror_handler_impl(_: *mut x11::xlib::Display, _event: *mut x11::xlib::XErrorEvent) -> c_int {
     //print!("X error received: ");
     //println!("type {}, serial {}, error_code {}, request_code {}, minor_code {}",
     //    (*event).type_, (*event).serial, (*event).error_code, (*event).request_code, (*event).minor_code);
@@ -606,7 +606,7 @@ pub extern fn cefswt_set_focus(browser: *mut cef::cef_browser_t, set: bool, pare
 }
 
 #[cfg(target_os = "linux")]
-fn do_set_focus(parent: *mut c_void, focus: i32) {
+fn do_set_focus(parent: *mut c_void, _focus: i32) {
     let root = unsafe { gtk::gtk_widget_get_toplevel(parent) };
     //println!("<<<<<<<< set_focus {} {:?} {:?}", focus, parent, root);
     // workaround to actually remove focus from cef inputs
