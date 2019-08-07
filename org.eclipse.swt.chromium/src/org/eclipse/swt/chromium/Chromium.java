@@ -1901,7 +1901,11 @@ class Chromium extends WebBrowser {
             }
     		return getPlainUrl(this.url);
     	}
-        String cefurl = ChromiumLib.cefswt_get_url(browser);
+        long urlPtr = ChromiumLib.cefswt_get_url(browser);
+        String cefurl = null;
+        if (urlPtr != 0) {
+            cefurl = ChromiumLib.cefswt_cstring_to_java(urlPtr);
+        }
 //        debugPrint("getUrl1:" + cefurl);
         if (cefurl == null)
             cefurl = getPlainUrl(this.url);
