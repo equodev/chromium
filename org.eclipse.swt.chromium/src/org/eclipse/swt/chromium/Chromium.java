@@ -217,6 +217,7 @@ class Chromium extends WebBrowser {
     public void create(Composite parent, int style) {
         initCEF(chromium.getDisplay());
 //        debugPrint("initCef Done");
+        chromium.setBackground(parent.getDisplay().getSystemColor(SWT.COLOR_TRANSPARENT));
         paintListener = new PaintListener() {
             @Override
             public void paintControl(PaintEvent e) {
