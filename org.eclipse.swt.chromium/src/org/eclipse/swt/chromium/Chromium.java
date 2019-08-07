@@ -279,22 +279,16 @@ class Chromium extends WebBrowser {
                 app.ptr = C.malloc(cef_app_t.sizeof);
                 ChromiumLib.memmove(app.ptr, app, cef_app_t.sizeof);
                 ChromiumLib.cefswt_init(app.ptr, cefrustPath, VERSION, debugPort);
+                
+                display.disposeExec(() -> {
+                    if (app == null || shuttindDown) {
+                        // already shutdown
+                        return;
+                    }
+                    internalShutdown();
+                });
             }
         }
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public synchronized void start() {
-                if (app == null || shuttindDown) {
-                    // already shutdown
-                    return;
-                }
-                if (Display.getCurrent() != null) {
-                    internalShutdown();
-                } else {
-                    Display.getDefault().syncExec(() -> internalShutdown());
-                }
-            }
-        });
     }
 
     static long get_browser_process_handler(long app) {
