@@ -1638,7 +1638,7 @@ class Chromium extends WebBrowser {
                             String propValue = props.getProperty(prop);
                             Path path = Paths.get(propValue);
                             String fileName = path.getFileName().toString();
-                            if (!mapLibraryName.equals(fileName) && !fileName.startsWith(mapJniName)) {
+                            if (!mapLibraryName.equals(fileName) && !fileName.contains(mapJniName)) {
                                 ResourceExpander.findResource(path.getParent().toString(), fileName, false);
                             }
                         }
@@ -1652,8 +1652,10 @@ class Chromium extends WebBrowser {
         	cefrustPath = cefrustlib.getParentFile().getCanonicalPath();
         
         	CEFFactory.create(cefrustPath);
-        	Library.loadLibrary(cefrustlib.toString(), false);
-        	Library.loadLibrary(jnilib.toString(), false);
+        	System.load(cefrustlib.toString());
+            System.load(jnilib.toString());
+//        	Library.loadLibrary(cefrustlib.toString(), false);
+//        	Library.loadLibrary(jnilib.toString(), false);
             
             setupCookies();
 

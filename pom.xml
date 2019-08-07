@@ -13,19 +13,6 @@
 		<tycho.version>1.2.0</tycho.version>
 	</properties>
 
-	<repositories>
-		<repository>
-			<id>eclipse</id>
-			<url>http://download.eclipse.org/releases/photon</url>
-			<layout>p2</layout>
-		</repository>
-		<repository>
-			<id>eclipse-updates</id>
-			<url>http://download.eclipse.org/eclipse/updates/4.8</url>
-			<layout>p2</layout>
-		</repository>
-	</repositories>
-
 	<modules>
 		<module>org.eclipse.swt.chromium</module>
 		<module>org.eclipse.swt.chromium.cocoa.macosx.x86_64</module>
