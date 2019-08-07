@@ -68,7 +68,7 @@ public class ResourceExpander {
             Function<String, File> lookForFileInPath = searchPath -> {
                 String classpath = System.getProperty(searchPath);
                 if (classpath != null){
-                    String[] paths = classpath.split(":");
+                    String[] paths = classpath.split(File.pathSeparator);
                     for (String path : paths) {
                     File file = new File(path + SEPARATOR + maybeSubDirPath + finalResourceName);
                         if (file.exists()){

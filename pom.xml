@@ -6,7 +6,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.eclipse</groupId>
 	<artifactId>swt.chromium</artifactId>
-	<version>0.10.0-SNAPSHOT</version>
+	<version>0.10.2-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<properties>
@@ -16,12 +16,12 @@
 	<repositories>
 		<repository>
 			<id>eclipse</id>
-			<url>http://download.eclipse.org/releases/photon</url>
+			<url>http://download.eclipse.org/releases/2019-06</url>
 			<layout>p2</layout>
 		</repository>
 		<repository>
 			<id>eclipse-updates</id>
-			<url>http://download.eclipse.org/eclipse/updates/4.8</url>
+			<url>http://download.eclipse.org/eclipse/updates/4.12</url>
 			<layout>p2</layout>
 		</repository>
 	</repositories>

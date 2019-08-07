@@ -29,7 +29,7 @@ public class ChromiumLib extends C {
     /**
      * @param browser cast=(void *)
      */
-    public static final native String cefswt_get_url(long browser);
+    public static final native long cefswt_get_url(long browser);
 
     /**
      * @param browser cast=(void *)

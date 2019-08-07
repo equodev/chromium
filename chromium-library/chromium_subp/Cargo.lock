@@ -63,7 +63,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "chromium"
-version = "0.10.0"
+version = "0.10.2"
 dependencies = [
  "bindgen 0.32.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "java_bindgen 0.31.2 (git+https://github.com/maketechnology/java-bindgen?branch=java-bindgen)",
