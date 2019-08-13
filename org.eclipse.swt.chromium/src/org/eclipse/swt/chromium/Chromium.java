@@ -1583,7 +1583,7 @@ class Chromium extends WebBrowser {
         internalShutdown();
     }
     
-    private static synchronized void internalShutdown() {
+    private static void internalShutdown() {
         if (lib == null || app == null) {
             return;
         }
