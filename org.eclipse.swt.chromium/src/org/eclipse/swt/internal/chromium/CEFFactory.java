@@ -26,7 +26,20 @@ public class CEFFactory {
         }
 
         for (String lib : toLoad) {
-        	Library.loadLibrary(lib, false);
+            try {
+                Library.loadLibrary(lib, false);
+            } catch (UnsatisfiedLinkError e) {
+                if (!isWin && !isMac && e.getMessage().contains("libgconf")) {
+                    try {
+                        Library.loadLibrary(cefrustPath + "/libgconf-2.so.4", false);
+                    } catch (UnsatisfiedLinkError e1) {
+                        throw e;
+                    }
+                    Library.loadLibrary(lib, false);
+                    return;
+                }
+                throw e;
+            }
 		}
     }
 
