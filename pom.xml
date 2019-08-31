@@ -31,6 +31,7 @@
 		<module>org.eclipse.swt.chromium.cocoa.macosx.x86_64</module>
 		<module>org.eclipse.swt.chromium.gtk.linux.x86_64</module>
 		<module>org.eclipse.swt.chromium.win32.win32.x86_64</module>
+		<module>org.eclipse.swt.chromium.win32.win32.x86</module>
 		<module>org.eclipse.swt.chromium.feature</module>
 		<module>org.eclipse.swt.chromium.repository</module>
 		<module>org.eclipse.swt.chromium.tests</module>
@@ -61,6 +62,11 @@
 							<os>win32</os>
 							<ws>win32</ws>
 							<arch>x86_64</arch>
+						</environment>
+						<environment>
+							<os>win32</os>
+							<ws>win32</ws>
+							<arch>x86</arch>
 						</environment>
 						<environment>
 							<os>macosx</os>
