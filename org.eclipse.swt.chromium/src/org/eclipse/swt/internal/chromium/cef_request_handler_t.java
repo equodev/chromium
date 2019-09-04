@@ -1,6 +1,6 @@
 package org.eclipse.swt.internal.chromium;
 
-import org.eclipse.swt.internal.Callback;
+import org.eclipse.swt.internal.*;
 
 ///
 /// Implement this structure to handle events related to browser requests. The
@@ -22,7 +22,7 @@ public class cef_request_handler_t {
 	/// ERR_ABORTED.
 	///
 	/** @field cast=(void*) */
-	public long on_before_browse;
+	public int /*long*/ on_before_browse;
 	///
 	/// Called on the UI thread before OnBeforeBrowse in certain limited cases
 	/// where navigating a new or different browser might be desirable. This
@@ -40,7 +40,7 @@ public class cef_request_handler_t {
 	/// proceed in the source browser's top-level frame.
 	///
 	/** @field cast=(void*) */
-	public long on_open_urlfrom_tab;
+	public int /*long*/ on_open_urlfrom_tab;
 	///
 	/// Called on the IO thread before a resource request is loaded. The |request|
 	/// object may be modified. Return RV_CONTINUE to continue the request
@@ -50,7 +50,7 @@ public class cef_request_handler_t {
 	///
 	///
 	/** @field cast=(void*) */
-	public long on_before_resource_load;
+	public int /*long*/ on_before_resource_load;
 	///
 	/// Called on the IO thread before a resource is loaded. To allow the resource
 	/// to load normally return NULL. To specify a handler for the resource return
@@ -58,7 +58,7 @@ public class cef_request_handler_t {
 	/// modified in this callback.
 	///
 	/** @field cast=(void*) */
-	public long get_resource_handler;
+	public int /*long*/ get_resource_handler;
 	///
 	/// Called on the IO thread when a resource load is redirected. The |request|
 	/// parameter will contain the old URL and other request-related information.
@@ -68,7 +68,7 @@ public class cef_request_handler_t {
 	/// callback.
 	///
 	/** @field cast=(void*) */
-	public long on_resource_redirect;
+	public int /*long*/ on_resource_redirect;
 	///
 	/// Called on the IO thread when a resource response is received. To allow the
 	/// resource to load normally return false (0). To redirect or retry the
@@ -76,14 +76,14 @@ public class cef_request_handler_t {
 	/// The |response| object cannot be modified in this callback.
 	///
 	/** @field cast=(void*) */
-	public long on_resource_response;
+	public int /*long*/ on_resource_response;
 	///
 	/// Called on the IO thread to optionally filter resource response content.
 	/// |request| and |response| represent the request and response respectively
 	/// and cannot be modified in this callback.
 	///
 	/** @field cast=(void*) */
-	public long get_resource_response_filter;
+	public int /*long*/ get_resource_response_filter;
 	///
 	/// Called on the IO thread when a resource load has completed. |request| and
 	/// |response| represent the request and response respectively and cannot be
@@ -91,7 +91,7 @@ public class cef_request_handler_t {
 	/// |received_content_length| is the number of response bytes actually read.
 	///
 	/** @field cast=(void*) */
-	public long on_resource_load_complete;
+	public int /*long*/ on_resource_load_complete;
 	///
 	/// Called on the IO thread when the browser needs credentials from the user.
 	/// |isProxy| indicates whether the host is a proxy server. |host| contains the
@@ -104,7 +104,7 @@ public class cef_request_handler_t {
 	/// request immediately.
 	///
 	/** @field cast=(void*) */
-	public long get_auth_credentials;
+	public int /*long*/ get_auth_credentials;
 	///
 	/// Called on the IO thread when JavaScript requests a specific storage quota
 	/// size via the webkitStorageInfo.requestQuota function. |origin_url| is the
@@ -115,7 +115,7 @@ public class cef_request_handler_t {
 	/// immediately.
 	///
 	/** @field cast=(void*) */
-	public long on_quota_request;
+	public int /*long*/ on_quota_request;
 	///
 	/// Called on the UI thread to handle requests for URLs with an unknown
 	/// protocol component. Set |allow_os_execution| to true (1) to attempt
@@ -124,7 +124,7 @@ public class cef_request_handler_t {
 	/// OTHER URL ANALYSIS BEFORE ALLOWING OS EXECUTION.
 	///
 	/** @field cast=(void*) */
-	public long on_protocol_execution;
+	public int /*long*/ on_protocol_execution;
 	///
 	/// Called on the UI thread to handle requests for URLs with an invalid SSL
 	/// certificate. Return true (1) and call cef_request_tCallback::cont() either
@@ -134,7 +134,7 @@ public class cef_request_handler_t {
 	/// be accepted without calling this function.
 	///
 	/** @field cast=(void*) */
-	public long on_certificate_error;
+	public int /*long*/ on_certificate_error;
 	///
 	/// Called on the UI thread when a client certificate is being requested for
 	/// authentication. Return false (0) to use the default behavior and
@@ -149,29 +149,29 @@ public class cef_request_handler_t {
 	/// the server trusts.
 	///
 	/** @field cast=(void*) */
-	public long on_select_client_certificate;
+	public int /*long*/ on_select_client_certificate;
 	///
 	/// Called on the browser process UI thread when a plugin has crashed.
 	/// |plugin_path| is the path of the plugin that crashed.
 	///
 	/** @field cast=(void*) */
-	public long on_plugin_crashed;
+	public int /*long*/ on_plugin_crashed;
 	///
 	/// Called on the browser process UI thread when the render view associated
 	/// with |browser| is ready to receive/handle IPC messages in the render
 	/// process.
 	///
 	/** @field cast=(void*) */
-	public long on_render_view_ready;
+	public int /*long*/ on_render_view_ready;
 	///
 	/// Called on the browser process UI thread when the render process terminates
 	/// unexpectedly. |status| indicates how the process terminated.
 	///
 	/** @field cast=(void*) */
-	public long on_render_process_terminated;
+	public int /*long*/ on_render_process_terminated;
 
 	/** @field flags=no_gen */
-	public long ptr;
+	public int /*long*/ ptr;
 	/** @field flags=no_gen */
 	public Callback on_before_browse_cb;
 	/** @field flags=no_gen */

@@ -1,6 +1,6 @@
 package org.eclipse.swt.internal.chromium;
 
-import org.eclipse.swt.internal.Callback;
+import org.eclipse.swt.internal.*;
 
 ///
 /// Implement this structure to handle events related to browser load status. The
@@ -20,7 +20,7 @@ public class cef_load_handler_t {
 	/// calls to OnLoadError and/or OnLoadEnd.
 	///
 	/** @field cast=(void*) */
-	public long on_loading_state_change;
+	public int /*long*/ on_loading_state_change;
 	///
 	/// Called after a navigation has been committed and before the browser begins
 	/// loading contents in the frame. The |frame| value will never be NULL -- call
@@ -34,7 +34,7 @@ public class cef_load_handler_t {
 	/// overall browser load status use OnLoadingStateChange instead.
 	///
 	/** @field cast=(void*) */
-	public long on_load_start;
+	public int /*long*/ on_load_start;
 	///
 	/// Called when the browser is done loading a frame. The |frame| value will
 	/// never be NULL -- call the is_main() function to check if this frame is the
@@ -46,7 +46,7 @@ public class cef_load_handler_t {
 	/// instead.
 	///
 	/** @field cast=(void*) */
-	public long on_load_end;
+	public int /*long*/ on_load_end;
 	///
 	/// Called when a navigation fails or is canceled. This function may be called
 	/// by itself if before commit or in combination with OnLoadStart/OnLoadEnd if
@@ -55,10 +55,10 @@ public class cef_load_handler_t {
 	/// net\base\net_error_list.h for complete descriptions of the error codes.
 	///
 	/** @field cast=(void*) */
-	public long on_load_error;
+	public int /*long*/ on_load_error;
 
 	/** @field flags=no_gen */
-	public long ptr;
+	public int /*long*/ ptr;
 	/** @field flags=no_gen */
 	public Callback on_loading_state_change_cb;
 

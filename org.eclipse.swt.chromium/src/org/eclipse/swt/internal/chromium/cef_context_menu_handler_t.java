@@ -1,6 +1,6 @@
 package org.eclipse.swt.internal.chromium;
 
-import org.eclipse.swt.internal.Callback;
+import org.eclipse.swt.internal.*;
 
 ///
 /// Implement this structure to handle context menu events. The functions of this
@@ -19,7 +19,7 @@ public class cef_context_menu_handler_t {
 	/// |model| outside of this callback.
 	///
 	/** @field cast=(void*) */
-	public long on_before_context_menu;
+	public int /*long*/ on_before_context_menu;
 	///
 	/// Called to allow custom display of the context menu. |params| provides
 	/// information about the context menu state. |model| contains the context menu
@@ -29,7 +29,7 @@ public class cef_context_menu_handler_t {
 	/// references to |params| or |model| outside of this callback.
 	///
 	/** @field cast=(void*) */
-	public long run_context_menu;
+	public int /*long*/ run_context_menu;
 	///
 	/// Called to execute a command selected from the context menu. Return true (1)
 	/// if the command was handled or false (0) for the default implementation. See
@@ -40,16 +40,16 @@ public class cef_context_menu_handler_t {
 	/// this callback.
 	///
 	/** @field cast=(void*) */
-	public long on_context_menu_command;
+	public int /*long*/ on_context_menu_command;
 	///
 	/// Called when the context menu is dismissed irregardless of whether the menu
 	/// was NULL or a command was selected.
 	///
 	/** @field cast=(void*) */
-	public long on_context_menu_dismissed;
+	public int /*long*/ on_context_menu_dismissed;
 
 	/** @field flags=no_gen */
-	public long ptr;
+	public int /*long*/ ptr;
 	/** @field flags=no_gen */
 	public Callback run_context_menu_cb;
 

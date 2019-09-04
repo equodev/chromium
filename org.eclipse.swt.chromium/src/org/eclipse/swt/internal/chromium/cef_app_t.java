@@ -23,7 +23,7 @@ public class cef_app_t {
 	/// in undefined behavior including crashes.
 	///
 	/** @field cast=(void*) */
-	public long on_before_command_line_processing;
+	public int /*long*/ on_before_command_line_processing;
 	///
 	/// Provides an opportunity to register custom schemes. Do not keep a reference
 	/// to the |registrar| object. This function is called on the main thread for
@@ -31,7 +31,7 @@ public class cef_app_t {
 	/// processes.
 	///
 	/** @field cast=(void*) */
-	public long on_register_custom_schemes;
+	public int /*long*/ on_register_custom_schemes;
 	///
 	/// Return the handler for resource bundle events. If
 	/// CefSettings.pack_loading_disabled is true (1) a handler must be returned.
@@ -39,22 +39,22 @@ public class cef_app_t {
 	/// function is called by the browser and render processes on multiple threads.
 	///
 	/** @field cast=(void*) */
-	public long get_resource_bundle_handler;
+	public int /*long*/ get_resource_bundle_handler;
 	///
 	/// Return the handler for functionality specific to the browser process. This
 	/// function is called on multiple threads in the browser process.
 	///
 	/** @field cast=(void*) */
-	public long get_browser_process_handler;
+	public int /*long*/ get_browser_process_handler;
 	///
 	/// Return the handler for functionality specific to the render process. This
 	/// function is called on the render process main thread.
 	///
 	/** @field cast=(void*) */
-	public long get_render_process_handler;
+	public int /*long*/ get_render_process_handler;
 
 	/** @field flags=no_gen */
-	public long ptr;
+	public int /*long*/ ptr;
 	/** @field flags=no_gen */
 	public Callback get_browser_process_handler_cb;
 

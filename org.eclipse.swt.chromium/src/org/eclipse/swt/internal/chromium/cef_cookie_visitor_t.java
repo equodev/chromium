@@ -1,6 +1,6 @@
 package org.eclipse.swt.internal.chromium;
 
-import org.eclipse.swt.internal.Callback;
+import org.eclipse.swt.internal.*;
 
 ///
 /// Structure to implement for visiting cookie values. The functions of this
@@ -19,10 +19,10 @@ public class cef_cookie_visitor_t {
     /// called if no cookies are found.
     ///
     /** @field cast=(void*) */
-    public long visit;
+    public int /*long*/ visit;
 
     /** @field flags=no_gen */
-    public long ptr;
+    public int /*long*/ ptr;
     /** @field flags=no_gen */
 	public Callback visit_cb;
 

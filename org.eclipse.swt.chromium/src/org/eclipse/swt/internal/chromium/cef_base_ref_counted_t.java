@@ -15,7 +15,7 @@ public class cef_base_ref_counted_t {
     /// for every new copy of a pointer to a given object.
     ///
     /** @field cast=(void*) */
-    public long add_ref;
+    public int /*long*/ add_ref;
     ///
     /// Called to decrement the reference count for the object. If the
     /// reference
@@ -24,11 +24,11 @@ public class cef_base_ref_counted_t {
     /// resulting reference count is 0.
     ///
     /** @field cast=(void*) */
-    public long release;
+    public int /*long*/ release;
     ///
     /// Returns true (1) if the current reference count is 1.
     ///
     /** @field cast=(void*) */
-    public long has_one_ref;
+    public int /*long*/ has_one_ref;
 
 }

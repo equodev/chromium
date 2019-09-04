@@ -1,6 +1,6 @@
 package org.eclipse.swt.internal.chromium;
 
-import org.eclipse.swt.internal.Callback;
+import org.eclipse.swt.internal.*;
 
 ///
 /// Implement this structure to handle events related to browser display state.
@@ -15,17 +15,17 @@ public class cef_display_handler_t {
 	/// Called when a frame's address has changed.
 	///
 	/** @field cast=(void*) */
-	public long on_address_change;
+	public int /*long*/ on_address_change;
 	///
 	/// Called when the page title changes.
 	///
 	/** @field cast=(void*) */
-	public long on_title_change;
+	public int /*long*/ on_title_change;
 	///
 	/// Called when the page icon changes.
 	///
 	/** @field cast=(void*) */
-	public long on_favicon_urlchange;
+	public int /*long*/ on_favicon_urlchange;
 	///
 	/// Called when web content in the page has toggled fullscreen mode. If
 	/// |fullscreen| is true (1) the content will automatically be sized to fill
@@ -34,7 +34,7 @@ public class cef_display_handler_t {
 	/// responsible for resizing the browser if desired.
 	///
 	/** @field cast=(void*) */
-	public long on_fullscreen_mode_change;
+	public int /*long*/ on_fullscreen_mode_change;
 	///
 	/// Called when the browser is about to display a tooltip. |text| contains the
 	/// text that will be displayed in the tooltip. To handle the display of the
@@ -44,22 +44,22 @@ public class cef_display_handler_t {
 	/// for drawing tooltips and the return value is ignored.
 	///
 	/** @field cast=(void*) */
-	public long on_tooltip;
+	public int /*long*/ on_tooltip;
 	///
 	/// Called when the browser receives a status message. |value| contains the
 	/// text that will be displayed in the status message.
 	///
 	/** @field cast=(void*) */
-	public long on_status_message;
+	public int /*long*/ on_status_message;
 	///
 	/// Called to display a console message. Return true (1) to stop the message
 	/// from being output to the console.
 	///
 	/** @field cast=(void*) */
-	public long on_console_message;
+	public int /*long*/ on_console_message;
 
 	/** @field flags=no_gen */
-	public long ptr;
+	public int /*long*/ ptr;
 	/** @field flags=no_gen */
 	public Callback on_title_change_cb;
 	/** @field flags=no_gen */

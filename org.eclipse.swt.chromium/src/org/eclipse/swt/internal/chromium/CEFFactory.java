@@ -154,7 +154,7 @@ public class CEFFactory {
     }
 
     public static interface EvalReturned {
-        void invoke(int loop, int type, long value);
+        void invoke(int loop, int type, int /*long*/ value);
     }
 
 }

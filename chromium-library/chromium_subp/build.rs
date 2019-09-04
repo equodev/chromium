@@ -39,7 +39,11 @@ fn get_cef_path() -> std::path::PathBuf {
     cef_path.push("cef_linux");
   } 
   else if cfg!(target_os = "windows") {
+    if std::env::var("CARGO_CFG_TARGET_ARCH").unwrap() == "x86" {
+      cef_path.push("cef_windows_x86");
+    } else {
     cef_path.push("cef_windows");
+  }
   }
   cef_path
 }

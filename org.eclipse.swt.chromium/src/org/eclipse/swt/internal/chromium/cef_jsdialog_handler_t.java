@@ -1,6 +1,6 @@
 package org.eclipse.swt.internal.chromium;
 
-import org.eclipse.swt.internal.Callback;
+import org.eclipse.swt.internal.*;
 
 ///
 /// Implement this structure to handle events related to JavaScript dialogs. The
@@ -29,7 +29,7 @@ public class cef_jsdialog_handler_t {
 	/// dismissed.
 	///
 	/** @field cast=(void*) */
-	public long on_jsdialog;
+	public int /*long*/ on_jsdialog;
 	///
 	/// Called to run a dialog asking the user if they want to leave a page. Return
 	/// false (0) to use the default dialog implementation. Return true (1) if the
@@ -39,22 +39,22 @@ public class cef_jsdialog_handler_t {
 	/// dialog is dismissed.
 	///
 	/** @field cast=(void*) */
-	public long on_before_unload_dialog;
+	public int /*long*/ on_before_unload_dialog;
 	///
 	/// Called to cancel any pending dialogs and reset any saved dialog state. Will
 	/// be called due to events like page navigation irregardless of whether any
 	/// dialogs are currently pending.
 	///
 	/** @field cast=(void*) */
-	public long on_reset_dialog_state;
+	public int /*long*/ on_reset_dialog_state;
 	///
 	/// Called when the default implementation dialog is closed.
 	///
 	/** @field cast=(void*) */
-	public long on_dialog_closed;
+	public int /*long*/ on_dialog_closed;
 
 	/** @field flags=no_gen */
-	public long ptr;
+	public int /*long*/ ptr;
 	/** @field flags=no_gen */
 	public Callback on_jsdialog_cb;
 

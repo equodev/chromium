@@ -17,7 +17,7 @@ public class cef_browser_process_handler_t {
 	/// has been initialized.
 	///
 	/** @field cast=(void*) */
-	public long on_context_initialized;
+	public int /*long*/ on_context_initialized;
 	///
 	/// Called before a child process is launched. Will be called on the browser
 	/// process UI thread when launching a render process and on the browser
@@ -26,7 +26,7 @@ public class cef_browser_process_handler_t {
 	/// reference to |command_line| outside of this function.
 	///
 	/** @field cast=(void*) */
-	public long on_before_child_process_launch;
+	public int /*long*/ on_before_child_process_launch;
 	///
 	/// Called on the browser process IO thread after the main thread has been
 	/// created for a new render process. Provides an opportunity to specify extra
@@ -35,13 +35,13 @@ public class cef_browser_process_handler_t {
 	/// process. Do not keep a reference to |extra_info| outside of this function.
 	///
 	/** @field cast=(void*) */
-	public long on_render_process_thread_created;
+	public int /*long*/ on_render_process_thread_created;
 	///
 	/// Return the handler for printing on Linux. If a print handler is not
 	/// provided then printing will not be supported on the Linux platform.
 	///
 	/** @field cast=(void*) */
-	public long get_print_handler;
+	public int /*long*/ get_print_handler;
 	///
 	/// Called from any thread when work has been scheduled for the browser process
 	/// main (UI) thread. This callback is used in combination with CefSettings.
@@ -56,10 +56,10 @@ public class cef_browser_process_handler_t {
 	/// cancelled.
 	///
 	/** @field cast=(void*) */
-	public long on_schedule_message_pump_work;
+	public int /*long*/ on_schedule_message_pump_work;
 
 	/** @field flags=no_gen */
-	public long ptr;
+	public int /*long*/ ptr;
 	/** @field flags=no_gen */
 	public Callback on_schedule_message_pump_work_cb;
 

@@ -1,6 +1,6 @@
 package org.eclipse.swt.internal.chromium;
 
-import org.eclipse.swt.internal.Callback;
+import org.eclipse.swt.internal.*;
 
 ///
 /// Implement this structure to handle events related to focus. The functions of
@@ -18,22 +18,22 @@ public class cef_focus_handler_t {
 	/// false (0) if the browser is giving focus to the previous component.
 	///
 	/** @field cast=(void*) */
-	public long on_take_focus;
+	public int /*long*/ on_take_focus;
 	///
 	/// Called when the browser component is requesting focus. |source| indicates
 	/// where the focus request is originating from. Return false (0) to allow the
 	/// focus to be set or true (1) to cancel setting the focus.
 	///
 	/** @field cast=(void*) */
-	public long on_set_focus;
+	public int /*long*/ on_set_focus;
 	///
 	/// Called when the browser component has received focus.
 	///
 	/** @field cast=(void*) */
-	public long on_got_focus;
+	public int /*long*/ on_got_focus;
 
 	/** @field flags=no_gen */
-	public long ptr;
+	public int /*long*/ ptr;
 	/** @field flags=no_gen */
 	public Callback on_got_focus_cb;
 	/** @field flags=no_gen */

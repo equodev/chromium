@@ -35,13 +35,13 @@ public class cef_life_span_handler_t {
 	/// (indicated by a call to OnAfterCreated for the popup browser).
 	///
 	/** @field cast=(void*) */
-	public long on_before_popup;
+	public int /*long*/ on_before_popup;
 	///
 	/// Called after a new browser is created. This callback will be the first
 	/// notification that references |browser|.
 	///
 	/** @field cast=(void*) */
-	public long on_after_created;
+	public int /*long*/ on_after_created;
 	///
 	/// Called when a browser has recieved a request to close. This may result
 	/// directly from a call to cef_browser_host_t::*close_browser() or indirectly
@@ -132,7 +132,7 @@ public class cef_life_span_handler_t {
 	/// exist.
 	///
 	/** @field cast=(void*) */
-	public long do_close;
+	public int /*long*/ do_close;
 	///
 	/// Called just before a browser is destroyed. Release all references to the
 	/// browser object and do not attempt to execute any functions on the browser
@@ -141,10 +141,10 @@ public class cef_life_span_handler_t {
 	/// additional usage information.
 	///
 	/** @field cast=(void*) */
-	public long on_before_close;
+	public int /*long*/ on_before_close;
 
 	/** @field flags=no_gen */
-	public long ptr;
+	public int /*long*/ ptr;
 	/** @field flags=no_gen */
 	public Callback on_before_popup_cb;
 	/** @field flags=no_gen */

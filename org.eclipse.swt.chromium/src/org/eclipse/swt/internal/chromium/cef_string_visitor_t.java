@@ -1,6 +1,6 @@
 package org.eclipse.swt.internal.chromium;
 
-import org.eclipse.swt.internal.Callback;
+import org.eclipse.swt.internal.*;
 
 ///
 /// Implement this structure to receive string values asynchronously.
@@ -14,10 +14,10 @@ public class cef_string_visitor_t {
     /// Method that will be executed.
     ///
     /** @field cast=(void*) */
-    public long visit;
+    public int /*long*/ visit;
 
     /** @field flags=no_gen */
-    public long ptr;
+    public int /*long*/ ptr;
     /** @field flags=no_gen */
 	public Callback visit_cb;
 	/** @field flags=no_gen */
