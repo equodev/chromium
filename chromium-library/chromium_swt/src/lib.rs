@@ -16,7 +16,7 @@ mod app;
 #[cfg(target_os = "linux")]
 mod gtk;
 
-use std::os::raw::{c_char, c_int, c_ulong, c_void};
+use std::os::raw::{c_char, c_int, c_void};
 #[cfg(unix)]
 use std::collections::HashMap;
 
@@ -258,7 +258,7 @@ fn restore_signal_handlers(signal_handlers: HashMap<c_int, nix::sys::signal::Sig
 }
 
 #[no_mangle]
-pub extern fn cefswt_create_browser(hwnd: c_ulong, url: *const c_char, client: &mut cef::_cef_client_t, w: c_int, h: c_int, js: c_int, bg: cef::cef_color_t) -> *const cef::cef_browser_t {
+pub extern fn cefswt_create_browser(hwnd: *mut c_void, url: *const c_char, client: &mut cef::_cef_client_t, w: c_int, h: c_int, js: c_int, bg: cef::cef_color_t) -> *const cef::cef_browser_t {
     assert_eq!((*client).base.size, std::mem::size_of::<cef::_cef_client_t>());
 
     // println!("hwnd: {}", hwnd);
@@ -276,7 +276,7 @@ pub extern fn cefswt_create_browser(hwnd: c_ulong, url: *const c_char, client: &
 }
 
 #[no_mangle]
-pub extern fn cefswt_set_window_info_parent(window_info: *mut cef::_cef_window_info_t, client: *mut *mut cef::_cef_client_t, jclient: &mut cef::_cef_client_t, hwnd: c_ulong, x: c_int, y: c_int, w: c_int, h: c_int) {
+pub extern fn cefswt_set_window_info_parent(window_info: *mut cef::_cef_window_info_t, client: *mut *mut cef::_cef_client_t, jclient: &mut cef::_cef_client_t, hwnd: *mut c_void, x: c_int, y: c_int, w: c_int, h: c_int) {
     unsafe {
         //println!("cefswt_set_window_info_parent {:?} {}", *window_info, hwnd);
         (*client) = jclient;
@@ -330,7 +330,7 @@ pub extern fn cefswt_resized(browser: *mut cef::cef_browser_t, width: i32, heigh
 }
 
 #[cfg(target_os = "linux")]
-fn do_resize(win_handle: c_ulong, width: i32, height: i32) {
+fn do_resize(win_handle: *mut c_void, width: i32, height: i32) {
     use x11::xlib;
 
     let xwindow = win_handle;
@@ -349,12 +349,12 @@ fn do_resize(win_handle: c_ulong, width: i32, height: i32) {
 }
 
 #[cfg(target_os = "macos")]
-fn do_resize(_win_handle: c_ulong, _: i32, _: i32) {
+fn do_resize(_win_handle: *mut c_void, _: i32, _: i32) {
     // handled by cocoa
 }
 
 #[cfg(target_family = "windows")]
-fn do_resize(win_handle: c_ulong, width: i32, height: i32) {
+fn do_resize(win_handle: *mut c_void, width: i32, height: i32) {
     extern crate winapi;
 
     let x = 0;
@@ -600,7 +600,7 @@ pub extern fn cefswt_set_focus(browser: *mut cef::cef_browser_t, set: bool, pare
     };
     //println!("<<<<<<<< set_focus {}", focus);
     unsafe { focus_fn(browser_host, focus) };
-    if !set && parent as c_ulong != 0 {
+    if !set && !parent.is_null() {
         do_set_focus(parent, focus);
     }
 }

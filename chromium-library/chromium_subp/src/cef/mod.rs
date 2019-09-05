@@ -12766,7 +12766,7 @@ pub struct _cef_browser_host_t {
     /// // UI thread and it will return the handle for the top-level native window.
     /// ///
     pub get_window_handle: ::std::option::Option<
-        unsafe extern "C" fn(self_: *mut _cef_browser_host_t) -> ::std::os::raw::c_ulong,
+        unsafe extern "C" fn(self_: *mut _cef_browser_host_t) -> *mut ::std::os::raw::c_void,
     >,
     ///
     /// // Retrieve the window handle of the browser that opened this browser. Will
@@ -12775,7 +12775,7 @@ pub struct _cef_browser_host_t {
     /// // handling of modal windows.
     /// ///
     pub get_opener_window_handle: ::std::option::Option<
-        unsafe extern "C" fn(self_: *mut _cef_browser_host_t) -> ::std::os::raw::c_ulong,
+        unsafe extern "C" fn(self_: *mut _cef_browser_host_t) -> *mut ::std::os::raw::c_void,
     >,
     ///
     /// // Returns true (1) if this browser is wrapped in a cef_browser_view_t.
@@ -23201,7 +23201,7 @@ pub struct _cef_render_handler_t {
         unsafe extern "C" fn(
             self_: *mut _cef_render_handler_t,
             browser: *mut _cef_browser_t,
-            cursor: ::std::os::raw::c_ulong,
+            cursor: *const ::std::os::raw::c_void,
             type_: cef_cursor_type_t,
             custom_cursor_info: *const _cef_cursor_info_t,
         ),
