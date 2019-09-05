@@ -10,18 +10,18 @@
 	<packaging>pom</packaging>
 
 	<properties>
-		<tycho.version>1.2.0</tycho.version>
+		<tycho.version>1.4.0</tycho.version>
 	</properties>
 
 	<repositories>
 		<repository>
 			<id>eclipse</id>
-			<url>http://download.eclipse.org/releases/2019-06</url>
+			<url>http://download.eclipse.org/releases/2018-09</url>
 			<layout>p2</layout>
 		</repository>
 		<repository>
 			<id>eclipse-updates</id>
-			<url>http://download.eclipse.org/eclipse/updates/4.12</url>
+			<url>http://download.eclipse.org/eclipse/updates/4.9</url>
 			<layout>p2</layout>
 		</repository>
 	</repositories>

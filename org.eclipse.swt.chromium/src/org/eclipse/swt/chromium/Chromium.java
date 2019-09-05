@@ -97,7 +97,7 @@ class Chromium extends WebBrowser {
     private static final String JNI_LIB_V = "swt-chromium-"+VERSION;
     private static final int MAX_PROGRESS = 100;
     private static final int LOOP = 75;
-    private static final boolean debug = Boolean.valueOf(System.getProperty("swt.chromium.debug", "false"));
+    private static final boolean debug = Boolean.valueOf(System.getProperty("swt.chromium.debug", "true"));
     
     static {
         lib = loadLib();
@@ -216,7 +216,7 @@ class Chromium extends WebBrowser {
     @Override
     public void create(Composite parent, int style) {
         initCEF(chromium.getDisplay());
-//        debugPrint("initCef Done");
+        debugPrint("initCef Done");
         chromium.setBackground(parent.getDisplay().getSystemColor(SWT.COLOR_TRANSPARENT));
         paintListener = new PaintListener() {
             @Override
@@ -292,7 +292,7 @@ class Chromium extends WebBrowser {
     }
 
     static int /*long*/ get_browser_process_handler(int /*long*/ app) {
-//        debug("GetBrowserProcessHandler");
+        debug("GetBrowserProcessHandler");
     	if (browserProcessHandler == null)
     		return 0;
         return browserProcessHandler.ptr;
@@ -322,7 +322,7 @@ class Chromium extends WebBrowser {
         if (browsers.get() <= 0 || pumpDisable || disposingAny > 0)
             return;
         Display display = Display.getDefault();
-//        debugPrint("pump "+delay);
+        debug("pump "+delay);
         Runnable scheduleWork = () -> {
             restartLoop(display, delay);
             display.timerExec(-1, loopWorkRunnable);
@@ -446,7 +446,8 @@ class Chromium extends WebBrowser {
         instance = ++INSTANCES;
         debug("Registering chromium instance " + instance);
         instances.put(instance, this);
-        ChromiumLib.cefswt_create_browser(hwnd, url, clientHandler.ptr, size.x, size.y, jsEnabledOnNextPage ? 1 : 0, cefBgColor);
+        int b = ChromiumLib.cefswt_create_browser(hwnd, url, clientHandler.ptr, size.x, size.y, jsEnabledOnNextPage ? 1 : 0, cefBgColor);
+        debugPrint("Browser ptr " + b);
     }
 
     private void createPopup(int /*long*/ windowInfo, int /*long*/ client, WindowEvent event) {
@@ -600,7 +601,7 @@ class Chromium extends WebBrowser {
     }
     
     static int /*long*/ get_life_span_handler(int /*long*/ client) {
-//        debug("GetLifeSpanHandler");
+        debug("GetLifeSpanHandler");
         if (lifeSpanHandler == null)
     		return 0;
         return lifeSpanHandler.ptr;
@@ -908,7 +909,7 @@ class Chromium extends WebBrowser {
     }
     
     static int /*long*/ get_load_handler(int /*long*/ client) {
-//        debugPrint("GetLoadHandler");
+        debugPrint("GetLoadHandler");
         if (loadHandler == null)
     		return 0;
         return loadHandler.ptr;
@@ -985,7 +986,7 @@ class Chromium extends WebBrowser {
     }
     
     static int /*long*/ get_display_handler(int /*long*/ client) {
-//        debugPrint("GetDisplayHandler");
+        debugPrint("GetDisplayHandler");
         if (displayHandler == null)
     		return 0;
         return displayHandler.ptr;
@@ -1017,7 +1018,7 @@ class Chromium extends WebBrowser {
 	}
 
     private void on_address_change(int /*long*/ browser, int /*long*/ frame, int /*long*/ url) {
-		//debugPrint("on_address_change");
+		debugPrint("on_address_change");
 		if (isDisposed() || locationListeners == null) return;
 		LocationEvent event = new LocationEvent(chromium);
 		event.display = chromium.getDisplay();
@@ -1040,7 +1041,7 @@ class Chromium extends WebBrowser {
 
 	static void on_status_message(int /*long*/ self, int /*long*/ browser, int /*long*/ status) {
     	int id = ChromiumLib.cefswt_get_id(browser);
-//    	debug("on_status_message: " + id);
+    	debug("on_status_message: " + id);
     	safeGeInstance(id).on_status_message(browser, status);
     }
 
@@ -1070,7 +1071,7 @@ class Chromium extends WebBrowser {
     }
     
     static int /*long*/ get_request_handler(int /*long*/ client) {
-//        debugPrint("GetRequestHandler");
+        debugPrint("GetRequestHandler");
         if (requestHandler == null)
     		return 0;
         return requestHandler.ptr;
@@ -1078,7 +1079,7 @@ class Chromium extends WebBrowser {
     
     static int on_before_browse(int /*long*/ self, int /*long*/ browser, int /*long*/ frame, int /*long*/ request, int is_redirect) {
     	int id = ChromiumLib.cefswt_get_id(browser);
-//    	debug("on_before_browse: " + id);
+    	debug("on_before_browse: " + id);
     	return safeGeInstance(id).on_before_browse(browser, frame, request);
     }
 

@@ -52,12 +52,15 @@ pub fn create_browser(canvas_hwnd: *mut c_void, url: &str, jclient: &mut cef::_c
     let url_cef = utils::cef_string(url);
 
     // Create browser.
-    //println!("Calling cef_browser_host_create_browser");
+    println!("Calling cef_browser_host_create_browser");
     //if unsafe { cef::cef_browser_host_create_browser(&window_info, client, &url_cef, &browser_settings, null_mut()) } != 1 {
         //println!("Failed calling browserHostCreateBrowser");
     //}
     let browser: *mut cef::cef_browser_t = unsafe { cef::cef_browser_host_create_browser_sync(&window_info, jclient, &url_cef, &browser_settings, null_mut()) };
+    println!("after Calling cef_browser_host_create_browser");
+    
     assert_eq!(unsafe{(*browser).base.size}, size_of::<cef::_cef_browser_t>());
+    println!("browser size ok");
     browser
 }
 
@@ -165,7 +168,8 @@ fn cef_window_info(hwnd: *mut c_void, w: c_int, h: c_int) -> cef::_cef_window_in
         y: 0,
         width: w,
         height: h,
-        parent_window: hwnd as cef::win::HWND,
+        // parent_window: hwnd as cef::win::HWND,
+        parent_window: 0 as cef::win::HWND,
         windowless_rendering_enabled: 0,
         window: 0 as cef::win::HWND,
         ex_style: 0,
