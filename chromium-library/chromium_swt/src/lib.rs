@@ -82,7 +82,7 @@ pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char
         browser_subprocess_path: subp_cef,
         framework_dir_path: framework_dir_cef,
         multi_threaded_message_loop: 0,
-        external_message_pump: 0,
+        external_message_pump: 1,
         windowless_rendering_enabled: 0,
         command_line_args_disabled: 0,
         cache_path: cache_dir_cef,
@@ -109,6 +109,7 @@ pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char
 
     //println!("Calling cef_initialize");
     do_initialize(main_args, settings, japp);
+    // println!("After Calling cef_initialize");
 }
 
 #[cfg(target_os = "linux")]
@@ -227,7 +228,7 @@ fn swizzle_send_event() {
 
 #[cfg(target_os = "windows")]
 fn do_initialize(main_args: cef::_cef_main_args_t, settings: cef::_cef_settings_t, app_raw: *mut cef::_cef_app_t) {
-    // unsafe { cef::cef_enable_highdpi_support() };
+    unsafe { cef::cef_enable_highdpi_support() };
     unsafe { cef::cef_initialize(&main_args, &settings, &mut (*app_raw), std::ptr::null_mut()) };
 }
 
@@ -261,13 +262,14 @@ fn restore_signal_handlers(signal_handlers: HashMap<c_int, nix::sys::signal::Sig
 pub extern fn cefswt_create_browser(hwnd: *mut c_void, url: *const c_char, client: &mut cef::_cef_client_t, w: c_int, h: c_int, js: c_int, bg: cef::cef_color_t) -> *const cef::cef_browser_t {
     assert_eq!((*client).base.size, std::mem::size_of::<cef::_cef_client_t>());
 
-    println!("hwnd: {:?}", hwnd);
+    // println!("hwnd: {:?}", hwnd);
     // (*client).on_process_message_received = Option::Some(on_process_message_received);
 
     let url = utils::str_from_c(url);
-    println!("url: {:?}", url);
+    // println!("url: {:?}", url);
+
     let browser = app::create_browser(hwnd, url, client, w, h, js, bg);
-    println!("after create browser");
+    // println!("after create browser");
 
     // let browser_host = get_browser_host(browser);
     // unsafe {
@@ -498,7 +500,7 @@ pub extern fn cefswt_execute(browser: *mut cef::cef_browser_t, text: *const c_ch
 
 #[no_mangle]
 pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char, id: i32,
-        callback: unsafe extern "C" fn(work: c_int, kind: c_int, value: *const c_char)) -> c_int {
+        callback: unsafe extern "stdcall" fn(work: c_int, kind: c_int, value: *const c_char)) -> c_int {
     let text_cef = utils::cef_string_from_c(text);
     let name = utils::cef_string("eval");
     unsafe {
@@ -573,7 +575,7 @@ pub unsafe extern fn cefswt_function_id(message: *mut cef::cef_process_message_t
 }
 
 #[no_mangle]
-pub unsafe extern fn cefswt_function_arg(message: *mut cef::cef_process_message_t, index: i32, callback: unsafe extern "C" fn(work: c_int, kind: c_int, value: *const c_char)) -> c_int {
+pub unsafe extern fn cefswt_function_arg(message: *mut cef::cef_process_message_t, index: i32, callback: unsafe extern "stdcall" fn(work: c_int, kind: c_int, value: *const c_char)) -> c_int {
     let args = (*message).get_argument_list.unwrap()(message);
     let kind = (*args).get_int.unwrap()(args, (1+index*2+1) as usize);
     let arg = (*args).get_string.unwrap()(args, (1+index*2+2) as usize);

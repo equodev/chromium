@@ -118,7 +118,7 @@ pub fn wait_response(browser: *mut cef::cef_browser_t,
         msg: *mut cef::cef_process_message_t,
         args: *mut cef::_cef_list_value_t,
         target: cef::cef_process_id_t,
-        callback: Option<unsafe extern "C" fn(work: c_int, kind: c_int, value: *const c_char)>
+        callback: Option<unsafe extern "stdcall" fn(work: c_int, kind: c_int, value: *const c_char)>
         ) -> Result<ReturnSt, String> {
     match TcpListener::bind(("127.0.0.1", 0)) {
         Ok(listener) => {

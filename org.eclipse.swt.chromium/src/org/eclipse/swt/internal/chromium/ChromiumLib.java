@@ -10,6 +10,7 @@ public class ChromiumLib extends C {
     public static final native void cefswt_init(int /*long*/ app, String cefrustPath, String version, int debugPort);
 
     /**
+     * @param hwnd cast=(void *)
      * @param clientHandler cast=(void *)
      */
     public static final native int /*long*/ cefswt_create_browser(int /*long*/ hwnd, String url, int /*long*/ clientHandler, int w, int h, int js, int cefBgColor);
@@ -56,6 +57,7 @@ public class ChromiumLib extends C {
      * @param windowInfo cast=(void *)
      * @param client cast=(void *)
      * @param clientHandler cast=(void *)
+     * @param handle cast=(void *)
      */
     public static final native void cefswt_set_window_info_parent(int /*long*/ windowInfo, int /*long*/ client, int /*long*/ clientHandler, int /*long*/ handle, int x, int y, int w, int h);
 
