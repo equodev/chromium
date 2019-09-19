@@ -716,7 +716,7 @@ class Chromium extends WebBrowser {
             debugPrint("DoClose popup:" + Chromium.this.browser+":"+browser);
             return 0;
         }
-        Display display = chromium.getDisplay();
+        Display display = Display.getDefault();
 		if (/*!disposing &&*/ !isDisposed() && closeWindowListeners != null) {
             org.eclipse.swt.browser.WindowEvent event = new org.eclipse.swt.browser.WindowEvent(chromium);
             event.display = display;
@@ -1549,7 +1549,6 @@ class Chromium extends WebBrowser {
 	
 	@Override
 	public boolean close() {
-		dispose();
 		return super.close();
 	}
 

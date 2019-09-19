@@ -730,4 +730,7 @@ boolean translateMnemonics () {
 	return true;
 }
 
+public void dispose() {
+}
+
 }
