@@ -347,7 +347,7 @@ fn do_resize(win_handle: *mut c_void, width: i32, height: i32) {
         sibling: 0,
         stack_mode: 0
     };
-    unsafe { xlib::XConfigureWindow(std::mem::transmute(xdisplay), xwindow,
+    unsafe { xlib::XConfigureWindow(std::mem::transmute(xdisplay), xwindow as u64,
         (xlib::CWX | xlib::CWY | xlib::CWHeight | xlib::CWWidth) as u32, &mut changes) };
 }
 

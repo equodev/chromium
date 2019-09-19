@@ -65,8 +65,6 @@ pub fn create_browser(canvas_hwnd: *mut c_void, url: &str, jclient: &mut cef::_c
 }
 
 #[cfg(target_os = "linux")]
-use std::os::raw::{c_void};
-#[cfg(target_os = "linux")]
 fn override_system_visual(visual: *mut c_void) {
     unsafe {
         let xvisual = gtk::gdk_x11_visual_get_xvisual(visual);
@@ -104,14 +102,14 @@ fn cef_window_info(hwnd: *mut c_void, w: c_int, h: c_int) -> cef::_cef_window_in
 
 #[cfg(target_os = "linux")]
 pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: *mut c_void, x: c_int, y: c_int, w: c_int, h: c_int) {
-    use std::os::raw::{c_uint, c_void};
+    use std::os::raw::{c_uint};
     //unsafe {println!("orig window_info {} {:?}", hwnd, (*window_info)); };
     unsafe { 
         (*window_info).x = x as c_uint;
         (*window_info).y = y as c_uint;
         (*window_info).width = w as c_uint;
         (*window_info).height = h as c_uint;
-        (*window_info).parent_window = if hwnd == 0 { 0 } else {
+        (*window_info).parent_window = if hwnd.is_null() { 0 } else {
             let visual = gtk::gtk_widget_get_visual(hwnd);
             override_system_visual(visual);
 
