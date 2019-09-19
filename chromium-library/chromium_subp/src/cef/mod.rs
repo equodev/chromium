@@ -4173,20 +4173,20 @@ pub struct _cef_base_ref_counted_t {
     /// // Called to increment the reference count for the object. Should be called
     /// // for every new copy of a pointer to a given object.
     /// ///
-    pub add_ref: ::std::option::Option<unsafe extern "stdcall" fn(self_: *mut _cef_base_ref_counted_t)>,
+    pub add_ref: ::std::option::Option<unsafe extern "system" fn(self_: *mut _cef_base_ref_counted_t)>,
     ///
     /// // Called to decrement the reference count for the object. If the reference
     /// // count falls to 0 the object should self-delete. Returns true (1) if the
     /// // resulting reference count is 0.
     /// ///
     pub release: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_base_ref_counted_t) -> ::std::os::raw::c_int,
+        unsafe extern "system" fn(self_: *mut _cef_base_ref_counted_t) -> ::std::os::raw::c_int,
     >,
     ///
     /// // Returns true (1) if the current reference count is 1.
     /// ///
     pub has_one_ref: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_base_ref_counted_t) -> ::std::os::raw::c_int,
+        unsafe extern "system" fn(self_: *mut _cef_base_ref_counted_t) -> ::std::os::raw::c_int,
     >,
 }
 #[test]
@@ -4433,7 +4433,7 @@ pub struct _cef_value_t {
     /// // set successfully.
     /// ///
     pub set_int: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_value_t, value: ::std::os::raw::c_int)
+        unsafe extern "system" fn(self_: *mut _cef_value_t, value: ::std::os::raw::c_int)
             -> ::std::os::raw::c_int,
     >,
     ///
@@ -4448,7 +4448,7 @@ pub struct _cef_value_t {
     /// // set successfully.
     /// ///
     pub set_string: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_value_t, value: *const cef_string_t)
+        unsafe extern "system" fn(self_: *mut _cef_value_t, value: *const cef_string_t)
             -> ::std::os::raw::c_int,
     >,
     ///
@@ -5607,7 +5607,7 @@ pub struct _cef_list_value_t {
     /// // Returns the number of values.
     /// ///
     pub get_size:
-        ::std::option::Option<unsafe extern "stdcall" fn(self_: *mut _cef_list_value_t) -> usize>,
+        ::std::option::Option<unsafe extern "system" fn(self_: *mut _cef_list_value_t) -> usize>,
     ///
     /// // Removes all values. Returns true (1) on success.
     /// ///
@@ -5646,7 +5646,7 @@ pub struct _cef_list_value_t {
     /// // Returns the value at the specified index as type int.
     /// ///
     pub get_int: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_list_value_t, index: usize) -> ::std::os::raw::c_int,
+        unsafe extern "system" fn(self_: *mut _cef_list_value_t, index: usize) -> ::std::os::raw::c_int,
     >,
     ///
     /// // Returns the value at the specified index as type double.
@@ -5659,7 +5659,7 @@ pub struct _cef_list_value_t {
     /// ///
     /// // The resulting string must be freed by calling cef_string_userfree_free().
     pub get_string: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_list_value_t, index: usize) -> cef_string_userfree_t,
+        unsafe extern "system" fn(self_: *mut _cef_list_value_t, index: usize) -> cef_string_userfree_t,
     >,
     ///
     /// // Returns the value at the specified index as type binary. The returned value
@@ -5721,7 +5721,7 @@ pub struct _cef_list_value_t {
     /// // value was set successfully.
     /// ///
     pub set_int: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_list_value_t,
             index: usize,
             value: ::std::os::raw::c_int,
@@ -5740,7 +5740,7 @@ pub struct _cef_list_value_t {
     /// // the value was set successfully.
     /// ///
     pub set_string: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_list_value_t,
             index: usize,
             value: *const cef_string_t,
@@ -8317,13 +8317,13 @@ pub struct _cef_request_t {
     /// ///
     /// // The resulting string must be freed by calling cef_string_userfree_free().
     pub get_url: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_request_t) -> cef_string_userfree_t,
+        unsafe extern "system" fn(self_: *mut _cef_request_t) -> cef_string_userfree_t,
     >,
     ///
     /// // Set the fully qualified URL.
     /// ///
     pub set_url: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_request_t, url: *const cef_string_t),
+        unsafe extern "system" fn(self_: *mut _cef_request_t, url: *const cef_string_t),
     >,
     ///
     /// // Get the request function type. The value will default to POST if post data
@@ -8374,7 +8374,7 @@ pub struct _cef_request_t {
     /// // Set the post data.
     /// ///
     pub set_post_data: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_request_t, postData: *mut _cef_post_data_t),
+        unsafe extern "system" fn(self_: *mut _cef_request_t, postData: *mut _cef_post_data_t),
     >,
     ///
     /// // Get the header values. Will not include the Referer value if any.
@@ -8387,7 +8387,7 @@ pub struct _cef_request_t {
     /// // be removed and ignored.
     /// ///
     pub set_header_map: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_request_t, headerMap: cef_string_multimap_t),
+        unsafe extern "system" fn(self_: *mut _cef_request_t, headerMap: cef_string_multimap_t),
     >,
     ///
     /// // Set all values at one time.
@@ -8748,7 +8748,7 @@ pub struct _cef_post_data_t {
     /// // Add the specified post data element.  Returns true (1) if the add succeeds.
     /// ///
     pub add_element: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_post_data_t, element: *mut _cef_post_data_element_t)
+        unsafe extern "system" fn(self_: *mut _cef_post_data_t, element: *mut _cef_post_data_element_t)
             -> ::std::os::raw::c_int,
     >,
     ///
@@ -8895,7 +8895,7 @@ pub struct _cef_post_data_element_t {
     /// // copied.
     /// ///
     pub set_to_bytes: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_post_data_element_t,
             size: usize,
             bytes: *const ::std::os::raw::c_void,
@@ -9072,7 +9072,7 @@ pub struct _cef_string_visitor_t {
     /// // Method that will be executed.
     /// ///
     pub visit: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_string_visitor_t, string: *const cef_string_t),
+        unsafe extern "system" fn(self_: *mut _cef_string_visitor_t, string: *const cef_string_t),
     >,
 }
 #[test]
@@ -9166,7 +9166,7 @@ pub struct _cef_frame_t {
     /// // visitor.
     /// ///
     pub get_source: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_frame_t, visitor: *mut _cef_string_visitor_t),
+        unsafe extern "system" fn(self_: *mut _cef_frame_t, visitor: *mut _cef_string_visitor_t),
     >,
     ///
     /// // Retrieve this frame's display text as a string sent to the specified
@@ -9179,13 +9179,13 @@ pub struct _cef_frame_t {
     /// // Load the request represented by the |request| object.
     /// ///
     pub load_request: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_frame_t, request: *mut _cef_request_t),
+        unsafe extern "system" fn(self_: *mut _cef_frame_t, request: *mut _cef_request_t),
     >,
     ///
     /// // Load the specified |url|.
     /// ///
     pub load_url: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_frame_t, url: *const cef_string_t),
+        unsafe extern "system" fn(self_: *mut _cef_frame_t, url: *const cef_string_t),
     >,
     ///
     /// // Load the contents of |string_val| with the specified dummy |url|. |url|
@@ -9193,7 +9193,7 @@ pub struct _cef_frame_t {
     /// // link clicks and web security restrictions may not behave as expected.
     /// ///
     pub load_string: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_frame_t,
             string_val: *const cef_string_t,
             url: *const cef_string_t,
@@ -9207,7 +9207,7 @@ pub struct _cef_frame_t {
     /// // reporting.
     /// ///
     pub execute_java_script: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_frame_t,
             code: *const cef_string_t,
             script_url: *const cef_string_t,
@@ -9218,7 +9218,7 @@ pub struct _cef_frame_t {
     /// // Returns true (1) if this is the main (top-level) frame.
     /// ///
     pub is_main: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_frame_t) -> ::std::os::raw::c_int,
+        unsafe extern "system" fn(self_: *mut _cef_frame_t) -> ::std::os::raw::c_int,
     >,
     ///
     /// // Returns true (1) if this is the focused frame.
@@ -9254,7 +9254,7 @@ pub struct _cef_frame_t {
     /// ///
     /// // The resulting string must be freed by calling cef_string_userfree_free().
     pub get_url: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_frame_t) -> cef_string_userfree_t,
+        unsafe extern "system" fn(self_: *mut _cef_frame_t) -> cef_string_userfree_t,
     >,
     ///
     /// // Returns the browser that this frame belongs to.
@@ -9267,7 +9267,7 @@ pub struct _cef_frame_t {
     /// // called from the render process.
     /// ///
     pub get_v8context: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_frame_t) -> *mut _cef_v8context_t,
+        unsafe extern "system" fn(self_: *mut _cef_frame_t) -> *mut _cef_v8context_t,
     >,
     ///
     /// // Visit the DOM document. This function can only be called from the render
@@ -10354,7 +10354,7 @@ pub struct _cef_process_message_t {
     /// // if this function returns false (0).
     /// ///
     pub is_valid: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_process_message_t) -> ::std::os::raw::c_int,
+        unsafe extern "system" fn(self_: *mut _cef_process_message_t) -> ::std::os::raw::c_int,
     >,
     ///
     /// // Returns true (1) if the values of this object are read-only. Some APIs may
@@ -10374,13 +10374,13 @@ pub struct _cef_process_message_t {
     /// ///
     /// // The resulting string must be freed by calling cef_string_userfree_free().
     pub get_name: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_process_message_t) -> cef_string_userfree_t,
+        unsafe extern "system" fn(self_: *mut _cef_process_message_t) -> cef_string_userfree_t,
     >,
     ///
     /// // Returns the list of arguments.
     /// ///
     pub get_argument_list: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_process_message_t) -> *mut _cef_list_value_t,
+        unsafe extern "system" fn(self_: *mut _cef_process_message_t) -> *mut _cef_list_value_t,
     >,
 }
 #[test]
@@ -10624,7 +10624,7 @@ pub struct _cef_cookie_manager_t {
     /// // Returns false (0) if cookies cannot be accessed.
     /// ///
     pub visit_url_cookies: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_cookie_manager_t,
             url: *const cef_string_t,
             includeHttpOnly: ::std::os::raw::c_int,
@@ -10641,7 +10641,7 @@ pub struct _cef_cookie_manager_t {
     /// // false (0) if an invalid URL is specified or if cookies cannot be accessed.
     /// ///
     pub set_cookie: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_cookie_manager_t,
             url: *const cef_string_t,
             cookie: *const _cef_cookie_t,
@@ -10660,7 +10660,7 @@ pub struct _cef_cookie_manager_t {
     /// // the Visit*Cookies() functions.
     /// ///
     pub delete_cookies: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_cookie_manager_t,
             url: *const cef_string_t,
             cookie_name: *const cef_string_t,
@@ -10854,7 +10854,7 @@ pub struct _cef_cookie_visitor_t {
     /// // called if no cookies are found.
     /// ///
     pub visit: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_cookie_visitor_t,
             cookie: *const _cef_cookie_t,
             count: ::std::os::raw::c_int,
@@ -12089,38 +12089,38 @@ pub struct _cef_browser_t {
     /// // browser process.
     /// ///
     pub get_host: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_browser_t) -> *mut _cef_browser_host_t,
+        unsafe extern "system" fn(self_: *mut _cef_browser_t) -> *mut _cef_browser_host_t,
     >,
     ///
     /// // Returns true (1) if the browser can navigate backwards.
     /// ///
     pub can_go_back: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_browser_t) -> ::std::os::raw::c_int,
+        unsafe extern "system" fn(self_: *mut _cef_browser_t) -> ::std::os::raw::c_int,
     >,
     ///
     /// // Navigate backwards.
     /// ///
-    pub go_back: ::std::option::Option<unsafe extern "stdcall" fn(self_: *mut _cef_browser_t)>,
+    pub go_back: ::std::option::Option<unsafe extern "system" fn(self_: *mut _cef_browser_t)>,
     ///
     /// // Returns true (1) if the browser can navigate forwards.
     /// ///
     pub can_go_forward: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_browser_t) -> ::std::os::raw::c_int,
+        unsafe extern "system" fn(self_: *mut _cef_browser_t) -> ::std::os::raw::c_int,
     >,
     ///
     /// // Navigate forwards.
     /// ///
-    pub go_forward: ::std::option::Option<unsafe extern "stdcall" fn(self_: *mut _cef_browser_t)>,
+    pub go_forward: ::std::option::Option<unsafe extern "system" fn(self_: *mut _cef_browser_t)>,
     ///
     /// // Returns true (1) if the browser is currently loading.
     /// ///
     pub is_loading: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_browser_t) -> ::std::os::raw::c_int,
+        unsafe extern "system" fn(self_: *mut _cef_browser_t) -> ::std::os::raw::c_int,
     >,
     ///
     /// // Reload the current page.
     /// ///
-    pub reload: ::std::option::Option<unsafe extern "stdcall" fn(self_: *mut _cef_browser_t)>,
+    pub reload: ::std::option::Option<unsafe extern "system" fn(self_: *mut _cef_browser_t)>,
     ///
     /// // Reload the current page ignoring any cached data.
     /// ///
@@ -12129,19 +12129,19 @@ pub struct _cef_browser_t {
     ///
     /// // Stop loading the page.
     /// ///
-    pub stop_load: ::std::option::Option<unsafe extern "stdcall" fn(self_: *mut _cef_browser_t)>,
+    pub stop_load: ::std::option::Option<unsafe extern "system" fn(self_: *mut _cef_browser_t)>,
     ///
     /// // Returns the globally unique identifier for this browser.
     /// ///
     pub get_identifier: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_browser_t) -> ::std::os::raw::c_int,
+        unsafe extern "system" fn(self_: *mut _cef_browser_t) -> ::std::os::raw::c_int,
     >,
     ///
     /// // Returns true (1) if this object is pointing to the same handle as |that|
     /// // object.
     /// ///
     pub is_same: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_browser_t, that: *mut _cef_browser_t)
+        unsafe extern "system" fn(self_: *mut _cef_browser_t, that: *mut _cef_browser_t)
             -> ::std::os::raw::c_int,
     >,
     ///
@@ -12160,7 +12160,7 @@ pub struct _cef_browser_t {
     /// // Returns the main (top-level) frame for the browser window.
     /// ///
     pub get_main_frame: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_browser_t) -> *mut _cef_frame_t,
+        unsafe extern "system" fn(self_: *mut _cef_browser_t) -> *mut _cef_frame_t,
     >,
     ///
     /// // Returns the focused frame for the browser window.
@@ -12178,7 +12178,7 @@ pub struct _cef_browser_t {
     /// // Returns the frame with the specified name, or NULL if not found.
     /// ///
     pub get_frame: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_browser_t, name: *const cef_string_t)
+        unsafe extern "system" fn(self_: *mut _cef_browser_t, name: *const cef_string_t)
             -> *mut _cef_frame_t,
     >,
     ///
@@ -12207,7 +12207,7 @@ pub struct _cef_browser_t {
     /// // message was sent successfully.
     /// ///
     pub send_process_message: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_browser_t,
             target_process: cef_process_id_t,
             message: *mut _cef_process_message_t,
@@ -12741,7 +12741,7 @@ pub struct _cef_browser_host_t {
     /// // information.
     /// ///
     pub close_browser: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_browser_host_t, force_close: ::std::os::raw::c_int),
+        unsafe extern "system" fn(self_: *mut _cef_browser_host_t, force_close: ::std::os::raw::c_int),
     >,
     ///
     /// // Helper for closing a browser. Call this function from the top-level window
@@ -12758,7 +12758,7 @@ pub struct _cef_browser_host_t {
     /// // Set whether the browser is focused.
     /// ///
     pub set_focus: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_browser_host_t, focus: ::std::os::raw::c_int),
+        unsafe extern "system" fn(self_: *mut _cef_browser_host_t, focus: ::std::os::raw::c_int),
     >,
     ///
     /// // Retrieve the window handle for this browser. If this browser is wrapped in
@@ -12766,7 +12766,7 @@ pub struct _cef_browser_host_t {
     /// // UI thread and it will return the handle for the top-level native window.
     /// ///
     pub get_window_handle: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_browser_host_t) -> *mut ::std::os::raw::c_void,
+        unsafe extern "system" fn(self_: *mut _cef_browser_host_t) -> *mut ::std::os::raw::c_void,
     >,
     ///
     /// // Retrieve the window handle of the browser that opened this browser. Will
@@ -16163,7 +16163,7 @@ pub struct _cef_run_context_menu_callback_t {
     /// // Cancel context menu display.
     /// ///
     pub cancel:
-        ::std::option::Option<unsafe extern "stdcall" fn(self_: *mut _cef_run_context_menu_callback_t)>,
+        ::std::option::Option<unsafe extern "system" fn(self_: *mut _cef_run_context_menu_callback_t)>,
 }
 #[test]
 fn bindgen_test_layout__cef_run_context_menu_callback_t() {
@@ -16253,7 +16253,7 @@ pub struct _cef_context_menu_handler_t {
     /// // references to |params| or |model| outside of this callback.
     /// ///
     pub run_context_menu: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_context_menu_handler_t,
             browser: *mut _cef_browser_t,
             frame: *mut _cef_frame_t,
@@ -17325,7 +17325,7 @@ pub struct _cef_browser_process_handler_t {
     /// // cancelled.
     /// ///
     pub on_schedule_message_pump_work: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_browser_process_handler_t, delay_ms: ::std::os::raw::c_longlong),
+        unsafe extern "system" fn(self_: *mut _cef_browser_process_handler_t, delay_ms: ::std::os::raw::c_longlong),
     >,
 }
 #[test]
@@ -17438,7 +17438,7 @@ pub struct _cef_load_handler_t {
     /// // calls to OnLoadError and/or OnLoadEnd.
     /// ///
     pub on_loading_state_change: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_load_handler_t,
             browser: *mut _cef_browser_t,
             isLoading: ::std::os::raw::c_int,
@@ -17459,7 +17459,7 @@ pub struct _cef_load_handler_t {
     /// // overall browser load status use OnLoadingStateChange instead.
     /// ///
     pub on_load_start: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_load_handler_t,
             browser: *mut _cef_browser_t,
             frame: *mut _cef_frame_t,
@@ -17477,7 +17477,7 @@ pub struct _cef_load_handler_t {
     /// // instead.
     /// ///
     pub on_load_end: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_load_handler_t,
             browser: *mut _cef_browser_t,
             frame: *mut _cef_frame_t,
@@ -17492,7 +17492,7 @@ pub struct _cef_load_handler_t {
     /// // net\base\net_error_list.h for complete descriptions of the error codes.
     /// ///
     pub on_load_error: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_load_handler_t,
             browser: *mut _cef_browser_t,
             frame: *mut _cef_frame_t,
@@ -17856,7 +17856,7 @@ pub struct _cef_v8context_t {
     /// // before calling this function.
     /// ///
     pub get_global: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_v8context_t) -> *mut _cef_v8value_t,
+        unsafe extern "system" fn(self_: *mut _cef_v8context_t) -> *mut _cef_v8value_t,
     >,
     ///
     /// // Enter this context. A context must be explicitly entered before creating a
@@ -17866,14 +17866,14 @@ pub struct _cef_v8context_t {
     /// // if the scope was entered successfully.
     /// ///
     pub enter: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_v8context_t) -> ::std::os::raw::c_int,
+        unsafe extern "system" fn(self_: *mut _cef_v8context_t) -> ::std::os::raw::c_int,
     >,
     ///
     /// // Exit this context. Call this function only after calling enter(). Returns
     /// // true (1) if the scope was exited successfully.
     /// ///
     pub exit: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_v8context_t) -> ::std::os::raw::c_int,
+        unsafe extern "system" fn(self_: *mut _cef_v8context_t) -> ::std::os::raw::c_int,
     >,
     ///
     /// // Returns true (1) if this object is pointing to the same handle as |that|
@@ -17892,7 +17892,7 @@ pub struct _cef_v8context_t {
     /// // exception, if any, and the function will return false (0).
     /// ///
     pub eval: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_v8context_t,
             code: *const cef_string_t,
             script_url: *const cef_string_t,
@@ -18056,7 +18056,7 @@ pub struct _cef_v8handler_t {
     /// // that will be thrown. Return true (1) if execution was handled.
     /// ///
     pub execute: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_v8handler_t,
             name: *const cef_string_t,
             object: *mut _cef_v8value_t,
@@ -18359,7 +18359,7 @@ pub struct _cef_v8exception_t {
     /// ///
     /// // The resulting string must be freed by calling cef_string_userfree_free().
     pub get_message: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_v8exception_t) -> cef_string_userfree_t,
+        unsafe extern "system" fn(self_: *mut _cef_v8exception_t) -> cef_string_userfree_t,
     >,
     ///
     /// // Returns the line of source code that the exception occurred within.
@@ -18550,43 +18550,43 @@ pub struct _cef_v8value_t {
     /// // returns false (0).
     /// ///
     pub is_valid: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
+        unsafe extern "system" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
     >,
     ///
     /// // True if the value type is undefined.
     /// ///
     pub is_undefined: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
+        unsafe extern "system" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
     >,
     ///
     /// // True if the value type is null.
     /// ///
     pub is_null: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
+        unsafe extern "system" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
     >,
     ///
     /// // True if the value type is bool.
     /// ///
     pub is_bool: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
+        unsafe extern "system" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
     >,
     ///
     /// // True if the value type is int.
     /// ///
     pub is_int: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
+        unsafe extern "system" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
     >,
     ///
     /// // True if the value type is unsigned int.
     /// ///
     pub is_uint: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
+        unsafe extern "system" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
     >,
     ///
     /// // True if the value type is double.
     /// ///
     pub is_double: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
+        unsafe extern "system" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
     >,
     ///
     /// // True if the value type is Date.
@@ -18598,7 +18598,7 @@ pub struct _cef_v8value_t {
     /// // True if the value type is string.
     /// ///
     pub is_string: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
+        unsafe extern "system" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
     >,
     ///
     /// // True if the value type is object.
@@ -18610,7 +18610,7 @@ pub struct _cef_v8value_t {
     /// // True if the value type is array.
     /// ///
     pub is_array: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
+        unsafe extern "system" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
     >,
     ///
     /// // True if the value type is function.
@@ -18630,23 +18630,23 @@ pub struct _cef_v8value_t {
     /// // Return a bool value.
     /// ///
     pub get_bool_value: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
+        unsafe extern "system" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
     >,
     ///
     /// // Return an int value.
     /// ///
     pub get_int_value:
-        ::std::option::Option<unsafe extern "stdcall" fn(self_: *mut _cef_v8value_t) -> int32>,
+        ::std::option::Option<unsafe extern "system" fn(self_: *mut _cef_v8value_t) -> int32>,
     ///
     /// // Return an unsigned int value.
     /// ///
     pub get_uint_value:
-        ::std::option::Option<unsafe extern "stdcall" fn(self_: *mut _cef_v8value_t) -> uint32>,
+        ::std::option::Option<unsafe extern "system" fn(self_: *mut _cef_v8value_t) -> uint32>,
     ///
     /// // Return a double value.
     /// ///
     pub get_double_value:
-        ::std::option::Option<unsafe extern "stdcall" fn(self_: *mut _cef_v8value_t) -> f64>,
+        ::std::option::Option<unsafe extern "system" fn(self_: *mut _cef_v8value_t) -> f64>,
     ///
     /// // Return a Date value.
     /// ///
@@ -18657,7 +18657,7 @@ pub struct _cef_v8value_t {
     /// ///
     /// // The resulting string must be freed by calling cef_string_userfree_free().
     pub get_string_value: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_v8value_t) -> cef_string_userfree_t,
+        unsafe extern "system" fn(self_: *mut _cef_v8value_t) -> cef_string_userfree_t,
     >,
     ///
     /// // Returns true (1) if this is a user created object.
@@ -18750,7 +18750,7 @@ pub struct _cef_v8value_t {
     /// // this function is called incorrectly or an exception is thrown.
     /// ///
     pub get_value_byindex: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_v8value_t, index: ::std::os::raw::c_int)
+        unsafe extern "system" fn(self_: *mut _cef_v8value_t, index: ::std::os::raw::c_int)
             -> *mut _cef_v8value_t,
     >,
     ///
@@ -18760,7 +18760,7 @@ pub struct _cef_v8value_t {
     /// // (1) even though assignment failed.
     /// ///
     pub set_value_bykey: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_v8value_t,
             key: *const cef_string_t,
             value: *mut _cef_v8value_t,
@@ -18774,7 +18774,7 @@ pub struct _cef_v8value_t {
     /// // (1) even though assignment failed.
     /// ///
     pub set_value_byindex: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_v8value_t,
             index: ::std::os::raw::c_int,
             value: *mut _cef_v8value_t,
@@ -18844,7 +18844,7 @@ pub struct _cef_v8value_t {
     /// // Returns the number of elements in the array.
     /// ///
     pub get_array_length: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
+        unsafe extern "system" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
     >,
     ///
     /// // Returns the function name.
@@ -19904,7 +19904,7 @@ pub struct _cef_render_process_handler_t {
     /// // cef_v8context_t::get_task_runner() function.
     /// ///
     pub on_context_created: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_render_process_handler_t,
             browser: *mut _cef_browser_t,
             frame: *mut _cef_frame_t,
@@ -19960,7 +19960,7 @@ pub struct _cef_render_process_handler_t {
     /// // reference to or attempt to access the message outside of this callback.
     /// ///
     pub on_process_message_received: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_render_process_handler_t,
             browser: *mut _cef_browser_t,
             source_process: cef_process_id_t,
@@ -20344,7 +20344,7 @@ pub struct _cef_response_t {
     /// // Set all response header fields.
     /// ///
     pub set_header_map: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_response_t, headerMap: cef_string_multimap_t),
+        unsafe extern "system" fn(self_: *mut _cef_response_t, headerMap: cef_string_multimap_t),
     >,
 }
 #[test]
@@ -20943,14 +20943,14 @@ pub struct _cef_app_t {
     /// // function is called on multiple threads in the browser process.
     /// ///
     pub get_browser_process_handler: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_app_t) -> *mut _cef_browser_process_handler_t,
+        unsafe extern "system" fn(self_: *mut _cef_app_t) -> *mut _cef_browser_process_handler_t,
     >,
     ///
     /// // Return the handler for functionality specific to the render process. This
     /// // function is called on the render process main thread.
     /// ///
     pub get_render_process_handler: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_app_t) -> *mut _cef_render_process_handler_t,
+        unsafe extern "system" fn(self_: *mut _cef_app_t) -> *mut _cef_render_process_handler_t,
     >,
 }
 #[test]
@@ -21299,7 +21299,7 @@ pub struct _cef_display_handler_t {
     /// // Called when a frame's address has changed.
     /// ///
     pub on_address_change: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_display_handler_t,
             browser: *mut _cef_browser_t,
             frame: *mut _cef_frame_t,
@@ -21310,7 +21310,7 @@ pub struct _cef_display_handler_t {
     /// // Called when the page title changes.
     /// ///
     pub on_title_change: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_display_handler_t,
             browser: *mut _cef_browser_t,
             title: *const cef_string_t,
@@ -21360,7 +21360,7 @@ pub struct _cef_display_handler_t {
     /// // text that will be displayed in the status message.
     /// ///
     pub on_status_message: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_display_handler_t,
             browser: *mut _cef_browser_t,
             value: *const cef_string_t,
@@ -22244,7 +22244,7 @@ pub struct _cef_focus_handler_t {
     /// // false (0) if the browser is giving focus to the previous component.
     /// ///
     pub on_take_focus: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_focus_handler_t,
             browser: *mut _cef_browser_t,
             next: ::std::os::raw::c_int,
@@ -22256,7 +22256,7 @@ pub struct _cef_focus_handler_t {
     /// // focus to be set or true (1) to cancel setting the focus.
     /// ///
     pub on_set_focus: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_focus_handler_t,
             browser: *mut _cef_browser_t,
             source: cef_focus_source_t,
@@ -22266,7 +22266,7 @@ pub struct _cef_focus_handler_t {
     /// // Called when the browser component has received focus.
     /// ///
     pub on_got_focus: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_focus_handler_t, browser: *mut _cef_browser_t),
+        unsafe extern "system" fn(self_: *mut _cef_focus_handler_t, browser: *mut _cef_browser_t),
     >,
 }
 #[test]
@@ -22489,7 +22489,7 @@ pub struct _cef_jsdialog_callback_t {
     /// // was pressed. The |user_input| value should be specified for prompt dialogs.
     /// ///
     pub cont: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_jsdialog_callback_t,
             success: ::std::os::raw::c_int,
             user_input: *const cef_string_t,
@@ -22558,7 +22558,7 @@ pub struct _cef_jsdialog_handler_t {
     /// // dismissed.
     /// ///
     pub on_jsdialog: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_jsdialog_handler_t,
             browser: *mut _cef_browser_t,
             origin_url: *const cef_string_t,
@@ -22800,7 +22800,7 @@ pub struct _cef_life_span_handler_t {
     /// // (indicated by a call to OnAfterCreated for the popup browser).
     /// ///
     pub on_before_popup: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_life_span_handler_t,
             browser: *mut _cef_browser_t,
             frame: *mut _cef_frame_t,
@@ -22820,7 +22820,7 @@ pub struct _cef_life_span_handler_t {
     /// // notification that references |browser|.
     /// ///
     pub on_after_created: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_life_span_handler_t, browser: *mut _cef_browser_t),
+        unsafe extern "system" fn(self_: *mut _cef_life_span_handler_t, browser: *mut _cef_browser_t),
     >,
     ///
     /// // Called when a browser has recieved a request to close. This may result
@@ -22912,7 +22912,7 @@ pub struct _cef_life_span_handler_t {
     /// //     exist.
     /// ///
     pub do_close: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_life_span_handler_t, browser: *mut _cef_browser_t)
+        unsafe extern "system" fn(self_: *mut _cef_life_span_handler_t, browser: *mut _cef_browser_t)
             -> ::std::os::raw::c_int,
     >,
     ///
@@ -22923,7 +22923,7 @@ pub struct _cef_life_span_handler_t {
     /// // additional usage information.
     /// ///
     pub on_before_close: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_life_span_handler_t, browser: *mut _cef_browser_t),
+        unsafe extern "system" fn(self_: *mut _cef_life_span_handler_t, browser: *mut _cef_browser_t),
     >,
 }
 #[test]
@@ -23465,7 +23465,7 @@ pub struct _cef_auth_callback_t {
     /// // Continue the authentication request.
     /// ///
     pub cont: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_auth_callback_t,
             username: *const cef_string_t,
             password: *const cef_string_t,
@@ -23474,7 +23474,7 @@ pub struct _cef_auth_callback_t {
     ///
     /// // Cancel the authentication request.
     /// ///
-    pub cancel: ::std::option::Option<unsafe extern "stdcall" fn(self_: *mut _cef_auth_callback_t)>,
+    pub cancel: ::std::option::Option<unsafe extern "system" fn(self_: *mut _cef_auth_callback_t)>,
 }
 #[test]
 fn bindgen_test_layout__cef_auth_callback_t() {
@@ -23722,12 +23722,12 @@ pub struct _cef_request_callback_t {
     /// // continued. Otherwise, the request will be canceled.
     /// ///
     pub cont: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_request_callback_t, allow: ::std::os::raw::c_int),
+        unsafe extern "system" fn(self_: *mut _cef_request_callback_t, allow: ::std::os::raw::c_int),
     >,
     ///
     /// // Cancel the url request.
     /// ///
-    pub cancel: ::std::option::Option<unsafe extern "stdcall" fn(self_: *mut _cef_request_callback_t)>,
+    pub cancel: ::std::option::Option<unsafe extern "system" fn(self_: *mut _cef_request_callback_t)>,
 }
 #[test]
 fn bindgen_test_layout__cef_request_callback_t() {
@@ -23860,7 +23860,7 @@ pub struct _cef_request_handler_t {
     /// // ERR_ABORTED.
     /// ///
     pub on_before_browse: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_request_handler_t,
             browser: *mut _cef_browser_t,
             frame: *mut _cef_frame_t,
@@ -24001,7 +24001,7 @@ pub struct _cef_request_handler_t {
     /// // request immediately.
     /// ///
     pub get_auth_credentials: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_request_handler_t,
             browser: *mut _cef_browser_t,
             frame: *mut _cef_frame_t,
@@ -24055,7 +24055,7 @@ pub struct _cef_request_handler_t {
     /// // be accepted without calling this function.
     /// ///
     pub on_certificate_error: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_request_handler_t,
             browser: *mut _cef_browser_t,
             cert_error: cef_errorcode_t,
@@ -24078,7 +24078,7 @@ pub struct _cef_request_handler_t {
     /// // the server trusts.
     /// ///
     pub on_select_client_certificate: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_request_handler_t,
             browser: *mut _cef_browser_t,
             isProxy: ::std::os::raw::c_int,
@@ -24364,7 +24364,7 @@ pub struct _cef_client_t {
     /// // implementation will be used.
     /// ///
     pub get_context_menu_handler: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_client_t) -> *mut _cef_context_menu_handler_t,
+        unsafe extern "system" fn(self_: *mut _cef_client_t) -> *mut _cef_context_menu_handler_t,
     >,
     ///
     /// // Return the handler for dialogs. If no handler is provided the default
@@ -24377,7 +24377,7 @@ pub struct _cef_client_t {
     /// // Return the handler for browser display state events.
     /// ///
     pub get_display_handler: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_client_t) -> *mut _cef_display_handler_t,
+        unsafe extern "system" fn(self_: *mut _cef_client_t) -> *mut _cef_display_handler_t,
     >,
     ///
     /// // Return the handler for download events. If no handler is returned downloads
@@ -24402,7 +24402,7 @@ pub struct _cef_client_t {
     /// // Return the handler for focus events.
     /// ///
     pub get_focus_handler: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_client_t) -> *mut _cef_focus_handler_t,
+        unsafe extern "system" fn(self_: *mut _cef_client_t) -> *mut _cef_focus_handler_t,
     >,
     ///
     /// // Return the handler for geolocation permissions requests. If no handler is
@@ -24416,7 +24416,7 @@ pub struct _cef_client_t {
     /// // default implementation will be used.
     /// ///
     pub get_jsdialog_handler: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_client_t) -> *mut _cef_jsdialog_handler_t,
+        unsafe extern "system" fn(self_: *mut _cef_client_t) -> *mut _cef_jsdialog_handler_t,
     >,
     ///
     /// // Return the handler for keyboard events.
@@ -24428,13 +24428,13 @@ pub struct _cef_client_t {
     /// // Return the handler for browser life span events.
     /// ///
     pub get_life_span_handler: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_client_t) -> *mut _cef_life_span_handler_t,
+        unsafe extern "system" fn(self_: *mut _cef_client_t) -> *mut _cef_life_span_handler_t,
     >,
     ///
     /// // Return the handler for browser load status events.
     /// ///
     pub get_load_handler: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_client_t) -> *mut _cef_load_handler_t,
+        unsafe extern "system" fn(self_: *mut _cef_client_t) -> *mut _cef_load_handler_t,
     >,
     ///
     /// // Return the handler for off-screen rendering events.
@@ -24446,7 +24446,7 @@ pub struct _cef_client_t {
     /// // Return the handler for browser request events.
     /// ///
     pub get_request_handler: ::std::option::Option<
-        unsafe extern "stdcall" fn(self_: *mut _cef_client_t) -> *mut _cef_request_handler_t,
+        unsafe extern "system" fn(self_: *mut _cef_client_t) -> *mut _cef_request_handler_t,
     >,
     ///
     /// // Called when a new message is received from a different process. Return true
@@ -24454,7 +24454,7 @@ pub struct _cef_client_t {
     /// // reference to or attempt to access the message outside of this callback.
     /// ///
     pub on_process_message_received: ::std::option::Option<
-        unsafe extern "stdcall" fn(
+        unsafe extern "system" fn(
             self_: *mut _cef_client_t,
             browser: *mut _cef_browser_t,
             source_process: cef_process_id_t,

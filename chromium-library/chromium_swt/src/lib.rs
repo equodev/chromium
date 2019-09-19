@@ -500,7 +500,7 @@ pub extern fn cefswt_execute(browser: *mut cef::cef_browser_t, text: *const c_ch
 
 #[no_mangle]
 pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char, id: i32,
-        callback: unsafe extern "stdcall" fn(work: c_int, kind: c_int, value: *const c_char)) -> c_int {
+        callback: unsafe extern "system" fn(work: c_int, kind: c_int, value: *const c_char)) -> c_int {
     let text_cef = utils::cef_string_from_c(text);
     let name = utils::cef_string("eval");
     unsafe {
@@ -575,7 +575,7 @@ pub unsafe extern fn cefswt_function_id(message: *mut cef::cef_process_message_t
 }
 
 #[no_mangle]
-pub unsafe extern fn cefswt_function_arg(message: *mut cef::cef_process_message_t, index: i32, callback: unsafe extern "stdcall" fn(work: c_int, kind: c_int, value: *const c_char)) -> c_int {
+pub unsafe extern fn cefswt_function_arg(message: *mut cef::cef_process_message_t, index: i32, callback: unsafe extern "system" fn(work: c_int, kind: c_int, value: *const c_char)) -> c_int {
     let args = (*message).get_argument_list.unwrap()(message);
     let kind = (*args).get_int.unwrap()(args, (1+index*2+1) as usize);
     let arg = (*args).get_string.unwrap()(args, (1+index*2+2) as usize);

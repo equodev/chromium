@@ -27,6 +27,7 @@ publish:
   variables:
     GIT_DEPTH: "1"
     RELEASE: "true"
+    CHANNEL: "win-32b"
   dependencies:
   - build
   before_script:
@@ -39,14 +40,12 @@ publish:
   - du -h -s public || true
   - mc config host add do https://ams3.digitaloceanspaces.com "$DO_KEY" "$DO_SECRET" --lookup auto
 #  - mc mb -p do/$DO_BUCKET
-  - mc mirror --overwrite --remove public/repository do/$DO_BUCKET/rls/repository/
+  - mc mirror --overwrite --remove public/repository do/$DO_BUCKET/$CHANNEL/repository/
   - current=$(date -u +"%FT%T.%3NZ")
   - echo "current $current"
   - 'echo "{\"version\": \"${VERSION}\", \"created\": \"${current}\", \"downloadInstallPath\": \"/repository/plugins/org.eclipse.swt.chromium\", \"downloadUpdatePath\": \"/repository/features/org.eclipse.swt.chromium.feature\"}" > public/metadata.json'
-  - mc cp public/metadata.json do/$DO_BUCKET/rls/
+  - mc cp public/metadata.json do/$DO_BUCKET/$CHANNEL/
   after_script:
   - ls public
   - ls public/repository
   when: manual
-
-

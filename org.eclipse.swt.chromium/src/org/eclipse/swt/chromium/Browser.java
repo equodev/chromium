@@ -14,7 +14,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 
 public class Browser extends Composite {
-    Chromium webBrowser;
+    WebBrowser webBrowser;
     int userStyle;
     boolean isClosing;
 
@@ -29,14 +29,21 @@ public class Browser extends Composite {
         }
 
         style = getStyle ();
-        webBrowser = new Chromium();
+        String msg = "";
+        try {
+			webBrowser = (WebBrowser) Class.forName("org.eclipse.swt.chromium.Chromium").newInstance();
+		} catch (ClassNotFoundException e) {
+			msg = "Cannot find Chromium class, probably you a missing a chromium.swt fragment.";
+		} catch (InstantiationException | IllegalAccessException e) {
+			msg = e.getMessage();
+		}
         if (webBrowser != null) {
             webBrowser.setBrowser (this);
             webBrowser.create (parent, style);
             return;
         }
         dispose ();
-        SWT.error (SWT.ERROR_NO_HANDLES);
+        SWT.error (SWT.ERROR_NO_HANDLES, null, msg);
     }
 
     static Composite checkParent (Composite parent) {
@@ -71,7 +78,7 @@ public class Browser extends Composite {
      * @since 3.2
      */
     public static void clearSessions () {
-        Chromium.clearSessions ();
+        WebBrowser.clearSessions ();
     }
 
     /**
@@ -92,7 +99,7 @@ public class Browser extends Composite {
     public static String getCookie (String name, String url) {
         if (name == null) SWT.error (SWT.ERROR_NULL_ARGUMENT);
         if (url == null) SWT.error (SWT.ERROR_NULL_ARGUMENT);
-        return Chromium.GetCookie (name, url);
+        return WebBrowser.GetCookie (name, url);
     }
 
     /**
@@ -122,7 +129,7 @@ public class Browser extends Composite {
     public static boolean setCookie (String value, String url) {
         if (value == null) SWT.error (SWT.ERROR_NULL_ARGUMENT);
         if (url == null) SWT.error (SWT.ERROR_NULL_ARGUMENT);
-        return Chromium.SetCookie (value, url, true);
+        return WebBrowser.SetCookie (value, url, true);
     }
 
     /**
@@ -1033,7 +1040,6 @@ public class Browser extends Composite {
     @Override
     public void dispose() {
         checkWidget();
-        webBrowser.dispose();
         super.dispose();
         webBrowser = null;
     }

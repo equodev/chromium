@@ -39,7 +39,7 @@ impl App {
     }
 
     fn cef_app() -> cef::cef_app_t {
-        unsafe extern "stdcall" fn get_render_process_handler(self_: *mut cef::_cef_app_t)
+        unsafe extern "system" fn get_render_process_handler(self_: *mut cef::_cef_app_t)
                 -> *mut cef::_cef_render_process_handler_t {
             let a = self_ as *mut App;
             (*a).render_process_handler.as_ptr()
@@ -84,7 +84,7 @@ impl RenderProcessHandler {
     }
 
     fn cef_render_process_handler() -> cef::_cef_render_process_handler_t {
-        unsafe extern "stdcall" fn on_context_created(
+        unsafe extern "system" fn on_context_created(
             self_: *mut cef::_cef_render_process_handler_t,
             browser: *mut cef::_cef_browser_t,
             frame: *mut cef::_cef_frame_t,
@@ -112,7 +112,7 @@ impl RenderProcessHandler {
             }
         }
 
-        unsafe extern "stdcall" fn on_process_message_received(
+        unsafe extern "system" fn on_process_message_received(
             self_: *mut cef::_cef_render_process_handler_t,
             browser: *mut cef::_cef_browser_t,
             source_process: cef::cef_process_id_t,
@@ -305,7 +305,7 @@ impl V8Handler {
     }
 
     fn cef_function_handler() -> cef::_cef_v8handler_t {
-        unsafe extern "stdcall" fn execute(
+        unsafe extern "system" fn execute(
             self_: *mut cef::_cef_v8handler_t,
             name: *const cef::cef_string_t,
             _object: *mut cef::_cef_v8value_t,
