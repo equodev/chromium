@@ -310,7 +310,7 @@ impl V8Handler {
             name: *const cef::cef_string_t,
             _object: *mut cef::_cef_v8value_t,
             arguments_count: usize,
-            arguments: *const *const cef::_cef_v8value_t,
+            arguments: *const *mut cef::_cef_v8value_t,
             retval: *mut *mut cef::_cef_v8value_t,
             exception: *mut cef::cef_string_t,
         ) -> c_int {

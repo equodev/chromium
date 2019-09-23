@@ -4,5 +4,6 @@ cef_osx/
 cef_linux/
 cef_windows/
 cef_windows_x86/
+cef_windows*/
 .dockerignore
 Dockerfile*

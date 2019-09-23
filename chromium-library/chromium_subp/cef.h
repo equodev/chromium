@@ -1,6 +1,10 @@
+#define cef_window_handle_t void*
+#define cef_cursor_handle_t void*
+#define cef_event_handle_t void*
+
 #include "include/internal/cef_export.h"
 
-#include "include/base/cef_basictypes.h"
+// #include "include/base/cef_basictypes.h"
 
 #include "include/internal/cef_string_types.h"
 #include "include/internal/cef_string.h"

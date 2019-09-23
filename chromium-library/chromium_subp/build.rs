@@ -85,6 +85,8 @@ fn gen_os(cef_path: std::path::Display) {
     .header("cef_win.h")
     .whitelist_type("_cef_main_args_t")
     .whitelist_type("_cef_window_info_t")
+    .blacklist_type("wchar_t")
+    .blacklist_type("char16")
     .blacklist_type(".*string.*")
     .raw_line("use cef::cef_string_t;")
     .generate().expect("Failed to gencef win")
@@ -110,6 +112,7 @@ fn gen_os(cef_path: std::path::Display) {
     .whitelist_type("_cef_main_args_t")
     .whitelist_type("_cef_window_info_t")
     .blacklist_type(".*string.*")
+    .blacklist_type("char16")
     .raw_line("use cef::cef_string_t;")
     .generate().expect("Failed to gencef mac")
     .write_to_file(std::path::Path::new("src").join("cef").join("mac.rs"));
@@ -117,14 +120,20 @@ fn gen_os(cef_path: std::path::Display) {
 
 #[cfg(feature = "gen")]
 fn gen_cef(cef_path: std::path::Display) {
-  let _ = generator(cef_path)
+  use std::io::Write;
+  #[cfg(target_os = "windows")] let gen = generator(cef_path).header("include/internal/cef_types_win.h");
+  #[cfg(target_os = "linux")] let gen = generator(cef_path).header("include/internal/cef_types_linux.h");
+  #[cfg(target_os = "macos")] let gen = generator(cef_path).header("include/internal/cef_types_mac.h");
+  let generated = gen
     .header("cef.h")
     .whitelist_type("cef_string_t")
+    .whitelist_type("cef_string_userfree_t")
     .whitelist_type(".*cef_base_t")
     .whitelist_type("_cef_scheme_registrar_t")
     .whitelist_type("_cef_.*_handler_t")
     .whitelist_type("_cef_urlrequest_client_t")
     .whitelist_type("_cef_urlrequest_t")
+    .whitelist_type("cef_window_handle_t")
     .whitelist_function("cef_string_.*")
     .whitelist_function("cef_execute_process")
     .whitelist_function("cef_initialize")
@@ -136,17 +145,54 @@ fn gen_cef(cef_path: std::path::Display) {
     .whitelist_function("cef_.*")
     .blacklist_type("_cef_main_args_t")
     .blacklist_type("_cef_window_info_t")
+    .blacklist_type("(__)?time(64)?_t")
+    .blacklist_type("wchar_t")
+    .blacklist_type("char16")
+    .blacklist_type("u?int64")
+    .blacklist_type("DWORD")
+    .blacklist_type("HWND.*")
+    .blacklist_type("HINSTANCE.*")
+    .blacklist_type("HMENU.*")
+    .blacklist_type("HICON.*")
+    .blacklist_type("HCURSOR.*")
+    .blacklist_type("POINT")
+    .blacklist_type("MSG")
+    .blacklist_type("tagMSG")
+    .blacklist_type("tagPOINT")
+    .blacklist_type(".*XDisplay")
+    .blacklist_type(".*XEvent")
     .raw_line("#[cfg(target_os = \"linux\")] pub mod linux;")
     .raw_line("#[cfg(target_os = \"linux\")] pub use self::linux::_cef_window_info_t;")
     .raw_line("#[cfg(target_os = \"linux\")] pub use self::linux::_cef_main_args_t;")
+    .raw_line("#[cfg(target_os = \"linux\")] pub type wchar_t = i32;")
+    .raw_line("#[cfg(target_os = \"linux\")] pub type char16 = i32;")
+    .raw_line("#[cfg(target_os = \"linux\")] pub type time_t = isize;")
+    .raw_line("#[cfg(target_os = \"linux\")] pub type int64 = ::std::os::raw::c_longlong;")
+    .raw_line("#[cfg(target_os = \"linux\")] pub type uint64 = ::std::os::raw::c_ulonglong;")
     .raw_line("#[cfg(target_os = \"macos\")] pub mod mac;")
     .raw_line("#[cfg(target_os = \"macos\")] pub use self::mac::_cef_window_info_t;")
     .raw_line("#[cfg(target_os = \"macos\")] pub use self::mac::_cef_main_args_t;")
+    .raw_line("#[cfg(target_os = \"macos\")] pub type wchar_t = i32;")
+    .raw_line("#[cfg(target_os = \"macos\")] pub type char16 = u16;")
+    .raw_line("#[cfg(target_os = \"macos\")] pub type time_t = i64;")
+    .raw_line("#[cfg(target_os = \"macos\")] pub type int64 = ::std::os::raw::c_longlong;")
+    .raw_line("#[cfg(target_os = \"macos\")] pub type uint64 = ::std::os::raw::c_ulonglong;")
     .raw_line("#[cfg(windows)] pub mod win;")
     .raw_line("#[cfg(windows)] pub use self::win::_cef_window_info_t;")
     .raw_line("#[cfg(windows)] pub use self::win::_cef_main_args_t;")
+    .raw_line("#[cfg(windows)] pub type wchar_t = u16;")
+    .raw_line("#[cfg(windows)] pub type char16 = u16;")
+    .raw_line("#[cfg(windows)] pub type time_t = i64;")
+    .raw_line("#[cfg(windows)] pub type int64 = ::std::os::raw::c_longlong;")
+    .raw_line("#[cfg(windows)] pub type uint64 = ::std::os::raw::c_ulonglong;")
     .generate().expect("Failed to gencef")
-    .write_to_file(std::path::Path::new("src").join("cef").join("mod.rs"));
+    .to_string();
+    // .write_to_file(std::path::Path::new("src").join("cef").join("mod.rs"));
+    let new_data = generated.replace("\"stdcall\"", "\"system\"");
+
+    // Recreate the file and dump the processed contents to it
+    let mut dst = std::fs::File::create(std::path::Path::new("src").join("cef").join("mod.rs")).expect("Cannot create mod.rs file");
+    dst.write(new_data.as_bytes()).expect("Cannot write mod.rs");
 }
 
 #[cfg(feature = "genJava")]
@@ -278,26 +324,22 @@ fn gen_java_cef(cef_path: std::path::Display) {
 
 #[cfg(feature = "gen")]
 fn generator(cef_path: std::path::Display) -> bindgen::Builder {
-  let config = bindgen::CodegenConfig {
-            functions: true,
-            types: true,
-            vars: false,
-            methods: true,
-            constructors: false,
-            destructors: false
-        };
+  let mut config = bindgen::CodegenConfig::FUNCTIONS;
+  config.insert(bindgen::CodegenConfig::TYPES);
   let gen = bindgen::builder()
     .clang_arg(format!("-I{}", cef_path))
     .clang_arg(format!("-I{}", "C:\\Program Files (x86)\\Microsoft SDKs\\Windows\\v7.1A\\Include"))
     .clang_arg("-fparse-all-comments")
     .clang_arg("-Wno-nonportable-include-path")
     .clang_arg("-Wno-invalid-token-paste")
-    .link("cef")
+    // .link("cef")
     //.use_core()
     .with_codegen_config(config)
     .rustified_enum(".*")
     .rustfmt_bindings(true)
     .derive_debug(true)
+    .trust_clang_mangling(false)
+    .layout_tests(false)
     .raw_line("#![allow(dead_code)]")
     .raw_line("#![allow(non_snake_case)]")
     .raw_line("#![allow(non_camel_case_types)]")
