@@ -337,7 +337,7 @@ fn do_resize(win_handle: *mut c_void, width: i32, height: i32) {
     use x11::xlib;
 
     let xwindow = win_handle;
-    let xdisplay = unsafe { cef::cef_get_xdisplay() };
+    let xdisplay = unsafe { cef::linux::cef_get_xdisplay() };
     let mut changes = xlib::XWindowChanges {
         x: 0,
         y: 0,

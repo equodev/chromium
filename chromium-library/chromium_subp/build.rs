@@ -100,6 +100,7 @@ fn gen_os(cef_path: std::path::Display) {
     .header("cef_linux.h")
     .whitelist_type("_cef_main_args_t")
     .whitelist_type("_cef_window_info_t")
+    .whitelist_function("cef_get_xdisplay")
     .generate().expect("Failed to gencef linux")
     .write_to_file(std::path::Path::new("src").join("cef").join("linux.rs"));
 }
@@ -160,6 +161,7 @@ fn gen_cef(cef_path: std::path::Display) {
     .blacklist_type("tagMSG")
     .blacklist_type("tagPOINT")
     .blacklist_type(".*XDisplay")
+    .blacklist_type("VisualID")
     .blacklist_type(".*XEvent")
     .raw_line("#[cfg(target_os = \"linux\")] pub mod linux;")
     .raw_line("#[cfg(target_os = \"linux\")] pub use self::linux::_cef_window_info_t;")
