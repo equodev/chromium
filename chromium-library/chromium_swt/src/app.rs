@@ -29,7 +29,6 @@ pub fn create_browser(canvas_hwnd: *mut c_void, url: &str, jclient: &mut cef::_c
         default_encoding: utils::cef_string_empty(),
         remote_fonts: cef::cef_state_t::STATE_DEFAULT,
         javascript: if js == 0 { cef::cef_state_t::STATE_DISABLED } else { cef::cef_state_t::STATE_DEFAULT },
-        javascript_open_windows: cef::cef_state_t::STATE_DEFAULT,
         javascript_close_windows: cef::cef_state_t::STATE_DEFAULT,
         javascript_access_clipboard: cef::cef_state_t::STATE_DEFAULT,
         javascript_dom_paste: cef::cef_state_t::STATE_DEFAULT,

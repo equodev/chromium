@@ -33,16 +33,16 @@ fn get_cef_path() -> std::path::PathBuf {
   let mut cef_path = cwd.clone();
   
   if cfg!(target_os = "macos") {
-    cef_path.push("cef_osx");
+    cef_path.push("cef_macosx");
   } 
   else if cfg!(target_os = "linux") {
     cef_path.push("cef_linux");
   } 
   else if cfg!(target_os = "windows") {
     if std::env::var("CARGO_CFG_TARGET_ARCH").unwrap() == "x86" {
-      cef_path.push("cef_windows_x86");
+      cef_path.push("cef_win32_x86");
     } else {
-    cef_path.push("cef_windows");
+    cef_path.push("cef_win32");
   }
   }
   cef_path

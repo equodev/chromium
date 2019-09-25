@@ -771,12 +771,6 @@ pub struct _cef_browser_settings_t {
     ///
     pub javascript: cef_state_t,
     ///
-    /// Controls whether JavaScript can be used for opening windows. Also
-    /// configurable using the "disable-javascript-open-windows" command-line
-    /// switch.
-    ///
-    pub javascript_open_windows: cef_state_t,
-    ///
     /// Controls whether JavaScript can be used to close windows that were not
     /// opened via JavaScript. JavaScript can still be used to close windows that
     /// were opened via JavaScript or that have no back/forward history. Also
@@ -11100,7 +11094,7 @@ pub struct _cef_life_span_handler_t {
     ///
     pub base: cef_base_ref_counted_t,
     ///
-    /// Called on the IO thread before a new popup browser is created. The
+    /// Called on the UI thread before a new popup browser is created. The
     /// |browser| and |frame| values represent the source of the popup request. The
     /// |target_url| and |target_frame_name| values indicate where the popup
     /// browser should navigate and may be NULL if not specified with the request.
