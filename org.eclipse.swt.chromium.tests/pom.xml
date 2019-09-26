@@ -13,7 +13,16 @@
 
 	<properties>
 		<flags></flags>
+		<cefrepo>http://dl.maketechnology.io/chromium-cef/rls/repository</cefrepo>
 	</properties>
+
+	<repositories>
+		<repository>
+			<id>chromium.cef</id>
+			<url>${cefrepo}</url>
+			<layout>p2</layout>
+		</repository>
+	</repositories>
 
 	<build>
 		<plugins>
@@ -38,6 +47,11 @@
 							<requirement>
 								<type>eclipse-feature</type>
 								<id>org.eclipse.swt.chromium.feature</id>
+								<versionRange>0.0.0</versionRange>
+							</requirement>
+							<requirement>
+								<type>eclipse-feature</type>
+								<id>com.make.chromium.cef.feature</id>
 								<versionRange>0.0.0</versionRange>
 							</requirement>
 						</extraRequirements>
