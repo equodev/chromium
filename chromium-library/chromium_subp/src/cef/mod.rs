@@ -1840,11 +1840,7 @@ pub struct _cef_popup_features_t {
     pub menuBarVisible: ::std::os::raw::c_int,
     pub statusBarVisible: ::std::os::raw::c_int,
     pub toolBarVisible: ::std::os::raw::c_int,
-    pub locationBarVisible: ::std::os::raw::c_int,
     pub scrollbarsVisible: ::std::os::raw::c_int,
-    pub resizable: ::std::os::raw::c_int,
-    pub fullscreen: ::std::os::raw::c_int,
-    pub dialog: ::std::os::raw::c_int,
 }
 #[repr(i32)]
 ///
@@ -2151,43 +2147,61 @@ pub enum cef_plugin_policy_t {
     ///
     PLUGIN_POLICY_DISABLE = 3,
 }
+impl cef_referrer_policy_t {
+    pub const REFERRER_POLICY_DEFAULT: cef_referrer_policy_t =
+        cef_referrer_policy_t::REFERRER_POLICY_CLEAR_REFERRER_ON_TRANSITION_FROM_SECURE_TO_INSECURE;
+}
 #[repr(i32)]
 ///
 /// Policy for how the Referrer HTTP header value will be sent during navigation.
 /// If the `--no-referrers` command-line flag is specified then the policy value
 /// will be ignored and the Referrer value will never be sent.
+/// Must be kept synchronized with net::URLRequest::ReferrerPolicy from Chromium.
 ///
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum cef_referrer_policy_t {
     ///
-    /// Always send the complete Referrer value.
+    /// Clear the referrer header if the header value is HTTPS but the request
+    /// destination is HTTP. This is the default behavior.
     ///
-    REFERRER_POLICY_ALWAYS = 0,
+    REFERRER_POLICY_CLEAR_REFERRER_ON_TRANSITION_FROM_SECURE_TO_INSECURE = 0,
     ///
-    /// Use the default policy. This is REFERRER_POLICY_ORIGIN_WHEN_CROSS_ORIGIN
-    /// when the `--reduced-referrer-granularity` command-line flag is specified
-    /// and REFERRER_POLICY_NO_REFERRER_WHEN_DOWNGRADE otherwise.
+    /// A slight variant on CLEAR_REFERRER_ON_TRANSITION_FROM_SECURE_TO_INSECURE:
+    /// If the request destination is HTTP, an HTTPS referrer will be cleared. If
+    /// the request's destination is cross-origin with the referrer (but does not
+    /// downgrade), the referrer's granularity will be stripped down to an origin
+    /// rather than a full URL. Same-origin requests will send the full referrer.
     ///
+    REFERRER_POLICY_REDUCE_REFERRER_GRANULARITY_ON_TRANSITION_CROSS_ORIGIN = 1,
     ///
-    REFERRER_POLICY_DEFAULT = 1,
+    /// Strip the referrer down to an origin when the origin of the referrer is
+    /// different from the destination's origin.
     ///
-    /// When navigating from HTTPS to HTTP do not send the Referrer value.
-    /// Otherwise, send the complete Referrer value.
+    REFERRER_POLICY_ORIGIN_ONLY_ON_TRANSITION_CROSS_ORIGIN = 2,
     ///
-    REFERRER_POLICY_NO_REFERRER_WHEN_DOWNGRADE = 2,
+    /// Never change the referrer.
     ///
-    /// Never send the Referrer value.
+    REFERRER_POLICY_NEVER_CLEAR_REFERRER = 3,
     ///
-    REFERRER_POLICY_NEVER = 3,
-    ///
-    /// Only send the origin component of the Referrer value.
+    /// Strip the referrer down to the origin regardless of the redirect location.
     ///
     REFERRER_POLICY_ORIGIN = 4,
     ///
-    /// When navigating cross-origin only send the origin component of the Referrer
-    /// value. Otherwise, send the complete Referrer value.
+    /// Clear the referrer when the request's referrer is cross-origin with the
+    /// request's destination.
     ///
-    REFERRER_POLICY_ORIGIN_WHEN_CROSS_ORIGIN = 5,
+    REFERRER_POLICY_CLEAR_REFERRER_ON_TRANSITION_CROSS_ORIGIN = 5,
+    ///
+    /// Strip the referrer down to the origin, but clear it entirely if the
+    /// referrer value is HTTPS and the destination is HTTP.
+    ///
+    REFERRER_POLICY_ORIGIN_CLEAR_ON_TRANSITION_FROM_SECURE_TO_INSECURE = 6,
+    ///
+    /// Always clear the referrer regardless of the request destination.
+    ///
+    REFERRER_POLICY_NO_REFERRER = 7,
+    /// Always the last value in this enumeration.
+    REFERRER_POLICY_LAST_VALUE = 8,
 }
 #[repr(i32)]
 ///

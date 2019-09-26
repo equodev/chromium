@@ -90,8 +90,8 @@ import org.eclipse.swt.widgets.Widget;
 
 class Chromium extends WebBrowser {
 	private static final String DATA_TEXT_URL = "data:text/html;base64,";
-	private static final String VERSION = "6000";
-    private static final String CEFVERSION = "3112";
+	private static final String VERSION = "6100";
+    private static final String CEFVERSION = "3163";
     private static final String SHARED_LIB_V = "chromium_swt_"+VERSION;
     private static final String JNI_LIB_V = "swt-chromium-"+VERSION;
     private static final int MAX_PROGRESS = 100;
@@ -847,7 +847,7 @@ class Chromium extends WebBrowser {
 		  event.display = chromium.getDisplay ();
 		  event.widget = chromium;
 		  event.required = false;
-		  event.addressBar = popupFeatures.locationBarVisible == 1;
+		  event.addressBar = popupFeatures.toolBarVisible == 1;
 		  event.menuBar = popupFeatures.menuBarVisible == 1;
 		  event.statusBar = popupFeatures.statusBarVisible == 1;
 		  event.toolBar = popupFeatures.toolBarVisible == 1;
