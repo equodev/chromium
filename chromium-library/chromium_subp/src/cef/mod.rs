@@ -4519,7 +4519,7 @@ pub struct _cef_request_t {
         unsafe extern "system" fn(self_: *mut _cef_request_t, flags: ::std::os::raw::c_int),
     >,
     ///
-    /// Set the URL to the first party for cookies used in combination with
+    /// Get the URL to the first party for cookies used in combination with
     /// cef_urlrequest_t.
     ///
     /// The resulting string must be freed by calling cef_string_userfree_free().
@@ -4527,7 +4527,7 @@ pub struct _cef_request_t {
         unsafe extern "system" fn(self_: *mut _cef_request_t) -> cef_string_userfree_t,
     >,
     ///
-    /// Get the URL to the first party for cookies used in combination with
+    /// Set the URL to the first party for cookies used in combination with
     /// cef_urlrequest_t.
     ///
     pub set_first_party_for_cookies: ::std::option::Option<
@@ -6254,7 +6254,7 @@ pub struct _cef_request_context_t {
     ///
     /// Clears all active and idle connections that Chromium currently has. This is
     /// only recommended if you have released all other CEF objects but don't yet
-    /// want to call cef_shutdown(). If |callback| is non-NULL it will be executed
+    /// want to call Cefshutdown(). If |callback| is non-NULL it will be executed
     /// on the UI thread after completion.
     ///
     pub close_all_connections: ::std::option::Option<
@@ -12509,6 +12509,13 @@ pub struct _cef_urlrequest_t {
     ///
     pub get_response: ::std::option::Option<
         unsafe extern "system" fn(self_: *mut _cef_urlrequest_t) -> *mut _cef_response_t,
+    >,
+    ///
+    /// Returns true (1) if the response body was served from the cache. This
+    /// includes responses for which revalidation was required.
+    ///
+    pub response_was_cached: ::std::option::Option<
+        unsafe extern "system" fn(self_: *mut _cef_urlrequest_t) -> ::std::os::raw::c_int,
     >,
     ///
     /// Cancel the request.
