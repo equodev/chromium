@@ -1428,6 +1428,9 @@ pub enum cef_process_id_t {
     ///
     PID_RENDERER = 1,
 }
+impl cef_thread_id_t {
+    pub const TID_FILE: cef_thread_id_t = cef_thread_id_t::TID_FILE_BACKGROUND;
+}
 #[repr(i32)]
 ///
 /// Existing thread IDs.
@@ -1437,38 +1440,54 @@ pub enum cef_thread_id_t {
     ///
     /// The main thread in the browser. This will be the same as the main
     /// application thread if CefInitialize() is called with a
-    /// CefSettings.multi_threaded_message_loop value of false.
+    /// CefSettings.multi_threaded_message_loop value of false. Do not perform
+    /// blocking tasks on this thread. All tasks posted after
+    /// CefBrowserProcessHandler::OnContextInitialized() and before CefShutdown()
+    /// are guaranteed to run. This thread will outlive all other CEF threads.
     ///
     TID_UI = 0,
     ///
-    /// Used to interact with the database.
+    /// Used for blocking tasks (e.g. file system access) where the user won't
+    /// notice if the task takes an arbitrarily long time to complete. All tasks
+    /// posted after CefBrowserProcessHandler::OnContextInitialized() and before
+    /// CefShutdown() are guaranteed to run.
     ///
-    TID_DB = 1,
+    TID_FILE_BACKGROUND = 1,
     ///
-    /// Used to interact with the file system.
+    /// Used for blocking tasks (e.g. file system access) that affect UI or
+    /// responsiveness of future user interactions. Do not use if an immediate
+    /// response to a user interaction is expected. All tasks posted after
+    /// CefBrowserProcessHandler::OnContextInitialized() and before CefShutdown()
+    /// are guaranteed to run.
+    /// Examples:
+    /// - Updating the UI to reflect progress on a long task.
+    /// - Loading data that might be shown in the UI after a future user
+    ///   interaction.
     ///
-    TID_FILE = 2,
+    TID_FILE_USER_VISIBLE = 2,
     ///
-    /// Used for file system operations that block user interactions.
-    /// Responsiveness of this thread affects users.
+    /// Used for blocking tasks (e.g. file system access) that affect UI
+    /// immediately after a user interaction. All tasks posted after
+    /// CefBrowserProcessHandler::OnContextInitialized() and before CefShutdown()
+    /// are guaranteed to run.
+    /// Example: Generating data shown in the UI immediately after a click.
     ///
     TID_FILE_USER_BLOCKING = 3,
     ///
-    /// Used to launch and terminate browser processes.
+    /// Used to process IPC and network messages. Do not perform blocking tasks on
+    /// this thread. All tasks posted after
+    /// CefBrowserProcessHandler::OnContextInitialized() and before CefShutdown()
+    /// are guaranteed to run.
     ///
-    TID_PROCESS_LAUNCHER = 4,
-    ///
-    /// Used to handle slow HTTP cache operations.
-    ///
-    TID_CACHE = 5,
-    ///
-    /// Used to process IPC and network messages.
-    ///
-    TID_IO = 6,
+    TID_IO = 4,
     ///
     /// The main thread in the renderer. Used for all WebKit and V8 interaction.
+    /// Tasks may be posted to this thread after
+    /// CefRenderProcessHandler::OnRenderThreadCreated but are not guaranteed to
+    /// run before sub-process termination (sub-processes may be killed at any time
+    /// without warning).
     ///
-    TID_RENDERER = 7,
+    TID_RENDERER = 5,
 }
 #[repr(i32)]
 ///
@@ -9438,6 +9457,29 @@ pub struct _cef_v8exception_t {
     >,
 }
 ///
+/// Callback structure that is passed to cef_v8value_t::CreateArrayBuffer.
+///
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct _cef_v8array_buffer_release_callback_t {
+    ///
+    /// Base structure.
+    ///
+    pub base: cef_base_ref_counted_t,
+    ///
+    /// Called to release |buffer| when the ArrayBuffer JS object is garbage
+    /// collected. |buffer| is the value that was passed to CreateArrayBuffer along
+    /// with this object.
+    ///
+    pub release_buffer: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_v8array_buffer_release_callback_t,
+            buffer: *mut ::std::os::raw::c_void,
+        ),
+    >,
+}
+pub type cef_v8array_buffer_release_callback_t = _cef_v8array_buffer_release_callback_t;
+///
 /// Structure representing a V8 value handle. V8 handles can only be accessed
 /// from the thread on which they are created. Valid threads for creating a V8
 /// handle include the render process main thread (TID_RENDERER) and WebWorker
@@ -9517,6 +9559,12 @@ pub struct _cef_v8value_t {
     /// True if the value type is array.
     ///
     pub is_array: ::std::option::Option<
+        unsafe extern "system" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
+    >,
+    ///
+    /// True if the value type is an ArrayBuffer.
+    ///
+    pub is_array_buffer: ::std::option::Option<
         unsafe extern "system" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
     >,
     ///
@@ -9776,6 +9824,25 @@ pub struct _cef_v8value_t {
         unsafe extern "system" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
     >,
     ///
+    /// Returns the ReleaseCallback object associated with the ArrayBuffer or NULL
+    /// if the ArrayBuffer was not created with CreateArrayBuffer.
+    ///
+    pub get_array_buffer_release_callback: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_v8value_t,
+        ) -> *mut _cef_v8array_buffer_release_callback_t,
+    >,
+    ///
+    /// Prevent the ArrayBuffer from using it's memory block by setting the length
+    /// to zero. This operation cannot be undone. If the ArrayBuffer was created
+    /// with CreateArrayBuffer then
+    /// cef_v8array_buffer_release_callback_t::ReleaseBuffer will be called to
+    /// release the underlying buffer.
+    ///
+    pub neuter_array_buffer: ::std::option::Option<
+        unsafe extern "system" fn(self_: *mut _cef_v8value_t) -> ::std::os::raw::c_int,
+    >,
+    ///
     /// Returns the function name.
     ///
     /// The resulting string must be freed by calling cef_string_userfree_free().
@@ -9900,6 +9967,23 @@ extern "C" {
     /// reference.
     ///
     pub fn cef_v8value_create_array(length: ::std::os::raw::c_int) -> *mut cef_v8value_t;
+}
+extern "C" {
+    ///
+    /// Create a new cef_v8value_t object of type ArrayBuffer which wraps the
+    /// provided |buffer| of size |length| bytes. The ArrayBuffer is externalized,
+    /// meaning that it does not own |buffer|. The caller is responsible for freeing
+    /// |buffer| when requested via a call to cef_v8array_buffer_release_callback_t::
+    /// ReleaseBuffer. This function should only be called from within the scope of a
+    /// cef_render_process_handler_t, cef_v8handler_t or cef_v8accessor_t callback,
+    /// or in combination with calling enter() and exit() on a stored cef_v8context_t
+    /// reference.
+    ///
+    pub fn cef_v8value_create_array_buffer(
+        buffer: *mut ::std::os::raw::c_void,
+        length: usize,
+        release_callback: *mut cef_v8array_buffer_release_callback_t,
+    ) -> *mut cef_v8value_t;
 }
 extern "C" {
     ///
@@ -10374,6 +10458,19 @@ pub struct _cef_response_t {
     ///
     pub set_header_map: ::std::option::Option<
         unsafe extern "system" fn(self_: *mut _cef_response_t, headerMap: cef_string_multimap_t),
+    >,
+    ///
+    /// Get the resolved URL after redirects or changed as a result of HSTS.
+    ///
+    /// The resulting string must be freed by calling cef_string_userfree_free().
+    pub get_url: ::std::option::Option<
+        unsafe extern "system" fn(self_: *mut _cef_response_t) -> cef_string_userfree_t,
+    >,
+    ///
+    /// Set the resolved URL after redirects or changed as a result of HSTS.
+    ///
+    pub set_url: ::std::option::Option<
+        unsafe extern "system" fn(self_: *mut _cef_response_t, url: *const cef_string_t),
     >,
 }
 pub type cef_response_t = _cef_response_t;
@@ -10948,6 +11045,17 @@ pub struct _cef_display_handler_t {
             browser: *mut _cef_browser_t,
             new_size: *const cef_size_t,
         ) -> ::std::os::raw::c_int,
+    >,
+    ///
+    /// Called when the overall page loading progress has changed. |progress|
+    /// ranges from 0.0 to 1.0.
+    ///
+    pub on_loading_progress_change: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_display_handler_t,
+            browser: *mut _cef_browser_t,
+            progress: f64,
+        ),
     >,
 }
 ///
@@ -11817,6 +11925,19 @@ pub struct _cef_render_handler_t {
             character_bounds: *const cef_rect_t,
         ),
     >,
+    ///
+    /// Called when text selection has changed for the specified |browser|.
+    /// |selected_text| is the currently selected text and |selected_range| is the
+    /// character range.
+    ///
+    pub on_text_selection_changed: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_render_handler_t,
+            browser: *mut _cef_browser_t,
+            selected_text: *const cef_string_t,
+            selected_range: *const cef_range_t,
+        ),
+    >,
 }
 ///
 /// Callback structure used for asynchronous continuation of authentication
@@ -12008,7 +12129,9 @@ pub struct _cef_request_handler_t {
     /// If the navigation is allowed cef_load_handler_t::OnLoadStart and
     /// cef_load_handler_t::OnLoadEnd will be called. If the navigation is canceled
     /// cef_load_handler_t::OnLoadError will be called with an |errorCode| value of
-    /// ERR_ABORTED.
+    /// ERR_ABORTED. The |user_gesture| value will be true (1) if the browser
+    /// navigated via explicit user gesture (e.g. clicking a link) or false (0) if
+    /// it navigated automatically (e.g. via the DomContentLoaded event).
     ///
     pub on_before_browse: ::std::option::Option<
         unsafe extern "system" fn(
@@ -12016,6 +12139,7 @@ pub struct _cef_request_handler_t {
             browser: *mut _cef_browser_t,
             frame: *mut _cef_frame_t,
             request: *mut _cef_request_t,
+            user_gesture: ::std::os::raw::c_int,
             is_redirect: ::std::os::raw::c_int,
         ) -> ::std::os::raw::c_int,
     >,

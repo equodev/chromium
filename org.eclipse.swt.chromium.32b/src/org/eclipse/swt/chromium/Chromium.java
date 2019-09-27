@@ -90,8 +90,8 @@ import org.eclipse.swt.widgets.Widget;
 
 class Chromium extends WebBrowser {
 	private static final String DATA_TEXT_URL = "data:text/html;base64,";
-	private static final String VERSION = "6500";
-    private static final String CEFVERSION = "3325";
+	private static final String VERSION = "6600";
+    private static final String CEFVERSION = "3359";
     private static final String SHARED_LIB_V = "chromium_swt_"+VERSION;
     private static final String JNI_LIB_V = "swt-chromium-"+VERSION;
     private static final int MAX_PROGRESS = 100;
@@ -1051,7 +1051,7 @@ class Chromium extends WebBrowser {
 
 	private static void set_request_handler() {
         requestHandler = CEFFactory.newRequestHandler();
-        requestHandler.on_before_browse_cb = new Callback(Chromium.class, "on_before_browse", int.class, new Type[] {long.class, long.class, long.class, long.class, int.class});
+        requestHandler.on_before_browse_cb = new Callback(Chromium.class, "on_before_browse", int.class, new Type[] {long.class, long.class, long.class, long.class, int.class, int.class});
         requestHandler.on_before_browse = checkGetAddress(requestHandler.on_before_browse_cb);
         requestHandler.get_auth_credentials_cb = new Callback(Chromium.class, "get_auth_credentials", int.class, new Type[] {long.class, long.class, long.class, int.class, long.class, int.class, long.class, long.class, long.class});
         requestHandler.get_auth_credentials = checkGetAddress(requestHandler.get_auth_credentials_cb);
@@ -1069,7 +1069,7 @@ class Chromium extends WebBrowser {
         return requestHandler.ptr;
     }
     
-    static int on_before_browse(int /*long*/ self, int /*long*/ browser, int /*long*/ frame, int /*long*/ request, int is_redirect) {
+    static int on_before_browse(int /*long*/ self, int /*long*/ browser, int /*long*/ frame, int /*long*/ request, int user_gesture, int is_redirect) {
     	int id = ChromiumLib.cefswt_get_id(browser);
 //    	debug("on_before_browse: " + id);
     	return safeGeInstance(id).on_before_browse(browser, frame, request);
