@@ -369,6 +369,9 @@ extern "C" {
 /// 32-bit ARGB color value, not premultiplied. The color components are always
 /// in a known order. Equivalent to the SkColor type.
 pub type cef_color_t = uint32;
+impl cef_log_severity_t {
+    pub const LOGSEVERITY_DEBUG: cef_log_severity_t = cef_log_severity_t::LOGSEVERITY_VERBOSE;
+}
 #[repr(i32)]
 ///
 /// Log severity levels.
@@ -10944,6 +10947,7 @@ pub struct _cef_display_handler_t {
         unsafe extern "system" fn(
             self_: *mut _cef_display_handler_t,
             browser: *mut _cef_browser_t,
+            level: cef_log_severity_t,
             message: *const cef_string_t,
             source: *const cef_string_t,
             line: ::std::os::raw::c_int,
@@ -12237,6 +12241,35 @@ pub struct _cef_request_handler_t {
             realm: *const cef_string_t,
             scheme: *const cef_string_t,
             callback: *mut _cef_auth_callback_t,
+        ) -> ::std::os::raw::c_int,
+    >,
+    ///
+    /// Called on the IO thread before sending a network request with a "Cookie"
+    /// request header. Return true (1) to allow cookies to be included in the
+    /// network request or false (0) to block cookies. The |request| object should
+    /// not be modified in this callback.
+    ///
+    pub can_get_cookies: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_request_handler_t,
+            browser: *mut _cef_browser_t,
+            frame: *mut _cef_frame_t,
+            request: *mut _cef_request_t,
+        ) -> ::std::os::raw::c_int,
+    >,
+    ///
+    /// Called on the IO thread when receiving a network request with a "Set-
+    /// Cookie" response header value represented by |cookie|. Return true (1) to
+    /// allow the cookie to be stored or false (0) to block the cookie. The
+    /// |request| object should not be modified in this callback.
+    ///
+    pub can_set_cookie: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_request_handler_t,
+            browser: *mut _cef_browser_t,
+            frame: *mut _cef_frame_t,
+            request: *mut _cef_request_t,
+            cookie: *const _cef_cookie_t,
         ) -> ::std::os::raw::c_int,
     >,
     ///

@@ -106,6 +106,22 @@ public class cef_request_handler_t {
 	/** @field cast=(void*) */
 	public long /*int*/ get_auth_credentials;
 	///
+	/// Called on the IO thread before sending a network request with a "Cookie"
+	/// request header. Return true (1) to allow cookies to be included in the
+	/// network request or false (0) to block cookies. The |request| object should
+	/// not be modified in this callback.
+	///
+	/** @field cast=(void*) */
+	public long /*int*/ can_get_cookies;
+	///
+	/// Called on the IO thread when receiving a network request with a "Set-
+	/// Cookie" response header value represented by |cookie|. Return true (1) to
+	/// allow the cookie to be stored or false (0) to block the cookie. The
+	/// |request| object should not be modified in this callback.
+	///
+	/** @field cast=(void*) */
+	public long /*int*/ can_set_cookie;
+	///
 	/// Called on the IO thread when JavaScript requests a specific storage quota
 	/// size via the webkitStorageInfo.requestQuota function. |origin_url| is the
 	/// origin of the page making the request. |new_size| is the requested quota
