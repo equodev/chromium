@@ -57,6 +57,14 @@ public class cef_display_handler_t {
 	///
 	/** @field cast=(void*) */
 	public int /*long*/ on_console_message;
+	///
+	/// Called when auto-resize is enabled via
+	/// cef_browser_host_t::SetAutoResizeEnabled and the contents have auto-
+	/// resized. |new_size| will be the desired size in view coordinates. Return
+	/// true (1) if the resize was handled or false (0) for default handling.
+	///
+	/** @field cast=(void*) */
+	public int /*long*/ on_auto_resize;
 
 	/** @field flags=no_gen */
 	public int /*long*/ ptr;

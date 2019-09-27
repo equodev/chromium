@@ -5507,6 +5507,256 @@ pub struct _cef_delete_cookies_callback_t {
     >,
 }
 ///
+/// Object representing an extension. Methods may be called on any thread unless
+/// otherwise indicated.
+///
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct _cef_extension_t {
+    ///
+    /// Base structure.
+    ///
+    pub base: cef_base_ref_counted_t,
+    ///
+    /// Returns the unique extension identifier. This is calculated based on the
+    /// extension public key, if available, or on the extension path. See
+    /// https://developer.chrome.com/extensions/manifest/key for details.
+    ///
+    /// The resulting string must be freed by calling cef_string_userfree_free().
+    pub get_identifier: ::std::option::Option<
+        unsafe extern "system" fn(self_: *mut _cef_extension_t) -> cef_string_userfree_t,
+    >,
+    ///
+    /// Returns the absolute path to the extension directory on disk. This value
+    /// will be prefixed with PK_DIR_RESOURCES if a relative path was passed to
+    /// cef_request_tContext::LoadExtension.
+    ///
+    /// The resulting string must be freed by calling cef_string_userfree_free().
+    pub get_path: ::std::option::Option<
+        unsafe extern "system" fn(self_: *mut _cef_extension_t) -> cef_string_userfree_t,
+    >,
+    ///
+    /// Returns the extension manifest contents as a cef_dictionary_value_t object.
+    /// See https://developer.chrome.com/extensions/manifest for details.
+    ///
+    pub get_manifest: ::std::option::Option<
+        unsafe extern "system" fn(self_: *mut _cef_extension_t) -> *mut _cef_dictionary_value_t,
+    >,
+    ///
+    /// Returns true (1) if this object is the same extension as |that| object.
+    /// Extensions are considered the same if identifier, path and loader context
+    /// match.
+    ///
+    pub is_same: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_extension_t,
+            that: *mut _cef_extension_t,
+        ) -> ::std::os::raw::c_int,
+    >,
+    ///
+    /// Returns the handler for this extension. Will return NULL for internal
+    /// extensions or if no handler was passed to
+    /// cef_request_tContext::LoadExtension.
+    ///
+    pub get_handler: ::std::option::Option<
+        unsafe extern "system" fn(self_: *mut _cef_extension_t) -> *mut _cef_extension_handler_t,
+    >,
+    ///
+    /// Returns the request context that loaded this extension. Will return NULL
+    /// for internal extensions or if the extension has been unloaded. See the
+    /// cef_request_tContext::LoadExtension documentation for more information
+    /// about loader contexts. Must be called on the browser process UI thread.
+    ///
+    pub get_loader_context: ::std::option::Option<
+        unsafe extern "system" fn(self_: *mut _cef_extension_t) -> *mut _cef_request_context_t,
+    >,
+    ///
+    /// Returns true (1) if this extension is currently loaded. Must be called on
+    /// the browser process UI thread.
+    ///
+    pub is_loaded: ::std::option::Option<
+        unsafe extern "system" fn(self_: *mut _cef_extension_t) -> ::std::os::raw::c_int,
+    >,
+    ///
+    /// Unload this extension if it is not an internal extension and is currently
+    /// loaded. Will result in a call to
+    /// cef_extension_tHandler::OnExtensionUnloaded on success.
+    ///
+    pub unload: ::std::option::Option<unsafe extern "system" fn(self_: *mut _cef_extension_t)>,
+}
+///
+/// Callback structure used for asynchronous continuation of
+/// cef_extension_tHandler::GetExtensionResource.
+///
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct _cef_get_extension_resource_callback_t {
+    ///
+    /// Base structure.
+    ///
+    pub base: cef_base_ref_counted_t,
+    ///
+    /// Continue the request. Read the resource contents from |stream|.
+    ///
+    pub cont: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_get_extension_resource_callback_t,
+            stream: *mut _cef_stream_reader_t,
+        ),
+    >,
+    ///
+    /// Cancel the request.
+    ///
+    pub cancel: ::std::option::Option<
+        unsafe extern "system" fn(self_: *mut _cef_get_extension_resource_callback_t),
+    >,
+}
+///
+/// Implement this structure to handle events related to browser extensions. The
+/// functions of this structure will be called on the UI thread. See
+/// cef_request_tContext::LoadExtension for information about extension loading.
+///
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct _cef_extension_handler_t {
+    ///
+    /// Base structure.
+    ///
+    pub base: cef_base_ref_counted_t,
+    ///
+    /// Called if the cef_request_tContext::LoadExtension request fails. |result|
+    /// will be the error code.
+    ///
+    pub on_extension_load_failed: ::std::option::Option<
+        unsafe extern "system" fn(self_: *mut _cef_extension_handler_t, result: cef_errorcode_t),
+    >,
+    ///
+    /// Called if the cef_request_tContext::LoadExtension request succeeds.
+    /// |extension| is the loaded extension.
+    ///
+    pub on_extension_loaded: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_extension_handler_t,
+            extension: *mut _cef_extension_t,
+        ),
+    >,
+    ///
+    /// Called after the cef_extension_t::Unload request has completed.
+    ///
+    pub on_extension_unloaded: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_extension_handler_t,
+            extension: *mut _cef_extension_t,
+        ),
+    >,
+    ///
+    /// Called when an extension needs a browser to host a background script
+    /// specified via the "background" manifest key. The browser will have no
+    /// visible window and cannot be displayed. |extension| is the extension that
+    /// is loading the background script. |url| is an internally generated
+    /// reference to an HTML page that will be used to load the background script
+    /// via a <script> src attribute. To allow creation of the browser optionally
+    /// modify |client| and |settings| and return false (0). To cancel creation of
+    /// the browser (and consequently cancel load of the background script) return
+    /// true (1). Successful creation will be indicated by a call to
+    /// cef_life_span_handler_t::OnAfterCreated, and
+    /// cef_browser_host_t::IsBackgroundHost will return true (1) for the resulting
+    /// browser. See https://developer.chrome.com/extensions/event_pages for more
+    /// information about extension background script usage.
+    ///
+    pub on_before_background_browser: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_extension_handler_t,
+            extension: *mut _cef_extension_t,
+            url: *const cef_string_t,
+            client: *mut *mut _cef_client_t,
+            settings: *mut _cef_browser_settings_t,
+        ) -> ::std::os::raw::c_int,
+    >,
+    ///
+    /// Called when an extension API (e.g. chrome.tabs.create) requests creation of
+    /// a new browser. |extension| and |browser| are the source of the API call.
+    /// |active_browser| may optionally be specified via the windowId property or
+    /// returned via the get_active_browser() callback and provides the default
+    /// |client| and |settings| values for the new browser. |index| is the position
+    /// value optionally specified via the index property. |url| is the URL that
+    /// will be loaded in the browser. |active| is true (1) if the new browser
+    /// should be active when opened.  To allow creation of the browser optionally
+    /// modify |windowInfo|, |client| and |settings| and return false (0). To
+    /// cancel creation of the browser return true (1). Successful creation will be
+    /// indicated by a call to cef_life_span_handler_t::OnAfterCreated. Any
+    /// modifications to |windowInfo| will be ignored if |active_browser| is
+    /// wrapped in a cef_browser_view_t.
+    ///
+    pub on_before_browser: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_extension_handler_t,
+            extension: *mut _cef_extension_t,
+            browser: *mut _cef_browser_t,
+            active_browser: *mut _cef_browser_t,
+            index: ::std::os::raw::c_int,
+            url: *const cef_string_t,
+            active: ::std::os::raw::c_int,
+            windowInfo: *mut _cef_window_info_t,
+            client: *mut *mut _cef_client_t,
+            settings: *mut _cef_browser_settings_t,
+        ) -> ::std::os::raw::c_int,
+    >,
+    ///
+    /// Called when no tabId is specified to an extension API call that accepts a
+    /// tabId parameter (e.g. chrome.tabs.*). |extension| and |browser| are the
+    /// source of the API call. Return the browser that will be acted on by the API
+    /// call or return NULL to act on |browser|. The returned browser must share
+    /// the same cef_request_tContext as |browser|. Incognito browsers should not
+    /// be considered unless the source extension has incognito access enabled, in
+    /// which case |include_incognito| will be true (1).
+    ///
+    pub get_active_browser: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_extension_handler_t,
+            extension: *mut _cef_extension_t,
+            browser: *mut _cef_browser_t,
+            include_incognito: ::std::os::raw::c_int,
+        ) -> *mut _cef_browser_t,
+    >,
+    ///
+    /// Called when the tabId associated with |target_browser| is specified to an
+    /// extension API call that accepts a tabId parameter (e.g. chrome.tabs.*).
+    /// |extension| and |browser| are the source of the API call. Return true (1)
+    /// to allow access of false (0) to deny access. Access to incognito browsers
+    /// should not be allowed unless the source extension has incognito access
+    /// enabled, in which case |include_incognito| will be true (1).
+    ///
+    pub can_access_browser: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_extension_handler_t,
+            extension: *mut _cef_extension_t,
+            browser: *mut _cef_browser_t,
+            include_incognito: ::std::os::raw::c_int,
+            target_browser: *mut _cef_browser_t,
+        ) -> ::std::os::raw::c_int,
+    >,
+    ///
+    /// Called to retrieve an extension resource that would normally be loaded from
+    /// disk (e.g. if a file parameter is specified to chrome.tabs.executeScript).
+    /// |extension| and |browser| are the source of the resource request. |file| is
+    /// the requested relative file path. To handle the resource request return
+    /// true (1) and execute |callback| either synchronously or asynchronously. For
+    /// the default behavior which reads the resource from the extension directory
+    /// on disk return false (0). Localization substitutions will not be applied to
+    /// resources handled via this function.
+    ///
+    pub get_extension_resource: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_extension_handler_t,
+            extension: *mut _cef_extension_t,
+            browser: *mut _cef_browser_t,
+            file: *const cef_string_t,
+            callback: *mut _cef_get_extension_resource_callback_t,
+        ) -> ::std::os::raw::c_int,
+    >,
+}
+///
 /// Information about a specific web plugin.
 ///
 #[repr(C)]
@@ -5728,6 +5978,16 @@ pub struct _cef_request_context_handler_t {
     ///
     pub base: cef_base_ref_counted_t,
     ///
+    /// Called on the browser process UI thread immediately after the request
+    /// context has been initialized.
+    ///
+    pub on_request_context_initialized: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_request_context_handler_t,
+            request_context: *mut _cef_request_context_t,
+        ),
+    >,
+    ///
     /// Called on the browser process IO thread to retrieve the cookie manager. If
     /// this function returns NULL the default cookie manager retrievable via
     /// cef_request_tContext::get_default_cookie_manager() will be used.
@@ -5779,9 +6039,9 @@ pub struct _cef_resolve_callback_t {
     ///
     pub base: cef_base_ref_counted_t,
     ///
-    /// Called after the ResolveHost request has completed. |result| will be the
-    /// result code. |resolved_ips| will be the list of resolved IP addresses or
-    /// NULL if the resolution failed.
+    /// Called on the UI thread after the ResolveHost request has completed.
+    /// |result| will be the result code. |resolved_ips| will be the list of
+    /// resolved IP addresses or NULL if the resolution failed.
     ///
     pub on_resolve_completed: ::std::option::Option<
         unsafe extern "system" fn(
@@ -6027,6 +6287,109 @@ pub struct _cef_request_context_t {
             resolved_ips: cef_string_list_t,
         ) -> cef_errorcode_t,
     >,
+    ///
+    /// Load an extension.
+    ///
+    /// If extension resources will be read from disk using the default load
+    /// implementation then |root_directory| should be the absolute path to the
+    /// extension resources directory and |manifest| should be NULL. If extension
+    /// resources will be provided by the client (e.g. via cef_request_tHandler
+    /// and/or cef_extension_tHandler) then |root_directory| should be a path
+    /// component unique to the extension (if not absolute this will be internally
+    /// prefixed with the PK_DIR_RESOURCES path) and |manifest| should contain the
+    /// contents that would otherwise be read from the "manifest.json" file on
+    /// disk.
+    ///
+    /// The loaded extension will be accessible in all contexts sharing the same
+    /// storage (HasExtension returns true (1)). However, only the context on which
+    /// this function was called is considered the loader (DidLoadExtension returns
+    /// true (1)) and only the loader will receive cef_request_tContextHandler
+    /// callbacks for the extension.
+    ///
+    /// cef_extension_tHandler::OnExtensionLoaded will be called on load success or
+    /// cef_extension_tHandler::OnExtensionLoadFailed will be called on load
+    /// failure.
+    ///
+    /// If the extension specifies a background script via the "background"
+    /// manifest key then cef_extension_tHandler::OnBeforeBackgroundBrowser will be
+    /// called to create the background browser. See that function for additional
+    /// information about background scripts.
+    ///
+    /// For visible extension views the client application should evaluate the
+    /// manifest to determine the correct extension URL to load and then pass that
+    /// URL to the cef_browser_host_t::CreateBrowser* function after the extension
+    /// has loaded. For example, the client can look for the "browser_action"
+    /// manifest key as documented at
+    /// https://developer.chrome.com/extensions/browserAction. Extension URLs take
+    /// the form "chrome-extension://<extension_id>/<path>".
+    ///
+    /// Browsers that host extensions differ from normal browsers as follows:
+    ///  - Can access chrome.* JavaScript APIs if allowed by the manifest. Visit
+    ///    chrome://extensions-support for the list of extension APIs currently
+    ///    supported by CEF.
+    ///  - Main frame navigation to non-extension content is blocked.
+    ///  - Pinch-zooming is disabled.
+    ///  - CefBrowserHost::GetExtension returns the hosted extension.
+    ///  - CefBrowserHost::IsBackgroundHost returns true for background hosts.
+    ///
+    /// See https://developer.chrome.com/extensions for extension implementation
+    /// and usage documentation.
+    ///
+    pub load_extension: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_request_context_t,
+            root_directory: *const cef_string_t,
+            manifest: *mut _cef_dictionary_value_t,
+            handler: *mut _cef_extension_handler_t,
+        ),
+    >,
+    ///
+    /// Returns true (1) if this context was used to load the extension identified
+    /// by |extension_id|. Other contexts sharing the same storage will also have
+    /// access to the extension (see HasExtension). This function must be called on
+    /// the browser process UI thread.
+    ///
+    pub did_load_extension: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_request_context_t,
+            extension_id: *const cef_string_t,
+        ) -> ::std::os::raw::c_int,
+    >,
+    ///
+    /// Returns true (1) if this context has access to the extension identified by
+    /// |extension_id|. This may not be the context that was used to load the
+    /// extension (see DidLoadExtension). This function must be called on the
+    /// browser process UI thread.
+    ///
+    pub has_extension: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_request_context_t,
+            extension_id: *const cef_string_t,
+        ) -> ::std::os::raw::c_int,
+    >,
+    ///
+    /// Retrieve the list of all extensions that this context has access to (see
+    /// HasExtension). |extension_ids| will be populated with the list of extension
+    /// ID values. Returns true (1) on success. This function must be called on the
+    /// browser process UI thread.
+    ///
+    pub get_extensions: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_request_context_t,
+            extension_ids: cef_string_list_t,
+        ) -> ::std::os::raw::c_int,
+    >,
+    ///
+    /// Returns the extension matching |extension_id| or NULL if no matching
+    /// extension is accessible in this context (see HasExtension). This function
+    /// must be called on the browser process UI thread.
+    ///
+    pub get_extension: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_request_context_t,
+            extension_id: *const cef_string_t,
+        ) -> *mut _cef_extension_t,
+    >,
 }
 pub type cef_request_context_t = _cef_request_context_t;
 extern "C" {
@@ -6115,7 +6478,8 @@ pub struct _cef_browser_t {
     ///
     pub stop_load: ::std::option::Option<unsafe extern "system" fn(self_: *mut _cef_browser_t)>,
     ///
-    /// Returns the globally unique identifier for this browser.
+    /// Returns the globally unique identifier for this browser. This value is also
+    /// used as the tabId for extension APIs.
     ///
     pub get_identifier: ::std::option::Option<
         unsafe extern "system" fn(self_: *mut _cef_browser_t) -> ::std::os::raw::c_int,
@@ -6899,6 +7263,34 @@ pub struct _cef_browser_host_t {
             self_: *mut _cef_browser_host_t,
             accessibility_state: cef_state_t,
         ),
+    >,
+    ///
+    /// Enable notifications of auto resize via
+    /// cef_display_handler_t::OnAutoResize. Notifications are disabled by default.
+    /// |min_size| and |max_size| define the range of allowed sizes.
+    ///
+    pub set_auto_resize_enabled: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_browser_host_t,
+            enabled: ::std::os::raw::c_int,
+            min_size: *const cef_size_t,
+            max_size: *const cef_size_t,
+        ),
+    >,
+    ///
+    /// Returns the extension hosted in this browser or NULL if no extension is
+    /// hosted. See cef_request_tContext::LoadExtension for details.
+    ///
+    pub get_extension: ::std::option::Option<
+        unsafe extern "system" fn(self_: *mut _cef_browser_host_t) -> *mut _cef_extension_t,
+    >,
+    ///
+    /// Returns true (1) if this browser is hosting an extension background script.
+    /// Background hosts do not have a window and are not displayable. See
+    /// cef_request_tContext::LoadExtension for details.
+    ///
+    pub is_background_host: ::std::option::Option<
+        unsafe extern "system" fn(self_: *mut _cef_browser_host_t) -> ::std::os::raw::c_int,
     >,
 }
 extern "C" {
@@ -10555,6 +10947,19 @@ pub struct _cef_display_handler_t {
             message: *const cef_string_t,
             source: *const cef_string_t,
             line: ::std::os::raw::c_int,
+        ) -> ::std::os::raw::c_int,
+    >,
+    ///
+    /// Called when auto-resize is enabled via
+    /// cef_browser_host_t::SetAutoResizeEnabled and the contents have auto-
+    /// resized. |new_size| will be the desired size in view coordinates. Return
+    /// true (1) if the resize was handled or false (0) for default handling.
+    ///
+    pub on_auto_resize: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_display_handler_t,
+            browser: *mut _cef_browser_t,
+            new_size: *const cef_size_t,
         ) -> ::std::os::raw::c_int,
     >,
 }
