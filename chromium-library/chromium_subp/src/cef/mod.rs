@@ -1813,19 +1813,6 @@ pub enum cef_focus_source_t {
     ///
     FOCUS_SOURCE_SYSTEM = 1,
 }
-#[repr(i32)]
-///
-/// Navigation types.
-///
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum cef_navigation_type_t {
-    NAVIGATION_LINK_CLICKED = 0,
-    NAVIGATION_FORM_SUBMITTED = 1,
-    NAVIGATION_BACK_FORWARD = 2,
-    NAVIGATION_RELOAD = 3,
-    NAVIGATION_FORM_RESUBMITTED = 4,
-    NAVIGATION_OTHER = 5,
-}
 ///
 /// Popup window features.
 ///
@@ -5420,6 +5407,17 @@ extern "C" {
     pub fn cef_cookie_manager_get_global_manager(
         callback: *mut _cef_completion_callback_t,
     ) -> *mut cef_cookie_manager_t;
+}
+extern "C" {
+    ///
+    /// Returns a cookie manager that neither stores nor retrieves cookies. All usage
+    /// of cookies will be blocked including cookies accessed via the network
+    /// (request/response headers), via JavaScript (document.cookie), and via
+    /// cef_cookie_manager_t functions. No cookies will be displayed in DevTools. If
+    /// you wish to only block cookies sent via the network use the
+    /// cef_request_tHandler CanGetCookies and CanSetCookie functions instead.
+    ///
+    pub fn cef_cookie_manager_get_blocking_manager() -> *mut cef_cookie_manager_t;
 }
 extern "C" {
     ///
@@ -10156,21 +10154,6 @@ pub struct _cef_render_process_handler_t {
         ) -> *mut _cef_load_handler_t,
     >,
     ///
-    /// Called before browser navigation. Return true (1) to cancel the navigation
-    /// or false (0) to allow the navigation to proceed. The |request| object
-    /// cannot be modified in this callback.
-    ///
-    pub on_before_navigation: ::std::option::Option<
-        unsafe extern "system" fn(
-            self_: *mut _cef_render_process_handler_t,
-            browser: *mut _cef_browser_t,
-            frame: *mut _cef_frame_t,
-            request: *mut _cef_request_t,
-            navigation_type: cef_navigation_type_t,
-            is_redirect: ::std::os::raw::c_int,
-        ) -> ::std::os::raw::c_int,
-    >,
-    ///
     /// Called immediately after the V8 context for a frame has been created. To
     /// retrieve the JavaScript 'window' object use the
     /// cef_v8context_t::get_global() function. V8 handles can only be accessed
@@ -11300,68 +11283,6 @@ pub struct _cef_focus_handler_t {
     >,
 }
 ///
-/// Callback structure used for asynchronous continuation of geolocation
-/// permission requests.
-///
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct _cef_geolocation_callback_t {
-    ///
-    /// Base structure.
-    ///
-    pub base: cef_base_ref_counted_t,
-    ///
-    /// Call to allow or deny geolocation access.
-    ///
-    pub cont: ::std::option::Option<
-        unsafe extern "system" fn(
-            self_: *mut _cef_geolocation_callback_t,
-            allow: ::std::os::raw::c_int,
-        ),
-    >,
-}
-///
-/// Implement this structure to handle events related to geolocation permission
-/// requests. The functions of this structure will be called on the browser
-/// process UI thread.
-///
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct _cef_geolocation_handler_t {
-    ///
-    /// Base structure.
-    ///
-    pub base: cef_base_ref_counted_t,
-    ///
-    /// Called when a page requests permission to access geolocation information.
-    /// |requesting_url| is the URL requesting permission and |request_id| is the
-    /// unique ID for the permission request. Return true (1) and call
-    /// cef_geolocation_callback_t::cont() either in this function or at a later
-    /// time to continue or cancel the request. Return false (0) to cancel the
-    /// request immediately.
-    ///
-    pub on_request_geolocation_permission: ::std::option::Option<
-        unsafe extern "system" fn(
-            self_: *mut _cef_geolocation_handler_t,
-            browser: *mut _cef_browser_t,
-            requesting_url: *const cef_string_t,
-            request_id: ::std::os::raw::c_int,
-            callback: *mut _cef_geolocation_callback_t,
-        ) -> ::std::os::raw::c_int,
-    >,
-    ///
-    /// Called when a geolocation access request is canceled. |request_id| is the
-    /// unique ID for the permission request.
-    ///
-    pub on_cancel_geolocation_permission: ::std::option::Option<
-        unsafe extern "system" fn(
-            self_: *mut _cef_geolocation_handler_t,
-            browser: *mut _cef_browser_t,
-            request_id: ::std::os::raw::c_int,
-        ),
-    >,
-}
-///
 /// Callback structure used for asynchronous continuation of JavaScript dialog
 /// requests.
 ///
@@ -12436,13 +12357,6 @@ pub struct _cef_client_t {
     ///
     pub get_focus_handler: ::std::option::Option<
         unsafe extern "system" fn(self_: *mut _cef_client_t) -> *mut _cef_focus_handler_t,
-    >,
-    ///
-    /// Return the handler for geolocation permissions requests. If no handler is
-    /// provided geolocation access will be denied by default.
-    ///
-    pub get_geolocation_handler: ::std::option::Option<
-        unsafe extern "system" fn(self_: *mut _cef_client_t) -> *mut _cef_geolocation_handler_t,
     >,
     ///
     /// Return the handler for JavaScript dialogs. If no handler is provided the

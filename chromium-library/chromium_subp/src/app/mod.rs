@@ -170,7 +170,6 @@ impl RenderProcessHandler {
             on_browser_created: Option::None,
             on_browser_destroyed: Option::None,
             get_load_handler: Option::None,
-            on_before_navigation: Option::None,
             on_context_created: Option::Some(on_context_created),
             on_context_released: Option::None,
             on_uncaught_exception: Option::None,

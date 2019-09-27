@@ -49,12 +49,6 @@ public class cef_client_t {
 	/** @field cast=(void*) */
 	public long /*int*/ get_focus_handler;
 	///
-	/// Return the handler for geolocation permissions requests. If no handler is
-	/// provided geolocation access will be denied by default.
-	///
-	/** @field cast=(void*) */
-	public long /*int*/ get_geolocation_handler;
-	///
 	/// Return the handler for JavaScript dialogs. If no handler is provided the
 	/// default implementation will be used.
 	///
