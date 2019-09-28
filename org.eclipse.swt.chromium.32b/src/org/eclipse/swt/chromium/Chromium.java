@@ -90,8 +90,8 @@ import org.eclipse.swt.widgets.Widget;
 
 class Chromium extends WebBrowser {
 	private static final String DATA_TEXT_URL = "data:text/html;base64,";
-	private static final String VERSION = "6700";
-    private static final String CEFVERSION = "3396";
+	private static final String VERSION = "6800";
+    private static final String CEFVERSION = "3440";
     private static final String SHARED_LIB_V = "chromium_swt_"+VERSION;
     private static final String JNI_LIB_V = "swt-chromium-"+VERSION;
     private static final int MAX_PROGRESS = 100;

@@ -77,7 +77,6 @@ pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char
 
     let settings = cef::_cef_settings_t {
         size: std::mem::size_of::<cef::_cef_settings_t>(),
-        single_process: 0,
         no_sandbox: 1,
         browser_subprocess_path: subp_cef,
         framework_dir_path: framework_dir_cef,

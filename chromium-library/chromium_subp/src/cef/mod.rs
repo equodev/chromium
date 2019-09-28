@@ -435,13 +435,6 @@ pub struct _cef_settings_t {
     ///
     pub size: usize,
     ///
-    /// Set to true (1) to use a single process for the browser and renderer. This
-    /// run mode is not officially supported by Chromium and is less stable than
-    /// the multi-process default. Also configurable using the "single-process"
-    /// command-line switch.
-    ///
-    pub single_process: ::std::os::raw::c_int,
-    ///
     /// Set to true (1) to disable the sandbox for sub-processes. See
     /// cef_sandbox_win.h for requirements to enable the sandbox on Windows. Also
     /// configurable using the "no-sandbox" command-line switch.
