@@ -1474,12 +1474,16 @@ pub enum cef_thread_id_t {
     ///
     TID_FILE_USER_BLOCKING = 3,
     ///
+    /// Used to launch and terminate browser processes.
+    ///
+    TID_PROCESS_LAUNCHER = 4,
+    ///
     /// Used to process IPC and network messages. Do not perform blocking tasks on
     /// this thread. All tasks posted after
     /// CefBrowserProcessHandler::OnContextInitialized() and before CefShutdown()
     /// are guaranteed to run.
     ///
-    TID_IO = 4,
+    TID_IO = 5,
     ///
     /// The main thread in the renderer. Used for all WebKit and V8 interaction.
     /// Tasks may be posted to this thread after
@@ -1487,7 +1491,7 @@ pub enum cef_thread_id_t {
     /// run before sub-process termination (sub-processes may be killed at any time
     /// without warning).
     ///
-    TID_RENDERER = 5,
+    TID_RENDERER = 6,
 }
 #[repr(i32)]
 ///
@@ -5950,9 +5954,6 @@ extern "C" {
     ///   2. widevinecdm file from the CDM binary distribution (e.g.
     ///      widevinecdm.dll on on Windows, libwidevinecdm.dylib on OS X,
     ///      libwidevinecdm.so on Linux).
-    ///   3. widevidecdmadapter file from the CEF binary distribution (e.g.
-    ///      widevinecdmadapter.dll on Windows, widevinecdmadapter.plugin on OS X,
-    ///      libwidevinecdmadapter.so on Linux).
     ///
     /// If any of these files are missing or if the manifest file has incorrect
     /// contents the registration will fail and |callback| will receive a |result|
