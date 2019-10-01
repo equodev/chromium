@@ -956,6 +956,10 @@ pub enum cef_termination_status_t {
     /// Segmentation fault.
     ///
     TS_PROCESS_CRASHED = 2,
+    ///
+    /// Out of memory. Some platforms may use TS_PROCESS_CRASHED instead.
+    ///
+    TS_PROCESS_OOM = 3,
 }
 impl cef_errorcode_t {
     pub const ERR_CERT_BEGIN: cef_errorcode_t = cef_errorcode_t::ERR_CERT_COMMON_NAME_INVALID;
@@ -2526,6 +2530,12 @@ pub struct _cef_base_ref_counted_t {
     /// Returns true (1) if the current reference count is 1.
     ///
     pub has_one_ref: ::std::option::Option<
+        unsafe extern "system" fn(self_: *mut _cef_base_ref_counted_t) -> ::std::os::raw::c_int,
+    >,
+    ///
+    /// Returns true (1) if the current reference count is at least 1.
+    ///
+    pub has_at_least_one_ref: ::std::option::Option<
         unsafe extern "system" fn(self_: *mut _cef_base_ref_counted_t) -> ::std::os::raw::c_int,
     >,
 }

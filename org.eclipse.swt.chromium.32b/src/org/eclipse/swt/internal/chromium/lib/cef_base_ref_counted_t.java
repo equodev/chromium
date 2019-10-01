@@ -30,5 +30,7 @@ public class cef_base_ref_counted_t {
     ///
     /** @field cast=(void*) */
     public int /*long*/ has_one_ref;
+    /** @field cast=(void*) */
+    public int /*long*/ has_at_least_one_ref;
 
 }

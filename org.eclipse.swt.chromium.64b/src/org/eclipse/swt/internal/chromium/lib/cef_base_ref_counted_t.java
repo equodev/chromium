@@ -30,5 +30,10 @@ public class cef_base_ref_counted_t {
     ///
     /** @field cast=(void*) */
     public long /*int*/ has_one_ref;
+    ///
+    /// Returns true (1) if the current reference count is at least 1.
+    ///
+    /** @field cast=(void*) */
+    public long /*int*/ has_at_least_one_ref;
 
 }

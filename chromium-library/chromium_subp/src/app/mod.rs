@@ -16,7 +16,8 @@ impl Base {
             size,
             add_ref: Option::None,
             has_one_ref: Option::None,
-            release: Option::None
+            release: Option::None,
+            has_at_least_one_ref: Option::None
         }
     }
 }
