@@ -6,6 +6,7 @@ authors = ["Make Technology <http://maketechnology.io>", "Guillermo Zunino <guil
 [lib]
 name = "chromium_swt_6900"
 crate-type = ["dylib"]
+path = "src/lib.rs"
 
 [profile.release]
 lto = true
