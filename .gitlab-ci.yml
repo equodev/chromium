@@ -27,7 +27,7 @@ publish:
   variables:
     GIT_DEPTH: "1"
     RELEASE: "true"
-    CHANNEL: "win-32b"
+    CHANNEL: "69-win-32b"
   dependencies:
   - build
   before_script:
