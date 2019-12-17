@@ -1055,6 +1055,10 @@ class Chromium extends WebBrowser {
         requestHandler.on_before_browse = checkGetAddress(requestHandler.on_before_browse_cb);
         requestHandler.get_auth_credentials_cb = new Callback(Chromium.class, "get_auth_credentials", int.class, new Type[] {long.class, long.class, long.class, int.class, long.class, int.class, long.class, long.class, long.class});
         requestHandler.get_auth_credentials = checkGetAddress(requestHandler.get_auth_credentials_cb);
+        requestHandler.can_get_cookies_cb = new Callback(Chromium.class, "can_get_cookies", int.class, new Type[] {long.class, long.class, long.class, long.class});
+        requestHandler.can_get_cookies = checkGetAddress(requestHandler.can_get_cookies_cb);
+        requestHandler.can_set_cookie_cb = new Callback(Chromium.class, "can_set_cookie", int.class, new Type[] {long.class, long.class, long.class, long.class, long.class});
+        requestHandler.can_set_cookie = checkGetAddress(requestHandler.can_set_cookie_cb);
 
         clientHandler.get_request_handler_cb = new Callback(Chromium.class, "get_request_handler", long.class, new Type[] {long.class});
         clientHandler.get_request_handler = checkGetAddress(clientHandler.get_request_handler_cb);
@@ -1135,7 +1139,15 @@ class Chromium extends WebBrowser {
         ChromiumLib.cefswt_auth_callback(callback, event.user, event.password, event.doit ? 1 : 0);
         return event.doit ? 1 : 0;
 	}
-	
+
+    static int can_get_cookies(int /*long*/ self, int /*long*/ browser, int /*long*/ frame, int /*long*/ request) {
+        return 1;
+    }
+    
+    static int can_set_cookie(int /*long*/ self, int /*long*/ browser, int /*long*/ frame, int /*long*/ request, int /*long*/ cookie) {
+        return 1;
+    }
+    
 	class AuthDialog extends Dialog {
 
 		public AuthDialog(Shell parent) {
