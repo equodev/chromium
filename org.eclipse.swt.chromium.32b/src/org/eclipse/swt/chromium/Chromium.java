@@ -431,7 +431,8 @@ class Chromium extends WebBrowser {
         }
         prepareBrowser();
         final Display display = chromium.getDisplay();
-        final Color bgColor = display.getSystemColor(SWT.COLOR_WIDGET_BACKGROUND);
+        final Color bg = chromium.getBackground();
+        final Color bgColor = bg != null ? bg : display.getSystemColor(SWT.COLOR_WIDGET_BACKGROUND);
         int cefBgColor = cefColor(bgColor.getAlpha(), bgColor.getRed(), bgColor.getGreen(), bgColor.getBlue());
 
         final org.eclipse.swt.graphics.Point size = getChromiumSize();
