@@ -277,7 +277,33 @@ class Chromium extends WebBrowser {
                 }
                 app.ptr = C.malloc(cef_app_t.sizeof);
                 ChromiumLib.memmove(app.ptr, app, cef_app_t.sizeof);
+                
+                boolean suspend = "win32".equals(SWT.getPlatform()) ? false : Boolean.getBoolean("swt.chromium.suspendThreads");
+                Thread main = null;
+                Thread[] threads = null;
+                int threadsCount = 0;
+                if (suspend) {
+                    main = Thread.currentThread();
+                    threads = new Thread[Thread.activeCount()*2];
+                    threadsCount = Thread.enumerate(threads);
+                    for (int i=0; i<threadsCount; i++) {
+                        Thread t = threads[i];
+                        if (t != main) {
+                            t.suspend();
+                        }
+                    }
+                }
+                
                 ChromiumLib.cefswt_init(app.ptr, cefrustPath, VERSION, debugPort);
+
+                if (suspend) {
+                    for (int i=0; i<threadsCount; i++) {
+                        Thread t = threads[i];
+                        if (t != main) {
+                            t.resume();
+                        }
+                    }
+                }
                 
                 display.disposeExec(() -> {
                     if (app == null || shuttindDown) {
