@@ -1651,8 +1651,8 @@ class Chromium extends WebBrowser {
         	cefrustPath = cefrustlib.getParentFile().getCanonicalPath();
         
         	CEFFactory.create(cefrustPath);
-        	System.load(cefrustlib.toString());
-            System.load(jnilib.toString());
+        	System.load(cefrustlib.getAbsolutePath());
+            System.load(jnilib.getAbsolutePath());
 //        	Library.loadLibrary(cefrustlib.toString(), false);
 //        	Library.loadLibrary(jnilib.toString(), false);
             
