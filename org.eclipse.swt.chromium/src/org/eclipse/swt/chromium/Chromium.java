@@ -1324,13 +1324,30 @@ class Chromium extends WebBrowser {
     }
     
 	private void set_text_visitor() {
-        textVisitor = CEFFactory.newStringVisitor();
-        textVisitor.visit_cb = new Callback(this, "textVisitor_visit", void.class, new Type[] {long.class, long.class});
-        textVisitor.visit = checkGetAddress(textVisitor.visit_cb);
-        textVisitor.ptr = C.malloc(cef_string_visitor_t.sizeof);
-        textVisitor.refs = 1;
-        ChromiumLib.memmove(textVisitor.ptr, textVisitor, cef_string_visitor_t.sizeof);
-    }
+		try {
+			textVisitor = CEFFactory.newStringVisitor();
+			textVisitor.visit_cb = new Callback(this, "textVisitor_visit", void.class,
+					new Type[] { long.class, long.class });
+			textVisitor.visit = checkGetAddress(textVisitor.visit_cb);
+			textVisitor.ptr = C.malloc(cef_string_visitor_t.sizeof);
+			textVisitor.refs = 1;
+			ChromiumLib.memmove(textVisitor.ptr, textVisitor, cef_string_visitor_t.sizeof);
+		} catch (Throwable t) {
+			if (textVisitor != null) {
+				if (textVisitor.visit_cb.getAddress() != 0L) {
+					disposeCallback(textVisitor.visit_cb);
+				}
+
+				if (textVisitor.ptr != 0L) {
+					C.free(textVisitor.ptr);
+				}
+
+				textVisitor = null;
+			}
+
+			throw t;
+		}
+	}
 
 	void textVisitor_visit(long self, long cefString) {
 //		debugPrint("text visited");
@@ -1819,16 +1836,23 @@ class Chromium extends WebBrowser {
         		ret[0] = mapType(type, value);
         	}
         };
-        Callback callback_cb = new Callback(callback, "invoke", void.class, new Type[] {int.class, int.class, long.class});
         
-        StringBuilder buffer = new StringBuilder ("(function() {");
-        buffer.append ("\n");
-        buffer.append (script);
-        buffer.append ("\n})()");
-        
-        checkBrowser();
-        boolean returnSt = ChromiumLib.cefswt_eval(browser, buffer.toString(), EVAL++, checkGetAddress(callback_cb));
-        disposeCallback(callback_cb);
+        boolean returnSt;
+        Callback callback_cb = null;
+		try {
+			callback_cb = new Callback(callback, "invoke", void.class, new Type[] { int.class, int.class, long.class });
+			StringBuilder buffer = new StringBuilder("(function() {");
+			buffer.append("\n");
+			buffer.append(script);
+			buffer.append("\n})()");
+
+			checkBrowser();
+			returnSt = ChromiumLib.cefswt_eval(browser, buffer.toString(), EVAL++, checkGetAddress(callback_cb));
+		} finally {
+			if (callback_cb != null) {
+				disposeCallback(callback_cb);
+			}
+		}
         if (!returnSt) {
             throw new SWTException("Script that was evaluated failed");
         }
