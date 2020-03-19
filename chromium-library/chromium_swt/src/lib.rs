@@ -369,10 +369,10 @@ fn do_resize(win_handle: *mut c_void, width: i32, height: i32) {
 }
 
 #[no_mangle]
-pub extern fn cefswt_close_browser(browser: *mut cef::cef_browser_t) {
+pub extern fn cefswt_close_browser(browser: *mut cef::cef_browser_t, force: c_int) {
     let browser_host = get_browser_host(browser);
-    let close_fn = unsafe { (*browser_host).close_browser.expect("null try_close_browser") };
-    unsafe { close_fn(browser_host, 1) };
+    let close_fn = unsafe { (*browser_host).close_browser.expect("null close_browser") };
+    unsafe { close_fn(browser_host, force) };
 }
 
 #[no_mangle]

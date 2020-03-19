@@ -96,7 +96,7 @@ public class ChromiumLib extends C {
     /**
      * @param browser cast=(void *)
      */
-    public static final native void cefswt_close_browser(long /*int*/ browser);
+    public static final native void cefswt_close_browser(long /*int*/ browser, int force);
 
     /**
      * @param browser cast=(void *)

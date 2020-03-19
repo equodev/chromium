@@ -57,6 +57,10 @@ public class cef_jsdialog_handler_t {
 	public int /*long*/ ptr;
 	/** @field flags=no_gen */
 	public Callback on_jsdialog_cb;
+	/** @field flags=no_gen */
+	public Callback on_dialog_closed_cb;
+	/** @field flags=no_gen */
+	public Callback on_before_unload_dialog_cb;
 
 	public static final int sizeof = ChromiumLib.cef_jsdialog_handler_t_sizeof();
 

@@ -146,7 +146,10 @@ class Chromium extends WebBrowser {
     private boolean canGoForward;
     private CompletableFuture<Boolean> enableProgress = new CompletableFuture<>();
     private CompletableFuture<Boolean> created = new CompletableFuture<>();
-    private int disposing;
+    enum Dispose {
+    	No, FromDispose, FromClose, FromBrowser, Unload, UnloadClosed, WaitIfClosed, DoIt, 
+    }
+    private Dispose disposing = Dispose.No;
     private int instance;
 	private boolean hasFocus;
 	private boolean ignoreFirstFocus = true;
@@ -646,6 +649,9 @@ class Chromium extends WebBrowser {
     }
     
     private void on_before_close(long /*int*/ browser) {
+    	if (disposing == Dispose.FromBrowser && "gtk".equals(SWT.getPlatform())) {
+    		chromium.dispose();
+    	}
     	this.browser = 0;
     	this.chromium = null;
     	debugPrint("closed");
@@ -668,9 +674,7 @@ class Chromium extends WebBrowser {
 	        disposeCallback(clientHandler.get_context_menu_handler_cb);
 	        disposeCallback(clientHandler.get_display_handler_cb);
 	        disposeCallback(clientHandler.get_focus_handler_cb);
-	        if (jsDialogHandler != null) {
-	        	disposeCallback(clientHandler.get_jsdialog_handler_cb);
-	        }
+        	disposeCallback(clientHandler.get_jsdialog_handler_cb);
 	        
 	        Callback get_life_span_handler_cb = clientHandler.get_life_span_handler_cb;
 	        Callback get_request_handler_cb = clientHandler.get_request_handler_cb;
@@ -715,6 +719,8 @@ class Chromium extends WebBrowser {
         }
         if (jsDialogHandler != null) {
         	disposeCallback(jsDialogHandler.on_jsdialog_cb);
+        	disposeCallback(jsDialogHandler.on_dialog_closed_cb);
+        	disposeCallback(jsDialogHandler.on_before_unload_dialog_cb);
 	        C.free(jsDialogHandler.ptr);
 	        jsDialogHandler = null;
         }
@@ -753,21 +759,26 @@ class Chromium extends WebBrowser {
                 listener.close(event);
             }
         }
-        
-        if (disposing == 0) {
+
+        if (disposing == Dispose.FromClose || disposing == Dispose.Unload || disposing == Dispose.UnloadClosed || disposing == Dispose.WaitIfClosed) {
+    		disposing = Dispose.DoIt;
+        }
+        else if (disposing == Dispose.No) {
         	if (chromium != null) {
-        		disposing = 2;
-        		chromium.dispose();
+        		disposing = Dispose.FromBrowser;
+        		if (!"gtk".equals(SWT.getPlatform())) {
+        			chromium.dispose();
+        		}
         	}
         }
 //        if ("gtk".equals(SWT.getPlatform())) {
-        	waitForClose(display);
+//        	waitForClose(display);
 //        }
         // do not send close notification to top level window
         // returning 0, cause the window to close 
         debugPrint("AFTER DoClose");
 
-        return 1;
+        return disposing == Dispose.FromBrowser && "gtk".equals(SWT.getPlatform()) ? 0 : 1;
 	}
 
 	static void on_after_created(long /*int*/ self, long /*int*/ browser) {
@@ -1239,13 +1250,16 @@ class Chromium extends WebBrowser {
 	}
 
 	private static void set_jsdialog_handler() {
-        if (!"gtk".equals(SWT.getPlatform())) {
-            return;
-        }
         jsDialogHandler = CEFFactory.newJsDialogHandler();
-        jsDialogHandler.on_jsdialog_cb = new Callback(Chromium.class, "on_jsdialog", int.class, new Type[] {long.class, long.class, long.class, int.class, long.class, long.class, long.class, int.class});
-		jsDialogHandler.on_jsdialog = checkGetAddress(jsDialogHandler.on_jsdialog_cb);
-
+        if ("gtk".equals(SWT.getPlatform())) {
+        	jsDialogHandler.on_jsdialog_cb = new Callback(Chromium.class, "on_jsdialog", int.class, new Type[] {long.class, long.class, long.class, int.class, long.class, long.class, long.class, int.class});
+        	jsDialogHandler.on_jsdialog = checkGetAddress(jsDialogHandler.on_jsdialog_cb);
+        }
+		jsDialogHandler.on_dialog_closed_cb = new Callback(Chromium.class, "on_dialog_closed", void.class, new Type[] {long.class, long.class});
+		jsDialogHandler.on_dialog_closed = checkGetAddress(jsDialogHandler.on_dialog_closed_cb);
+		jsDialogHandler.on_before_unload_dialog_cb = new Callback(Chromium.class, "on_before_unload_dialog", int.class, new Type[] {long.class, long.class, long.class, int.class, long.class});
+		jsDialogHandler.on_before_unload_dialog = checkGetAddress(jsDialogHandler.on_before_unload_dialog_cb);
+		
 		clientHandler.get_jsdialog_handler_cb = new Callback(Chromium.class, "get_jsdialog_handler", long.class, new Type[] {long.class});
         clientHandler.get_jsdialog_handler = checkGetAddress(clientHandler.get_jsdialog_handler_cb);
         jsDialogHandler.ptr = C.malloc (cef_jsdialog_handler_t.sizeof);
@@ -1269,32 +1283,71 @@ class Chromium extends WebBrowser {
 			long /*int*/ default_prompt_text, long /*int*/ callback) {
     	if (isDisposed()) return 0;
         
-        int style = SWT.ICON_WORKING;
+//        String prompt = ChromiumLib.cefswt_cefstring_to_java(default_prompt_text);
+        String url = ChromiumLib.cefswt_cefstring_to_java(origin_url);
+        String title = getPlainUrl(url);
+        String msg = ChromiumLib.cefswt_cefstring_to_java(message_text);
+        openJsDialog(dialog_type, title, msg, default_prompt_text, callback);
+        return 1;
+	}
+
+	private int openJsDialog(int dialog_type, String title, String msg, long /*int*/ default_prompt_text, long /*int*/ callback) {
+		int style = SWT.ICON_WORKING;
         switch (dialog_type) {
         case cef_jsdialog_handler_t.JSDIALOGTYPE_ALERT:
-            style = SWT.ICON_INFORMATION;
-            break;
+        	style = SWT.ICON_INFORMATION;
+        	break;
         case cef_jsdialog_handler_t.JSDIALOGTYPE_CONFIRM:
-            style = SWT.ICON_WARNING;
-            break;
+        	style = SWT.ICON_WARNING;
+        	break;
         case cef_jsdialog_handler_t.JSDIALOGTYPE_PROMPT:
-            style = SWT.ICON_QUESTION | SWT.YES | SWT.NO;
-            break;
+        	style = SWT.ICON_QUESTION | SWT.YES | SWT.NO;
+        	break;
         }
-        String url = ChromiumLib.cefswt_cefstring_to_java(origin_url);
-        String msg = ChromiumLib.cefswt_cefstring_to_java(message_text);
-        String prompt = ChromiumLib.cefswt_cefstring_to_java(default_prompt_text);
         MessageBox box = new MessageBox(chromium.getShell(), style);
-        box.setText(getPlainUrl(url));
-        if (prompt != null) {
-            box.setMessage(msg);
-        } else {
-            box.setMessage(msg);
-        }
+		box.setText(title);
+        box.setMessage(msg);
         int open = box.open();
-        ChromiumLib.cefswt_dialog_close(callback, open == SWT.OK || open == SWT.YES ? 1 : 0, default_prompt_text);
+        int r = open == SWT.OK || open == SWT.YES ? 1 : 0;
+        debug("JS Dialog Closed with "+r);
+		ChromiumLib.cefswt_dialog_close(callback, r, default_prompt_text);
         chromium.getShell().forceActive();
-        return 1;
+        return r;
+	}
+
+	static void on_dialog_closed(long /*int*/ self_, long /*int*/ browser) {
+		int id = ChromiumLib.cefswt_get_id(browser);
+		safeGeInstance(id).on_dialog_closed(browser);
+	}
+	
+	private void on_dialog_closed(long /*int*/ browser) {
+		debug("on_dialog_closed_cb disposing: " + disposing);
+		if (disposing == Dispose.Unload) {
+			disposing = Dispose.UnloadClosed;
+		}
+	}
+	
+	static int on_before_unload_dialog(long /*int*/ self_, long /*int*/ browser, long /*int*/ msg, int is_reload, long /*int*/ callback) {
+		int id = ChromiumLib.cefswt_get_id(browser);
+		return safeGeInstance(id).on_before_unload_dialog(browser, msg, is_reload, callback);
+	}
+
+	private int on_before_unload_dialog(long /*int*/ browser, long /*int*/ message_text, int is_reload, long /*int*/ callback) {
+		debug("on_before_unload_dialog disposing: " + disposing);
+		if (disposing == Dispose.FromClose) {
+			disposing = Dispose.Unload;
+			
+			if ("gtk".equals(SWT.getPlatform())) {
+		        String msg = ChromiumLib.cefswt_cefstring_to_java(message_text);
+//				Display.getDefault().asyncExec(() -> {
+//					ChromiumLib.cefswt_dialog_close(callback, 0, 0);
+					openJsDialog(cef_jsdialog_handler_t.JSDIALOGTYPE_PROMPT, "Are you sure you want to leave this page?", msg, 0, callback);
+					disposing = Dispose.UnloadClosed;
+//				});
+				return 1;
+			}
+		}
+		return 0;
 	}
 
 	private static void set_context_menu_handler() {
@@ -1331,7 +1384,7 @@ class Chromium extends WebBrowser {
 	}
 
     private void updateText() {
-        if (browser != 0 && !isDisposed() && disposing == 0) {
+        if (browser != 0 && !isDisposed() && disposing == Dispose.No) {
             debugPrint("update text");
             if (textVisitor != null) {
             	textVisitor.refs++;
@@ -1489,8 +1542,8 @@ class Chromium extends WebBrowser {
     }
 
     private int on_process_message_received(long /*int*/ browser, int source, long /*int*/ processMessage) {
-    	if (source != CEFFactory.PID_RENDERER || !jsEnabled || disposing == 1 || isDisposed()) {
-            return 0;
+    	if (source != CEFFactory.PID_RENDERER || !jsEnabled || chromium == null) {
+    		return 0;
         }
         FunctionSt fn = new FunctionSt();
 		ChromiumLib.cefswt_function_id(processMessage, fn);
@@ -1503,9 +1556,7 @@ class Chromium extends WebBrowser {
         for (int i = 0; i < argsSize; i++) {
             int arg = i;
             EvalReturned callback = (loop, type, valuePtr) -> {
-            	if (loop == 1) {
-            		chromium.getDisplay().readAndDispatch();
-            	} else {
+            	if (loop == 0) {
         			String value = ChromiumLib.cefswt_cstring_to_java(valuePtr);
             		args[arg] = mapType(type, value);
             	}
@@ -1576,14 +1627,52 @@ class Chromium extends WebBrowser {
 	
 	@Override
 	public boolean close() {
-		return super.close();
+		if (disposing != Dispose.No || isDisposed())
+    		return false;
+		if (browser == 0)
+			return true;
+		boolean closed = false;
+		debugPrint("call try_close_browser");
+		disposing = Dispose.FromClose;
+		ChromiumLib.cefswt_close_browser(browser, 0);
+		
+		long t = System.currentTimeMillis();
+		long end = t+10000;
+		Shell shell = chromium.getShell();
+		Display display = shell.getDisplay();
+		while (!shell.isDisposed() && System.currentTimeMillis() < end) {
+			//debug("in close, disposing:"+disposing);
+			if (disposing == Dispose.Unload) {
+				//debug("in close, disposing:"+disposing);
+				end += 1000;
+			}
+			else if (disposing == Dispose.UnloadClosed) {
+				debug("in close, disposing:"+disposing);
+				disposing = Dispose.WaitIfClosed;
+				end = System.currentTimeMillis() + LOOP*2;
+			}
+			else if (disposing == Dispose.DoIt) {
+				debug("in close, disposing:"+disposing);
+				closed = true;
+				break;
+			}
+			if (!display.readAndDispatch()) {
+				display.sleep();
+			}
+		}
+		if (!closed) {
+			disposing = Dispose.No;
+		}
+		//debugPrint("try_close_browser returned");
+		return closed;
 	}
 
     public void dispose() {
-    	if (disposing == 1 || isDisposed())
+    	debugPrint("in dispose, disposing "+ disposing);
+    	if (disposing == Dispose.FromDispose || isDisposed())
     		return;
-    	boolean callClose = disposing != 2;
-    	disposing = 1;
+    	boolean callClose = disposing == Dispose.No;
+    	disposing = Dispose.FromDispose;
     	disposingAny++;
     	if (focusListener != null)
     		chromium.removeFocusListener(focusListener);
@@ -1591,7 +1680,8 @@ class Chromium extends WebBrowser {
     	if (browser != 0 && callClose) {
 //          browsers.decrementAndGet();
     		debugPrint("call close_browser");
-    		ChromiumLib.cefswt_close_browser(browser);
+    		ChromiumLib.cefswt_close_browser(browser, 1);
+    		waitForClose(Display.getDefault());
     	}
     }
 
@@ -1828,6 +1918,7 @@ class Chromium extends WebBrowser {
         		createBrowser();
         	}
     	}
+    	checkBrowser();
         Object[] ret = new Object[1];
         EvalReturned callback = (loop, type, valuePtr) -> {
         	if (loop == 1) {
@@ -1851,7 +1942,6 @@ class Chromium extends WebBrowser {
         buffer.append (script);
         buffer.append ("\n})()");
         
-        checkBrowser();
         boolean returnSt = ChromiumLib.cefswt_eval(browser, buffer.toString(), EVAL++, checkGetAddress(callback_cb));
         disposeCallback(callback_cb);
         if (!returnSt) {
@@ -2033,7 +2123,7 @@ class Chromium extends WebBrowser {
     	long /*int*/ address = cb.getAddress();
 //    	cbs++;
     	if (address == 0) {
-    		throw new SWTError(SWT.ERROR_NO_HANDLES);
+    		throw new SWTError(SWT.ERROR_NO_MORE_CALLBACKS);
     	}
 //    	debug("CALLBACKS "+cbs);
 		return address;
