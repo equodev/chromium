@@ -132,7 +132,9 @@ fn cef_window_info(hwnd: *mut c_void, w: c_int, h: c_int) -> cef::_cef_window_in
         windowless_rendering_enabled: 0,
         view: 0 as *mut c_void,
         hidden: 0,
-        window_name: cef::cef_string_t { str: null_mut(),  length: 0,  dtor: Option::None }
+        window_name: cef::cef_string_t { str: null_mut(),  length: 0,  dtor: Option::None },
+        external_begin_frame_enabled: 0,
+        shared_texture_enabled: 0,
     };
     //println!("parent {:?}", window_info.parent_view);
     window_info
