@@ -91,7 +91,9 @@ fn cef_window_info(hwnd: *mut c_void, w: c_int, h: c_int) -> cef::_cef_window_in
             height: h as c_uint,
             parent_window: parent_win,
             windowless_rendering_enabled: 0,
-            window: 0
+            window: 0,
+            external_begin_frame_enabled: 0,
+            shared_texture_enabled: 0,
         };
         window_info
     };
