@@ -399,7 +399,12 @@ pub enum cef_log_severity_t {
     ///
     LOGSEVERITY_ERROR = 4,
     ///
-    /// Completely disable logging.
+    /// FATAL logging.
+    ///
+    LOGSEVERITY_FATAL = 5,
+    ///
+    /// Disable logging to file for all messages, and to stderr for messages with
+    /// severity less than FATAL.
     ///
     LOGSEVERITY_DISABLE = 99,
 }
@@ -558,9 +563,10 @@ pub struct _cef_settings_t {
     pub log_file: cef_string_t,
     ///
     /// The log severity. Only messages of this severity level or higher will be
-    /// logged. Also configurable using the "log-severity" command-line switch with
-    /// a value of "verbose", "info", "warning", "error", "error-report" or
-    /// "disable".
+    /// logged. When set to DISABLE no messages will be written to the log file,
+    /// but FATAL messages will still be output to stderr. Also configurable using
+    /// the "log-severity" command-line switch with a value of "verbose", "info",
+    /// "warning", "error", "fatal" or "disable".
     ///
     pub log_severity: cef_log_severity_t,
     ///
@@ -7017,6 +7023,12 @@ pub struct _cef_browser_host_t {
         ),
     >,
     ///
+    /// Issue a BeginFrame request to Chromium.  Only valid when
+    /// cef_window_tInfo::external_begin_frame_enabled is set to true (1).
+    ///
+    pub send_external_begin_frame:
+        ::std::option::Option<unsafe extern "system" fn(self_: *mut _cef_browser_host_t)>,
+    ///
     /// Send a key event to the browser.
     ///
     pub send_key_event: ::std::option::Option<
@@ -11761,7 +11773,8 @@ pub struct _cef_render_handler_t {
     >,
     ///
     /// Called to retrieve the root window rectangle in screen coordinates. Return
-    /// true (1) if the rectangle was provided.
+    /// true (1) if the rectangle was provided. If this function returns false (0)
+    /// the rectangle from GetViewRect will be used.
     ///
     pub get_root_screen_rect: ::std::option::Option<
         unsafe extern "system" fn(
@@ -11772,14 +11785,14 @@ pub struct _cef_render_handler_t {
     >,
     ///
     /// Called to retrieve the view rectangle which is relative to screen
-    /// coordinates. Return true (1) if the rectangle was provided.
+    /// coordinates. This function must always provide a non-NULL rectangle.
     ///
     pub get_view_rect: ::std::option::Option<
         unsafe extern "system" fn(
             self_: *mut _cef_render_handler_t,
             browser: *mut _cef_browser_t,
             rect: *mut cef_rect_t,
-        ) -> ::std::os::raw::c_int,
+        ),
     >,
     ///
     /// Called to retrieve the translation from view coordinates to actual screen
@@ -11841,7 +11854,8 @@ pub struct _cef_render_handler_t {
     /// contains the pixel data for the whole image. |dirtyRects| contains the set
     /// of rectangles in pixel coordinates that need to be repainted. |buffer| will
     /// be |width|*|height|*4 bytes in size and represents a BGRA image with an
-    /// upper-left origin.
+    /// upper-left origin. This function is only called when
+    /// cef_window_tInfo::shared_texture_enabled is set to false (0).
     ///
     pub on_paint: ::std::option::Option<
         unsafe extern "system" fn(
@@ -11853,6 +11867,25 @@ pub struct _cef_render_handler_t {
             buffer: *const ::std::os::raw::c_void,
             width: ::std::os::raw::c_int,
             height: ::std::os::raw::c_int,
+        ),
+    >,
+    ///
+    /// Called when an element has been rendered to the shared texture handle.
+    /// |type| indicates whether the element is the view or the popup widget.
+    /// |dirtyRects| contains the set of rectangles in pixel coordinates that need
+    /// to be repainted. |shared_handle| is the handle for a D3D11 Texture2D that
+    /// can be accessed via ID3D11Device using the OpenSharedResource function.
+    /// This function is only called when cef_window_tInfo::shared_texture_enabled
+    /// is set to true (1), and is currently only supported on Windows.
+    ///
+    pub on_accelerated_paint: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_render_handler_t,
+            browser: *mut _cef_browser_t,
+            type_: cef_paint_element_type_t,
+            dirtyRectsCount: usize,
+            dirtyRects: *const cef_rect_t,
+            shared_handle: *mut ::std::os::raw::c_void,
         ),
     >,
     ///

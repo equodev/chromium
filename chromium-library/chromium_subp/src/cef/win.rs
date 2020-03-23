@@ -62,6 +62,17 @@ pub struct _cef_window_info_t {
     ///
     pub windowless_rendering_enabled: ::std::os::raw::c_int,
     ///
+    /// Set to true (1) to enable shared textures for windowless rendering. Only
+    /// valid if windowless_rendering_enabled above is also set to true. Currently
+    /// only supported on Windows (D3D11).
+    ///
+    pub shared_texture_enabled: ::std::os::raw::c_int,
+    ///
+    /// Set to true (1) to enable the ability to issue BeginFrame requests from the
+    /// client application by calling CefBrowserHost::SendExternalBeginFrame.
+    ///
+    pub external_begin_frame_enabled: ::std::os::raw::c_int,
+    ///
     /// Handle for the new browser window. Only used with windowed rendering.
     ///
     pub window: HWND,

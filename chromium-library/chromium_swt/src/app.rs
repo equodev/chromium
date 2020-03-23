@@ -172,7 +172,9 @@ fn cef_window_info(hwnd: *mut c_void, w: c_int, h: c_int) -> cef::_cef_window_in
         window_name: cef::cef_string_t { str: null_mut(),  length: 0,  dtor: Option::None },
         style: winapi::um::winuser::WS_CHILDWINDOW | winapi::um::winuser::WS_CLIPCHILDREN
             | winapi::um::winuser::WS_CLIPSIBLINGS | winapi::um::winuser::WS_VISIBLE | winapi::um::winuser::WS_TABSTOP,
-        menu: 0 as cef::win::HMENU
+        menu: 0 as cef::win::HMENU,
+        external_begin_frame_enabled: 0,
+        shared_texture_enabled: 0,
     };
     //println!("parent {:?}", window_info.parent_window);
     window_info
