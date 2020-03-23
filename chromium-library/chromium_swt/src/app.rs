@@ -79,7 +79,7 @@ extern "C" {
 
 #[cfg(target_os = "linux")]
 fn cef_window_info(hwnd: *mut c_void, w: c_int, h: c_int) -> cef::_cef_window_info_t {
-    use std::os::raw::{c_uint, c_void};
+    use std::os::raw::{c_uint};
     let window_info = unsafe {
         let visual = gtk::gtk_widget_get_visual(hwnd);
         override_system_visual(visual);

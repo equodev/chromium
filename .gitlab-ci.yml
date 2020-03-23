@@ -27,9 +27,12 @@ publish:
   variables:
     GIT_DEPTH: "1"
     RELEASE: "true"
-    CHANNEL: "win-32b"
+    CHANNEL: "dev"
   dependencies:
   - build
+  environment:
+    name: $CHANNEL
+    url: http://dl.maketechnology.io/chromium-swt/$CHANNEL/repository
   before_script:
   - QUALIFIER=$(if [[ -z "$RELEASE" ]] ; then echo "dev"; else echo "r"; fi)
   - export VERSION=$(cat pom.xml | grep "<version>.*</version>" | head -n 1 | awk -F'[><-]' '{print $3}').$QUALIFIER

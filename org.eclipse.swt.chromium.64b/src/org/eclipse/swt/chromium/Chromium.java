@@ -431,7 +431,8 @@ class Chromium extends WebBrowser {
         }
         prepareBrowser();
         final Display display = chromium.getDisplay();
-        final Color bgColor = display.getSystemColor(SWT.COLOR_WIDGET_BACKGROUND);
+        final Color bg = chromium.getBackground();
+        final Color bgColor = bg != null ? bg : display.getSystemColor(SWT.COLOR_WIDGET_BACKGROUND);
         int cefBgColor = cefColor(bgColor.getAlpha(), bgColor.getRed(), bgColor.getGreen(), bgColor.getBlue());
 
         final org.eclipse.swt.graphics.Point size = getChromiumSize();
@@ -1055,6 +1056,10 @@ class Chromium extends WebBrowser {
         requestHandler.on_before_browse = checkGetAddress(requestHandler.on_before_browse_cb);
         requestHandler.get_auth_credentials_cb = new Callback(Chromium.class, "get_auth_credentials", int.class, new Type[] {long.class, long.class, long.class, int.class, long.class, int.class, long.class, long.class, long.class});
         requestHandler.get_auth_credentials = checkGetAddress(requestHandler.get_auth_credentials_cb);
+        requestHandler.can_get_cookies_cb = new Callback(Chromium.class, "can_get_cookies", int.class, new Type[] {long.class, long.class, long.class, long.class});
+        requestHandler.can_get_cookies = checkGetAddress(requestHandler.can_get_cookies_cb);
+        requestHandler.can_set_cookie_cb = new Callback(Chromium.class, "can_set_cookie", int.class, new Type[] {long.class, long.class, long.class, long.class, long.class});
+        requestHandler.can_set_cookie = checkGetAddress(requestHandler.can_set_cookie_cb);
 
         clientHandler.get_request_handler_cb = new Callback(Chromium.class, "get_request_handler", long.class, new Type[] {long.class});
         clientHandler.get_request_handler = checkGetAddress(clientHandler.get_request_handler_cb);
@@ -1135,7 +1140,15 @@ class Chromium extends WebBrowser {
         ChromiumLib.cefswt_auth_callback(callback, event.user, event.password, event.doit ? 1 : 0);
         return event.doit ? 1 : 0;
 	}
-	
+
+    static int can_get_cookies(long /*int*/ self, long /*int*/ browser, long /*int*/ frame, long /*int*/ request) {
+        return 1;
+    }
+    
+    static int can_set_cookie(long /*int*/ self, long /*int*/ browser, long /*int*/ frame, long /*int*/ request, long /*int*/ cookie) {
+        return 1;
+    }
+    
 	class AuthDialog extends Dialog {
 
 		public AuthDialog(Shell parent) {
