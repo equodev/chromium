@@ -11,6 +11,11 @@ public class cef_client_t {
 	///
 	public cef_base_ref_counted_t base;
 	///
+	/// Return the handler for audio rendering events.
+	///
+	/** @field cast=(void*) */
+	public int /*long*/ get_audio_handler;
+	///
 	/// Return the handler for context menus. If no handler is provided the default
 	/// implementation will be used.
 	///

@@ -1129,6 +1129,28 @@ pub enum cef_drag_operations_mask_t {
     DRAG_OPERATION_DELETE = 32,
     DRAG_OPERATION_EVERY = -1,
 }
+impl cef_text_input_mode_t {
+    pub const CEF_TEXT_INPUT_MODE_MAX: cef_text_input_mode_t =
+        cef_text_input_mode_t::CEF_TEXT_INPUT_MODE_SEARCH;
+}
+#[repr(i32)]
+///
+/// Input mode of a virtual keyboard. These constants match their equivalents
+/// in Chromium's text_input_mode.h and should not be renumbered.
+/// See https://html.spec.whatwg.org/#input-modalities:-the-inputmode-attribute
+///
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum cef_text_input_mode_t {
+    CEF_TEXT_INPUT_MODE_DEFAULT = 0,
+    CEF_TEXT_INPUT_MODE_NONE = 1,
+    CEF_TEXT_INPUT_MODE_TEXT = 2,
+    CEF_TEXT_INPUT_MODE_TEL = 3,
+    CEF_TEXT_INPUT_MODE_URL = 4,
+    CEF_TEXT_INPUT_MODE_EMAIL = 5,
+    CEF_TEXT_INPUT_MODE_NUMERIC = 6,
+    CEF_TEXT_INPUT_MODE_DECIMAL = 7,
+    CEF_TEXT_INPUT_MODE_SEARCH = 8,
+}
 #[repr(i32)]
 ///
 /// V8 access control values.
@@ -1603,6 +1625,83 @@ pub struct _cef_mouse_event_t {
     /// cef_event_flags_t for values.
     ///
     pub modifiers: uint32,
+}
+#[repr(i32)]
+///
+/// Touch points states types.
+///
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum cef_touch_event_type_t {
+    CEF_TET_RELEASED = 0,
+    CEF_TET_PRESSED = 1,
+    CEF_TET_MOVED = 2,
+    CEF_TET_CANCELLED = 3,
+}
+#[repr(i32)]
+///
+/// The device type that caused the event.
+///
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum cef_pointer_type_t {
+    CEF_POINTER_TYPE_TOUCH = 0,
+    CEF_POINTER_TYPE_MOUSE = 1,
+    CEF_POINTER_TYPE_PEN = 2,
+    CEF_POINTER_TYPE_ERASER = 3,
+    CEF_POINTER_TYPE_UNKNOWN = 4,
+}
+///
+/// Structure representing touch event information.
+///
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct _cef_touch_event_t {
+    ///
+    /// Id of a touch point. Must be unique per touch, can be any number except -1.
+    /// Note that a maximum of 16 concurrent touches will be tracked; touches
+    /// beyond that will be ignored.
+    ///
+    pub id: ::std::os::raw::c_int,
+    ///
+    /// X coordinate relative to the left side of the view.
+    ///
+    pub x: f32,
+    ///
+    /// Y coordinate relative to the top side of the view.
+    ///
+    pub y: f32,
+    ///
+    /// X radius in pixels. Set to 0 if not applicable.
+    ///
+    pub radius_x: f32,
+    ///
+    /// Y radius in pixels. Set to 0 if not applicable.
+    ///
+    pub radius_y: f32,
+    ///
+    /// Rotation angle in radians. Set to 0 if not applicable.
+    ///
+    pub rotation_angle: f32,
+    ///
+    /// The normalized pressure of the pointer input in the range of [0,1].
+    /// Set to 0 if not applicable.
+    ///
+    pub pressure: f32,
+    ///
+    /// The state of the touch point. Touches begin with one CEF_TET_PRESSED event
+    /// followed by zero or more CEF_TET_MOVED events and finally one
+    /// CEF_TET_RELEASED or CEF_TET_CANCELLED event. Events not respecting this
+    /// order will be ignored.
+    ///
+    pub type_: cef_touch_event_type_t,
+    ///
+    /// Bit flags describing any pressed modifier keys. See
+    /// cef_event_flags_t for values.
+    ///
+    pub modifiers: uint32,
+    ///
+    /// The device type that caused the event.
+    ///
+    pub pointer_type: cef_pointer_type_t,
 }
 #[repr(i32)]
 ///
@@ -2167,6 +2266,10 @@ impl cef_referrer_policy_t {
     pub const REFERRER_POLICY_DEFAULT: cef_referrer_policy_t =
         cef_referrer_policy_t::REFERRER_POLICY_CLEAR_REFERRER_ON_TRANSITION_FROM_SECURE_TO_INSECURE;
 }
+impl cef_referrer_policy_t {
+    pub const REFERRER_POLICY_LAST_VALUE: cef_referrer_policy_t =
+        cef_referrer_policy_t::REFERRER_POLICY_NO_REFERRER;
+}
 #[repr(i32)]
 ///
 /// Policy for how the Referrer HTTP header value will be sent during navigation.
@@ -2216,8 +2319,6 @@ pub enum cef_referrer_policy_t {
     /// Always clear the referrer regardless of the request destination.
     ///
     REFERRER_POLICY_NO_REFERRER = 7,
-    /// Always the last value in this enumeration.
-    REFERRER_POLICY_LAST_VALUE = 8,
 }
 #[repr(i32)]
 ///
@@ -2361,6 +2462,88 @@ pub struct _cef_composition_underline_t {
     pub thick: ::std::os::raw::c_int,
 }
 pub type cef_composition_underline_t = _cef_composition_underline_t;
+impl cef_channel_layout_t {
+    pub const CEF_CHANNEL_LAYOUT_MAX: cef_channel_layout_t =
+        cef_channel_layout_t::CEF_CHANNEL_LAYOUT_BITSTREAM;
+}
+#[repr(i32)]
+///
+/// Enumerates the various representations of the ordering of audio channels.
+/// Logged to UMA, so never reuse a value, always add new/greater ones!
+/// See media\base\channel_layout.h
+///
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum cef_channel_layout_t {
+    CEF_CHANNEL_LAYOUT_NONE = 0,
+    CEF_CHANNEL_LAYOUT_UNSUPPORTED = 1,
+    /// Front C
+    CEF_CHANNEL_LAYOUT_MONO = 2,
+    /// Front L, Front R
+    CEF_CHANNEL_LAYOUT_STEREO = 3,
+    /// Front L, Front R, Back C
+    CEF_CHANNEL_LAYOUT_2_1 = 4,
+    /// Front L, Front R, Front C
+    CEF_CHANNEL_LAYOUT_SURROUND = 5,
+    /// Front L, Front R, Front C, Back C
+    CEF_CHANNEL_LAYOUT_4_0 = 6,
+    /// Front L, Front R, Side L, Side R
+    CEF_CHANNEL_LAYOUT_2_2 = 7,
+    /// Front L, Front R, Back L, Back R
+    CEF_CHANNEL_LAYOUT_QUAD = 8,
+    /// Front L, Front R, Front C, Side L, Side R
+    CEF_CHANNEL_LAYOUT_5_0 = 9,
+    /// Front L, Front R, Front C, LFE, Side L, Side R
+    CEF_CHANNEL_LAYOUT_5_1 = 10,
+    /// Front L, Front R, Front C, Back L, Back R
+    CEF_CHANNEL_LAYOUT_5_0_BACK = 11,
+    /// Front L, Front R, Front C, LFE, Back L, Back R
+    CEF_CHANNEL_LAYOUT_5_1_BACK = 12,
+    /// Front L, Front R, Front C, Side L, Side R, Back L, Back R
+    CEF_CHANNEL_LAYOUT_7_0 = 13,
+    /// Front L, Front R, Front C, LFE, Side L, Side R, Back L, Back R
+    CEF_CHANNEL_LAYOUT_7_1 = 14,
+    /// Front L, Front R, Front C, LFE, Side L, Side R, Front LofC, Front RofC
+    CEF_CHANNEL_LAYOUT_7_1_WIDE = 15,
+    /// Stereo L, Stereo R
+    CEF_CHANNEL_LAYOUT_STEREO_DOWNMIX = 16,
+    /// Stereo L, Stereo R, LFE
+    CEF_CHANNEL_LAYOUT_2POINT1 = 17,
+    /// Stereo L, Stereo R, Front C, LFE
+    CEF_CHANNEL_LAYOUT_3_1 = 18,
+    /// Stereo L, Stereo R, Front C, Rear C, LFE
+    CEF_CHANNEL_LAYOUT_4_1 = 19,
+    /// Stereo L, Stereo R, Front C, Side L, Side R, Back C
+    CEF_CHANNEL_LAYOUT_6_0 = 20,
+    /// Stereo L, Stereo R, Side L, Side R, Front LofC, Front RofC
+    CEF_CHANNEL_LAYOUT_6_0_FRONT = 21,
+    /// Stereo L, Stereo R, Front C, Rear L, Rear R, Rear C
+    CEF_CHANNEL_LAYOUT_HEXAGONAL = 22,
+    /// Stereo L, Stereo R, Front C, LFE, Side L, Side R, Rear Center
+    CEF_CHANNEL_LAYOUT_6_1 = 23,
+    /// Stereo L, Stereo R, Front C, LFE, Back L, Back R, Rear Center
+    CEF_CHANNEL_LAYOUT_6_1_BACK = 24,
+    /// Stereo L, Stereo R, Side L, Side R, Front LofC, Front RofC, LFE
+    CEF_CHANNEL_LAYOUT_6_1_FRONT = 25,
+    /// Front L, Front R, Front C, Side L, Side R, Front LofC, Front RofC
+    CEF_CHANNEL_LAYOUT_7_0_FRONT = 26,
+    /// Front L, Front R, Front C, LFE, Back L, Back R, Front LofC, Front RofC
+    CEF_CHANNEL_LAYOUT_7_1_WIDE_BACK = 27,
+    /// Front L, Front R, Front C, Side L, Side R, Rear L, Back R, Back C.
+    CEF_CHANNEL_LAYOUT_OCTAGONAL = 28,
+    /// Channels are not explicitly mapped to speakers.
+    CEF_CHANNEL_LAYOUT_DISCRETE = 29,
+    /// Front L, Front R, Front C. Front C contains the keyboard mic audio. This
+    /// layout is only intended for input for WebRTC. The Front C channel
+    /// is stripped away in the WebRTC audio input pipeline and never seen outside
+    /// of that.
+    CEF_CHANNEL_LAYOUT_STEREO_AND_KEYBOARD_MIC = 30,
+    /// Front L, Front R, Side L, Side R, LFE
+    CEF_CHANNEL_LAYOUT_4_1_QUAD_SIDE = 31,
+    /// Actual channel layout is specified in the bitstream and the actual channel
+    /// count is unknown at Chromium media pipeline level (useful for audio
+    /// pass-through mode).
+    CEF_CHANNEL_LAYOUT_BITSTREAM = 32,
+}
 ///
 /// CEF string maps are a set of key/value string pairs.
 ///
@@ -7074,6 +7257,15 @@ pub struct _cef_browser_host_t {
         ),
     >,
     ///
+    /// Send a touch event to the browser for a windowless browser.
+    ///
+    pub send_touch_event: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_browser_host_t,
+            event: *const _cef_touch_event_t,
+        ),
+    >,
+    ///
     /// Send a focus event to the browser.
     ///
     pub send_focus_event: ::std::option::Option<
@@ -7326,6 +7518,19 @@ pub struct _cef_browser_host_t {
     /// cef_request_tContext::LoadExtension for details.
     ///
     pub is_background_host: ::std::option::Option<
+        unsafe extern "system" fn(self_: *mut _cef_browser_host_t) -> ::std::os::raw::c_int,
+    >,
+    ///
+    ///  Set whether the browser's audio is muted.
+    ///
+    pub set_audio_muted: ::std::option::Option<
+        unsafe extern "system" fn(self_: *mut _cef_browser_host_t, mute: ::std::os::raw::c_int),
+    >,
+    ///
+    /// Returns true (1) if the browser's audio is muted.  This function can only
+    /// be called on the UI thread.
+    ///
+    pub is_audio_muted: ::std::option::Option<
         unsafe extern "system" fn(self_: *mut _cef_browser_host_t) -> ::std::os::raw::c_int,
     >,
 }
@@ -10601,56 +10806,7 @@ pub struct _cef_scheme_registrar_t {
     /// Register a custom scheme. This function should not be called for the built-
     /// in HTTP, HTTPS, FILE, FTP, ABOUT and DATA schemes.
     ///
-    /// If |is_standard| is true (1) the scheme will be treated as a standard
-    /// scheme. Standard schemes are subject to URL canonicalization and parsing
-    /// rules as defined in the Common Internet Scheme Syntax RFC 1738 Section 3.1
-    /// available at http://www.ietf.org/rfc/rfc1738.txt
-    ///
-    /// In particular, the syntax for standard scheme URLs must be of the form:
-    /// <pre>
-    ///  [scheme]://[username]:[password]@[host]:[port]/[url-path]
-    /// </pre> Standard scheme URLs must have a host component that is a fully
-    /// qualified domain name as defined in Section 3.5 of RFC 1034 [13] and
-    /// Section 2.1 of RFC 1123. These URLs will be canonicalized to
-    /// "scheme://host/path" in the simplest case and
-    /// "scheme://username:password@host:port/path" in the most explicit case. For
-    /// example, "scheme:host/path" and "scheme:///host/path" will both be
-    /// canonicalized to "scheme://host/path". The origin of a standard scheme URL
-    /// is the combination of scheme, host and port (i.e., "scheme://host:port" in
-    /// the most explicit case).
-    ///
-    /// For non-standard scheme URLs only the "scheme:" component is parsed and
-    /// canonicalized. The remainder of the URL will be passed to the handler as-
-    /// is. For example, "scheme:///some%20text" will remain the same. Non-standard
-    /// scheme URLs cannot be used as a target for form submission.
-    ///
-    /// If |is_local| is true (1) the scheme will be treated with the same security
-    /// rules as those applied to "file" URLs. Normal pages cannot link to or
-    /// access local URLs. Also, by default, local URLs can only perform
-    /// XMLHttpRequest calls to the same URL (origin + path) that originated the
-    /// request. To allow XMLHttpRequest calls from a local URL to other URLs with
-    /// the same origin set the CefSettings.file_access_from_file_urls_allowed
-    /// value to true (1). To allow XMLHttpRequest calls from a local URL to all
-    /// origins set the CefSettings.universal_access_from_file_urls_allowed value
-    /// to true (1).
-    ///
-    /// If |is_display_isolated| is true (1) the scheme can only be displayed from
-    /// other content hosted with the same scheme. For example, pages in other
-    /// origins cannot create iframes or hyperlinks to URLs with the scheme. For
-    /// schemes that must be accessible from other schemes set this value to false
-    /// (0), set |is_cors_enabled| to true (1), and use CORS "Access-Control-Allow-
-    /// Origin" headers to further restrict access.
-    ///
-    /// If |is_secure| is true (1) the scheme will be treated with the same
-    /// security rules as those applied to "https" URLs. For example, loading this
-    /// scheme from other secure schemes will not trigger mixed content warnings.
-    ///
-    /// If |is_cors_enabled| is true (1) the scheme can be sent CORS requests. This
-    /// value should be true (1) in most cases where |is_standard| is true (1).
-    ///
-    /// If |is_csp_bypassing| is true (1) the scheme can bypass Content-Security-
-    /// Policy (CSP) checks. This value should be false (0) in most cases where
-    /// |is_standard| is true (1).
+    /// See cef_scheme_options_t for possible values for |options|.
     ///
     /// This function may be called on any thread. It should only be called once
     /// per unique |scheme_name| value. If |scheme_name| is already registered or
@@ -10660,12 +10816,7 @@ pub struct _cef_scheme_registrar_t {
         unsafe extern "system" fn(
             self_: *mut _cef_scheme_registrar_t,
             scheme_name: *const cef_string_t,
-            is_standard: ::std::os::raw::c_int,
-            is_local: ::std::os::raw::c_int,
-            is_display_isolated: ::std::os::raw::c_int,
-            is_secure: ::std::os::raw::c_int,
-            is_cors_enabled: ::std::os::raw::c_int,
-            is_csp_bypassing: ::std::os::raw::c_int,
+            options: ::std::os::raw::c_int,
         ) -> ::std::os::raw::c_int,
     >,
 }
@@ -10887,6 +11038,71 @@ extern "C" {
     /// support DirectWrite and GDI fonts are kerned very badly.
     ///
     pub fn cef_enable_highdpi_support();
+}
+///
+/// Implement this structure to handle audio events All functions will be called
+/// on the UI thread
+///
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct _cef_audio_handler_t {
+    ///
+    /// Base structure.
+    ///
+    pub base: cef_base_ref_counted_t,
+    ///
+    /// Called when the stream identified by |audio_stream_id| has started.
+    /// |audio_stream_id| will uniquely identify the stream across all future
+    /// cef_audio_handler_t callbacks. OnAudioSteamStopped will always be called
+    /// after OnAudioStreamStarted; both functions may be called multiple times for
+    /// the same stream. |channels| is the number of channels, |channel_layout| is
+    /// the layout of the channels and |sample_rate| is the stream sample rate.
+    /// |frames_per_buffer| is the maximum number of frames that will occur in the
+    /// PCM packet passed to OnAudioStreamPacket.
+    ///
+    pub on_audio_stream_started: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_audio_handler_t,
+            browser: *mut _cef_browser_t,
+            audio_stream_id: ::std::os::raw::c_int,
+            channels: ::std::os::raw::c_int,
+            channel_layout: cef_channel_layout_t,
+            sample_rate: ::std::os::raw::c_int,
+            frames_per_buffer: ::std::os::raw::c_int,
+        ),
+    >,
+    ///
+    /// Called when a PCM packet is received for the stream identified by
+    /// |audio_stream_id|. |data| is an array representing the raw PCM data as a
+    /// floating point type, i.e. 4-byte value(s). |frames| is the number of frames
+    /// in the PCM packet. |pts| is the presentation timestamp (in milliseconds
+    /// since the Unix Epoch) and represents the time at which the decompressed
+    /// packet should be presented to the user. Based on |frames| and the
+    /// |channel_layout| value passed to OnAudioStreamStarted you can calculate the
+    /// size of the |data| array in bytes.
+    ///
+    pub on_audio_stream_packet: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_audio_handler_t,
+            browser: *mut _cef_browser_t,
+            audio_stream_id: ::std::os::raw::c_int,
+            data: *mut *const f32,
+            frames: ::std::os::raw::c_int,
+            pts: int64,
+        ),
+    >,
+    ///
+    /// Called when the stream identified by |audio_stream_id| has stopped.
+    /// OnAudioSteamStopped will always be called after OnAudioStreamStarted; both
+    /// functions may be called multiple times for the same stream.
+    ///
+    pub on_audio_stream_stopped: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_audio_handler_t,
+            browser: *mut _cef_browser_t,
+            audio_stream_id: ::std::os::raw::c_int,
+        ),
+    >,
 }
 ///
 /// Callback structure for asynchronous continuation of file dialog requests.
@@ -11979,6 +12195,19 @@ pub struct _cef_render_handler_t {
             selected_range: *const cef_range_t,
         ),
     >,
+    ///
+    /// Called when an on-screen keyboard should be shown or hidden for the
+    /// specified |browser|. |input_mode| specifies what kind of keyboard should be
+    /// opened. If |input_mode| is CEF_TEXT_INPUT_MODE_NONE, any existing keyboard
+    /// for this browser should be hidden.
+    ///
+    pub on_virtual_keyboard_requested: ::std::option::Option<
+        unsafe extern "system" fn(
+            self_: *mut _cef_render_handler_t,
+            browser: *mut _cef_browser_t,
+            input_mode: cef_text_input_mode_t,
+        ),
+    >,
 }
 ///
 /// Callback structure used for asynchronous continuation of authentication
@@ -12478,6 +12707,12 @@ pub struct _cef_client_t {
     /// Base structure.
     ///
     pub base: cef_base_ref_counted_t,
+    ///
+    /// Return the handler for audio rendering events.
+    ///
+    pub get_audio_handler: ::std::option::Option<
+        unsafe extern "system" fn(self_: *mut _cef_client_t) -> *mut _cef_audio_handler_t,
+    >,
     ///
     /// Return the handler for context menus. If no handler is provided the default
     /// implementation will be used.
