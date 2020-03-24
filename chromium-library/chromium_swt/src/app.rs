@@ -85,6 +85,7 @@ fn cef_window_info(hwnd: *mut c_void, w: c_int, h: c_int) -> cef::_cef_window_in
         override_system_visual(visual);
         let parent_win = gtk::gdk_x11_window_get_xid(gtk::gtk_widget_get_window(hwnd as *mut c_void));
         let window_info = cef::_cef_window_info_t {
+            window_name: cef::cef_string_t { str: null_mut(),  length: 0,  dtor: Option::None },
             x: 0,
             y: 0,
             width: w as c_uint,

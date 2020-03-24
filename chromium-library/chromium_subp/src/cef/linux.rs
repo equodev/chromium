@@ -4,6 +4,7 @@
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
+use cef::cef_string_t;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -31,8 +32,16 @@ pub struct _cef_main_args_t {
 /// Class representing window information.
 ///
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
 pub struct _cef_window_info_t {
+    ///
+    /// The initial title of the window, to be set when the window is created.
+    /// Some layout managers (e.g., Compiz) can look at the window title
+    /// in order to decide where to place the window when it is
+    /// created. When this attribute is not empty, the window title will
+    /// be set before the window is mapped to the dispay. Otherwise the
+    /// title will be initially empty.
+    ///
+    pub window_name: cef_string_t,
     pub x: ::std::os::raw::c_uint,
     pub y: ::std::os::raw::c_uint,
     pub width: ::std::os::raw::c_uint,

@@ -101,6 +101,9 @@ fn gen_os(cef_path: std::path::Display) {
     .whitelist_type("_cef_main_args_t")
     .whitelist_type("_cef_window_info_t")
     .whitelist_function("cef_get_xdisplay")
+    .blacklist_type("char16")
+    .blacklist_type(".*string.*")
+    .raw_line("use cef::cef_string_t;")
     .generate().expect("Failed to gencef linux")
     .write_to_file(std::path::Path::new("src").join("cef").join("linux.rs"));
 }
