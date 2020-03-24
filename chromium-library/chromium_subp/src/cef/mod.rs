@@ -5713,7 +5713,7 @@ pub struct _cef_delete_cookies_callback_t {
     pub base: cef_base_ref_counted_t,
     ///
     /// Method that will be called upon completion. |num_deleted| will be the
-    /// number of cookies that were deleted or -1 if unknown.
+    /// number of cookies that were deleted.
     ///
     pub on_complete: ::std::option::Option<
         unsafe extern "system" fn(
@@ -6486,19 +6486,6 @@ pub struct _cef_request_context_t {
             origin: *const cef_string_t,
             callback: *mut _cef_resolve_callback_t,
         ),
-    >,
-    ///
-    /// Attempts to resolve |origin| to a list of associated IP addresses using
-    /// cached data. |resolved_ips| will be populated with the list of resolved IP
-    /// addresses or NULL if no cached data is available. Returns ERR_NONE on
-    /// success. This function must be called on the browser process IO thread.
-    ///
-    pub resolve_host_cached: ::std::option::Option<
-        unsafe extern "system" fn(
-            self_: *mut _cef_request_context_t,
-            origin: *const cef_string_t,
-            resolved_ips: cef_string_list_t,
-        ) -> cef_errorcode_t,
     >,
     ///
     /// Load an extension.
