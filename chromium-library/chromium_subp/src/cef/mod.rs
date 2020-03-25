@@ -463,6 +463,12 @@ pub struct _cef_settings_t {
     ///
     pub framework_dir_path: cef_string_t,
     ///
+    /// The path to the main bundle on macOS. If this value is empty then it
+    /// defaults to the top-level app bundle. Also configurable using
+    /// the "main-bundle-path" command-line switch.
+    ///
+    pub main_bundle_path: cef_string_t,
+    ///
     /// Set to true (1) to have the browser process message loop run in a separate
     /// thread. If false (0) than the CefDoMessageLoopWork() function must be
     /// called from your application message loop. This option is only supported on
@@ -1065,7 +1071,6 @@ pub enum cef_errorcode_t {
     ERR_HTTPS_PROXY_TUNNEL_RESPONSE_REDIRECT = -140,
     ERR_SSL_CLIENT_AUTH_SIGNATURE_FAILED = -141,
     ERR_MSG_TOO_BIG = -142,
-    ERR_SPDY_SESSION_ALREADY_EXISTS = -143,
     ERR_WS_PROTOCOL_ERROR = -145,
     ERR_ADDRESS_IN_USE = -147,
     ERR_SSL_HANDSHAKE_NOT_COMPLETED = -148,
@@ -1091,7 +1096,6 @@ pub enum cef_errorcode_t {
     ERR_SSL_OBSOLETE_CIPHER = -172,
     ERR_WS_UPGRADE = -173,
     ERR_READ_IF_READY_NOT_IMPLEMENTED = -174,
-    ERR_SSL_VERSION_INTERFERENCE = -175,
     ERR_NO_BUFFER_SPACE = -176,
     ERR_SSL_CLIENT_AUTH_NO_COMMON_ALGORITHMS = -177,
     ERR_EARLY_DATA_REJECTED = -178,

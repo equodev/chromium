@@ -80,6 +80,7 @@ pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char
         no_sandbox: 1,
         browser_subprocess_path: subp_cef,
         framework_dir_path: framework_dir_cef,
+        main_bundle_path: utils::cef_string_empty(),
         multi_threaded_message_loop: 0,
         external_message_pump: 1,
         windowless_rendering_enabled: 0,
