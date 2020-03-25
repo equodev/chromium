@@ -87,7 +87,7 @@ impl RenderProcessHandler {
     fn cef_render_process_handler() -> cef::_cef_render_process_handler_t {
         unsafe extern "system" fn on_context_created(
             self_: *mut cef::_cef_render_process_handler_t,
-            browser: *mut cef::_cef_browser_t,
+            _browser: *mut cef::_cef_browser_t,
             frame: *mut cef::_cef_frame_t,
             context: *mut cef::_cef_v8context_t,
         ) {
@@ -95,7 +95,7 @@ impl RenderProcessHandler {
                 //println!("CONTEXT CREATED");
                 let rph = self_ as *mut RenderProcessHandler;
                 
-                (*rph).function_handler = Option::Some(V8Handler::new(browser));
+                (*rph).function_handler = Option::Some(V8Handler::new(frame));
                 let handler: Option<&mut V8Handler> = (*rph).function_handler.as_mut();
                 let handler: &mut V8Handler = handler.expect("no handler");
                 
@@ -116,6 +116,7 @@ impl RenderProcessHandler {
         unsafe extern "system" fn on_process_message_received(
             self_: *mut cef::_cef_render_process_handler_t,
             browser: *mut cef::_cef_browser_t,
+            _frame: *mut cef::_cef_frame_t,
             source_process: cef::cef_process_id_t,
             message: *mut cef::_cef_process_message_t,
         ) -> c_int {
@@ -289,14 +290,14 @@ unsafe fn convert_type(ret: *mut cef::cef_v8value_t, _eval_id: c_int, context: *
 
 struct V8Handler {
     cef: cef::_cef_v8handler_t,
-    browser: *mut cef::_cef_browser_t
+    frame: *mut cef::_cef_frame_t
 }
 
 impl V8Handler {
-    fn new(browser: *mut cef::_cef_browser_t) -> V8Handler {
+    fn new(frame: *mut cef::_cef_frame_t) -> V8Handler {
         V8Handler {
             cef: V8Handler::cef_function_handler(),
-            browser: browser
+            frame: frame
         }
     }
 
@@ -315,7 +316,7 @@ impl V8Handler {
             exception: *mut cef::cef_string_t,
         ) -> c_int {
             let handler = self_ as *mut V8Handler;
-            let browser = (*handler).browser;
+            let frame = (*handler).frame;
 
             let msg_name = utils::cef_string("function_call");
             let msg = cef::cef_process_message_create(&msg_name);
@@ -341,7 +342,7 @@ impl V8Handler {
                 }
             }
 
-            let result = socket::wait_response(browser, msg, args, cef::cef_process_id_t::PID_BROWSER, None);
+            let result = socket::wait_response(frame, msg, args, cef::cef_process_id_t::PID_BROWSER, None);
             match result {
                 Ok(return_st) => {
                     match map_type(return_st.kind, return_st.str_value.to_str().unwrap()) {

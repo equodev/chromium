@@ -85,6 +85,7 @@ pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char
         windowless_rendering_enabled: 0,
         command_line_args_disabled: 0,
         cache_path: cache_dir_cef,
+        root_cache_path: cache_dir_cef,
         user_data_path: utils::cef_string_empty(),
         persist_session_cookies: 1,
         persist_user_preferences: 1,
@@ -103,7 +104,8 @@ pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char
         ignore_certificate_errors: 0,
         enable_net_security_expiration: 0,
         background_color: 0,
-        accept_language_list: utils::cef_string_empty()
+        accept_language_list: utils::cef_string_empty(),
+        application_client_id_for_file_scanning: utils::cef_string("chromium.swt"),
     };
 
     //println!("Calling cef_initialize");
@@ -509,7 +511,9 @@ pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char,
         assert_eq!(s, 1);
         let s = (*args).set_string.unwrap()(args, 2, &text_cef);
         assert_eq!(s, 1);
-        match socket::wait_response(browser, msg, args, cef::cef_process_id_t::PID_RENDERER, Some(callback)) {
+        let get_frame = (*browser).get_main_frame.expect("null get_main_frame");
+        let main_frame = get_frame(browser);
+        match socket::wait_response(main_frame, msg, args, cef::cef_process_id_t::PID_RENDERER, Some(callback)) {
             Ok(r) => {
                 callback(0, r.kind as i32, r.str_value.as_ptr());
                 1
@@ -533,9 +537,10 @@ pub extern fn cefswt_function(browser: *mut cef::cef_browser_t, name: *mut c_cha
         assert_eq!(s, 1);
         let s = (*args).set_string.unwrap()(args, 1, &name_cef);
         assert_eq!(s, 1);
-        let sent = (*browser).send_process_message.unwrap()(browser, cef::cef_process_id_t::PID_RENDERER, msg);
-        assert_eq!(sent, 1);
-        sent
+        let get_frame = (*browser).get_main_frame.expect("null get_main_frame");
+        let main_frame = get_frame(browser);
+        (*main_frame).send_process_message.unwrap()(main_frame, cef::cef_process_id_t::PID_RENDERER, msg);
+        1
     }
 }
 

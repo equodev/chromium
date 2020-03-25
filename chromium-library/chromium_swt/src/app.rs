@@ -55,7 +55,7 @@ pub fn create_browser(canvas_hwnd: *mut c_void, url: &str, jclient: &mut cef::_c
     //if unsafe { cef::cef_browser_host_create_browser(&window_info, client, &url_cef, &browser_settings, null_mut()) } != 1 {
         //println!("Failed calling browserHostCreateBrowser");
     //}
-    let browser: *mut cef::cef_browser_t = unsafe { cef::cef_browser_host_create_browser_sync(&window_info, jclient, &url_cef, &browser_settings, null_mut()) };
+    let browser: *mut cef::cef_browser_t = unsafe { cef::cef_browser_host_create_browser_sync(&window_info, jclient, &url_cef, &browser_settings, null_mut(), null_mut()) };
     // println!("after Calling cef_browser_host_create_browser {:?}", browser);
     
     assert_eq!(unsafe{(*browser).base.size}, size_of::<cef::_cef_browser_t>());

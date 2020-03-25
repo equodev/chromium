@@ -114,7 +114,7 @@ fn serialize_null() {
     assert_eq!(CString::new("").unwrap(), read_st.str_value);
 }
 
-pub fn wait_response(browser: *mut cef::cef_browser_t, 
+pub fn wait_response(frame: *mut cef::_cef_frame_t, 
         msg: *mut cef::cef_process_message_t,
         args: *mut cef::_cef_list_value_t,
         target: cef::cef_process_id_t,
@@ -125,9 +125,8 @@ pub fn wait_response(browser: *mut cef::cef_browser_t,
             let port = listener.local_addr().unwrap().port();
             let s = unsafe {(*args).set_int.unwrap()(args, 0, port as i32) };
             assert_eq!(s, 1);
-            let sent = unsafe {(*browser).send_process_message.unwrap()(browser, target, msg)};
-            assert_eq!(sent, 1);
-
+            unsafe {(*frame).send_process_message.unwrap()(frame, target, msg)};
+            
             //println!("new server, waiting response in :{:?}", port);
             let mut res = None;
             listener.set_nonblocking(true).expect("Cannot set non-blocking");

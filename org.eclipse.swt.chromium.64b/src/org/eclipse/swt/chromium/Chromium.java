@@ -90,8 +90,8 @@ import org.eclipse.swt.widgets.Widget;
 
 class Chromium extends WebBrowser {
 	private static final String DATA_TEXT_URL = "data:text/html;base64,";
-	private static final String VERSION = "7400";
-    private static final String CEFVERSION = "3729";
+	private static final String VERSION = "7500";
+    private static final String CEFVERSION = "3770";
     private static final String SHARED_LIB_V = "chromium_swt_"+VERSION;
     private static final String JNI_LIB_V = "swt-chromium-"+VERSION;
     private static final int MAX_PROGRESS = 100;
@@ -566,7 +566,7 @@ class Chromium extends WebBrowser {
 		set_request_handler();
 		set_jsdialog_handler();
 		set_context_menu_handler();
-		clientHandler.on_process_message_received_cb = new Callback(Chromium.class, "on_process_message_received", int.class, new Type[] {long.class, long.class, int.class, long.class});
+		clientHandler.on_process_message_received_cb = new Callback(Chromium.class, "on_process_message_received", int.class, new Type[] {long.class, long.class, long.class, int.class, long.class});
 		clientHandler.on_process_message_received = checkGetAddress(clientHandler.on_process_message_received_cb);
 	
 		clientHandler.ptr = C.malloc(cef_client_t.sizeof);
@@ -1056,10 +1056,6 @@ class Chromium extends WebBrowser {
         requestHandler.on_before_browse = checkGetAddress(requestHandler.on_before_browse_cb);
         requestHandler.get_auth_credentials_cb = new Callback(Chromium.class, "get_auth_credentials", int.class, new Type[] {long.class, long.class, long.class, int.class, long.class, int.class, long.class, long.class, long.class});
         requestHandler.get_auth_credentials = checkGetAddress(requestHandler.get_auth_credentials_cb);
-        requestHandler.can_get_cookies_cb = new Callback(Chromium.class, "can_get_cookies", int.class, new Type[] {long.class, long.class, long.class, long.class});
-        requestHandler.can_get_cookies = checkGetAddress(requestHandler.can_get_cookies_cb);
-        requestHandler.can_set_cookie_cb = new Callback(Chromium.class, "can_set_cookie", int.class, new Type[] {long.class, long.class, long.class, long.class, long.class});
-        requestHandler.can_set_cookie = checkGetAddress(requestHandler.can_set_cookie_cb);
 
         clientHandler.get_request_handler_cb = new Callback(Chromium.class, "get_request_handler", long.class, new Type[] {long.class});
         clientHandler.get_request_handler = checkGetAddress(clientHandler.get_request_handler_cb);
@@ -1106,13 +1102,13 @@ class Chromium extends WebBrowser {
         return 0;
 	}
 
-    static int get_auth_credentials(long /*int*/ self, long /*int*/ browser, long /*int*/ frame, int isProxy, long /*int*/ host, int port, long /*int*/ realm, long /*int*/ scheme, long /*int*/ callback) {
+    static int get_auth_credentials(long /*int*/ self, long /*int*/ browser, long /*int*/ origin_url, int isProxy, long /*int*/ host, int port, long /*int*/ realm, long /*int*/ scheme, long /*int*/ callback) {
     	int id = ChromiumLib.cefswt_get_id(browser);
 //    	debug("on_before_browse: " + id);
-    	return safeGeInstance(id).get_auth_credentials(browser, frame, host, port, realm, callback);
+    	return safeGeInstance(id).get_auth_credentials(browser, origin_url, host, port, realm, callback);
     }
     
-	private int get_auth_credentials(long /*int*/ browser2, long /*int*/ frame, long /*int*/ host, int port, long /*int*/ realm, long /*int*/ callback) {
+	private int get_auth_credentials(long /*int*/ browser2, long /*int*/ origin_url, long /*int*/ host, int port, long /*int*/ realm, long /*int*/ callback) {
 		if (isDisposed()) return 0;
 		
         AuthenticationEvent event = new AuthenticationEvent(chromium);
@@ -1141,14 +1137,6 @@ class Chromium extends WebBrowser {
         return event.doit ? 1 : 0;
 	}
 
-    static int can_get_cookies(long /*int*/ self, long /*int*/ browser, long /*int*/ frame, long /*int*/ request) {
-        return 1;
-    }
-    
-    static int can_set_cookie(long /*int*/ self, long /*int*/ browser, long /*int*/ frame, long /*int*/ request, long /*int*/ cookie) {
-        return 1;
-    }
-    
 	class AuthDialog extends Dialog {
 
 		public AuthDialog(Shell parent) {
@@ -1468,7 +1456,7 @@ class Chromium extends WebBrowser {
         }
     }
 
-    static int on_process_message_received(long /*int*/ client, long /*int*/ browser, int source, long /*int*/ processMessage) {
+    static int on_process_message_received(long /*int*/ client, long /*int*/ browser, long /*int*/ frame, int source, long /*int*/ processMessage) {
     	int id = ChromiumLib.cefswt_get_id(browser);
     	debug("on_process_message_received: " + id);
     	return safeGeInstance(id).on_process_message_received(browser, source, processMessage);
