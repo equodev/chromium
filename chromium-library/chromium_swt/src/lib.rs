@@ -121,10 +121,11 @@ fn do_initialize(main_args: cef::_cef_main_args_t, settings: cef::_cef_settings_
 
     let mut signal_handlers: HashMap<c_int, nix::sys::signal::SigAction> = HashMap::new();
     backup_signal_handlers(&mut signal_handlers);
+    restore_signal_handlers(&signal_handlers);
 
     unsafe { cef::cef_initialize(&main_args, &settings, app_raw, std::ptr::null_mut()) };
 
-    restore_signal_handlers(signal_handlers);
+    restore_signal_handlers(&signal_handlers);
 }
 
 #[cfg(target_os = "macos")]
@@ -134,12 +135,13 @@ static EVENT_KEY: char = 'k';
 fn do_initialize(main_args: cef::_cef_main_args_t, settings: cef::_cef_settings_t, app_raw: *mut cef::_cef_app_t) {
     let mut signal_handlers: HashMap<c_int, nix::sys::signal::SigAction> = HashMap::new();
     backup_signal_handlers(&mut signal_handlers);
+    restore_signal_handlers(&signal_handlers);
 
     swizzle_send_event();
 
     unsafe { cef::cef_initialize(&main_args, &settings, &mut (*app_raw), std::ptr::null_mut()) };
 
-    restore_signal_handlers(signal_handlers);
+    restore_signal_handlers(&signal_handlers);
 }
 
 #[cfg(target_os = "macos")]
@@ -252,11 +254,11 @@ fn backup_signal_handlers(signal_handlers: &mut HashMap<c_int, nix::sys::signal:
 }
 
 #[cfg(unix)]
-fn restore_signal_handlers(signal_handlers: HashMap<c_int, nix::sys::signal::SigAction>) {
+fn restore_signal_handlers(signal_handlers: &HashMap<c_int, nix::sys::signal::SigAction>) {
     use nix::sys::signal;
     for (signal, sigact) in signal_handlers {
         //println!("restore signal {:?}:{:?}", signal, "sigact");
-        unsafe { signal::sigaction(std::mem::transmute(signal), &sigact).unwrap() };
+        unsafe { signal::sigaction(std::mem::transmute(*signal), sigact).unwrap() };
     }
 }
 

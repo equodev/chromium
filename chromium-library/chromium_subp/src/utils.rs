@@ -28,6 +28,9 @@ pub fn prepare_args() -> cef::_cef_main_args_t {
         mp
     }).collect();
     if cfg!(target_os = "macos") {
+        let carg = CString::new("--disable-in-process-stack-traces").expect("cant create arg");
+        let mp = carg.into_raw();
+        args.push(mp);
         let carg = CString::new("--disable-gpu-compositing").expect("cant create arg");
         let mp = carg.into_raw();
         args.push(mp);
@@ -36,6 +39,9 @@ pub fn prepare_args() -> cef::_cef_main_args_t {
         args.push(mp);
         // println!("Force --disable-gpu-compositing");
     } else {
+        let carg = CString::new("--disable-in-process-stack-traces").expect("cant create arg");
+        let mp = carg.into_raw();
+        args.push(mp);
         let carg = CString::new("--enable-webgl-draft-extensions").expect("cant create arg");
         let mp = carg.into_raw();
         args.push(mp);
