@@ -1565,12 +1565,19 @@ class Chromium extends WebBrowser {
             ChromiumLib.cefswt_function_arg(processMessage, i, checkGetAddress(callback_cb));
             disposeCallback(callback_cb);
         }
-        Object ret = functions.get(id).function(args);
-        
-        Object[] returnPair = convertType(ret);
-        ReturnType returnType = (ReturnType) returnPair[0];
-        String returnStr = (String) returnPair[1];
-		ChromiumLib.cefswt_function_return(browser, id, fn.port, returnType.intValue(), returnStr);
+        BrowserFunction browserFunction = functions.get(id);
+        if (browserFunction != null) {
+        	Object ret = browserFunction.function(args);
+        	
+        	Object[] returnPair = convertType(ret);
+        	ReturnType returnType = (ReturnType) returnPair[0];
+        	String returnStr = (String) returnPair[1];
+        	ChromiumLib.cefswt_function_return(browser, id, fn.port, returnType.intValue(), returnStr);
+        } else {
+        	ReturnType returnType = ReturnType.Error;
+        	String returnStr = "Call to already disposed browser function";
+			ChromiumLib.cefswt_function_return(browser, id, fn.port, returnType.intValue(), returnStr);
+        }
         
         return 1;
 	}
