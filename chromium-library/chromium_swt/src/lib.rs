@@ -669,6 +669,58 @@ pub extern fn cefswt_auth_callback(callback: *mut cef::_cef_auth_callback_t, jus
 }
 
 #[no_mangle]
+pub extern fn cefswt_handlekey(browser: *mut cef::cef_browser_t, event: *const cef::_cef_key_event_t) -> c_int {
+    unsafe {
+        let get_frame = (*browser).get_main_frame.expect("null get_main_frame");
+        let main_frame = get_frame(browser);
+        if (*event).modifiers == 128 && (*event).type_ != cef::cef_key_event_type_t::KEYEVENT_RAWKEYDOWN {
+            return match (*event).native_key_code {
+                8...9 => 1,
+                _ => 0,
+            }
+        }
+        if (*event).modifiers == 128 && (*event).type_ == cef::cef_key_event_type_t::KEYEVENT_RAWKEYDOWN {
+            return match (*event).native_key_code {
+                // Select all: command + a
+                0 => {
+                    (*main_frame).select_all.unwrap()(main_frame);
+                    1
+                },
+                // Copy: command + c
+                8 => {
+                    (*main_frame).copy.unwrap()(main_frame);
+                    1
+                },
+                // Paste: command + v
+                9 => {
+                    (*main_frame).paste.unwrap()(main_frame);
+                    1
+                },
+                // Cut: command + x
+                7 => {
+                    (*main_frame).cut.unwrap()(main_frame);
+                    1
+                },
+                // Undo: command + z
+                6 => {
+                    (*main_frame).undo.unwrap()(main_frame);
+                    1
+                },
+                _ => 0,
+            }
+        }
+        else if (*event).modifiers == 130 && (*event).type_ == cef::cef_key_event_type_t::KEYEVENT_RAWKEYDOWN {
+            // Redo: command + shift + z
+            if (*event).native_key_code == 6 {
+                (*main_frame).redo.unwrap()(main_frame);
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+#[no_mangle]
 pub extern fn cefswt_set_cookie(jurl: *const c_char, jname: *const c_char, jvalue: *const c_char, jdomain: *const c_char, jpath: *const c_char, secure: i32, httponly: i32, max_age: f64) -> c_int {
     let manager = unsafe { cef::cef_cookie_manager_get_global_manager(std::ptr::null_mut()) };
     let url = utils::cef_string_from_c(jurl);

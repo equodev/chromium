@@ -13,6 +13,7 @@ import org.eclipse.swt.internal.chromium.lib.cef_context_menu_handler_t;
 import org.eclipse.swt.internal.chromium.lib.cef_cookie_visitor_t;
 import org.eclipse.swt.internal.chromium.lib.cef_display_handler_t;
 import org.eclipse.swt.internal.chromium.lib.cef_focus_handler_t;
+import org.eclipse.swt.internal.chromium.lib.cef_keyboard_handler_t;
 import org.eclipse.swt.internal.chromium.lib.cef_jsdialog_handler_t;
 import org.eclipse.swt.internal.chromium.lib.cef_life_span_handler_t;
 import org.eclipse.swt.internal.chromium.lib.cef_load_handler_t;
@@ -77,6 +78,12 @@ public class CEFFactory {
     public static cef_focus_handler_t newFocusHandler() {
         cef_focus_handler_t st = new cef_focus_handler_t();
         st.base = setBase(st, cef_focus_handler_t.sizeof);
+        return st;
+    }
+
+    public static cef_keyboard_handler_t newKeyboardHandler() {
+        cef_keyboard_handler_t st = new cef_keyboard_handler_t();
+        st.base = setBase(st, cef_keyboard_handler_t.sizeof);
         return st;
     }
 

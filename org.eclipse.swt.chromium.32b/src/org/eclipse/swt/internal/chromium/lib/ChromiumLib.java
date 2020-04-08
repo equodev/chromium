@@ -159,6 +159,12 @@ public class ChromiumLib extends C {
      */
     public static final native void cefswt_auth_callback(int /*long*/ callback, String user, String password, int cont);
 
+    /**
+     * @param browser cast=(void *)
+     * @param event cast=(void *)
+     */
+    public static final native int cefswt_handlekey(int /*long*/ browser, int /*long*/ event);
+
     public static final native void cefswt_shutdown();
 
     public static final native boolean cefswt_set_cookie(String url, String name, String value, String domain, String path, int secure, int httpOnly, double maxAge);
@@ -183,6 +189,8 @@ public class ChromiumLib extends C {
 
     public static final native int cef_load_handler_t_sizeof();
 
+    public static final native int cef_keyboard_handler_t_sizeof();
+
     public static final native int cef_display_handler_t_sizeof();
 
     public static final native int cef_request_handler_t_sizeof();
@@ -194,6 +202,8 @@ public class ChromiumLib extends C {
     public static final native int cef_focus_handler_t_sizeof();
 
     public static final native int cef_popup_features_t_sizeof();
+
+    public static final native int cef_key_event_t_sizeof();
 
     public static final native int cef_string_visitor_t_sizeof();
 
@@ -274,6 +284,13 @@ public class ChromiumLib extends C {
      * @param src cast=(const void *),flags=no_out
      * @param size cast=(size_t)
      */
+    public static final native void memmove (int /*long*/ dest, cef_keyboard_handler_t src, int size);
+
+    /**
+     * @param dest cast=(void *)
+     * @param src cast=(const void *),flags=no_out
+     * @param size cast=(size_t)
+     */
     public static final native void memmove (int /*long*/ dest, cef_string_visitor_t src, int size);
 
     /**
@@ -289,5 +306,12 @@ public class ChromiumLib extends C {
      * @param size cast=(size_t)
      */
     public static final native void memmove (cef_popup_features_t dest, int /*long*/ src, int size);
+
+    /**
+     * @param dest cast=(void *)
+     * @param src cast=(const void *),flags=no_out
+     * @param size cast=(size_t)
+     */
+    public static final native void memmove (cef_key_event_t dest, int /*long*/ src, int size);
 
 }

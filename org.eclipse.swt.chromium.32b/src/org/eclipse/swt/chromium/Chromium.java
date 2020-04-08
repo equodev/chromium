@@ -69,6 +69,8 @@ import org.eclipse.swt.internal.chromium.lib.cef_cookie_visitor_t;
 import org.eclipse.swt.internal.chromium.lib.cef_display_handler_t;
 import org.eclipse.swt.internal.chromium.lib.cef_focus_handler_t;
 import org.eclipse.swt.internal.chromium.lib.cef_jsdialog_handler_t;
+import org.eclipse.swt.internal.chromium.lib.cef_key_event_t;
+import org.eclipse.swt.internal.chromium.lib.cef_keyboard_handler_t;
 import org.eclipse.swt.internal.chromium.lib.cef_life_span_handler_t;
 import org.eclipse.swt.internal.chromium.lib.cef_load_handler_t;
 import org.eclipse.swt.internal.chromium.lib.cef_popup_features_t;
@@ -123,6 +125,7 @@ class Chromium extends WebBrowser {
 
     private static cef_client_t clientHandler;
     private static cef_focus_handler_t focusHandler;
+    private static cef_keyboard_handler_t keyboardHandler;
     private static cef_life_span_handler_t lifeSpanHandler;
     private static cef_load_handler_t loadHandler;
     private static cef_display_handler_t displayHandler;
@@ -155,6 +158,7 @@ class Chromium extends WebBrowser {
 	private boolean hasFocus;
 	private boolean ignoreFirstFocus = true;
 	private PaintListener paintListener;
+	private Listener traverseListener;
 	private WindowEvent isPopup;
 	
     public Chromium() {
@@ -270,7 +274,7 @@ class Chromium extends WebBrowser {
 //              
                 app.get_browser_process_handler_cb = new Callback(Chromium.class, "get_browser_process_handler", long.class, new Type[] {long.class});
                 app.get_browser_process_handler = checkGetAddress(app.get_browser_process_handler_cb);
-              
+                
                 browserProcessHandler.ptr = C.malloc (cef_browser_process_handler_t.sizeof);
                 ChromiumLib.memmove(browserProcessHandler.ptr, browserProcessHandler, cef_browser_process_handler_t.sizeof);
 
@@ -464,6 +468,24 @@ class Chromium extends WebBrowser {
             this.url = "about:blank";
         }
         prepareBrowser();
+        if (!"gtk".equals(SWT.getPlatform())) {
+        	traverseListener = new Listener() {
+				@Override
+				public void handleEvent(Event event) {
+					if (event.type == SWT.Traverse) {
+						//debugPrint("Ignoring TRAVERSE " + event);
+						event.doit = false;
+					}
+				}
+			};
+        }
+        if ("win32".equals(SWT.getPlatform())) {
+			chromium.addListener(SWT.Traverse, traverseListener);
+			chromium.addListener(SWT.KeyDown, traverseListener); // required to take focus on tab
+        }
+        if ("cocoa".equals(SWT.getPlatform())) {
+			chromium.addListener(SWT.KeyDown, traverseListener); // required to take focus on tab
+        }
         final Display display = chromium.getDisplay();
         final Color bg = chromium.getBackground();
         final Color bgColor = bg != null ? bg : display.getSystemColor(SWT.COLOR_WIDGET_BACKGROUND);
@@ -594,6 +616,7 @@ class Chromium extends WebBrowser {
     private static void set_client_handler() {
 		clientHandler = CEFFactory.newClient();
 		set_focus_handler();
+		set_keyboard_handler();
 		set_life_span_handler();
 		set_load_handler();
 		set_display_handler();
@@ -706,6 +729,11 @@ class Chromium extends WebBrowser {
 	        disposeCallback(focusHandler.on_set_focus_cb);
 	        disposeCallback(focusHandler.on_take_focus_cb);
 	        focusHandler = null;
+        }
+        if (keyboardHandler != null){
+            C.free(keyboardHandler.ptr);
+	        disposeCallback(keyboardHandler.on_key_event_cb);
+	        keyboardHandler = null;
         }
         if (lifeSpanHandler != null) {
 	        disposeCallback(lifeSpanHandler.do_close_cb);
@@ -1463,8 +1491,139 @@ class Chromium extends WebBrowser {
 		disposeCallback(textVisitor.visit_cb);
 		freeDelayed(textVisitor.ptr);
 		textVisitor = null;
-	}
-	
+    }
+    
+    private static void set_keyboard_handler(){
+        keyboardHandler = CEFFactory.newKeyboardHandler();
+        keyboardHandler.on_key_event_cb = new Callback(Chromium.class, "on_key_event", int.class, new Type[] {long.class, long.class, long.class, long.class});
+        keyboardHandler.on_key_event = checkGetAddress(keyboardHandler.on_key_event_cb);
+
+		clientHandler.get_keyboard_handler_cb = new Callback(Chromium.class, "get_keyboard_handler", long.class, new Type[] {long.class});
+        clientHandler.get_keyboard_handler = checkGetAddress(clientHandler.get_keyboard_handler_cb);
+        keyboardHandler.ptr = C.malloc (cef_keyboard_handler_t.sizeof);
+        ChromiumLib.memmove(keyboardHandler.ptr, keyboardHandler, cef_keyboard_handler_t.sizeof);
+    }
+
+    static int /*long*/ get_keyboard_handler(int /*long*/ client) {
+//      debug("GetKeyboardHandler");
+        if (keyboardHandler == null)
+            return 0;
+        return keyboardHandler.ptr;
+    }
+
+    static int on_key_event(int /*long*/ keyboardHandler, int /*long*/ browser, int /*long*/ event, int /*long*/ os_event) {
+    	int id = ChromiumLib.cefswt_get_id(browser);
+    	//debug("on_key_event: " + id);
+    	return safeGeInstance(id).on_key_event(browser, event, os_event);
+    }
+
+	private enum cef_event_flags {
+		NONE(0),
+	    CAPS_LOCK_ON(1),
+	    SHIFT_DOWN(2, SWT.SHIFT),
+	    CONTROL_DOWN(4, SWT.CONTROL),
+	    ALT_DOWN(8, SWT.ALT),
+	    /// Mac OS-X command key.
+	    COMMAND_DOWN(128, SWT.COMMAND),
+	    /// Mac OS-X command key.
+	    NUM_LOCK_ON(256),
+	    /// Mac OS-X command key.
+	    IS_KEY_PAD(512),
+	    /// Mac OS-X command key.
+	    IS_LEFT(1024),
+	    /// Mac OS-X command key.
+	    IS_RIGHT(2048);
+		
+		int cefFlag;
+		private int swtKey;
+
+		private cef_event_flags(int flag) {
+			this(flag, SWT.NONE);
+		}
+		private cef_event_flags(int flag, int swtKey) {
+			this.cefFlag = flag;
+			this.swtKey = swtKey;
+		}
+		
+		boolean shouldSetState(int modifiers, Event event) {
+			if (isSet(modifiers)) {
+				if (event.type == SWT.KeyDown && event.keyCode == swtKey && swtKey != SWT.NONE) {
+					return false;
+				}
+				return true;
+			}
+			else if (event.type == SWT.KeyUp && event.keyCode == swtKey && swtKey != SWT.NONE) {
+				return true;
+			}
+			return false;
+		}
+		boolean isSet(int modifiers) {
+			return (modifiers & cefFlag) != 0;
+		}
+    }
+    
+    private int on_key_event(int /*long*/ browser, int /*long*/ event, int /*long*/ os_event) {
+        cef_key_event_t e = new cef_key_event_t();
+        ChromiumLib.memmove(e, event, ChromiumLib.cef_key_event_t_sizeof());
+
+        Event firedEvent = new Event();
+        if (e.type == 0 || e.type == 1) {
+            firedEvent.type = SWT.KeyDown;
+        } else if (e.type == 2) {
+            firedEvent.type = SWT.KeyUp;
+        } else {
+            return 0;
+        }
+
+        int translateKey = e.windows_key_code == 91 || e.windows_key_code == 93 ? SWT.COMMAND : translateKey(e.windows_key_code);
+        firedEvent.keyCode = translateKey != 0 ? translateKey : e.windows_key_code /*+ 32*/;
+        firedEvent.widget = chromium;
+        firedEvent.character = e.character;
+        firedEvent.display = chromium.getDisplay();
+        int stateMask = 0;
+        if (cef_event_flags.CAPS_LOCK_ON.shouldSetState(e.modifiers, firedEvent)){
+            stateMask += SWT.CAPS_LOCK;
+        }
+        if (cef_event_flags.SHIFT_DOWN.shouldSetState(e.modifiers, firedEvent)) {
+            stateMask += SWT.SHIFT;
+        }
+        if (cef_event_flags.CONTROL_DOWN.shouldSetState(e.modifiers, firedEvent)) {
+            stateMask += SWT.CTRL;
+        }
+        if (cef_event_flags.ALT_DOWN.shouldSetState(e.modifiers, firedEvent)) {
+            stateMask += SWT.ALT;
+        }
+        if (cef_event_flags.COMMAND_DOWN.shouldSetState(e.modifiers, firedEvent)) {
+            stateMask += SWT.COMMAND;
+        }
+        if (cef_event_flags.NUM_LOCK_ON.shouldSetState(e.modifiers, firedEvent)) {
+            stateMask += SWT.NUM_LOCK;
+        }
+        if (cef_event_flags.IS_KEY_PAD.shouldSetState(e.modifiers, firedEvent)) {
+            stateMask += SWT.KEYPAD;
+        }
+        if (cef_event_flags.IS_LEFT.shouldSetState(e.modifiers, firedEvent)) {
+            stateMask += SWT.LEFT;
+        }
+        if (cef_event_flags.IS_RIGHT.shouldSetState(e.modifiers, firedEvent)) {
+            stateMask += SWT.RIGHT;
+        }
+        firedEvent.stateMask = stateMask;
+        
+//        System.out.println("e.windows_key_code: " + e.windows_key_code + " translated: "+ translateKey(e.windows_key_code));
+//        System.out.println("e.native_key_code: " + e.native_key_code + " translated: "+ translateKey(e.native_key_code));
+//        System.out.println("e.character: " + e.character + " e.unmodified_character: " + e.unmodified_character);
+        
+        sendKeyEvent(firedEvent);
+        
+        if (firedEvent.doit && "cocoa".equals(SWT.getPlatform())) {
+    		int nativeHandleKey = ChromiumLib.cefswt_handlekey(browser, event);
+//    		System.out.println("NativeHandleKey: "+nativeHandleKey);
+    		return nativeHandleKey;
+        }
+        return 0;
+    }
+
     private static void set_focus_handler() {
         focusHandler = CEFFactory.newFocusHandler();
         focusHandler.on_got_focus_cb = new Callback(Chromium.class, "on_got_focus", void.class, new Type[] {long.class, long.class});
@@ -1721,6 +1880,11 @@ class Chromium extends WebBrowser {
     	if (focusListener != null)
     		chromium.removeFocusListener(focusListener);
     	focusListener = null;
+    	if (traverseListener != null) {
+    		chromium.removeListener(SWT.Traverse, traverseListener);
+    		chromium.removeListener(SWT.KeyDown, traverseListener);
+    		traverseListener = null;
+    	}
 //    	if (browser != 0 && callClose) {
 ////          browsers.decrementAndGet();
 //    		debugPrint("call close_browser");
