@@ -85,7 +85,7 @@ pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char
         external_message_pump: 1,
         windowless_rendering_enabled: 0,
         command_line_args_disabled: 0,
-        cache_path: cache_dir_cef,
+        cache_path: utils::cef_string("."),
         root_cache_path: cache_dir_cef,
         user_data_path: utils::cef_string_empty(),
         persist_session_cookies: 1,
