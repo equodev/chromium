@@ -721,6 +721,64 @@ pub extern fn cefswt_handlekey(browser: *mut cef::cef_browser_t, event: *const c
 }
 
 #[no_mangle]
+pub extern fn cefswt_download_callback(callback: *mut c_void, jfile: *const c_char, cont: c_int) {
+    unsafe {
+        if cont == 1 {
+            let file = utils::cef_string_from_c(jfile);
+            let show_save = if cfg!(target_os = "linux") {
+                0
+            } else {
+                1
+            };
+            let callback = callback as *mut cef::_cef_before_download_callback_t;
+            (*callback).cont.unwrap()(callback, &file, show_save)
+        } else {
+            let callback = callback as *mut cef::_cef_download_item_callback_t;
+            (*callback).cancel.unwrap()(callback)
+        }
+    };
+}
+
+#[repr(C)]
+#[derive(Debug)]
+pub struct DownloadItem {
+    pub id: u32,
+    pub status: i32,
+    pub file: *mut cef::cef_string_t,
+    pub url: *mut cef::cef_string_t,
+    pub received: i64,
+    pub total: i64,
+    pub speed: i64,
+    pub percent: i32,
+}
+
+#[no_mangle]
+pub unsafe extern fn cefswt_download_item(item: *mut cef::_cef_download_item_t, st: *mut DownloadItem) {
+    if (*item).is_valid.unwrap()(item) == 1 {
+        (*st).id = (*item).get_id.unwrap()(item);
+        (*st).status = if (*item).is_in_progress.unwrap()(item) == 1 {
+            1
+        } else if (*item).is_complete.unwrap()(item) == 1 {
+            2
+        } else if (*item).is_canceled.unwrap()(item) == 1 {
+            3
+        } else {
+            0
+        };
+        //println!("DOWNLOADITEM {}: {} {} {}", (*item).get_id.unwrap()(item), (*item).is_in_progress.unwrap()(item), (*item).is_complete.unwrap()(item), (*item).is_canceled.unwrap()(item));
+        (*st).url = (*item).get_original_url.unwrap()(item);
+        (*st).file = (*item).get_full_path.unwrap()(item);
+        (*st).received = (*item).get_received_bytes.unwrap()(item);
+        (*st).total = (*item).get_total_bytes.unwrap()(item);
+        (*st).speed = (*item).get_current_speed.unwrap()(item);
+        (*st).percent = (*item).get_percent_complete.unwrap()(item);
+    } else {
+        //println!("DOWNLOADITEM NOT VALID");
+        (*st).status = -1;
+    }
+}
+
+#[no_mangle]
 pub extern fn cefswt_set_cookie(jurl: *const c_char, jname: *const c_char, jvalue: *const c_char, jdomain: *const c_char, jpath: *const c_char, secure: i32, httponly: i32, max_age: f64) -> c_int {
     let manager = unsafe { cef::cef_cookie_manager_get_global_manager(std::ptr::null_mut()) };
     let url = utils::cef_string_from_c(jurl);

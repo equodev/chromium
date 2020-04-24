@@ -12,6 +12,7 @@ import org.eclipse.swt.internal.chromium.lib.cef_client_t;
 import org.eclipse.swt.internal.chromium.lib.cef_context_menu_handler_t;
 import org.eclipse.swt.internal.chromium.lib.cef_cookie_visitor_t;
 import org.eclipse.swt.internal.chromium.lib.cef_display_handler_t;
+import org.eclipse.swt.internal.chromium.lib.cef_download_handler_t;
 import org.eclipse.swt.internal.chromium.lib.cef_focus_handler_t;
 import org.eclipse.swt.internal.chromium.lib.cef_keyboard_handler_t;
 import org.eclipse.swt.internal.chromium.lib.cef_jsdialog_handler_t;
@@ -121,6 +122,12 @@ public class CEFFactory {
         cef_context_menu_handler_t st = new cef_context_menu_handler_t();
         st.base = setBase(st, cef_context_menu_handler_t.sizeof);
         return st;
+    }
+    
+    public static cef_download_handler_t newDownloadHandler() {
+    	cef_download_handler_t st = new cef_download_handler_t();
+    	st.base = setBase(st, cef_download_handler_t.sizeof);
+    	return st;
     }
 
     public static cef_string_visitor_t newStringVisitor() {

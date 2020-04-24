@@ -112,6 +112,8 @@ public class cef_client_t {
 	public Callback get_focus_handler_cb;
 	/** @field flags=no_gen */
 	public Callback get_keyboard_handler_cb;
+	/** @field flags=no_gen */
+	public Callback get_download_handler_cb;
 
 	public static final int sizeof = ChromiumLib.cef_client_t_sizeof();
 

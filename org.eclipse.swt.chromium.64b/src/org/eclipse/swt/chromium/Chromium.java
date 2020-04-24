@@ -54,12 +54,14 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.internal.C;
 import org.eclipse.swt.internal.Callback;
+import org.eclipse.swt.internal.Compatibility;
 import org.eclipse.swt.internal.DPIUtil;
 import org.eclipse.swt.internal.Library;
 import org.eclipse.swt.internal.chromium.CEFFactory;
 import org.eclipse.swt.internal.chromium.ResourceExpander;
 import org.eclipse.swt.internal.chromium.CEFFactory.ReturnType;
 import org.eclipse.swt.internal.chromium.lib.ChromiumLib;
+import org.eclipse.swt.internal.chromium.lib.DownloadItem;
 import org.eclipse.swt.internal.chromium.lib.FunctionSt;
 import org.eclipse.swt.internal.chromium.lib.cef_app_t;
 import org.eclipse.swt.internal.chromium.lib.cef_browser_process_handler_t;
@@ -67,6 +69,7 @@ import org.eclipse.swt.internal.chromium.lib.cef_client_t;
 import org.eclipse.swt.internal.chromium.lib.cef_context_menu_handler_t;
 import org.eclipse.swt.internal.chromium.lib.cef_cookie_visitor_t;
 import org.eclipse.swt.internal.chromium.lib.cef_display_handler_t;
+import org.eclipse.swt.internal.chromium.lib.cef_download_handler_t;
 import org.eclipse.swt.internal.chromium.lib.cef_focus_handler_t;
 import org.eclipse.swt.internal.chromium.lib.cef_jsdialog_handler_t;
 import org.eclipse.swt.internal.chromium.lib.cef_key_event_t;
@@ -84,9 +87,11 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.MessageBox;
+import org.eclipse.swt.widgets.Monitor;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Widget;
@@ -132,6 +137,7 @@ class Chromium extends WebBrowser {
     private static cef_request_handler_t requestHandler;
     private static cef_jsdialog_handler_t jsDialogHandler;
     private static cef_context_menu_handler_t contextMenuHandler;
+    private static cef_download_handler_t downloadHandler;
     private static cef_client_t popupClientHandler;
 	private static cef_life_span_handler_t popupLifeSpanHandler;
 	
@@ -623,6 +629,7 @@ class Chromium extends WebBrowser {
 		set_request_handler();
 		set_jsdialog_handler();
 		set_context_menu_handler();
+		set_download_handler();
 		clientHandler.on_process_message_received_cb = new Callback(Chromium.class, "on_process_message_received", int.class, new Type[] {long.class, long.class, long.class, int.class, long.class});
 		clientHandler.on_process_message_received = checkGetAddress(clientHandler.on_process_message_received_cb);
 	
@@ -772,6 +779,12 @@ class Chromium extends WebBrowser {
 	        disposeCallback(contextMenuHandler.run_context_menu_cb);
 	        C.free(contextMenuHandler.ptr);
 	        contextMenuHandler = null;
+        }
+        if (downloadHandler != null) {
+        	disposeCallback(downloadHandler.on_before_download_cb);
+        	disposeCallback(downloadHandler.on_download_updated_cb);
+        	C.free(downloadHandler.ptr);
+        	downloadHandler = null;
         }
         if (popupClientHandler != null) {
         	disposeCallback(popupClientHandler.get_life_span_handler_cb);
@@ -1447,7 +1460,176 @@ class Chromium extends WebBrowser {
         return 0;
 	}
 
-    private void updateText() {
+	private static void set_download_handler() {
+        downloadHandler = CEFFactory.newDownloadHandler();
+        downloadHandler.on_before_download_cb = new Callback(Chromium.class, "on_before_download", void.class, new Type[] {long.class, long.class, long.class, long.class, long.class});
+        downloadHandler.on_before_download = checkGetAddress(downloadHandler.on_before_download_cb);
+        downloadHandler.on_download_updated_cb = new Callback(Chromium.class, "on_download_updated", void.class, new Type[] {long.class, long.class, long.class, long.class});
+        downloadHandler.on_download_updated = checkGetAddress(downloadHandler.on_download_updated_cb);
+        
+		clientHandler.get_download_handler_cb = new Callback(Chromium.class, "get_download_handler", long.class, new Type[] {long.class});
+        clientHandler.get_download_handler = checkGetAddress(clientHandler.get_download_handler_cb);
+        downloadHandler.ptr = C.malloc (cef_download_handler_t.sizeof);
+        ChromiumLib.memmove(downloadHandler.ptr, downloadHandler, cef_download_handler_t.sizeof);
+    }
+    
+    static long /*int*/ get_download_handler(long /*int*/ client) {
+//        debug("GetDownloadHandler");
+        if (downloadHandler == null)
+    		return 0;
+        return downloadHandler.ptr;
+    }
+
+    static void on_before_download(long /*int*/ self, long /*int*/ browser, long /*int*/ download_item, long /*int*/ suggested_name, long /*int*/ callback) {
+    	int id = ChromiumLib.cefswt_get_id(browser);
+    	debug("on_before_download: " + id);
+    	safeGeInstance(id).on_before_download(browser, download_item, suggested_name, callback);
+    }
+    
+    private void on_before_download(long /*int*/ browser, long /*int*/ download_item, long /*int*/ suggested_name, long /*int*/ callback) {
+    	DownloadItem item = new DownloadItem();
+    	String name = null;
+    	if (suggested_name != 0) {
+    		name = ChromiumLib.cefswt_cefstring_to_java(suggested_name);
+    	}
+    	if ("gtk".equals(SWT.getPlatform())) {
+	    	FileDialog dlg = new FileDialog(chromium.getShell(), SWT.SAVE);
+	    	dlg.setText("Save File");
+	    	dlg.setOverwrite(true);
+	    	if (name != null && !name.isEmpty()) {
+	    		dlg.setFileName(name);
+	    	}
+	    	String selected = dlg.open();
+	    	if (selected != null) {
+	    		ChromiumLib.cefswt_download_item(download_item, item);
+	    		if (item.status != -1) {
+    				new Download(item, selected, this);
+	    		}
+	    		ChromiumLib.cefswt_download_callback(callback, selected, 1);
+	    	}
+    	} else {
+			new Download(item, name, this);
+    		ChromiumLib.cefswt_download_callback(callback, null, 1);
+    	}
+    }
+
+    static void on_download_updated(long /*int*/ self, long /*int*/ browser, long /*int*/ download_item, long /*int*/ callback) {
+    	int id = ChromiumLib.cefswt_get_id(browser);
+    	//debug("on_download_updated: " + id);
+    	safeGeInstance(id).on_download_updated(browser, download_item, callback);
+    }
+    
+    private void on_download_updated(long /*int*/ browser, long /*int*/ download_item, long /*int*/ callback) {
+    	DownloadItem item = new DownloadItem();
+		ChromiumLib.cefswt_download_item(download_item, item);
+		if (item.status != -1) {
+			Download download = Download.downloads.get(item.id);
+			if (download != null) {
+				download.update(item, callback);
+				if (!download.open) download.show();
+			}
+		}
+    }
+
+    static class Download {
+    	static final Map<Integer, Download> downloads = new HashMap<>();
+    	private int id;
+    	private String name;
+    	private Shell shell;
+		private Label statusLabel;
+		private Button cancel;
+		private long /*int*/ cancel_cb;
+		final Listener cancelListener = event -> {
+			ChromiumLib.cefswt_download_callback(cancel_cb, null, 0);
+			dispose();
+		};
+		private boolean open;
+		private Label nameLabel;
+		
+    	public Download(DownloadItem item, String name, Chromium browser) {
+    		this.id = item.id;
+    		this.name = name;
+    		Download.downloads.put(item.id, this);
+			shell = new Shell();
+			String msg = Compatibility.getMessage ("SWT_FileDownload"); //$NON-NLS-1$
+			shell.setText (msg);
+			GridLayout gridLayout = new GridLayout ();
+			gridLayout.marginHeight = 15;
+			gridLayout.marginWidth = 15;
+			gridLayout.verticalSpacing = 20;
+			shell.setLayout (gridLayout);
+			
+			nameLabel = new Label (shell, SWT.WRAP);
+			setText(item);
+			GridData data = new GridData ();
+			Monitor monitor = browser.chromium.getMonitor ();
+			int maxWidth = monitor.getBounds ().width / 2;
+			int width = nameLabel.computeSize (SWT.DEFAULT, SWT.DEFAULT).x;
+			data.widthHint = Math.min (width, maxWidth);
+			data.horizontalAlignment = GridData.FILL;
+			data.grabExcessHorizontalSpace = true;
+			nameLabel.setLayoutData (data);
+			
+			statusLabel = new Label (shell, SWT.NONE);
+			statusLabel.setText (Compatibility.getMessage ("SWT_Download_Started")); //$NON-NLS-1$
+			data = new GridData (GridData.FILL_BOTH);
+			statusLabel.setLayoutData (data);
+			
+			cancel = new Button (shell, SWT.PUSH);
+			cancel.setText (Compatibility.getMessage ("SWT_Cancel")); //$NON-NLS-1$
+			data = new GridData ();
+			data.horizontalAlignment = GridData.CENTER;
+			cancel.setLayoutData (data);
+			cancel.addListener (SWT.Selection, cancelListener);
+		}
+
+		private void show() {
+			open = true;
+			shell.pack ();
+			shell.open ();
+		}
+
+		private void update(DownloadItem item, long /*int*/ cancel_cb) {
+			this.cancel_cb = cancel_cb;
+			int status = item.status;
+			if (shell.isDisposed()) {
+				dispose();
+				return;
+			}
+			if (status == 2) { // complete
+				Display.getDefault().timerExec(3000, this::dispose);
+			}
+			
+			setText(item);
+			
+			long current = item.received / 1024L;
+			long total = item.total / 1024L;
+			String message = Compatibility.getMessage ("SWT_Download_Status", new Object[] {Long.valueOf(current), new Long(total)}); //$NON-NLS-1$
+			message = message + " at " + (item.speed / 1024L) + " KB/s " + (item.percent != -1 ? "("+item.percent+"%)" : "");
+			statusLabel.setText (message);
+			
+			if (status == 0 || status == 3) { // error or cancel
+				statusLabel.setText (Compatibility.getMessage ("SWT_Download_Error")); //$NON-NLS-1$
+				cancel.removeListener (SWT.Selection, cancelListener);
+				cancel.addListener (SWT.Selection, event -> dispose());
+				return;
+			}
+		}
+
+		private void setText(DownloadItem item) {
+			String nameString = item.file != 0 ? ChromiumLib.cefswt_cefstring_to_java(item.file) : name;
+			String urlString = ChromiumLib.cefswt_cefstring_to_java(item.url);
+			String msg = Compatibility.getMessage ("SWT_Download_Location", new Object[] {nameString +"\n", urlString}); //$NON-NLS-1$
+			nameLabel.setText (msg);
+		}
+
+		private void dispose() {
+			Download.downloads.remove(id);
+			shell.dispose();
+		}
+    }
+
+	private void updateText() {
         if (browser != 0 && !isDisposed() && disposing == Dispose.No) {
             debugPrint("update text");
             if (textVisitor != null) {

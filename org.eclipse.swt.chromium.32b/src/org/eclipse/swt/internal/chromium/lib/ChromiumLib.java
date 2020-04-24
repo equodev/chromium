@@ -158,6 +158,15 @@ public class ChromiumLib extends C {
      * @param callback cast=(void *)
      */
     public static final native void cefswt_auth_callback(int /*long*/ callback, String user, String password, int cont);
+    /**
+     * @param callback cast=(void *)
+     */
+    public static final native void cefswt_download_callback(int /*long*/ callback, String selected, int cont);
+    /**
+     * @param download_item cast=(void *)
+     * @param item flags=no_in
+     */
+    public static final native void cefswt_download_item(int /*long*/ download_item, DownloadItem item);
 
     /**
      * @param browser cast=(void *)
@@ -198,6 +207,8 @@ public class ChromiumLib extends C {
     public static final native int cef_jsdialog_handler_t_sizeof();
 
     public static final native int cef_context_menu_handler_t_sizeof();
+    
+    public static final native int cef_download_handler_t_sizeof();
 
     public static final native int cef_focus_handler_t_sizeof();
 
@@ -271,6 +282,13 @@ public class ChromiumLib extends C {
      * @param size cast=(size_t)
      */
     public static final native void memmove (int /*long*/ dest, cef_context_menu_handler_t src, int size);
+
+    /**
+     * @param dest cast=(void *)
+     * @param src cast=(const void *),flags=no_out
+     * @param size cast=(size_t)
+     */
+    public static final native void memmove (int /*long*/ dest, cef_download_handler_t src, int size);
 
     /**
      * @param dest cast=(void *)
