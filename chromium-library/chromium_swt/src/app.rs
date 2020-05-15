@@ -125,7 +125,6 @@ pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: *mut c
 
 #[cfg(target_os = "macos")]
 fn cef_window_info(hwnd: *mut c_void, w: c_int, h: c_int) -> cef::_cef_window_info_t {
-    use std::os::raw::{c_void};
     let window_info = cef::_cef_window_info_t {
         x: 0,
         y: 0,
@@ -145,7 +144,6 @@ fn cef_window_info(hwnd: *mut c_void, w: c_int, h: c_int) -> cef::_cef_window_in
 
 #[cfg(target_os = "macos")]
 pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: *mut c_void, x: c_int, y: c_int, w: c_int, h: c_int) {
-    use std::os::raw::{c_void};
     //unsafe { println!("orig window_info {} {:?}", hwnd, (*window_info)); };
     unsafe { 
         (*window_info).x = x;
