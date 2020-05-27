@@ -188,6 +188,7 @@ class Chromium extends WebBrowser {
     }
     
     public void setBrowser (Browser browser) {
+        super.setBrowser(browser);
         this.chromium = browser;
     }
     
@@ -1116,7 +1117,7 @@ class Chromium extends WebBrowser {
 
     private int on_before_browse(int /*long*/ browser2, int /*long*/ frame, int /*long*/ request) {
     	if (isDisposed() || locationListeners == null) return 0;
-        if (ChromiumLib.cefswt_is_main_frame(frame)) {
+//        if (ChromiumLib.cefswt_is_main_frame(frame)) {
             LocationEvent event = new LocationEvent(chromium);
             event.display = chromium.getDisplay();
             event.widget = chromium;
@@ -1136,8 +1137,8 @@ class Chromium extends WebBrowser {
             	enableProgress = new CompletableFuture<>();
             }
             return event.doit ? 0 : 1;
-        }
-        return 0;
+//        }
+//        return 0;
 	}
 
     static int get_auth_credentials(int /*long*/ self, int /*long*/ browser, int /*long*/ origin_url, int isProxy, int /*long*/ host, int port, int /*long*/ realm, int /*long*/ scheme, int /*long*/ callback) {
