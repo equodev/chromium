@@ -82,7 +82,7 @@ pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char
         framework_dir_path: framework_dir_cef,
         main_bundle_path: framework_dir_cef,
         multi_threaded_message_loop: 0,
-        external_message_pump: 1,
+        external_message_pump: if cfg!(target_os = "linux") { 0 } else { 1 },
         windowless_rendering_enabled: 0,
         command_line_args_disabled: 0,
         cache_path: cache_dir_cef,
