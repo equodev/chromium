@@ -62,8 +62,8 @@ public class Test_org_eclipse_swt_chromium_Browser extends Test_org_eclipse_swt_
 
 	// CONFIG
 	/** This forces tests to display the shell/browser for a brief moment. Useful to see what's going on with broken jUnits */
-	boolean debug_show_browser = false; // true to display browser.
-	int     debug_show_browser_timeout_seconds = 15; // if above set to true, then how long should the browser be shown for.
+	boolean debug_show_browser = true; // true to display browser.
+	int     debug_show_browser_timeout_seconds = 2; // if above set to true, then how long should the browser be shown for.
 													// This is independent of whether test passes or fails.
 
 	boolean debug_verbose_output = true;

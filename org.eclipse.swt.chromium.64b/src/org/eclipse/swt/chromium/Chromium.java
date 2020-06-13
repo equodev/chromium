@@ -1833,9 +1833,16 @@ class Chromium extends WebBrowser {
                 throw new SWTException("Failed to get cookies");
             }
             try {
-                cookieVisited.get(100, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                // no cookies found
+        		long end = System.currentTimeMillis()+200;
+        		Display display = Display.getCurrent();
+        		while (!cookieVisited.isDone() && !display.isDisposed() && System.currentTimeMillis() < end) {
+//        			debug("in cookie loop");
+        			loopWorkRunnable.run();
+        			if (!display.readAndDispatch()) {
+        				display.sleep();
+        			}
+        		}
+//            	debug("end cookie loop");
             } finally {
                 cookieVisited = null;
             }

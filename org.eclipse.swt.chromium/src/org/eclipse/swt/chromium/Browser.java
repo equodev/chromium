@@ -1041,7 +1041,8 @@ public class Browser extends Composite {
     public void dispose() {
     	if (isDisposed ()) return;
         checkWidget();
-        webBrowser.dispose();
+        if (webBrowser != null)
+        	webBrowser.dispose();
         super.dispose();
         webBrowser = null;
     }
