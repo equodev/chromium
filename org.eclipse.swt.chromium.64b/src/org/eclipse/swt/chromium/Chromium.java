@@ -254,7 +254,7 @@ class Chromium extends WebBrowser {
     	}
     }
 
-    private void initCEF(Display display) {
+    private static void initCEF(Display display) {
         synchronized (lib) {
             if (app == null) {
 //                CEFFactory.create();

@@ -1040,7 +1040,6 @@ public class Browser extends Composite {
     @Override
     public void dispose() {
     	if (isDisposed ()) return;
-        checkWidget();
         if (webBrowser != null)
         	webBrowser.dispose();
         super.dispose();
