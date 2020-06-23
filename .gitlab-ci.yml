@@ -10,7 +10,7 @@ variables:
   MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2repo"
   RELEASE: "true"
   VER: "76"
-  QUAL: ".beta"
+  QUAL: ".1"
 
 p2repo: &build
   image: maven:3.5-jdk-8-alpine
@@ -21,6 +21,7 @@ p2repo: &build
     paths:
     - org.eclipse.swt.chromium.tests/target/surefire-reports
     - org.eclipse.swt.chromium.repository/target/repository
+    - org.eclipse.swt.chromium.repository/target/*.zip
 
 p2repo.32b:
   variables:
@@ -49,11 +50,11 @@ publish: &publish
   - echo "version $VERSION"
   script:
   - mkdir -p public
-  - cp -r org.eclipse.swt.chromium.repository/target/repository public
+  - cp -r org.eclipse.swt.chromium.repository/target/* public
   - du -h -s public || true
   - mc config host add do https://ams3.digitaloceanspaces.com "$DO_KEY" "$DO_SECRET" --lookup auto
 #  - mc mb -p do/$DO_BUCKET
-  - mc mirror --overwrite --remove public/repository do/$DO_BUCKET/$CI_ENVIRONMENT_NAME/repository/
+  - mc mirror --overwrite --remove public/ do/$DO_BUCKET/$CI_ENVIRONMENT_NAME/
   - current=$(date -u +"%FT%T.%3NZ")
   - echo "current $current"
   - 'echo "{\"version\": \"${VERSION}\", \"created\": \"${current}\", \"downloadInstallPath\": \"/repository/plugins/org.eclipse.swt.chromium\", \"downloadUpdatePath\": \"/repository/features/org.eclipse.swt.chromium.feature\"}" > public/metadata.json'
