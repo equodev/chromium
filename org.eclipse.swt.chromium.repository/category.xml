@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <site>
-   <feature url="features/org.eclipse.swt.chromium.feature_76.0.0.qualifier.jar" id="org.eclipse.swt.chromium.feature" version="76.0.0.qualifier">
+   <feature url="features/org.eclipse.swt.chromium.feature_76.0.1.qualifier.jar" id="org.eclipse.swt.chromium.feature" version="76.0.1.qualifier">
       <category name="org.eclipse.swt.chromium"/>
    </feature>
-   <feature url="features/org.eclipse.swt.chromium.feature.32b_76.0.0.qualifier.jar" id="org.eclipse.swt.chromium.feature.32b" version="76.0.0.qualifier" arch="x86">
+   <feature url="features/org.eclipse.swt.chromium.feature.32b_76.0.1.qualifier.jar" id="org.eclipse.swt.chromium.feature.32b" version="76.0.1.qualifier" arch="x86">
       <category name="org.eclipse.swt.chromium"/>
    </feature>
    <category-def name="org.eclipse.swt.chromium" label="Chromium SWT Browser"/>
