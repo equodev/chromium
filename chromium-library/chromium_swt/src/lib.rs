@@ -675,7 +675,7 @@ pub extern fn cefswt_handlekey(browser: *mut cef::cef_browser_t, event: *const c
         let main_frame = get_frame(browser);
         if (*event).modifiers == 128 && (*event).type_ != cef::cef_key_event_type_t::KEYEVENT_RAWKEYDOWN {
             return match (*event).native_key_code {
-                8...9 => 1,
+                8..=9 => 1,
                 _ => 0,
             }
         }

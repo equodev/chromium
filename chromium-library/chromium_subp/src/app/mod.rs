@@ -1,11 +1,10 @@
 use cef;
 use utils;
 use socket;
-// use super::Step;
-// use Msg;
 use std::os::raw::{c_int};
 use std::{mem};
 use std::ffi::{CString, CStr};
+use std::collections::BTreeMap;
 
 pub struct Base {
 }
@@ -63,20 +62,19 @@ unsafe impl Send for Browser {}
 
 struct RenderProcessHandler {
     cef: cef::_cef_render_process_handler_t,
-    function_handler: Option<V8Handler>,
-    // function: *mut cef::cef_v8value_t,
-    context: *mut cef::cef_v8context_t,
-    functions: Vec<(c_int, cef::cef_string_userfree_t)>,
+    browsers: BTreeMap<c_int, BrowserFunctions>,
+}
+
+struct BrowserFunctions {
+    functions: BTreeMap<c_int, cef::cef_string_userfree_t>,
+    v8_handler: V8Handler,
 }
 
 impl RenderProcessHandler {
     fn new() -> RenderProcessHandler {
         RenderProcessHandler {
             cef: RenderProcessHandler::cef_render_process_handler(),
-            function_handler: Option::None,
-            // function: ::std::ptr::null_mut(),
-            context: ::std::ptr::null_mut(),
-            functions: Vec::new(),
+            browsers: BTreeMap::new(),
         }
     }
 
@@ -87,28 +85,36 @@ impl RenderProcessHandler {
     fn cef_render_process_handler() -> cef::_cef_render_process_handler_t {
         unsafe extern "system" fn on_context_created(
             self_: *mut cef::_cef_render_process_handler_t,
-            _browser: *mut cef::_cef_browser_t,
+            browser: *mut cef::_cef_browser_t,
             frame: *mut cef::_cef_frame_t,
             context: *mut cef::_cef_v8context_t,
         ) {
             if (*frame).is_main.unwrap()(frame) == 1 {
-                //println!("CONTEXT CREATED");
                 let rph = self_ as *mut RenderProcessHandler;
-                
-                (*rph).function_handler = Option::Some(V8Handler::new(frame));
-                let handler: Option<&mut V8Handler> = (*rph).function_handler.as_mut();
-                let handler: &mut V8Handler = handler.expect("no handler");
-                
-                // (*rph).function = func;
-                (*rph).context = context;
-                
-                // Retrieve the context's window object.
-                let global = (*context).get_global.unwrap()(context);
-
-                let pendings = &mut (*rph).functions;
-                for pending in pendings.iter() {
-                    let (id, name) = pending;
-                    register_function(*id, *name, global, handler);
+                let browserid = (*browser).get_identifier.unwrap()(browser);
+                //println!("CONTEXT CREATED is main {:?}", browserid);
+                match (*rph).browsers.get_mut(&browserid) {
+                    Some(fns) => {
+                        //println!("new main context in same browser, reregister functions or pendings");
+                        let handler = &mut fns.v8_handler;
+                        let s = (*context).enter.unwrap()(context);
+                        assert_eq!(s, 1);
+                        let global = (*context).get_global.unwrap()(context);
+                        
+                        let functions = &mut fns.functions;
+                        for (id, name) in functions.iter() {
+                            register_function(*id, *name, global, handler);
+                        }
+                        let s = (*context).exit.unwrap()(context);
+                        assert_eq!(s, 1);
+                    },
+                    None => {
+                        //println!("register new context");
+                        (*rph).browsers.insert(browserid, BrowserFunctions {
+                            functions: BTreeMap::new(),
+                            v8_handler: V8Handler::new(frame),
+                        });
+                    }
                 }
             }
         }
@@ -116,7 +122,7 @@ impl RenderProcessHandler {
         unsafe extern "system" fn on_process_message_received(
             self_: *mut cef::_cef_render_process_handler_t,
             browser: *mut cef::_cef_browser_t,
-            _frame: *mut cef::_cef_frame_t,
+            frame: *mut cef::_cef_frame_t,
             source_process: cef::cef_process_id_t,
             message: *mut cef::_cef_process_message_t,
         ) -> c_int {
@@ -132,26 +138,40 @@ impl RenderProcessHandler {
                     1
                 }
                 else if cef::cef_string_utf16_cmp(&utils::cef_string("function"), name) == 0 {
-                    //println!("RECEIVED FUNCTION MSG {:?} {} {}", source_process, cef::cef_currently_on(cef::cef_thread_id_t::TID_IO), cef::cef_currently_on(cef::cef_thread_id_t::TID_RENDERER));
-
+                    
                     let args = (*message).get_argument_list.unwrap()(message);
                     let id = (*args).get_int.unwrap()(args, 0);
                     let name = (*args).get_string.unwrap()(args, 1);
-
-                    let context = (*rph).context;
-                    (*rph).functions.push((id, name));
-                    if !(*rph).context.is_null() {
-                        let handler: Option<&mut V8Handler> = (*rph).function_handler.as_mut();
-                        let handler: &mut V8Handler = handler.expect("no handler");
-                        // let frame = (*browser).get_main_frame.unwrap()(browser);
-                        // let context = (*frame).get_v8context.unwrap()(frame);
-                        let s = (*context).enter.unwrap()(context);
-                        assert_eq!(s, 1);
-                        let global = (*context).get_global.unwrap()(context);
-
-                        register_function(id, name, global, handler);
-                        let s = (*context).exit.unwrap()(context);
-                        assert_eq!(s, 1);
+                    
+                    let browserid = (*browser).get_identifier.unwrap()(browser);
+                    //println!("RECEIVED FUNCTION MSG for id {}: {:?} {} {}", browserid, source_process, cef::cef_currently_on(cef::cef_thread_id_t::TID_IO), cef::cef_currently_on(cef::cef_thread_id_t::TID_RENDERER));
+                    match (*rph).browsers.get_mut(&browserid) {
+                        Some(fns) => {
+                            let frame = (*browser).get_main_frame.unwrap()(browser);
+                            let context = (*frame).get_v8context.unwrap()(frame);
+                            match fns.functions.insert(id, name) {
+                                Some(old) => cef::cef_string_userfree_utf16_free(old),
+                                None => {},
+                            };
+                            let handler = &mut fns.v8_handler;
+                            let s = (*context).enter.unwrap()(context);
+                            assert_eq!(s, 1);
+                            let global = (*context).get_global.unwrap()(context);
+                            
+                            //println!("register from msg");
+                            register_function(id, name, global, handler);
+                            let s = (*context).exit.unwrap()(context);
+                            assert_eq!(s, 1);
+                        },
+                        None => {
+                            //println!("received msg but context is not created");
+                            let mut fns = BTreeMap::new();
+                            fns.insert(id, name);
+                            (*rph).browsers.insert(browserid, BrowserFunctions {
+                                functions: fns,
+                                v8_handler: V8Handler::new(frame),
+                            });
+                        }
                     }
                     1
                 }
