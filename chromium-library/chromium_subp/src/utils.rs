@@ -45,6 +45,9 @@ pub fn prepare_args() -> cef::_cef_main_args_t {
         let carg = CString::new("--enable-webgl-draft-extensions").expect("cant create arg");
         let mp = carg.into_raw();
         args.push(mp);
+        let carg = CString::new("--use-mock-keychain").expect("cant create arg");
+        let mp = carg.into_raw();
+        args.push(mp);
     }
 
     let args_size = args.len() as i32;
