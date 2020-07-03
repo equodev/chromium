@@ -10,7 +10,7 @@ variables:
   MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2repo"
   RELEASE: "true"
   VER: "76"
-  QUAL: ".1"
+  QUAL: ".2"
 
 p2repo: &build
   image: maven:3.5-jdk-8-alpine
