@@ -907,7 +907,7 @@ class Chromium extends WebBrowser {
 			  } else {
 				  event.required = true;
 			  }
-		  } else {
+		  } else if (!event.required) {
 			  createDefaultPopup(windowInfo, client, event);
 		  }
 		});
