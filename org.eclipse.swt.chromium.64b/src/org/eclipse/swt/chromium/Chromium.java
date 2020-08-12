@@ -633,7 +633,7 @@ class Chromium extends WebBrowser {
 
     static void on_before_close(long /*int*/ plifeSpanHandler, long /*int*/ browser) {
     	int id = ChromiumLib.cefswt_get_id(browser);
-    	debug("OnBeforeClose" + id);
+    	debug("OnBeforeClose: " + id);
     	instances.remove(id).on_before_close(browser);
     	
 		int decrementAndGet = browsers.decrementAndGet();
@@ -651,9 +651,20 @@ class Chromium extends WebBrowser {
     }
     
     private void on_before_close(long /*int*/ browser) {
-    	if (disposing == Dispose.FromBrowser && "gtk".equals(SWT.getPlatform())) {
-    		chromium.dispose();
-    	}
+		if (chromium != null && closeWindowListeners != null) {
+			Display display = Display.getDefault();
+            org.eclipse.swt.browser.WindowEvent event = new org.eclipse.swt.browser.WindowEvent(chromium);
+            event.display = display;
+            event.widget = chromium;
+//            event.browser = chromium;
+            for (CloseWindowListener listener : closeWindowListeners) {
+                listener.close(event);
+            }
+        }
+//		if (disposing == Dispose.FromBrowser && "gtk".equals(SWT.getPlatform())) {
+//    	if (disposing == Dispose.FromBrowser) {
+//    		chromium.dispose();
+//    	}
     	this.browser = 0;
     	this.chromium = null;
     	debugPrint("closed");
@@ -751,16 +762,6 @@ class Chromium extends WebBrowser {
             debugPrint("DoClose popup:" + Chromium.this.browser+":"+browser);
             return 0;
         }
-        Display display = Display.getDefault();
-		if (/*!disposing &&*/ !isDisposed() && closeWindowListeners != null) {
-            org.eclipse.swt.browser.WindowEvent event = new org.eclipse.swt.browser.WindowEvent(chromium);
-            event.display = display;
-            event.widget = chromium;
-//            event.browser = chromium;
-            for (CloseWindowListener listener : closeWindowListeners) {
-                listener.close(event);
-            }
-        }
 
         if (disposing == Dispose.FromClose || disposing == Dispose.Unload || disposing == Dispose.UnloadClosed || disposing == Dispose.WaitIfClosed) {
     		disposing = Dispose.DoIt;
@@ -768,9 +769,9 @@ class Chromium extends WebBrowser {
         else if (disposing == Dispose.No) {
         	if (chromium != null) {
         		disposing = Dispose.FromBrowser;
-        		if (!"gtk".equals(SWT.getPlatform())) {
+//        		if (!"gtk".equals(SWT.getPlatform())) {
         			chromium.dispose();
-        		}
+//        		}
         	}
         }
 //        if ("gtk".equals(SWT.getPlatform())) {
@@ -780,7 +781,8 @@ class Chromium extends WebBrowser {
         // returning 0, cause the window to close 
         debugPrint("AFTER DoClose");
 
-        return disposing == Dispose.FromBrowser && "gtk".equals(SWT.getPlatform()) ? 0 : 1;
+//        return disposing == Dispose.FromBrowser && "gtk".equals(SWT.getPlatform()) ? 0 : 1;
+        return 1;
 	}
 
 	static void on_after_created(long /*int*/ self, long /*int*/ browser) {
@@ -921,13 +923,25 @@ class Chromium extends WebBrowser {
 		return 0;
 	}
 
-	private void waitForClose(Display display) {
-    	if (display == null || display.isDisposed()) return;
+	private void waitForClose(Display display, int step) {
+//    	if (display == null || display.isDisposed()) return;
+		System.out.println("Chromium.waitForClose() "+step);
+    	if (display == null || display.isDisposed() || step > 1000) return;
+    	int s = step+1;
         display.asyncExec(() -> {
             if (browser != 0) {
-                waitForClose(display);
+                waitForClose(display, s);
             }
         });
+//    	if (display == null || display.isDisposed() || step > 500) return;
+//    	long end = System.currentTimeMillis()+5000;
+//    	while (browser != 0 && !display.isDisposed() && System.currentTimeMillis() < end) {
+//    		ChromiumLib.cefswt_do_message_loop_work();
+//			if (!display.readAndDispatch()) {
+//				display.sleep();
+//			}
+//		}
+//    	System.out.println("AFTER Chromium.waitForClose()");
     }
     
 	private static void set_load_handler() {
@@ -1472,7 +1486,7 @@ class Chromium extends WebBrowser {
     
     static void on_got_focus(long /*int*/ focusHandler, long /*int*/ browser) {
     	int id = ChromiumLib.cefswt_get_id(browser);
-    	debug("on_got_focus: " + id);
+//    	debug("on_got_focus: " + id);
     	safeGeInstance(id).on_got_focus(browser);
     }
 
@@ -1488,7 +1502,7 @@ class Chromium extends WebBrowser {
 
 	static int on_set_focus(long /*int*/ focusHandler, long /*int*/ browser, int focusSource) {
     	int id = ChromiumLib.cefswt_get_id(browser);
-    	debug("on_set_focus: " + id);
+//    	debug("on_set_focus: " + id);
     	return safeGeInstance(id).on_set_focus(browser);
     }
     
@@ -1675,7 +1689,7 @@ class Chromium extends WebBrowser {
 			else if (disposing == Dispose.UnloadClosed) {
 				debug("in close, disposing:"+disposing);
 				disposing = Dispose.WaitIfClosed;
-				end = System.currentTimeMillis() + LOOP*2;
+				end = System.currentTimeMillis() + LOOP*4;
 			}
 			else if (disposing == Dispose.DoIt) {
 				debug("in close, disposing:"+disposing);
@@ -1697,18 +1711,20 @@ class Chromium extends WebBrowser {
     	debugPrint("in dispose, disposing "+ disposing);
     	if (disposing == Dispose.FromDispose || isDisposed())
     		return;
-    	boolean callClose = disposing == Dispose.No;
+//    	boolean callClose = disposing == Dispose.No;
+    	boolean callClose = false;
     	disposing = Dispose.FromDispose;
     	disposingAny++;
     	if (focusListener != null)
     		chromium.removeFocusListener(focusListener);
     	focusListener = null;
-    	if (browser != 0 && callClose) {
-//          browsers.decrementAndGet();
-    		debugPrint("call close_browser");
-    		ChromiumLib.cefswt_close_browser(browser, 1);
-    		waitForClose(Display.getDefault());
-    	}
+//    	if (browser != 0 && callClose) {
+////          browsers.decrementAndGet();
+//    		debugPrint("call close_browser");
+//    		ChromiumLib.cefswt_close_browser(browser, 1);
+//    		waitForClose(Display.getDefault(), 1);
+//    	}
+//    	waitForClose(Display.getDefault(), 1);
     }
 
     /**
