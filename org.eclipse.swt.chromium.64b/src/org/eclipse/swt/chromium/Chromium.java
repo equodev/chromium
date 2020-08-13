@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTError;
@@ -1251,7 +1252,7 @@ class Chromium extends WebBrowser {
 
 	private static void set_jsdialog_handler() {
         jsDialogHandler = CEFFactory.newJsDialogHandler();
-        if ("gtk".equals(SWT.getPlatform())) {
+        if (useSwtDialogs()) {
         	jsDialogHandler.on_jsdialog_cb = new Callback(Chromium.class, "on_jsdialog", int.class, new Type[] {long.class, long.class, long.class, int.class, long.class, long.class, long.class, int.class});
         	jsDialogHandler.on_jsdialog = checkGetAddress(jsDialogHandler.on_jsdialog_cb);
         }
@@ -1291,7 +1292,7 @@ class Chromium extends WebBrowser {
         return 1;
 	}
 
-	private int openJsDialog(int dialog_type, String title, String msg, long /*int*/ default_prompt_text, long /*int*/ callback) {
+	private void openJsDialog(int dialog_type, String title, String msg, long /*int*/ default_prompt_text, long /*int*/ callback) {
 		int style = SWT.ICON_WORKING;
         switch (dialog_type) {
         case cef_jsdialog_handler_t.JSDIALOGTYPE_ALERT:
@@ -1304,15 +1305,28 @@ class Chromium extends WebBrowser {
         	style = SWT.ICON_QUESTION | SWT.YES | SWT.NO;
         	break;
         }
-        MessageBox box = new MessageBox(chromium.getShell(), style);
-		box.setText(title);
-        box.setMessage(msg);
-        int open = box.open();
-        int r = open == SWT.OK || open == SWT.YES ? 1 : 0;
-        debug("JS Dialog Closed with "+r);
-		ChromiumLib.cefswt_dialog_close(callback, r, default_prompt_text);
-        chromium.getShell().forceActive();
-        return r;
+        Consumer<Integer> close = open -> {
+        	int r = open == SWT.OK || open == SWT.YES ? 1 : 0;
+        	debug("JS Dialog Closed with "+r);
+        	ChromiumLib.cefswt_dialog_close(callback, r, default_prompt_text);
+        	chromium.getShell().forceActive();
+        };
+        if (!"test".equals(System.getProperty("swt.chromium.dialogs", ""))) {
+        	MessageBox box = new MessageBox(chromium.getShell(), style);
+        	box.setText(title);
+        	box.setMessage(msg);
+        	int open = box.open();
+        	close.accept(open);
+        } else {
+        	CompletableFuture<Integer> f = (CompletableFuture<Integer>) chromium.getData("swt.chromium.dialogs");
+        	if (f != null) {
+        		f.thenAccept(close);
+        		chromium.setData("swt.chromium.dialogs", null);
+        		while (!f.isDone()) {
+    				if (!chromium.getDisplay().readAndDispatch()) chromium.getDisplay().sleep();
+    			}
+        	}
+        }
 	}
 
 	static void on_dialog_closed(long /*int*/ self_, long /*int*/ browser) {
@@ -1337,7 +1351,7 @@ class Chromium extends WebBrowser {
 		if (disposing == Dispose.FromClose) {
 			disposing = Dispose.Unload;
 			
-			if ("gtk".equals(SWT.getPlatform())) {
+			if (useSwtDialogs()) {
 		        String msg = ChromiumLib.cefswt_cefstring_to_java(message_text);
 //				Display.getDefault().asyncExec(() -> {
 //					ChromiumLib.cefswt_dialog_close(callback, 0, 0);
@@ -1348,6 +1362,10 @@ class Chromium extends WebBrowser {
 			}
 		}
 		return 0;
+	}
+
+	private static boolean useSwtDialogs() {
+		return "gtk".equals(SWT.getPlatform()) || !"native".equals(System.getProperty("swt.chromium.dialogs", "swt"));
 	}
 
 	private static void set_context_menu_handler() {
