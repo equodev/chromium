@@ -1,73 +1,11 @@
-stages:
-  - build
-  - deploy
-
-cache:
-  paths:
-  - .m2repo/
+include:
+  - project: 'maketech-oss/chromium.build'
+    ref: build
+    file: '/.chromium.swt-ci.yml'
 
 variables:
-  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2repo"
-  RELEASE: "true"
   VER: "76"
-  QUAL: ".2"
-
-p2repo: &build
-  image: maven:3.5-jdk-8-alpine
-  stage: build
-  script:
-    - mvn clean verify -Dmaven.test.failure.ignore=true -DskipTests
-  artifacts:
-    paths:
-    - org.eclipse.swt.chromium.tests/target/surefire-reports
-    - org.eclipse.swt.chromium.repository/target/repository
-    - org.eclipse.swt.chromium.repository/target/*.zip
-
-p2repo.32b:
-  variables:
-    B32: "true"
-  <<: *build
-
-publish: &publish
-  image: 
-    name: registry.gitlab.com/maketechpub/mc:public
-    entrypoint: ["/bin/sh", "-c"]
-  stage: deploy
-  variables:
-    GIT_DEPTH: "1"
-    RELEASE: "true"
-    CHANNEL: "dev"
-    ARCH: ""
-  dependencies:
-  - p2repo
-  environment:
-    name: "${VER}${ARCH}${QUAL}"
-    url: http://dl.maketechnology.io/chromium-swt/$CI_ENVIRONMENT_NAME/repository
-  before_script:
-  - echo $CI_ENVIRONMENT_NAME
-  - QUALIFIER=$(if [[ -z "$RELEASE" ]] ; then echo "dev"; else echo "r"; fi)
-  - export VERSION=$(cat pom.xml | grep "<version>.*</version>" | head -n 1 | awk -F'[><-]' '{print $3}').$QUALIFIER
-  - echo "version $VERSION"
-  script:
-  - mkdir -p public
-  - cp -r org.eclipse.swt.chromium.repository/target/* public
-  - du -h -s public || true
-  - mc config host add do https://ams3.digitaloceanspaces.com "$DO_KEY" "$DO_SECRET" --lookup auto
-#  - mc mb -p do/$DO_BUCKET
-  - mc mirror --overwrite --remove public/ do/$DO_BUCKET/$CI_ENVIRONMENT_NAME/
-  - current=$(date -u +"%FT%T.%3NZ")
-  - echo "current $current"
-  - 'echo "{\"version\": \"${VERSION}\", \"created\": \"${current}\", \"downloadInstallPath\": \"/repository/plugins/org.eclipse.swt.chromium\", \"downloadUpdatePath\": \"/repository/features/org.eclipse.swt.chromium.feature\"}" > public/metadata.json'
-  - mc cp public/metadata.json do/$DO_BUCKET/$CI_ENVIRONMENT_NAME/
-  after_script:
-  - ls public
-  - ls public/repository
-  when: manual
-
-publish.32b:
-  <<: *publish
-  variables:
-    GIT_DEPTH: "1"
-    ARCH: "-32b"
-  dependencies:
-  - p2repo.32b
+  QUAL: ".3"
+  cef_p2: http://dl.maketechnology.io/chromium-cef/76-64b.1/repository
+  cef32b_p2: http://dl.maketechnology.io/chromium-cef/76-64b.1/repository
+  cefdev_p2: http://dl.maketechnology.io/chromium-cef/76-dev.1/repository
