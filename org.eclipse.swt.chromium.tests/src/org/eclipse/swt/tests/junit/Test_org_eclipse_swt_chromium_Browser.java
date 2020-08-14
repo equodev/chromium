@@ -14,9 +14,11 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -60,10 +62,19 @@ import org.junit.rules.TestName;
  */
 public class Test_org_eclipse_swt_chromium_Browser extends Test_org_eclipse_swt_widgets_Composite {
 
+	static Field disposedIntentionally;
+	static {
+		try {
+			disposedIntentionally = org.eclipse.swt.tests.junit.Test_org_eclipse_swt_widgets_Widget.class.getDeclaredField("disposedIntentionally");
+			disposedIntentionally.setAccessible(true);
+		} catch (SecurityException | NoSuchFieldException e) {
+			e.printStackTrace();
+		}
+	}
 	// CONFIG
 	/** This forces tests to display the shell/browser for a brief moment. Useful to see what's going on with broken jUnits */
 	boolean debug_show_browser = true; // true to display browser.
-	int     debug_show_browser_timeout_seconds = 2; // if above set to true, then how long should the browser be shown for.
+	int     debug_show_browser_timeout_seconds = 1; // if above set to true, then how long should the browser be shown for.
 													// This is independent of whether test passes or fails.
 
 	boolean debug_verbose_output = true;
@@ -308,7 +319,11 @@ public void test_CloseWindowListener_addAndRemove () {
 public void test_CloseWindowListener_close () {
 	AtomicBoolean browserCloseListenerFired = new AtomicBoolean(false);
 	browser.addCloseWindowListener(	e -> {
-		disposedIntentionally= true;
+		try {
+			disposedIntentionally.set(this, true);
+		} catch (IllegalArgumentException | IllegalAccessException e1) {
+			e1.printStackTrace();
+		}
 		browserCloseListenerFired.set(true);
 	});
 	browser.setText("<script language='JavaScript'>window.close()</script>");
@@ -888,7 +903,7 @@ public void test_setUrl_local() {
 			url = pluginPath + "/data/testWebsiteWithTitle.html";
 		} else {
 			// used when ran from Eclipse gui.
-			url = Test_org_eclipse_swt_chromium_Browser.class.getClassLoader().getResource("testWebsiteWithTitle.html").toString();
+			url = Paths.get("testWebsiteWithTitle.html").toUri().toString();
 		}
 
 		testLogAppend("URL: " + url);
@@ -1542,12 +1557,16 @@ public void test_execute_and_closeListener () {
 		hasClosed.set(true);
 	});
 
-	browser.execute("window.close()");
+	browser.evaluate("window.close()");
 
 	shell.open();
 	boolean passed = waitForPassCondition(hasClosed::get);
 	if (passed)
-		disposedIntentionally = true;
+		try {
+			disposedIntentionally.set(this, true);
+		} catch (IllegalArgumentException | IllegalAccessException e1) {
+			e1.printStackTrace();
+		}
 	String message = "Either browser.execute() did not work (if you still see the html page) or closeListener Was not triggered if "
 			+ "browser looks disposed, but test still fails.";
 	assertTrue(message, passed);
