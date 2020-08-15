@@ -276,9 +276,12 @@ class Chromium extends WebBrowser {
 
                 int debugPort = 0;
                 try {
-                	debugPort = Integer.parseInt(System.getProperty("org.eclipse.swt.chromium.remote-debugging-port", "0"));
+                    debugPort = Integer.parseInt(System.getProperty("org.eclipse.swt.chromium.remote-debugging-port", "0"));
                 } catch (NumberFormatException e) {
-                	debugPort = 0;
+                    debugPort = 0;
+                }
+                if (debugPort == 0 && debug) {
+                    debugPort = -2;
                 }
                 app.ptr = C.malloc(cef_app_t.sizeof);
                 ChromiumLib.memmove(app.ptr, app, cef_app_t.sizeof);
