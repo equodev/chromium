@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTError;
@@ -90,7 +91,7 @@ import org.eclipse.swt.widgets.Widget;
 
 class Chromium extends WebBrowser {
 	private static final String DATA_TEXT_URL = "data:text/html;base64,";
-	private static final String VERSION = "7601";
+	private static final String VERSION = "7602";
     private static final String CEFVERSION = "3809";
     private static final String SHARED_LIB_V = "chromium_swt_"+VERSION;
     private static final String JNI_LIB_V = "swt-chromium-"+VERSION;
@@ -187,6 +188,7 @@ class Chromium extends WebBrowser {
     }
     
     public void setBrowser (Browser browser) {
+        super.setBrowser(browser);
         this.chromium = browser;
     }
     
@@ -274,9 +276,12 @@ class Chromium extends WebBrowser {
 
                 int debugPort = 0;
                 try {
-                	debugPort = Integer.parseInt(System.getProperty("org.eclipse.swt.chromium.remote-debugging-port", "0"));
+                    debugPort = Integer.parseInt(System.getProperty("org.eclipse.swt.chromium.remote-debugging-port", "0"));
                 } catch (NumberFormatException e) {
-                	debugPort = 0;
+                    debugPort = 0;
+                }
+                if (debugPort == 0 && debug) {
+                    debugPort = -2;
                 }
                 app.ptr = C.malloc(cef_app_t.sizeof);
                 ChromiumLib.memmove(app.ptr, app, cef_app_t.sizeof);
@@ -631,7 +636,7 @@ class Chromium extends WebBrowser {
 
     static void on_before_close(long /*int*/ plifeSpanHandler, long /*int*/ browser) {
     	int id = ChromiumLib.cefswt_get_id(browser);
-    	debug("OnBeforeClose" + id);
+    	debug("OnBeforeClose: " + id);
     	instances.remove(id).on_before_close(browser);
     	
 		int decrementAndGet = browsers.decrementAndGet();
@@ -649,9 +654,20 @@ class Chromium extends WebBrowser {
     }
     
     private void on_before_close(long /*int*/ browser) {
-    	if (disposing == Dispose.FromBrowser && "gtk".equals(SWT.getPlatform())) {
-    		chromium.dispose();
-    	}
+		if (chromium != null && closeWindowListeners != null) {
+			Display display = Display.getDefault();
+            org.eclipse.swt.browser.WindowEvent event = new org.eclipse.swt.browser.WindowEvent(chromium);
+            event.display = display;
+            event.widget = chromium;
+//            event.browser = chromium;
+            for (CloseWindowListener listener : closeWindowListeners) {
+                listener.close(event);
+            }
+        }
+//		if (disposing == Dispose.FromBrowser && "gtk".equals(SWT.getPlatform())) {
+//    	if (disposing == Dispose.FromBrowser) {
+//    		chromium.dispose();
+//    	}
     	this.browser = 0;
     	this.chromium = null;
     	debugPrint("closed");
@@ -749,16 +765,6 @@ class Chromium extends WebBrowser {
             debugPrint("DoClose popup:" + Chromium.this.browser+":"+browser);
             return 0;
         }
-        Display display = Display.getDefault();
-		if (/*!disposing &&*/ !isDisposed() && closeWindowListeners != null) {
-            org.eclipse.swt.browser.WindowEvent event = new org.eclipse.swt.browser.WindowEvent(chromium);
-            event.display = display;
-            event.widget = chromium;
-//            event.browser = chromium;
-            for (CloseWindowListener listener : closeWindowListeners) {
-                listener.close(event);
-            }
-        }
 
         if (disposing == Dispose.FromClose || disposing == Dispose.Unload || disposing == Dispose.UnloadClosed || disposing == Dispose.WaitIfClosed) {
     		disposing = Dispose.DoIt;
@@ -766,9 +772,9 @@ class Chromium extends WebBrowser {
         else if (disposing == Dispose.No) {
         	if (chromium != null) {
         		disposing = Dispose.FromBrowser;
-        		if (!"gtk".equals(SWT.getPlatform())) {
+//        		if (!"gtk".equals(SWT.getPlatform())) {
         			chromium.dispose();
-        		}
+//        		}
         	}
         }
 //        if ("gtk".equals(SWT.getPlatform())) {
@@ -778,7 +784,8 @@ class Chromium extends WebBrowser {
         // returning 0, cause the window to close 
         debugPrint("AFTER DoClose");
 
-        return disposing == Dispose.FromBrowser && "gtk".equals(SWT.getPlatform()) ? 0 : 1;
+//        return disposing == Dispose.FromBrowser && "gtk".equals(SWT.getPlatform()) ? 0 : 1;
+        return 1;
 	}
 
 	static void on_after_created(long /*int*/ self, long /*int*/ browser) {
@@ -906,7 +913,7 @@ class Chromium extends WebBrowser {
 			  } else {
 				  event.required = true;
 			  }
-		  } else {
+		  } else if (!event.required) {
 			  createDefaultPopup(windowInfo, client, event);
 		  }
 		});
@@ -919,13 +926,25 @@ class Chromium extends WebBrowser {
 		return 0;
 	}
 
-	private void waitForClose(Display display) {
-    	if (display == null || display.isDisposed()) return;
+	private void waitForClose(Display display, int step) {
+//    	if (display == null || display.isDisposed()) return;
+		System.out.println("Chromium.waitForClose() "+step);
+    	if (display == null || display.isDisposed() || step > 1000) return;
+    	int s = step+1;
         display.asyncExec(() -> {
             if (browser != 0) {
-                waitForClose(display);
+                waitForClose(display, s);
             }
         });
+//    	if (display == null || display.isDisposed() || step > 500) return;
+//    	long end = System.currentTimeMillis()+5000;
+//    	while (browser != 0 && !display.isDisposed() && System.currentTimeMillis() < end) {
+//    		ChromiumLib.cefswt_do_message_loop_work();
+//			if (!display.readAndDispatch()) {
+//				display.sleep();
+//			}
+//		}
+//    	System.out.println("AFTER Chromium.waitForClose()");
     }
     
 	private static void set_load_handler() {
@@ -1115,7 +1134,7 @@ class Chromium extends WebBrowser {
 
     private int on_before_browse(long /*int*/ browser2, long /*int*/ frame, long /*int*/ request) {
     	if (isDisposed() || locationListeners == null) return 0;
-        if (ChromiumLib.cefswt_is_main_frame(frame)) {
+//        if (ChromiumLib.cefswt_is_main_frame(frame)) {
             LocationEvent event = new LocationEvent(chromium);
             event.display = chromium.getDisplay();
             event.widget = chromium;
@@ -1128,15 +1147,15 @@ class Chromium extends WebBrowser {
             		listener.changing(event);
             	}
             } finally {
-            	loopDisable = false;	            	
+            	loopDisable = false;
             }
             if (!event.doit) {
             	debugPrint("canceled nav, dependats:"+enableProgress.getNumberOfDependents());
             	enableProgress = new CompletableFuture<>();
             }
             return event.doit ? 0 : 1;
-        }
-        return 0;
+//        }
+//        return 0;
 	}
 
     static int get_auth_credentials(long /*int*/ self, long /*int*/ browser, long /*int*/ origin_url, int isProxy, long /*int*/ host, int port, long /*int*/ realm, long /*int*/ scheme, long /*int*/ callback) {
@@ -1251,7 +1270,7 @@ class Chromium extends WebBrowser {
 
 	private static void set_jsdialog_handler() {
         jsDialogHandler = CEFFactory.newJsDialogHandler();
-        if ("gtk".equals(SWT.getPlatform())) {
+        if (useSwtDialogs()) {
         	jsDialogHandler.on_jsdialog_cb = new Callback(Chromium.class, "on_jsdialog", int.class, new Type[] {long.class, long.class, long.class, int.class, long.class, long.class, long.class, int.class});
         	jsDialogHandler.on_jsdialog = checkGetAddress(jsDialogHandler.on_jsdialog_cb);
         }
@@ -1291,7 +1310,7 @@ class Chromium extends WebBrowser {
         return 1;
 	}
 
-	private int openJsDialog(int dialog_type, String title, String msg, long /*int*/ default_prompt_text, long /*int*/ callback) {
+	private void openJsDialog(int dialog_type, String title, String msg, long /*int*/ default_prompt_text, long /*int*/ callback) {
 		int style = SWT.ICON_WORKING;
         switch (dialog_type) {
         case cef_jsdialog_handler_t.JSDIALOGTYPE_ALERT:
@@ -1304,15 +1323,28 @@ class Chromium extends WebBrowser {
         	style = SWT.ICON_QUESTION | SWT.YES | SWT.NO;
         	break;
         }
-        MessageBox box = new MessageBox(chromium.getShell(), style);
-		box.setText(title);
-        box.setMessage(msg);
-        int open = box.open();
-        int r = open == SWT.OK || open == SWT.YES ? 1 : 0;
-        debug("JS Dialog Closed with "+r);
-		ChromiumLib.cefswt_dialog_close(callback, r, default_prompt_text);
-        chromium.getShell().forceActive();
-        return r;
+        Consumer<Integer> close = open -> {
+        	int r = open == SWT.OK || open == SWT.YES ? 1 : 0;
+        	debug("JS Dialog Closed with "+r);
+        	ChromiumLib.cefswt_dialog_close(callback, r, default_prompt_text);
+        	chromium.getShell().forceActive();
+        };
+        if (!"test".equals(System.getProperty("swt.chromium.dialogs", ""))) {
+        	MessageBox box = new MessageBox(chromium.getShell(), style);
+        	box.setText(title);
+        	box.setMessage(msg);
+        	int open = box.open();
+        	close.accept(open);
+        } else {
+        	CompletableFuture<Integer> f = (CompletableFuture<Integer>) chromium.getData("swt.chromium.dialogs");
+        	if (f != null) {
+        		f.thenAccept(close);
+        		chromium.setData("swt.chromium.dialogs", null);
+        		while (!f.isDone()) {
+    				if (!chromium.getDisplay().readAndDispatch()) chromium.getDisplay().sleep();
+    			}
+        	}
+        }
 	}
 
 	static void on_dialog_closed(long /*int*/ self_, long /*int*/ browser) {
@@ -1337,7 +1369,7 @@ class Chromium extends WebBrowser {
 		if (disposing == Dispose.FromClose) {
 			disposing = Dispose.Unload;
 			
-			if ("gtk".equals(SWT.getPlatform())) {
+			if (useSwtDialogs()) {
 		        String msg = ChromiumLib.cefswt_cefstring_to_java(message_text);
 //				Display.getDefault().asyncExec(() -> {
 //					ChromiumLib.cefswt_dialog_close(callback, 0, 0);
@@ -1348,6 +1380,10 @@ class Chromium extends WebBrowser {
 			}
 		}
 		return 0;
+	}
+
+	private static boolean useSwtDialogs() {
+		return "gtk".equals(SWT.getPlatform()) || !"native".equals(System.getProperty("swt.chromium.dialogs", "swt"));
 	}
 
 	private static void set_context_menu_handler() {
@@ -1453,7 +1489,7 @@ class Chromium extends WebBrowser {
     
     static void on_got_focus(long /*int*/ focusHandler, long /*int*/ browser) {
     	int id = ChromiumLib.cefswt_get_id(browser);
-    	debug("on_got_focus: " + id);
+//    	debug("on_got_focus: " + id);
     	safeGeInstance(id).on_got_focus(browser);
     }
 
@@ -1469,7 +1505,7 @@ class Chromium extends WebBrowser {
 
 	static int on_set_focus(long /*int*/ focusHandler, long /*int*/ browser, int focusSource) {
     	int id = ChromiumLib.cefswt_get_id(browser);
-    	debug("on_set_focus: " + id);
+//    	debug("on_set_focus: " + id);
     	return safeGeInstance(id).on_set_focus(browser);
     }
     
@@ -1656,7 +1692,7 @@ class Chromium extends WebBrowser {
 			else if (disposing == Dispose.UnloadClosed) {
 				debug("in close, disposing:"+disposing);
 				disposing = Dispose.WaitIfClosed;
-				end = System.currentTimeMillis() + LOOP*2;
+				end = System.currentTimeMillis() + LOOP*4;
 			}
 			else if (disposing == Dispose.DoIt) {
 				debug("in close, disposing:"+disposing);
@@ -1678,18 +1714,20 @@ class Chromium extends WebBrowser {
     	debugPrint("in dispose, disposing "+ disposing);
     	if (disposing == Dispose.FromDispose || isDisposed())
     		return;
-    	boolean callClose = disposing == Dispose.No;
+//    	boolean callClose = disposing == Dispose.No;
+    	boolean callClose = false;
     	disposing = Dispose.FromDispose;
     	disposingAny++;
     	if (focusListener != null)
     		chromium.removeFocusListener(focusListener);
     	focusListener = null;
-    	if (browser != 0 && callClose) {
-//          browsers.decrementAndGet();
-    		debugPrint("call close_browser");
-    		ChromiumLib.cefswt_close_browser(browser, 1);
-    		waitForClose(Display.getDefault());
-    	}
+//    	if (browser != 0 && callClose) {
+////          browsers.decrementAndGet();
+//    		debugPrint("call close_browser");
+//    		ChromiumLib.cefswt_close_browser(browser, 1);
+//    		waitForClose(Display.getDefault(), 1);
+//    	}
+//    	waitForClose(Display.getDefault(), 1);
     }
 
     /**
