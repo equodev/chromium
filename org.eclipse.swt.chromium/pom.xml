@@ -7,6 +7,6 @@
 	<parent>
 		<groupId>org.eclipse</groupId>
 		<artifactId>swt.chromium</artifactId>
-		<version>76.0.2-SNAPSHOT</version>
+		<version>76.0.4-SNAPSHOT</version>
 	</parent>
 </project>

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <site>
-   <feature url="features/org.eclipse.swt.chromium.feature_76.0.2.qualifier.jar" id="org.eclipse.swt.chromium.feature" version="76.0.2.qualifier">
+   <feature url="features/org.eclipse.swt.chromium.feature_76.0.4.qualifier.jar" id="org.eclipse.swt.chromium.feature" version="76.0.4.qualifier">
       <category name="org.eclipse.swt.chromium"/>
    </feature>
-   <feature url="features/org.eclipse.swt.chromium.feature.32b_76.0.2.qualifier.jar" id="org.eclipse.swt.chromium.feature.32b" version="76.0.2.qualifier" arch="x86">
+   <feature url="features/org.eclipse.swt.chromium.feature.32b_76.0.4.qualifier.jar" id="org.eclipse.swt.chromium.feature.32b" version="76.0.4.qualifier" arch="x86">
       <category name="org.eclipse.swt.chromium"/>
    </feature>
-   <feature id="org.eclipse.swt.chromium.feature.source" version="76.0.2.qualifier">
+   <feature id="org.eclipse.swt.chromium.feature.source" version="76.0.4.qualifier">
       <category name="org.eclipse.swt.chromium.source"/>
    </feature>
    
