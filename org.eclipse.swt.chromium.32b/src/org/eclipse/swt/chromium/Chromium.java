@@ -1648,31 +1648,33 @@ class Chromium extends WebBrowser {
     
     static void on_got_focus(int /*long*/ focusHandler, int /*long*/ browser) {
     	int id = ChromiumLib.cefswt_get_id(browser);
-//    	debug("on_got_focus: " + id);
     	safeGeInstance(id).on_got_focus(browser);
     }
 
     private void on_got_focus(int /*long*/ browser2) {
     	if (!isDisposed()) {
-			hasFocus = true;
-		    if (!isDisposed() && chromium.getDisplay().getFocusControl() != null) {
+	    	debugPrint("on_got_focus: ");
+		    if (!isDisposed() && chromium.getDisplay().getFocusControl() != chromium) {
+		    	debugPrint("on_got_focus: setFocus");
 		        chromium.setFocus();
 		    }
-		    browserFocus(true);
+		    hasFocus = true;
+//		    browserFocus(true);
     	}
 	}
 
 	static int on_set_focus(int /*long*/ focusHandler, int /*long*/ browser, int focusSource) {
     	int id = ChromiumLib.cefswt_get_id(browser);
-//    	debug("on_set_focus: " + id);
     	return safeGeInstance(id).on_set_focus(browser);
     }
     
     private int on_set_focus(int /*long*/ browser) {
         if (ignoreFirstFocus) {
+	    	debugPrint("ignoreFirstFocus");
         	ignoreFirstFocus  = false;
         	return 1;
         }
+        debugPrint("on_set_focus");
         return 0;
 	}
 
@@ -1702,7 +1704,9 @@ class Chromium extends WebBrowser {
 
 	@Override
     public boolean isFocusControl() {
-    	return hasFocus;
+//		debugPrint("isFocusControl: "+ hasFocus + " - "+Display.getDefault().getFocusControl());
+//    	return hasFocus;
+    	return false;
     }
     
     // single loop for all browsers
@@ -1816,7 +1820,7 @@ class Chromium extends WebBrowser {
 	}
 
 	protected void browserFocus(boolean set) {
-        //debugPrint("cef focus: " + set);
+        debugPrint("cef focus: " + set);
         if (!isDisposed() && browser != 0) {
             int /*long*/ parent = (Display.getDefault().getActiveShell() == null) ? 0 : getHandle(chromium.getParent());
             if (chromium.getDisplay().getActiveShell() != chromium.getShell()) {
@@ -2084,6 +2088,7 @@ class Chromium extends WebBrowser {
             //debugPrint("focusLost");
             browserFocus(false);
             // System.out.println(Display.getDefault().getFocusControl());
+            hasFocus = false;
             enabled = true;
         }
 
@@ -2092,7 +2097,9 @@ class Chromium extends WebBrowser {
             if (!enabled)
                 return;
             //debugPrint("focusGained");
+            enabled = false;
             browserFocus(true);
+            enabled = true;
         }
     }
     
