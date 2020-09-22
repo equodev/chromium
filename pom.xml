@@ -6,7 +6,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.eclipse</groupId>
 	<artifactId>swt.chromium</artifactId>
-	<version>76.0.4-SNAPSHOT</version>
+	<version>76.0.5-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<properties>
