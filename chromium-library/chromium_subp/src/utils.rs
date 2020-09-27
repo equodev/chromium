@@ -29,25 +29,18 @@ pub fn prepare_args() -> cef::_cef_main_args_t {
     }).collect();
     if cfg!(target_os = "macos") {
         let carg = CString::new("--disable-in-process-stack-traces").expect("cant create arg");
-        let mp = carg.into_raw();
-        args.push(mp);
+        args.push(carg.into_raw());
         let carg = CString::new("--disable-gpu-compositing").expect("cant create arg");
-        let mp = carg.into_raw();
-        args.push(mp);
+        args.push(carg.into_raw());
         let carg = CString::new("--disable-accelerated-2d-canvas").expect("cant create arg");
-        let mp = carg.into_raw();
-        args.push(mp);
-        // println!("Force --disable-gpu-compositing");
+        args.push(carg.into_raw());
+        let carg = CString::new("--use-mock-keychain").expect("cant create arg");
+        args.push(carg.into_raw());
     } else {
         let carg = CString::new("--disable-in-process-stack-traces").expect("cant create arg");
-        let mp = carg.into_raw();
-        args.push(mp);
+        args.push(carg.into_raw());
         let carg = CString::new("--enable-webgl-draft-extensions").expect("cant create arg");
-        let mp = carg.into_raw();
-        args.push(mp);
-        let carg = CString::new("--use-mock-keychain").expect("cant create arg");
-        let mp = carg.into_raw();
-        args.push(mp);
+        args.push(carg.into_raw());
     }
 
     let args_size = args.len() as i32;
