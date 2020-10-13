@@ -10,12 +10,17 @@ import java.net.HttpCookie;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.text.NumberFormat;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -2136,6 +2141,7 @@ class Chromium extends WebBrowser {
         try {
             String mapLibraryName = System.mapLibraryName(SHARED_LIB_V);
             String mapJniName = JNI_LIB_V;
+            maybeClean(subDir);
             Enumeration<URL> fragments = Library.class.getClassLoader().getResources(subDir+"/chromium.properties");
             while (fragments.hasMoreElements()) {
                 URL url = (URL) fragments.nextElement();
@@ -2190,6 +2196,58 @@ class Chromium extends WebBrowser {
             throw swtError;
         }
     }
+
+	private static void maybeClean(String subDir) {
+		Path folder = Paths.get(ResourceExpander.USER_HOME, ResourceExpander.SWT_LIB_DIR, subDir);
+		Path cleanFile = folder.resolve(".clean");
+		boolean mark = false, clean = false;
+		if (Files.exists(folder)) {
+			if (!Files.exists(cleanFile)) {
+				clean = mark = true;
+			} else {
+				List<String> lines = null;
+				try {
+					lines = Files.readAllLines(cleanFile);
+				} catch (IOException e) {}
+				String latestClean = (lines == null || lines.isEmpty()) ? "0" : lines.get(0);
+				if (VERSION.compareTo(latestClean) > 0) {
+					clean = mark = true;
+				}
+			}
+		} else {
+			mark = true;
+		}
+		if (clean)
+			try {
+				Files.walkFileTree(folder, new SimpleFileVisitor<Path>() {
+				      @Override
+				      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+				          Files.delete(file);
+				          return FileVisitResult.CONTINUE;
+				      }
+				 
+				      @Override
+				      public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+				          if (exc == null) {
+				              Files.delete(dir);
+				              return FileVisitResult.CONTINUE;
+				          } else {
+				              throw exc;
+				          }
+				      }
+				  });
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		if (mark) {
+			try {
+				Files.createDirectories(folder);
+				Files.write(cleanFile, Collections.singletonList(VERSION));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
 
     private static void setupCookies() {
         WebBrowser.NativeClearSessions = () -> {

@@ -14,10 +14,10 @@ import org.eclipse.swt.internal.Library;
 public class ResourceExpander {
 
     public static final String USER_HOME;
-    static final String SEPARATOR;
+    public static final String SEPARATOR;
     static final String JAVA_LIB_PATH = "java.library.path";
     static final String SWT_LIB_PATH = "swt.library.path";
-    static final String SWT_LIB_DIR;
+    public static final String SWT_LIB_DIR;
 
     static {
         SEPARATOR = File.separator;
