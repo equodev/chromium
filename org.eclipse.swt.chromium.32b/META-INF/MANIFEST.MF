@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Chromium SWT Browser 32b
 Bundle-SymbolicName: org.eclipse.swt.chromium.32b
-Bundle-Version: 76.0.5.qualifier
+Bundle-Version: 76.0.6.qualifier
 Bundle-Vendor: Make Technology
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Fragment-Host: org.eclipse.swt.chromium

@@ -5,7 +5,7 @@ include:
 
 variables:
   VER: "76"
-  QUAL: ".5"
-  cef_p2: http://dl.maketechnology.io/chromium-cef/76-64b.3/repository
-  cef32b_p2: http://dl.maketechnology.io/chromium-cef/76-64b.3/repository
-  cefdev_p2: http://dl.maketechnology.io/chromium-cef/76-dev.3/repository
+  QUAL: ""
+  cef_p2: http://dl.maketechnology.io/chromium-cef/76-64b/repository
+  cef32b_p2: http://dl.maketechnology.io/chromium-cef/76-64b/repository
+  cefdev_p2: http://dl.maketechnology.io/chromium-cef/76-dev/repository
