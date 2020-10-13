@@ -1887,8 +1887,7 @@ class Chromium extends WebBrowser {
 	@Override
     public boolean isFocusControl() {
 //		debugPrint("isFocusControl: "+ hasFocus + " - "+Display.getDefault().getFocusControl());
-//    	return hasFocus;
-    	return false;
+		return ("gtk".equals(SWT.getPlatform())) ? hasFocus : false;
     }
     
     // single loop for all browsers
