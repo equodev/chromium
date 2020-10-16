@@ -40,7 +40,11 @@ pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char
     //println!("app {:?}", japp);
 
     let cefrust_path = utils::str_from_c(cefrust_path);
-    let version = utils::str_from_c(version);
+    let mut version = utils::str_from_c(version);
+    if version.ends_with("*") {
+        #[cfg(target_os = "linux")] unsafe { gtk::GTK3 = false };
+        version = &version[..version.len()-1];
+    }
 
     // let key = "LD_LIBRARY_PATH";
     // env::set_var(key, cefrust_path);
@@ -624,10 +628,10 @@ pub extern fn cefswt_set_focus(browser: *mut cef::cef_browser_t, set: bool, pare
 
 #[cfg(target_os = "linux")]
 fn do_set_focus(parent: *mut c_void, _focus: i32) {
-    let root = unsafe { gtk::gtk_widget_get_toplevel(parent) };
+    let root = gtk::gtk_widget_get_toplevel(parent);
     //println!("<<<<<<<< set_focus {} {:?} {:?}", focus, parent, root);
     // workaround to actually remove focus from cef inputs
-    unsafe { gtk::gtk_window_present(root) };
+    gtk::gtk_window_present(root);
 }
 
 #[cfg(target_family = "windows")]

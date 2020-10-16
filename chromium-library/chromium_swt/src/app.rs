@@ -80,10 +80,14 @@ extern "C" {
 #[cfg(target_os = "linux")]
 fn cef_window_info(hwnd: *mut c_void, w: c_int, h: c_int) -> cef::_cef_window_info_t {
     use std::os::raw::{c_uint};
-    let window_info = unsafe {
-        let visual = gtk::gtk_widget_get_visual(hwnd);
-        override_system_visual(visual);
-        let parent_win = gtk::gdk_x11_window_get_xid(gtk::gtk_widget_get_window(hwnd as *mut c_void));
+    let window_info = {
+        let parent_win = if unsafe {gtk::GTK3} {
+            let visual = gtk::gtk_widget_get_visual(hwnd);
+            override_system_visual(visual);
+            gtk::gdk_x11_window_get_xid(gtk::gtk_widget_get_window(hwnd as *mut c_void))
+        } else {
+            gtk::gdk_x11_drawable_get_xid(gtk::gtk_widget_get_window(hwnd as *mut c_void))
+        };
         let window_info = cef::_cef_window_info_t {
             window_name: cef::cef_string_t { str: null_mut(),  length: 0,  dtor: Option::None },
             x: 0,
@@ -112,10 +116,13 @@ pub fn set_window_parent(window_info: *mut cef::_cef_window_info_t, hwnd: *mut c
         (*window_info).width = w as c_uint;
         (*window_info).height = h as c_uint;
         (*window_info).parent_window = if hwnd.is_null() { 0 } else {
-            let visual = gtk::gtk_widget_get_visual(hwnd);
-            override_system_visual(visual);
-
-            gtk::gdk_x11_window_get_xid(gtk::gtk_widget_get_window(hwnd)) 
+            if gtk::GTK3 {
+                let visual = gtk::gtk_widget_get_visual(hwnd);
+                override_system_visual(visual);
+                gtk::gdk_x11_window_get_xid(gtk::gtk_widget_get_window(hwnd))
+            } else {
+                gtk::gdk_x11_drawable_get_xid(gtk::gtk_widget_get_window(hwnd))
+            }
         };
         (*window_info).windowless_rendering_enabled = 0;
         (*window_info).window = 0;

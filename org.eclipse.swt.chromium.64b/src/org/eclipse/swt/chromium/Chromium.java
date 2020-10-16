@@ -318,7 +318,15 @@ class Chromium extends WebBrowser {
 					}
 				}
 				
-				ChromiumLib.cefswt_init(app.ptr, cefrustPath, VERSION, debugPort);
+				String platform = SWT.getPlatform();
+				boolean isGtk2 = false;
+				if ("gtk".equals(platform)) {
+					String gtk = System.getProperty("org.eclipse.swt.internal.gtk.version", "");
+					if (gtk.startsWith("2")) {
+						isGtk2 = true;
+					}
+				}
+				ChromiumLib.cefswt_init(app.ptr, cefrustPath, VERSION+(isGtk2 ? "*" : ""), debugPort);
 
 				if (suspend) {
 					for (int i=0; i<threadsCount; i++) {
@@ -2131,13 +2139,6 @@ class Chromium extends WebBrowser {
 
 	private static Object loadLib() {
 		String platform = SWT.getPlatform();
-		if ("gtk".equals(platform)) {
-			String gtk = System.getProperty("org.eclipse.swt.internal.gtk.version", "");
-			if (gtk.startsWith("2")) {
-				throw new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY, "Chromium Browser is no longer supported in GTK2. ");
-			}
-		}
-
 		String subDir = "chromium-" + CEFVERSION;
 		File cefrustlib = null;
 		try {
