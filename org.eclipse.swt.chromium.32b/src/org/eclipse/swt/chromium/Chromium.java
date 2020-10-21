@@ -321,8 +321,9 @@ class Chromium extends WebBrowser {
 				String platform = SWT.getPlatform();
 				boolean isGtk2 = false;
 				if ("gtk".equals(platform)) {
-					String gtk = System.getProperty("org.eclipse.swt.internal.gtk.version", "");
+					String gtk = System.getProperty("org.eclipse.swt.internal.gtk.version", "2");
 					if (gtk.startsWith("2")) {
+						debug("Detected GTK2");
 						isGtk2 = true;
 					}
 				}
