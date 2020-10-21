@@ -9,7 +9,7 @@ use std::ptr::null_mut;
 
 fn subp() {
     //println!("IN SUBP");
-    let main_args = utils::prepare_args();
+    let main_args = utils::prepare_args(true);
     let mut app = app::App::new();
     //println!("Calling cef_execute_process");
     #[cfg(target_os = "windows")]

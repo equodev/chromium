@@ -18,15 +18,15 @@ pub fn subp_path(cwd: &::std::path::Path, version: &str) -> String {
 }
 
 #[cfg(unix)]
-pub fn prepare_args() -> cef::_cef_main_args_t {
+pub fn prepare_args(fill: bool) -> cef::_cef_main_args_t {
     use std::ffi::{CString};
-    let mut args: Vec<*mut c_char> = ::std::env::args().map(|arg| {
+    let mut args: Vec<*mut c_char> = if fill { ::std::env::args().map(|arg| {
         // println!("arg: {:?}", arg);
         let carg_rslt = CString::new(arg);
         let carg = carg_rslt.expect("cant create arg");
         let mp = carg.into_raw();
         mp
-    }).collect();
+    }).collect() } else { vec!() };
     if cfg!(target_os = "macos") {
         let carg = CString::new("--disable-in-process-stack-traces").expect("cant create arg");
         args.push(carg.into_raw());
@@ -57,7 +57,7 @@ pub fn prepare_args() -> cef::_cef_main_args_t {
 }
 
 #[cfg(windows)]
-pub fn prepare_args() -> cef::_cef_main_args_t {
+pub fn prepare_args(_fill: bool) -> cef::_cef_main_args_t {
     let h_instance = unsafe { winapi::um::libloaderapi::GetModuleHandleA(0 as winapi::um::winnt::LPCSTR) };
     let main_args = cef::_cef_main_args_t {
         instance: unsafe { ::std::mem::transmute(h_instance) }

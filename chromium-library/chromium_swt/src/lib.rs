@@ -45,7 +45,7 @@ pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char
     // let key = "LD_LIBRARY_PATH";
     // env::set_var(key, cefrust_path);
 
-    let main_args = utils::prepare_args();
+    let main_args = utils::prepare_args(false);
 
     let cefrust_dir = std::path::Path::new(&cefrust_path);
 
