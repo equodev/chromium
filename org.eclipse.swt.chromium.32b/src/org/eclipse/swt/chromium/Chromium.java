@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.StringTokenizer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -288,6 +289,8 @@ class Chromium extends WebBrowser {
 				
 				browserProcessHandler.ptr = C.malloc (cef_browser_process_handler_t.sizeof);
 				ChromiumLib.memmove(browserProcessHandler.ptr, browserProcessHandler, cef_browser_process_handler_t.sizeof);
+            	app.on_before_command_line_processing_cb = new Callback(Chromium.class, "on_before_command_line_processing", void.class, new Type[] {int.class, int.class, int.class});
+            	app.on_before_command_line_processing = checkGetAddress(app.on_before_command_line_processing_cb);
 
 				int debugPort = 0;
 				try {
@@ -338,6 +341,24 @@ class Chromium extends WebBrowser {
 			}
 		}
 	}
+    static void on_before_command_line_processing(int app, int process_type, int command_line) {
+		String vmArg = System.getProperty("swt.chromium.args");
+		if (vmArg != null) {
+			String[] lines = vmArg.split(";");
+			for(int i = 0; i < lines.length; i++) {
+				String cmdlineArg = lines[i];
+				String[] argParts = {null,null};
+				String[] argSplitted = cmdlineArg.split("=", 2);
+				for (int j = 0; j < argSplitted.length; j++) {
+					argParts[j]= argSplitted[j];
+				}
+				if (argParts[0] != null) {
+					ChromiumLib.cefswt_set_command(command_line, argParts[0], argParts[1]);					
+				}
+			}
+		}
+	}
+    
 
 	static int /*long*/ get_browser_process_handler(int /*long*/ app) {
 //		debug("GetBrowserProcessHandler");

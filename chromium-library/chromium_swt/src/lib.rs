@@ -622,6 +622,22 @@ pub extern fn cefswt_set_focus(browser: *mut cef::cef_browser_t, set: bool, pare
     }
 }
 
+#[no_mangle]
+pub extern fn cefswt_set_command(cmd: *mut cef::cef_command_line_t, arg: *const c_char, val: *const c_char) {
+    let argstr = utils::str_from_c(arg);
+    let cefarg = chromium::utils::cef_string(argstr);
+    if val.is_null() {
+        println!("cefswt_set_command {}", argstr);
+        unsafe {(*cmd).append_switch.unwrap()(cmd, &cefarg)};
+    } else {
+        let valstr = utils::str_from_c(val);
+        println!("cefswt_set_command {} {}", argstr, valstr);
+        let cefval = chromium::utils::cef_string(valstr);
+        unsafe {(*cmd).append_switch_with_value.unwrap()(cmd, &cefarg, &cefval)};
+    }
+}
+
+
 #[cfg(target_os = "linux")]
 fn do_set_focus(parent: *mut c_void, _focus: i32) {
     let root = unsafe { gtk::gtk_widget_get_toplevel(parent) };
