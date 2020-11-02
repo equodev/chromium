@@ -49,7 +49,7 @@ pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char
     // let key = "LD_LIBRARY_PATH";
     // env::set_var(key, cefrust_path);
 
-    let main_args = utils::prepare_args();
+    let main_args = utils::prepare_args(false);
 
     let cefrust_dir = std::path::Path::new(&cefrust_path);
 
@@ -625,6 +625,22 @@ pub extern fn cefswt_set_focus(browser: *mut cef::cef_browser_t, set: bool, pare
         do_set_focus(parent, focus);
     }
 }
+
+#[no_mangle]
+pub extern fn cefswt_set_command(cmd: *mut cef::cef_command_line_t, arg: *const c_char, val: *const c_char) {
+    let argstr = utils::str_from_c(arg);
+    let cefarg = chromium::utils::cef_string(argstr);
+    if val.is_null() {
+        println!("cefswt_set_command {}", argstr);
+        unsafe {(*cmd).append_switch.unwrap()(cmd, &cefarg)};
+    } else {
+        let valstr = utils::str_from_c(val);
+        println!("cefswt_set_command {} {}", argstr, valstr);
+        let cefval = chromium::utils::cef_string(valstr);
+        unsafe {(*cmd).append_switch_with_value.unwrap()(cmd, &cefarg, &cefval)};
+    }
+}
+
 
 #[cfg(target_os = "linux")]
 fn do_set_focus(parent: *mut c_void, _focus: i32) {

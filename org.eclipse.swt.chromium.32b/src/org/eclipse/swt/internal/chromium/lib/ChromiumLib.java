@@ -15,6 +15,11 @@ public class ChromiumLib extends C {
 	 */
 	public static final native int /*long*/ cefswt_create_browser(int /*long*/ hwnd, String url, int /*long*/ clientHandler, int w, int h, int js, int cefBgColor);
 
+	/**
+	 * @param cmd cast=(void *)
+	 */
+	public static final native void cefswt_set_command(int /*long*/ cmd, String arg, String val);
+
 	public static final native int cefswt_do_message_loop_work();
 
 	/**

@@ -1,5 +1,6 @@
 target/
 !*/src/bin/
+cef_osx/
 cef_macosx/
 cef_linux/
 cef_win32/

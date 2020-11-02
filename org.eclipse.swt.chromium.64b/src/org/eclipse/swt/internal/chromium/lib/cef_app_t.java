@@ -57,6 +57,8 @@ public class cef_app_t {
 	public long /*int*/ ptr;
 	/** @field flags=no_gen */
 	public Callback get_browser_process_handler_cb;
+	/** @field flags=no_gen */
+	public Callback on_before_command_line_processing_cb;
 
 	public static final int sizeof = ChromiumLib.cef_app_t_sizeof();
 }
