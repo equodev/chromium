@@ -1041,4 +1041,10 @@ public class Browser extends Composite {
 	public void dispose() {
 		super.dispose();
 	}
+	
+	public Object getWebBrowser () {
+		checkWidget();
+		return webBrowser.getWebBrowser ();
+	}
+
 }

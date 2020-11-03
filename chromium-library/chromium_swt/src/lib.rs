@@ -879,3 +879,17 @@ pub extern fn cefswt_go_forward(browser: *mut cef::_cef_browser_t) {
 pub extern fn cefswt_go_back(browser: *mut cef::_cef_browser_t) {
     unsafe { (*browser).go_back.expect("null go_back")(browser) };
 }
+
+#[no_mangle]
+pub extern fn cefswt_find(browser: *mut cef::cef_browser_t, search: *const c_char, forward: c_int, match_case: c_int, find_next: c_int) {
+    let browser_host = get_browser_host(browser);
+    if !search.is_null() {
+        let search = utils::str_from_c(search);
+        let search_cef = utils::cef_string(search);
+        let find = unsafe { (*browser_host).find.expect("no find") };
+        unsafe { find(browser_host, 0, &search_cef, forward, match_case, find_next) };
+    } else {
+        let stop_finding = unsafe { (*browser_host).stop_finding.expect("no stop_finding") };
+        unsafe { stop_finding(browser_host, 1) };
+    }
+}

@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.concurrent.CompletableFuture;
@@ -173,6 +174,7 @@ class Chromium extends WebBrowser {
 	private PaintListener paintListener;
 	private Listener traverseListener;
 	private WindowEvent isPopup;
+	private ExtraApi extraApi;
 	
 	public Chromium() {
 	}
@@ -2524,6 +2526,14 @@ class Chromium extends WebBrowser {
 	public boolean isForwardEnabled() {
 		return canGoForward;
 	}
+	
+	@Override
+	public Object getWebBrowser() {
+		if (extraApi == null) {
+			extraApi = new ExtraApi();
+		}
+		return extraApi;
+	}
 
 	@Override
 	public void refresh() {
@@ -2626,4 +2636,16 @@ class Chromium extends WebBrowser {
 		void invoke(int loop, int type, long /*int*/ value);
 	}
 
+	class ExtraApi implements ChromiumBrowser {
+		String lastSearch = null;
+
+		@Override
+		public void find(String search, boolean forward, boolean matchCase) {
+			checkBrowser();
+			int findNext = (Objects.equals(search, lastSearch) ? 1 : 0);
+			lastSearch = search;
+			ChromiumLib.cefswt_find(browser, search, forward ? 1 : 0, matchCase ? 1 : 0, findNext);
+		}
+		
+	}
 }
