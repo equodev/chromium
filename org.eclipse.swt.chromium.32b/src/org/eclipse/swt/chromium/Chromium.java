@@ -1879,8 +1879,9 @@ class Chromium extends WebBrowser {
 				debugPrint("on_got_focus: setFocus");
 				chromium.setFocus();
 			}
+			else if ("gtk".equals(SWT.getPlatform()))
+				browserFocus(true);
 			hasFocus = true;
-//			browserFocus(true);
 		}
 	}
 
