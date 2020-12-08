@@ -1875,28 +1875,32 @@ class Chromium extends WebBrowser {
 	private void on_got_focus(long /*int*/ browser2) {
 		if (!isDisposed()) {
 			debugPrint("on_got_focus: ");
-			if (!isDisposed() && chromium.getDisplay().getFocusControl() != chromium) {
+			if (chromium.getDisplay().getFocusControl() != chromium) {
 				debugPrint("on_got_focus: setFocus");
 				chromium.setFocus();
-			}
-			else if ("gtk".equals(SWT.getPlatform()))
 				browserFocus(true);
+			}
+			else if ("gtk".equals(SWT.getPlatform())) {
+				// debugPrint("on_got_focus: gtk force focus");
+				browserFocus(true);
+			}
 			hasFocus = true;
 		}
 	}
 
 	static int on_set_focus(long /*int*/ focusHandler, long /*int*/ browser, int focusSource) {
 		int id = ChromiumLib.cefswt_get_id(browser);
-		return safeGeInstance(id).on_set_focus(browser);
+		return safeGeInstance(id).on_set_focus(browser, focusSource);
 	}
 	
-	private int on_set_focus(long /*int*/ browser) {
-		if (ignoreFirstFocus) {
+	private int on_set_focus(long /*int*/ browser, int focusSource) {
+		if (ignoreFirstFocus && focusSource == 0) {
 			debugPrint("ignoreFirstFocus");
 			ignoreFirstFocus = false;
 			return 1;
 		}
 		debugPrint("on_set_focus");
+		hasFocus = true;
 		return 0;
 	}
 
@@ -2364,7 +2368,7 @@ class Chromium extends WebBrowser {
 				return;
 			//debugPrint("focusGained");
 			enabled = false;
-			browserFocus(true);
+//			browserFocus(true);
 			enabled = true;
 		}
 	}
