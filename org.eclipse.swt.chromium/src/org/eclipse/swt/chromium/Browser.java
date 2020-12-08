@@ -30,12 +30,15 @@ public class Browser extends Composite {
 
 		style = getStyle ();
 		String msg = "";
+		Throwable t = null;
 		try {
 			webBrowser = (WebBrowser) Class.forName("org.eclipse.swt.chromium.Chromium").newInstance();
 		} catch (ClassNotFoundException e) {
-			msg = "Cannot find Chromium class, probably you a missing a chromium.swt fragment.";
+			msg = "Cannot find Chromium class, probably you are missing a chromium.swt fragment.";
+			t = e;
 		} catch (InstantiationException | IllegalAccessException e) {
 			msg = e.getMessage();
+			t = e;
 		}
 		if (webBrowser != null) {
 			webBrowser.setBrowser (this);
@@ -43,7 +46,7 @@ public class Browser extends Composite {
 			return;
 		}
 		dispose ();
-		SWT.error (SWT.ERROR_NO_HANDLES, null, msg);
+		SWT.error (SWT.ERROR_NO_HANDLES, t, msg);
 	}
 
 	static Composite checkParent (Composite parent) {
