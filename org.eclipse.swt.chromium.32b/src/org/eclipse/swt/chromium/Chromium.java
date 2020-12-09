@@ -2651,6 +2651,12 @@ class Chromium extends WebBrowser {
 			lastSearch = search;
 			ChromiumLib.cefswt_find(browser, search, forward ? 1 : 0, matchCase ? 1 : 0, findNext);
 		}
+
+		@Override
+		public void zoom(double zoomLevel) {
+			checkBrowser();
+			ChromiumLib.cefswt_zoom(browser, zoomLevel);
+		}
 		
 	}
 }

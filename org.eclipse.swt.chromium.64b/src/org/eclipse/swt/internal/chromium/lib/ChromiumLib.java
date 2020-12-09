@@ -198,6 +198,11 @@ public class ChromiumLib extends C {
 	 */
 	public static final native void cefswt_find(long /*int*/ browser, String search, int forward, int matchCase, int findNext);
 
+	/**
+	 * @param browser cast=(void *)
+	 */
+	public static final native void cefswt_zoom(long /*int*/ browser, double level);
+
 	public static final native int cef_app_t_sizeof();
 
 	public static final native int cef_browser_process_handler_t_sizeof();

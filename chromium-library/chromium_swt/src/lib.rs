@@ -893,3 +893,10 @@ pub extern fn cefswt_find(browser: *mut cef::cef_browser_t, search: *const c_cha
         unsafe { stop_finding(browser_host, 1) };
     }
 }
+
+#[no_mangle]
+pub extern fn cefswt_zoom(browser: *mut cef::cef_browser_t, level: f64) {
+    let browser_host = get_browser_host(browser);
+    let set_zoom = unsafe { (*browser_host).set_zoom_level.expect("no zoom") };
+    unsafe { set_zoom(browser_host, level) };
+}
