@@ -18,6 +18,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.text.NumberFormat;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
@@ -51,6 +52,7 @@ import org.eclipse.swt.browser.StatusTextListener;
 import org.eclipse.swt.browser.TitleEvent;
 import org.eclipse.swt.browser.TitleListener;
 import org.eclipse.swt.browser.VisibilityWindowListener;
+import org.eclipse.swt.chromium.ChromiumBrowser.ConsoleListener;
 import org.eclipse.swt.events.ControlAdapter;
 import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.FocusEvent;
@@ -798,6 +800,7 @@ class Chromium extends WebBrowser {
 			disposeCallback(displayHandler.on_address_change_cb);
 			disposeCallback(displayHandler.on_status_message_cb);
 			disposeCallback(displayHandler.on_title_change_cb);
+			disposeCallback(displayHandler.on_console_message_cb);
 			C.free(displayHandler.ptr);
 			displayHandler = null;
 		}
@@ -1107,6 +1110,8 @@ class Chromium extends WebBrowser {
 		displayHandler.on_address_change = checkGetAddress(displayHandler.on_address_change_cb);
 		displayHandler.on_status_message_cb = new CallbackExt(Chromium.class, "on_status_message", void.class, new Type[] {long.class, long.class, long.class});
 		displayHandler.on_status_message = checkGetAddress(displayHandler.on_status_message_cb);
+		displayHandler.on_console_message_cb = new CallbackExt(Chromium.class, "on_console_message", int.class, new Type[] {long.class, long.class, int.class, long.class, long.class, int.class});
+		displayHandler.on_console_message = checkGetAddress(displayHandler.on_console_message_cb);
 		
 		clientHandler.get_display_handler_cb = new CallbackExt(Chromium.class, "get_display_handler", long.class, new Type[] {long.class});
 		clientHandler.get_display_handler = checkGetAddress(clientHandler.get_display_handler_cb);
@@ -1184,6 +1189,26 @@ class Chromium extends WebBrowser {
 		for (StatusTextListener listener : statusTextListeners) {
 			listener.changed(event);
 		}
+	}
+
+	static int on_console_message(long /*int*/ self, long /*int*/ browser, int level, long /*int*/ message, long /*int*/ source, int line) {
+		int id = ChromiumLib.cefswt_get_id(browser);
+//		debug("on_console_message: " + id + " "+level);
+		return safeGeInstance(id).on_console_message(browser, level, message, source, line);
+	}
+
+	private int on_console_message(long /*int*/ browser, int level, long /*int*/ message, long /*int*/ source, int line) {
+		if (isDisposed()) return 0;
+		String msg = (message == 0) ? "" : ChromiumLib.cefswt_cefstring_to_java(message);
+		String src = (source == 0) ? "" : ChromiumLib.cefswt_cefstring_to_java(source);
+		int prevent = 0;
+		if (extraApi != null) {
+			for (ConsoleListener listener : extraApi.consoleListeners) {
+				if (listener.message(level, msg, src, line))
+					prevent = 1;
+			}
+		}
+		return prevent;
 	}
 
 	private static void set_request_handler() {
@@ -2643,6 +2668,7 @@ class Chromium extends WebBrowser {
 
 	class ExtraApi implements ChromiumBrowser {
 		String lastSearch = null;
+		List<ConsoleListener> consoleListeners = new ArrayList<ConsoleListener>();
 
 		@Override
 		public void find(String search, boolean forward, boolean matchCase) {
@@ -2651,11 +2677,24 @@ class Chromium extends WebBrowser {
 			lastSearch = search;
 			ChromiumLib.cefswt_find(browser, search, forward ? 1 : 0, matchCase ? 1 : 0, findNext);
 		}
-		
+
 		@Override
 		public void zoom(double zoomLevel) {
 			checkBrowser();
 			ChromiumLib.cefswt_zoom(browser, zoomLevel);
 		}
+
+		@Override
+		public void addConsoleListener(ConsoleListener listener) {
+			checkBrowser();
+			consoleListeners.add(listener);
+		}
+
+		@Override
+		public void removeConsoleListener(ConsoleListener listener) {
+			checkBrowser();
+			consoleListeners.remove(listener);
+		}
+		
 	}
 }

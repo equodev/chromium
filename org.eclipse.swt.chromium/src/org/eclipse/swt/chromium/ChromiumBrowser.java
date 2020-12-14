@@ -12,4 +12,17 @@ public interface ChromiumBrowser {
 	 * @param zoomLevel
 	 */
 	public void zoom(double zoomLevel);
+	
+	public void addConsoleListener(ConsoleListener listener);
+	
+	public void removeConsoleListener(ConsoleListener listener);
+	
+	@FunctionalInterface
+	public interface ConsoleListener {
+		/**
+		 * level: 2 (INFO), 3 (WARNING), 4 (ERROR).
+		 * @return true to stop message from being output to console.
+		 */
+		boolean message(int level, String message, String source, int line);
+	}
 }

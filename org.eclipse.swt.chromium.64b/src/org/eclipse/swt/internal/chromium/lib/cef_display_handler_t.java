@@ -82,6 +82,8 @@ public class cef_display_handler_t {
 	public Callback on_address_change_cb;
 	/** @field flags=no_gen */
 	public Callback on_status_message_cb;
+	/** @field flags=no_gen */
+	public Callback on_console_message_cb;
 
 	public static final int sizeof = ChromiumLib.cef_display_handler_t_sizeof();
 }
