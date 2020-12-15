@@ -689,6 +689,35 @@ pub extern fn cefswt_auth_callback(callback: *mut cef::_cef_auth_callback_t, jus
 }
 
 #[no_mangle]
+pub extern fn cefswt_request_callback(callback: *mut cef::_cef_request_callback_t, ssl_info: *mut cef::_cef_sslinfo_t, cert_bytes: *const c_void, cert_size: usize, mut cont: c_int) {
+    unsafe {
+        if cert_size > 0 {
+            let provided_bin = cef::cef_binary_value_create(cert_bytes, cert_size);
+            let x509 = (*ssl_info).get_x509certificate.unwrap()(ssl_info);
+            let x509_der = (*x509).get_derencoded.unwrap()(x509);
+            if (*x509_der).is_equal.unwrap()(x509_der, provided_bin) == 1 {
+                //println!("Provided DER matches!");
+                cont = 1;
+            } else {
+                let x509_pem = (*x509).get_pemencoded.unwrap()(x509);
+                if (*x509_pem).is_equal.unwrap()(x509_pem, provided_bin) == 1 {
+                    //println!("Provided PEM matches!");
+                    cont = 1;
+                } else {
+                    //println!("Provided DER or PEM does not match");
+                    cont = 0;
+                }
+            }
+        }
+        if cont == 1 {
+            (*callback).cont.unwrap()(callback, cont)
+        } else {
+            (*callback).cancel.unwrap()(callback) 
+        }
+    };
+}
+
+#[no_mangle]
 pub extern fn cefswt_handlekey(browser: *mut cef::cef_browser_t, event: *const cef::_cef_key_event_t) -> c_int {
     unsafe {
         let get_frame = (*browser).get_main_frame.expect("null get_main_frame");

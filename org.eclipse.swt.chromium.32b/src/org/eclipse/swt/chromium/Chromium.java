@@ -807,6 +807,7 @@ class Chromium extends WebBrowser {
 		if (requestHandler != null) {
 			disposeCallback(requestHandler.on_before_browse_cb);
 			disposeCallback(requestHandler.get_auth_credentials_cb);
+			disposeCallback(requestHandler.on_certificate_error_cb);
 			C.free(requestHandler.ptr);
 			requestHandler = null;
 		}
@@ -1217,6 +1218,8 @@ class Chromium extends WebBrowser {
 		requestHandler.on_before_browse = checkGetAddress(requestHandler.on_before_browse_cb);
 		requestHandler.get_auth_credentials_cb = new CallbackExt(Chromium.class, "get_auth_credentials", int.class, new Type[] {long.class, long.class, long.class, int.class, long.class, int.class, long.class, long.class, long.class});
 		requestHandler.get_auth_credentials = checkGetAddress(requestHandler.get_auth_credentials_cb);
+		requestHandler.on_certificate_error_cb = new CallbackExt(Chromium.class, "on_certificate_error", int.class, new Type[] {long.class, long.class, int.class, long.class, long.class, long.class});
+		requestHandler.on_certificate_error = checkGetAddress(requestHandler.on_certificate_error_cb);
 
 		clientHandler.get_request_handler_cb = new CallbackExt(Chromium.class, "get_request_handler", long.class, new Type[] {long.class});
 		clientHandler.get_request_handler = checkGetAddress(clientHandler.get_request_handler_cb);
@@ -1371,6 +1374,71 @@ class Chromium extends WebBrowser {
 					display.sleep();
 			}
 		}
+	}
+
+	static int on_certificate_error(int /*long*/ self, int /*long*/ browser, int cert_error, int /*long*/ request_url, int /*long*/ ssl_info, int /*long*/ callback) {
+		int id = ChromiumLib.cefswt_get_id(browser);
+		debug("on_certificate_error: " + id);
+		return safeGeInstance(id).on_certificate_error(browser, cert_error, request_url, ssl_info, callback);
+	}
+	
+	private int on_certificate_error(int /*long*/ browser, int cert_error, int /*long*/ request_url, int /*long*/ ssl_info, int /*long*/ callback) {
+		String derpem = System.getProperty("swt.chromium.ssl", "");
+		if (!derpem.isEmpty()) {
+			if (Files.isReadable(Paths.get(derpem))) {
+				try {
+					byte[] derpemBytes = Files.readAllBytes(Paths.get(derpem));
+					ChromiumLib.cefswt_request_callback(callback, ssl_info, derpemBytes, derpemBytes.length, 1);
+					return 1;
+				} catch (IOException e) {
+					debugPrint("Failed to read file "+derpem);
+					e.printStackTrace();
+				}
+			} else {
+				debugPrint("Cannot read file '"+derpem+"', trying as string");
+				byte[] derpemBytes = derpem.getBytes(Charset.forName("ASCII"));
+				ChromiumLib.cefswt_request_callback(callback, ssl_info, derpemBytes, derpemBytes.length, 1);
+				return 1;
+			}
+		}
+		
+		String javaHost = request_url == 0 ? url : ChromiumLib.cefswt_cefstring_to_java(request_url);
+		MessageBox prompt = new MessageBox (chromium.getShell(), SWT.YES | SWT.NO);
+		prompt.setText(SWT.getMessage("SWT_InvalidCert_Title"));
+		String cefError = "";
+		switch (cert_error) {
+		case -110: cefError = "ERR_SSL_CLIENT_AUTH_CERT_NEEDED"; break;
+		case -111: cefError = "ERR_TUNNEL_CONNECTION_FAILED"; break;
+		case -112: cefError = "ERR_NO_SSL_VERSIONS_ENABLED"; break;	
+		case -113: cefError = "ERR_SSL_VERSION_OR_CIPHER_MISMATCH"; break;
+		case -114: cefError = "ERR_SSL_RENEGOTIATION_REQUESTED"; break;
+		case -200: cefError = "ERR_CERT_COMMON_NAME_INVALID"; break;
+		case -201: cefError = "ERR_CERT_DATE_INVALID"; break;
+		case -202: cefError = "ERR_CERT_AUTHORITY_INVALID"; break;
+		case -203: cefError = "ERR_CERT_CONTAINS_ERRORS"; break;
+		case -204: cefError = "ERR_CERT_NO_REVOCATION_MECHANISM"; break;
+		case -205: cefError = "ERR_CERT_UNABLE_TO_CHECK_REVOCATION"; break;
+		case -206: cefError = "ERR_CERT_REVOKED"; break;
+		case -207: cefError = "ERR_CERT_INVALID"; break;
+		case -208: cefError = "ERR_CERT_WEAK_SIGNATURE_ALGORITHM"; break;
+		case -210: cefError = "ERR_CERT_NON_UNIQUE_NAME"; break;
+		case -211: cefError = "ERR_CERT_WEAK_KEY"; break;
+		case -212: cefError = "ERR_CERT_NAME_CONSTRAINT_VIOLATION"; break;
+		case -213: cefError = "ERR_CERT_VALIDITY_TOO_LONG"; break;
+		default: break;
+		}
+		
+		String specific = cefError.isEmpty() ? "\n\n" : "\n\n" + cefError + "\n\n";
+		String message = SWT.getMessage("SWT_InvalidCert_Message", new Object[] {javaHost}) +
+				specific + SWT.getMessage("SWT_InvalidCert_Connect");
+		prompt.setMessage(message);
+		int result = prompt.open();
+		if (result == SWT.YES) {
+			ChromiumLib.cefswt_request_callback(callback, ssl_info, new byte[0], 0, 1);
+		} else {
+			ChromiumLib.cefswt_request_callback(callback, ssl_info, new byte[0], 0, 0);
+		}
+		return 1;
 	}
 
 	private static void set_jsdialog_handler() {

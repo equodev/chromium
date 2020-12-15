@@ -133,6 +133,8 @@ public class cef_request_handler_t {
 	public Callback on_before_browse_cb;
 	/** @field flags=no_gen */
 	public Callback get_auth_credentials_cb;
+	/** @field flags=no_gen */
+	public Callback on_certificate_error_cb;
 
 	public static final int sizeof = ChromiumLib.cef_request_handler_t_sizeof();
 }

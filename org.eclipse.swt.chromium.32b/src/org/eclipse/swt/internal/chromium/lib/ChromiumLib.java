@@ -163,6 +163,13 @@ public class ChromiumLib extends C {
 	 * @param callback cast=(void *)
 	 */
 	public static final native void cefswt_auth_callback(int /*long*/ callback, String user, String password, int cont);
+
+	/**
+	 * @param callback cast=(void *)
+	 * @param ssl_info cast=(void *)
+	 */
+	public static final native void cefswt_request_callback(int /* long */ callback, int /* long */ ssl_info, byte[] bytes, int length, int cont);
+
 	/**
 	 * @param callback cast=(void *)
 	 */
