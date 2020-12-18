@@ -12,6 +12,8 @@
 	<properties>
 		<tycho.version>1.4.0</tycho.version>
 		<cbi.jarsigner.skip>true</cbi.jarsigner.skip>
+		<mvn.space></mvn.space>
+		<mvn.folder></mvn.folder>
 	</properties>
 
 	<pluginRepositories>
@@ -20,6 +22,13 @@
 			<url>https://repo.eclipse.org/content/repositories/cbi-releases/</url>
 		</pluginRepository>
 	</pluginRepositories>
+
+	<distributionManagement>
+		<snapshotRepository>
+			<id>equo-chromium-swt</id>
+			<url>s3://${mvn.space}/${mvn.folder}/mvn</url>
+		</snapshotRepository>
+	</distributionManagement>
 
 	<repositories>
 		<!-- <repository>
@@ -46,6 +55,14 @@
 	</modules>
 
 	<build>
+		<extensions>
+			<extension>
+				<groupId>com.gkatzioura.maven.cloud</groupId>
+				<artifactId>s3-storage-wagon</artifactId>
+				<version>2.3</version>
+			</extension>
+		</extensions>
+
 		<plugins>
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
