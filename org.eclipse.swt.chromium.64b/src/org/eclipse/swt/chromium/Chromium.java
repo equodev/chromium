@@ -2754,13 +2754,11 @@ class Chromium extends WebBrowser {
 
 		@Override
 		public void addConsoleListener(ConsoleListener listener) {
-			checkBrowser();
 			consoleListeners.add(listener);
 		}
 
 		@Override
 		public void removeConsoleListener(ConsoleListener listener) {
-			checkBrowser();
 			consoleListeners.remove(listener);
 		}
 		
