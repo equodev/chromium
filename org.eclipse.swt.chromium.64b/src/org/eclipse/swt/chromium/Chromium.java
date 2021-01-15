@@ -156,7 +156,7 @@ class Chromium extends WebBrowser {
 	OpenWindowListener[] openWindowListeners = new OpenWindowListener[0];
 	private long /*int*/ hwnd;
 	private long /*int*/ browser;
-	private FocusListener focusListener;
+	private CefFocusListener focusListener;
 	private String url;
 	private String postData;
 	private String[] headers;
@@ -1970,7 +1970,10 @@ class Chromium extends WebBrowser {
 			debugPrint("on_got_focus: ");
 			if (chromium.getDisplay().getFocusControl() != chromium) {
 				debugPrint("on_got_focus: setFocus");
+				boolean focusListenerPrev = focusListener.enabled;
+				focusListener.enabled = false;
 				chromium.setFocus();
+				focusListener.enabled = focusListenerPrev;
 				browserFocus(true);
 			}
 			else if ("gtk".equals(SWT.getPlatform())) {
@@ -2461,7 +2464,9 @@ class Chromium extends WebBrowser {
 				return;
 			//debugPrint("focusGained");
 			enabled = false;
-//			browserFocus(true);
+			chromium.getDisplay().asyncExec(()-> {
+				browserFocus(true);
+			});
 			enabled = true;
 		}
 	}

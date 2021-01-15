@@ -156,7 +156,7 @@ class Chromium extends WebBrowser {
 	OpenWindowListener[] openWindowListeners = new OpenWindowListener[0];
 	private int /*long*/ hwnd;
 	private int /*long*/ browser;
-	private FocusListener focusListener;
+	private CefFocusListener focusListener;
 	private String url;
 	private String postData;
 	private String[] headers;
@@ -1409,7 +1409,7 @@ class Chromium extends WebBrowser {
 		switch (cert_error) {
 		case -110: cefError = "ERR_SSL_CLIENT_AUTH_CERT_NEEDED"; break;
 		case -111: cefError = "ERR_TUNNEL_CONNECTION_FAILED"; break;
-		case -112: cefError = "ERR_NO_SSL_VERSIONS_ENABLED"; break;	
+		case -112: cefError = "ERR_NO_SSL_VERSIONS_ENABLED"; break;
 		case -113: cefError = "ERR_SSL_VERSION_OR_CIPHER_MISMATCH"; break;
 		case -114: cefError = "ERR_SSL_RENEGOTIATION_REQUESTED"; break;
 		case -200: cefError = "ERR_CERT_COMMON_NAME_INVALID"; break;
@@ -1970,7 +1970,10 @@ class Chromium extends WebBrowser {
 			debugPrint("on_got_focus: ");
 			if (chromium.getDisplay().getFocusControl() != chromium) {
 				debugPrint("on_got_focus: setFocus");
+				boolean focusListenerPrev = focusListener.enabled;
+				focusListener.enabled = false;
 				chromium.setFocus();
+				focusListener.enabled = focusListenerPrev;
 				browserFocus(true);
 			}
 			else if ("gtk".equals(SWT.getPlatform())) {
@@ -2461,7 +2464,9 @@ class Chromium extends WebBrowser {
 				return;
 			//debugPrint("focusGained");
 			enabled = false;
-//			browserFocus(true);
+			chromium.getDisplay().asyncExec(()-> {
+				browserFocus(true);
+			});
 			enabled = true;
 		}
 	}
