@@ -334,7 +334,9 @@ class Chromium extends WebBrowser {
 						isGtk2 = true;
 					}
 				}
-				ChromiumLib.cefswt_init(app.ptr, cefrustPath, VERSION+(isGtk2 ? "*" : ""), debugPort);
+				String cachePath = System.getProperty("swt.chromium.cachepath", cefrustPath+File.separator+"cache");
+				String opts = VERSION + ";cache_path="+cachePath + (isGtk2 ? ";gtk2=true" : "");
+				ChromiumLib.cefswt_init(app.ptr, cefrustPath, opts, debugPort);
 
 				if (suspend) {
 					for (int i=0; i<threadsCount; i++) {

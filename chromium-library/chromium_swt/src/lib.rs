@@ -41,17 +41,32 @@ pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char
 
     let cefrust_path = utils::str_from_c(cefrust_path);
     let mut version = utils::str_from_c(version);
-    if version.ends_with("*") {
-        #[cfg(target_os = "linux")] unsafe { gtk::GTK3 = false };
-        version = &version[..version.len()-1];
-    }
-
+    //println!("VERSION: {:?}", version);
+    
     // let key = "LD_LIBRARY_PATH";
     // env::set_var(key, cefrust_path);
 
     let main_args = utils::prepare_args(false);
 
     let cefrust_dir = std::path::Path::new(&cefrust_path);
+    let cache_path = cefrust_dir.parent().unwrap().join("cache");
+    let mut cache_path = cache_path.to_str().unwrap();
+    
+    let opts: Vec<&str> = version.split(';').collect();
+    for i in 0..opts.len() {
+        //println!("opt: {:?} {:?}", i, opts[i]);
+        let parts: Vec<&str> = opts[i].splitn(2, '=').collect();
+        let opt_nm = parts[0];
+        let opt_val = if parts.len() > 1 { parts[1] } else { "" };
+        if "gtk2" == opt_nm && "true" == opt_val {
+            #[cfg(target_os = "linux")] unsafe { gtk::GTK3 = false };
+        }
+        else if "cache_path" == opt_nm {
+            cache_path = opt_val;
+        } 
+    }
+
+    version = &version[0..4];
 
     // env::set_current_dir(cefrust_dir).expect("Failed to set current dir");
     // println!("{:?}", env::current_dir().unwrap().to_str());
@@ -75,7 +90,7 @@ pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char
         utils::cef_string_empty()
     };
 
-    let cache_dir_cef = utils::cef_string(cefrust_dir.parent().unwrap().parent().unwrap().join("cef_cache").to_str().unwrap());
+    let cache_dir_cef = utils::cef_string(cache_path);
 
     let logfile_cef = utils::cef_string(cefrust_dir.join("lib.log").to_str().unwrap());
 
