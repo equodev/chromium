@@ -161,6 +161,7 @@ class Chromium extends WebBrowser {
 	private String postData;
 	private String[] headers;
 	private String text = "";
+	private String title = "";
 	private CompletableFuture<String> textReady;
 	private boolean canGoBack;
 	private boolean canGoForward;
@@ -1143,6 +1144,7 @@ class Chromium extends WebBrowser {
 		event.display = chromium.getDisplay ();
 		event.widget = chromium;
 		event.title = str;
+		this.title = str != null ? str : "";
 		for (TitleListener listener : titleListeners) {
 			listener.changed(event);
 		}
@@ -1477,37 +1479,55 @@ class Chromium extends WebBrowser {
 			long /*int*/ default_prompt_text, long /*int*/ callback) {
 		if (isDisposed()) return 0;
 		
-//		String prompt = ChromiumLib.cefswt_cefstring_to_java(default_prompt_text);
+		String prompt = default_prompt_text != 0 ? ChromiumLib.cefswt_cefstring_to_java(default_prompt_text) : null;
 		String url = ChromiumLib.cefswt_cefstring_to_java(origin_url);
 		String title = getPlainUrl(url);
+		String use = System.getProperty("swt.chromium.dialogs", "swt");
+		switch (use) {
+		case "swt-host":
+			try {
+				title = new URL(getPlainUrl(url)).getHost();
+			} catch (MalformedURLException e) {
+				title = "";
+			}
+			break;
+		case "swt-empty":
+			title = "";
+			break;
+		case "swt-title":
+			title = this.title;
+			break;
+		}
 		String msg = ChromiumLib.cefswt_cefstring_to_java(message_text);
-		openJsDialog(dialog_type, title, msg, default_prompt_text, callback);
+		openJsDialog(dialog_type, title, msg, prompt, default_prompt_text, callback);
 		return 1;
 	}
 
-	private void openJsDialog(int dialog_type, String title, String msg, long /*int*/ default_prompt_text, long /*int*/ callback) {
+	private void openJsDialog(int dialog_type, String title, String msg, String prompt, long /*int*/ default_prompt_text, long /*int*/ callback) {
 		int style = SWT.ICON_WORKING;
 		switch (dialog_type) {
 		case cef_jsdialog_handler_t.JSDIALOGTYPE_ALERT:
 			style = SWT.ICON_INFORMATION;
 			break;
 		case cef_jsdialog_handler_t.JSDIALOGTYPE_CONFIRM:
-			style = SWT.ICON_WARNING;
+			style = SWT.ICON_WARNING | SWT.CANCEL | SWT.OK;
 			break;
 		case cef_jsdialog_handler_t.JSDIALOGTYPE_PROMPT:
-			style = SWT.ICON_QUESTION | SWT.YES | SWT.NO;
+			style = SWT.ICON_QUESTION | SWT.CANCEL | SWT.OK;
 			break;
 		}
 		Consumer<Integer> close = open -> {
 			int r = open == SWT.OK || open == SWT.YES ? 1 : 0;
 			debug("JS Dialog Closed with "+r);
-			ChromiumLib.cefswt_dialog_close(callback, r, default_prompt_text);
+			chromium.getDisplay().asyncExec(() -> {
+				ChromiumLib.cefswt_dialog_close(callback, r, 0);
+			});
 			chromium.getShell().forceActive();
 		};
 		if (!"test".equals(System.getProperty("swt.chromium.dialogs", ""))) {
 			MessageBox box = new MessageBox(chromium.getShell(), style);
 			box.setText(title);
-			box.setMessage(msg);
+			box.setMessage(prompt != null ? msg + "\n\n"+prompt : msg);
 			int open = box.open();
 			close.accept(open);
 		} else {
@@ -1543,16 +1563,17 @@ class Chromium extends WebBrowser {
 		debug("on_before_unload_dialog disposing: " + disposing);
 		if (disposing == Dispose.FromClose) {
 			disposing = Dispose.Unload;
-			
-			if (useSwtDialogs()) {
-				String msg = ChromiumLib.cefswt_cefstring_to_java(message_text);
-//				Display.getDefault().asyncExec(() -> {
-//					ChromiumLib.cefswt_dialog_close(callback, 0, 0);
-					openJsDialog(cef_jsdialog_handler_t.JSDIALOGTYPE_PROMPT, "Are you sure you want to leave this page?", msg, 0, callback);
+		}	
+		if (useSwtDialogs()) {
+			String msg = ChromiumLib.cefswt_cefstring_to_java(message_text);
+//			Display.getDefault().asyncExec(() -> {
+//				ChromiumLib.cefswt_dialog_close(callback, 0, 0);
+				openJsDialog(cef_jsdialog_handler_t.JSDIALOGTYPE_CONFIRM, "Are you sure you want to leave this page?", msg, null, 0, callback);
+				if (disposing == Dispose.Unload) {
 					disposing = Dispose.UnloadClosed;
-//				});
-				return 1;
-			}
+				}
+//			});
+			return 1;
 		}
 		return 0;
 	}
