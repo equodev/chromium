@@ -692,7 +692,7 @@ class Chromium extends WebBrowser {
 		lifeSpanHandler.on_before_popup_cb = new CallbackExt(Chromium.class, "on_before_popup", int.class, new Type[] {long.class, long.class, long.class,
 				long.class, long.class, int.class,
 				int.class, long.class, long.class,
-				long.class, long.class, int.class});
+				long.class, long.class, long.class});
 		lifeSpanHandler.on_before_popup = checkGetAddress(lifeSpanHandler.on_before_popup_cb);
 		
 		clientHandler.get_life_span_handler_cb = new CallbackExt(Chromium.class, "get_life_span_handler", long.class, new Type[] {long.class});
@@ -948,24 +948,25 @@ class Chromium extends WebBrowser {
 	static int on_before_popup(long /*int*/ self, long /*int*/ browser, long /*int*/ frame,
 			long /*int*/ target_url, long /*int*/ target_frame_name, int target_disposition,
 			int user_gesture, long /*int*/ popupFeaturesPtr, long /*int*/ windowInfo,
-			long /*int*/ client, long /*int*/ settings, int no_javascript_access) {
+			long /*int*/ client, long /*int*/ settings, long /*int*/ no_javascript_access) {
 		loopDisable = true;
 		pumpDisable = true;
 		int id = ChromiumLib.cefswt_get_id(browser);
 		debug("on_before_popup: " + id);
-		int ret = safeGeInstance(id).on_before_popup(browser, popupFeaturesPtr, windowInfo, client);
+		int ret = safeGeInstance(id).on_before_popup(browser, target_url, popupFeaturesPtr, windowInfo, client);
 		loopDisable = false;
 		return ret;
 	}
 
-	private int on_before_popup(long /*int*/ browser, long /*int*/ popupFeaturesPtr, long /*int*/ windowInfo, long /*int*/ client) {
+	private int on_before_popup(long /*int*/ browser, long /*int*/ target_url, long /*int*/ popupFeaturesPtr, long /*int*/ windowInfo, long /*int*/ client) {
 		if (isDisposed()) 
 			return 1;
 		if (openWindowListeners == null) 
 			return 0;
 		
 		WindowEvent event = new WindowEvent(chromium);
-		
+		String toUrl = target_url != 0 ? ChromiumLib.cefswt_cefstring_to_java(target_url) : null;
+		event.data = toUrl;
 		cef_popup_features_t popupFeatures = new cef_popup_features_t();
 		ChromiumLib.memmove(popupFeatures, popupFeaturesPtr, ChromiumLib.cef_popup_features_t_sizeof());
 		
@@ -997,6 +998,11 @@ class Chromium extends WebBrowser {
 			if (event.browser != null) {
 				if (((Chromium) event.browser.webBrowser).instance == 0) {
 					((Chromium) event.browser.webBrowser).createPopup(windowInfo, client, event);
+				} else if (event.browser == this.chromium) {
+					if (toUrl != null) {
+						setUrl(toUrl, null, null);
+					}
+					event.required = true;
 				} else {
 					event.required = true;
 				}
@@ -1251,8 +1257,9 @@ class Chromium extends WebBrowser {
 			event.display = chromium.getDisplay();
 			event.widget = chromium;
 			event.doit = true;
+			event.top = ChromiumLib.cefswt_is_main_frame(frame);
 			event.location = ChromiumLib.cefswt_request_to_java(request);
-			debugPrint("on_before_browse:" + event.location);
+			debugPrint("on_before_browse:" + event.location + " top:"+event.top);
 			try {
 				loopDisable = true;
 				for (LocationListener listener : locationListeners) {
