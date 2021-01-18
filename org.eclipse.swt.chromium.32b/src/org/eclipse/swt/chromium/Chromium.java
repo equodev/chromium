@@ -130,7 +130,6 @@ class Chromium extends WebBrowser {
 	private static CompletableFuture<Boolean> cookieVisited;
 	private static AtomicInteger browsers = new AtomicInteger(0);
 	private static Map<Integer, Chromium> instances = new HashMap<>();
-	private static int EVAL = 1;
 	private static int INSTANCES = 0;
 	private static Runnable loopWork;
 	private static boolean loopDisable;
@@ -178,6 +177,7 @@ class Chromium extends WebBrowser {
 	private Listener traverseListener;
 	private WindowEvent isPopup;
 	private ExtraApi extraApi;
+	private int reentrant = 0;
 	
 	public Chromium() {
 	}
@@ -2117,7 +2117,9 @@ class Chromium extends WebBrowser {
 		}
 		BrowserFunction browserFunction = functions.get(id);
 		if (browserFunction != null) {
+			reentrant = fn.port;
 			Object ret = browserFunction.function(args);
+			reentrant = 0;
 			
 			Object[] returnPair = convertType(ret);
 			ReturnType returnType = (ReturnType) returnPair[0];
@@ -2563,7 +2565,7 @@ class Chromium extends WebBrowser {
 		buffer.append (script);
 		buffer.append ("\n})()");
 		
-		boolean returnSt = ChromiumLib.cefswt_eval(browser, buffer.toString(), EVAL++, checkGetAddress(callback_cb));
+		boolean returnSt = ChromiumLib.cefswt_eval(browser, buffer.toString(), (reentrant != 0) ? reentrant : 0, checkGetAddress(callback_cb));
 		disposeCallback(callback_cb);
 		if (!returnSt) {
 			throw new SWTException("Script that was evaluated failed");

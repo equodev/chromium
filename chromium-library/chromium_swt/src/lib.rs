@@ -531,25 +531,42 @@ pub extern fn cefswt_execute(browser: *mut cef::cef_browser_t, text: *const c_ch
 #[no_mangle]
 pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char, id: i32,
         callback: unsafe extern "system" fn(work: c_int, kind: c_int, value: *const c_char)) -> c_int {
-    let text_cef = utils::cef_string_from_c(text);
-    let name = utils::cef_string("eval");
-    unsafe {
-        let msg = cef::cef_process_message_create(&name);
-        let args = (*msg).get_argument_list.unwrap()(msg);
-        let s = (*args).set_int.unwrap()(args, 1, id);
-        assert_eq!(s, 1);
-        let s = (*args).set_string.unwrap()(args, 2, &text_cef);
-        assert_eq!(s, 1);
-        let get_frame = (*browser).get_main_frame.expect("null get_main_frame");
-        let main_frame = get_frame(browser);
-        match socket::wait_response(main_frame, msg, args, cef::cef_process_id_t::PID_RENDERER, Some(callback)) {
+    let cb = |work, kind, value| {
+        unsafe {callback(work, kind, value)};
+    };
+    let get_frame = unsafe {(*browser).get_main_frame.expect("null get_main_frame")};
+    let main_frame = unsafe {get_frame(browser)};
+    if id != 0 { // reentrant
+        let code = utils::str_from_c(text);
+        match socket::wait_response(main_frame, std::ptr::null_mut(), id as u16, code, cef::cef_process_id_t::PID_RENDERER, cb) {
             Ok(r) => {
-                callback(0, r.kind as i32, r.str_value.as_ptr());
+                unsafe {callback(0, r.kind as i32, r.str_value.as_ptr())};
                 1
             },
             Err(_e) => {
                 //println!("Failed in socket server {:?}", e);
                 0
+            }
+        }    
+    } else {
+        let text_cef = utils::cef_string_from_c(text);
+        let name = utils::cef_string("eval");
+        unsafe {
+            let msg = cef::cef_process_message_create(&name);
+            let args = (*msg).get_argument_list.unwrap()(msg);
+            let s = (*args).set_int.unwrap()(args, 1, id);
+            assert_eq!(s, 1);
+            let s = (*args).set_string.unwrap()(args, 2, &text_cef);
+            assert_eq!(s, 1);
+            match socket::wait_response(main_frame, msg, 0, "", cef::cef_process_id_t::PID_RENDERER, cb) {
+                Ok(r) => {
+                    callback(0, r.kind as i32, r.str_value.as_ptr());
+                    1
+                },
+                Err(_e) => {
+                    //println!("Failed in socket server {:?}", e);
+                    0
+                }
             }
         }
     }

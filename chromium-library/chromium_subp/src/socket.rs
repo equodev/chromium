@@ -12,7 +12,8 @@ pub enum ReturnType {
     Str = 2,
     Null = 3,
     Array = 4,
-    Error = 5
+    Error = 5,
+    Eval = 6
 }
 
 impl ReturnType {
@@ -23,6 +24,7 @@ impl ReturnType {
             2 => ReturnType::Str,
             3 => ReturnType::Null,
             4 => ReturnType::Array,
+            6 => ReturnType::Eval,
             _ => ReturnType::Error,
         }
     }
@@ -117,26 +119,34 @@ fn serialize_null() {
     assert_eq!(CString::new("").unwrap(), read_st.str_value);
 }
 
-pub fn wait_response(frame: *mut cef::_cef_frame_t, 
+pub fn wait_response<F: Fn(c_int, c_int, *const c_char)>(frame: *mut cef::_cef_frame_t, 
         msg: *mut cef::cef_process_message_t,
-        args: *mut cef::_cef_list_value_t,
+        answer_port: u16,
+        code: &str,
         target: cef::cef_process_id_t,
-        callback: Option<unsafe extern "system" fn(work: c_int, kind: c_int, value: *const c_char)>
+        callback: F,
         ) -> Result<ReturnSt, String> {
     match TcpListener::bind(("127.0.0.1", 0)) {
         Ok(listener) => {
             let port = listener.local_addr().unwrap().port();
-            let s = unsafe {(*args).set_int.unwrap()(args, 0, port as i32) };
-            assert_eq!(s, 1);
-            unsafe {(*frame).send_process_message.unwrap()(frame, target, msg)};
+
+            if msg.is_null() {
+                let eval = format!("{},{}", port, code);
+                socket_client(answer_port, CString::new(eval).unwrap(), ReturnType::Eval);
+            } else {
+                let args = unsafe {(*msg).get_argument_list.unwrap()(msg)};
+                let s = unsafe {(*args).set_int.unwrap()(args, 0, port as i32) };
+                assert_eq!(s, 1);
+                unsafe {(*frame).send_process_message.unwrap()(frame, target, msg)};
+            }
             
-            //println!("new server, waiting response in :{:?}", port);
+            //println!("new server, waiting response in :{:?} from {:?}", port, target);
             let mut res = None;
             listener.set_nonblocking(true).expect("Cannot set non-blocking");
             for stream in listener.incoming() {
                 match stream {
                     Ok(mut stream) => {
-                        //println!("new client!");
+                        //println!("new client! from {:?}", target);
                         let mut buffer = Vec::new();
                         loop {
                             match stream.read_to_end(&mut buffer) {
@@ -144,7 +154,12 @@ pub fn wait_response(frame: *mut cef::_cef_frame_t,
                                     //println!("read from socket: {} {} {:?}", n, ::std::mem::size_of::<ReturnSt>(), buffer);
                                     let ret = read_buffer(&buffer);
                                     //println!("st: {:?}", ret);
-                                    res = Some(Ok(ret));
+                                    if ret.kind == ReturnType::Eval {
+                                        callback(0, ReturnType::Eval as i32, ret.str_value.as_ptr());
+                                        break;
+                                    } else {
+                                        res = Some(Ok(ret));
+                                    }
                                     break;
                                 },
                                 Err(ref e) if e.kind() == ::std::io::ErrorKind::WouldBlock => {
@@ -159,12 +174,8 @@ pub fn wait_response(frame: *mut cef::_cef_frame_t,
                         }
                     },
                     Err(_e) => { 
-                        // println!("couldn't get client: {:?}", e);
-                        unsafe {
-                            if let Some(call) = callback {
-                                call(1, ReturnType::Error as i32, ::std::ptr::null());
-                            }
-                        };
+                        //println!("couldn't get client: {:?}", _e);
+                        callback(1, ReturnType::Error as i32, ::std::ptr::null());
                         unsafe { cef::cef_do_message_loop_work() };
                     }
                 };

@@ -1,7 +1,7 @@
 use cef;
 use utils;
 use socket;
-use std::os::raw::{c_int};
+use std::os::raw::{c_int, c_char};
 use std::{mem};
 use std::ffi::{CString, CStr};
 use std::collections::BTreeMap;
@@ -134,7 +134,7 @@ impl RenderProcessHandler {
                 }
                 let rph = self_ as *mut RenderProcessHandler;
                 let handled = if cef::cef_string_utf16_cmp(&utils::cef_string("eval"), name) == 0 {
-                    handle_eval(browser, message);
+                    handle_eval_msg(browser, message);
                     1
                 }
                 else if cef::cef_string_utf16_cmp(&utils::cef_string("function"), name) == 0 {
@@ -209,13 +209,17 @@ fn register_function(id: c_int, name: *mut cef::cef_string_t, global: *mut cef::
     assert_eq!(s, 1);
 }
 
-unsafe fn handle_eval(browser: *mut cef::_cef_browser_t, message: *mut cef::_cef_process_message_t) {
+unsafe fn handle_eval_msg(browser: *mut cef::_cef_browser_t, message: *mut cef::_cef_process_message_t) {
     //println!("RECEIVED EVAL MSG");
     let args = (*message).get_argument_list.unwrap()(message);
     let port = (*args).get_int.unwrap()(args, 0) as u16;
-    let id = (*args).get_int.unwrap()(args, 1);
+    let _id = (*args).get_int.unwrap()(args, 1);
     let code = (*args).get_string.unwrap()(args, 2);
+    handle_eval(browser, code, port);
+}
 
+unsafe fn handle_eval(browser: *mut cef::_cef_browser_t, code: *const cef::cef_string_t, answer_port: u16) {
+    //println!("EVALUAING");
     let frame = (*browser).get_main_frame.unwrap()(browser);
     let context = (*frame).get_v8context.unwrap()(frame);
     let url_cef = utils::cef_string("http://text/");
@@ -229,17 +233,17 @@ unsafe fn handle_eval(browser: *mut cef::_cef_browser_t, message: *mut cef::_cef
         let ret_str_cef = (*ex).get_message.unwrap()(ex);
         let ret_str = utils::cstr_from_cef(ret_str_cef);
         let ret_str = CStr::from_ptr(ret_str);
-        socket::socket_client(port, ret_str.to_owned(), socket::ReturnType::Error);
+        socket::socket_client(answer_port, ret_str.to_owned(), socket::ReturnType::Error);
         cef::cef_string_userfree_utf16_free(ret_str_cef);
     } else {
         //println!("Eval succeded {:?}", ret);
 
-        let (ret_str, kind) = convert_type(ret, id, context);
-        socket::socket_client(port, ret_str, kind);
+        let (ret_str, kind) = convert_type(ret, context);
+        socket::socket_client(answer_port, ret_str, kind);
     }
 }
 
-unsafe fn convert_type(ret: *mut cef::cef_v8value_t, _eval_id: c_int, context: *mut cef::cef_v8context_t) -> (CString, socket::ReturnType) {
+unsafe fn convert_type(ret: *mut cef::cef_v8value_t, context: *mut cef::cef_v8context_t) -> (CString, socket::ReturnType) {
     if (*ret).is_null.expect("is_null")(ret) == 1 || (*ret).is_undefined.unwrap()(ret) == 1 {
         let ret_str = CString::new("").unwrap();
         (ret_str, socket::ReturnType::Null)
@@ -287,7 +291,7 @@ unsafe fn convert_type(ret: *mut cef::cef_v8value_t, _eval_id: c_int, context: *
         arraystr.push('"');
         for i in 0..length {
             let vali = (*array_val).get_value_byindex.unwrap()(array_val, i);
-            let (valcstr, valtyp) = convert_type(vali, _eval_id, context);
+            let (valcstr, valtyp) = convert_type(vali, context);
             let valstr = format!("'{},{}'", valtyp as u32, valcstr.into_string().unwrap());
             if i > 0 {
                 arraystr.push_str(";");
@@ -350,7 +354,7 @@ impl V8Handler {
 
                 if !v8val.is_null() {
                     let ptr = v8val.read() as *mut cef::_cef_v8value_t;
-                    let (cstr, kind) = convert_type(ptr, 0, ::std::ptr::null_mut());
+                    let (cstr, kind) = convert_type(ptr, ::std::ptr::null_mut());
                     let s = (*args).set_int.unwrap()(args, 1+i*2+1, kind as i32);
                     assert_eq!(s, 1);
                     let rstr = cstr.into_string().expect("failed to convert string");
@@ -362,7 +366,20 @@ impl V8Handler {
                 }
             }
 
-            let result = socket::wait_response(frame, msg, args, cef::cef_process_id_t::PID_BROWSER, None);
+            //println!("CALLING JAVA FN, WAITING RESPONSE IN SUBP TID_RENDERER:{}", cef::cef_currently_on(cef::cef_thread_id_t::TID_RENDERER));
+            
+            let cb = |_work: c_int, kind: c_int, value: *const c_char| {
+                if socket::ReturnType::from(kind) == socket::ReturnType::Eval {
+                    let browser = (*frame).get_browser.unwrap()(frame);
+                    let cstr = utils::str_from_c(value);
+                    //println!("received eval: {:?}", cstr);
+                    let parts: Vec<&str> = cstr.splitn(2, ',').collect();
+                    let answer_port = parts[0].parse::<u16>().unwrap();
+                    let code = utils::cef_string(parts[1]);         
+                    handle_eval(browser, &code, answer_port);
+                } 
+            };
+            let result = socket::wait_response(frame, msg, 0, "", cef::cef_process_id_t::PID_BROWSER, cb);
             match result {
                 Ok(return_st) => {
                     match map_type(return_st.kind, return_st.str_value.to_str().unwrap()) {
