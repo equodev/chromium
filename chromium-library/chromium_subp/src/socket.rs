@@ -133,12 +133,14 @@ pub fn wait_response<F: Fn(c_int, c_int, *const c_char)>(frame: *mut cef::_cef_f
             if msg.is_null() {
                 let eval = format!("{},{}", port, code);
                 socket_client(answer_port, CString::new(eval).unwrap(), ReturnType::Eval);
-            } else {
-                let args = unsafe {(*msg).get_argument_list.unwrap()(msg)};
-                let s = unsafe {(*args).set_int.unwrap()(args, 0, port as i32) };
+            } else { unsafe {
+                let args = (*msg).get_argument_list.unwrap()(msg);
+                let s = (*args).set_int.unwrap()(args, 0, port as i32);
                 assert_eq!(s, 1);
-                unsafe {(*frame).send_process_message.unwrap()(frame, target, msg)};
-            }
+                ::app::Base::add_ref(&mut (*msg).base);
+                (*frame).send_process_message.unwrap()(frame, target, msg);
+                ::app::Base::release(&mut (*args).base);
+            }}
             
             //println!("new server, waiting response in :{:?} from {:?}", port, target);
             let mut res = None;

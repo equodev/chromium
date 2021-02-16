@@ -3,6 +3,7 @@ extern crate chromium;
 use chromium::utils;
 use chromium::cef;
 use chromium::app;
+use chromium::app::{Base, RefCount};
 
 use std::os::raw::{c_int};
 use std::ptr::null_mut;
@@ -11,6 +12,7 @@ fn subp() {
     //println!("IN SUBP");
     let main_args = utils::prepare_args(true);
     let mut app = app::App::new();
+    Base::add_ref(&mut app.wrapper().cef.base);
     //println!("Calling cef_execute_process");
     #[cfg(target_os = "windows")]
     unsafe {cef::cef_enable_highdpi_support()};

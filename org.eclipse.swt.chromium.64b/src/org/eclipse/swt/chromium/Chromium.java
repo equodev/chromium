@@ -1258,7 +1258,7 @@ class Chromium extends WebBrowser {
 			event.widget = chromium;
 			event.doit = true;
 			event.top = ChromiumLib.cefswt_is_main_frame(frame);
-			event.location = ChromiumLib.cefswt_request_to_java(request);
+			event.location = getPlainUrl(ChromiumLib.cefswt_request_to_java(request));
 			debugPrint("on_before_browse:" + event.location + " top:"+event.top);
 			try {
 				loopDisable = true;
