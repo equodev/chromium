@@ -150,7 +150,7 @@ class Chromium extends WebBrowser {
 	private static cef_client_t popupClientHandler;
 	private static cef_life_span_handler_t popupLifeSpanHandler;
 	
-	private cef_string_visitor_t textVisitor;
+	private CompletableFuture<String> textVisited;
 	Browser chromium;
 	OpenWindowListener[] openWindowListeners = new OpenWindowListener[0];
 	private long /*int*/ hwnd;
@@ -159,9 +159,7 @@ class Chromium extends WebBrowser {
 	private String url;
 	private String postData;
 	private String[] headers;
-	private String text = "";
 	private String title = "";
-	private CompletableFuture<String> textReady;
 	private boolean canGoBack;
 	private boolean canGoForward;
 	private CompletableFuture<Boolean> enableProgress = new CompletableFuture<>();
@@ -496,7 +494,6 @@ class Chromium extends WebBrowser {
 		focusListener = new CefFocusListener();
 		chromium.addFocusListener(focusListener);
 
-//		set_text_visitor();
 //		if (browsers.get() == 0) {
 		if (INSTANCES == 0) {
 			set_client_handler();
@@ -746,14 +743,6 @@ class Chromium extends WebBrowser {
 		this.browser = 0;
 		this.chromium = null;
 		debugPrint("closed");
-		if (textVisitor != null) {
-//			debugPrint("text visitor still pending");
-			Display.getCurrent().asyncExec(() -> {
-				if (textVisitor != null) {
-					freeTextVisitor();
-				}
-			});
-		}
 	}
 
 	static private synchronized void freeAll(Display display) {
@@ -1077,14 +1066,11 @@ class Chromium extends WebBrowser {
 				}
 			}
 		}
-		updateText();
 		if (isPopup != null) {
-			textReady.thenRun(() -> enableProgress.complete(true));
+			enableProgress.complete(true);
 		}
 		else if (!enableProgress.isDone() && isLoading == 0) {
-			textReady.thenRun(() -> {
-				enableProgress.complete(true);
-			});
+			enableProgress.complete(true);
 			return;
 		}
 		else if (!enableProgress.isDone()) {
@@ -1102,17 +1088,15 @@ class Chromium extends WebBrowser {
 				listener.changed(event);
 			}
 		} else {
-			textReady.thenRun(() -> {
-				if (loadingPage) {
-					loadingPage = false;
-					debugPrint("progress completed"); 
-					chromium.getDisplay().asyncExec(() -> {
-						for (ProgressListener listener : progressListeners) {
-							listener.completed(event);
-						}
-					});
-				}
-			});
+			if (loadingPage) {
+				loadingPage = false;
+				debugPrint("progress completed"); 
+				chromium.getDisplay().asyncExec(() -> {
+					for (ProgressListener listener : progressListeners) {
+						listener.completed(event);
+					}
+				});
+			}
 		}
 	}
 
@@ -1797,52 +1781,28 @@ class Chromium extends WebBrowser {
 		}
 	}
 
-	private void updateText() {
-		if (browser != 0 && !isDisposed() && disposing == Dispose.No) {
-			debugPrint("update text");
-			if (textVisitor != null) {
-				textVisitor.refs++;
-			} else {
-				set_text_visitor();
-			}
-			textReady = new CompletableFuture<String>();
-			ChromiumLib.cefswt_get_text(browser, textVisitor.ptr);
-		}
-	}
-	
-	private void set_text_visitor() {
-		textVisitor = CEFFactory.newStringVisitor();
+	private cef_string_visitor_t set_text_visitor() {
+		cef_string_visitor_t textVisitor = CEFFactory.newStringVisitor();
 		textVisitor.visit_cb = new CallbackExt(this, "textVisitor_visit", void.class, new Type[] {long.class, long.class});
 		textVisitor.visit = checkGetAddress(textVisitor.visit_cb);
 		textVisitor.ptr = C.malloc(cef_string_visitor_t.sizeof);
 		textVisitor.refs = 1;
 		ChromiumLib.memmove(textVisitor.ptr, textVisitor, cef_string_visitor_t.sizeof);
+		return textVisitor;
 	}
 
 	void textVisitor_visit(long /*int*/ self, long /*int*/ cefString) {
 //		debugPrint("text visited");
-
-		if (--textVisitor.refs == 0) {
-			freeTextVisitor();
-		}
-
 		String newtext = cefString != 0 ? ChromiumLib.cefswt_cefstring_to_java(cefString) : null;
 		if (newtext != null) {
-			text = newtext;
 			debugPrint("text visited completed");
-			textReady.complete(text);
+			textVisited.complete(newtext);
 		} else {
+			textVisited.complete("");
 			debugPrint("text visited null");
 		}
 	}
 
-	private void freeTextVisitor() {
-		debugPrint("free text visitor");
-		disposeCallback(textVisitor.visit_cb);
-		freeDelayed(textVisitor.ptr);
-		textVisitor = null;
-	}
-	
 	private static void set_keyboard_handler(){
 		keyboardHandler = CEFFactory.newKeyboardHandler();
 		keyboardHandler.on_key_event_cb = new CallbackExt(Chromium.class, "on_key_event", int.class, new Type[] {long.class, long.class, long.class, long.class});
@@ -2632,8 +2592,31 @@ class Chromium extends WebBrowser {
 
 	@Override
 	public String getText() {
-		checkBrowser();
-		return text;
+		if (browser != 0 && !isDisposed() && disposing == Dispose.No) {
+			cef_string_visitor_t textVisitor = set_text_visitor();
+			try {
+				textVisited = new CompletableFuture<>();
+				ChromiumLib.cefswt_get_text(browser, textVisitor.ptr);
+				
+				Display display = chromium.getDisplay();
+				while (!textVisited.isDone() && !display.isDisposed()) {
+					debug("in text loop");
+					loopWorkRunnable.run();
+					if (!display.readAndDispatch()) {
+						display.sleep();
+					}
+				}
+				try {
+					return textVisited.get();
+				} catch (InterruptedException | ExecutionException e) {
+				}
+			} finally {
+				disposeCallback(textVisitor.visit_cb);
+				C.free(textVisitor.ptr);
+				textVisited = null;
+			}
+		}
+		return "";
 	}
 	
 	@Override
@@ -2749,10 +2732,6 @@ class Chromium extends WebBrowser {
 			throw new SWTError("Wrong chromium id " + id);
 		}
 		return c;
-	}
-	
-	private static void freeDelayed(long /*int*/ ptr) {
-		Display.getDefault().asyncExec(() -> C.free(ptr));
 	}
 
 	//	static int cbs = 0;
