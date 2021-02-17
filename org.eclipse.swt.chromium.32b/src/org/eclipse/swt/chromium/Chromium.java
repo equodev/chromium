@@ -2598,7 +2598,7 @@ class Chromium extends WebBrowser {
 		else if (type == ReturnType.Array.intValue()) {
 			String value_unquoted = value.substring(1, value.length()-1);
 			String[] elements = value_unquoted.split(";(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
-			Object[] array = new Object[elements.length];
+			Object[] array = value_unquoted.isEmpty() ? new Object[0] : new Object[elements.length];
 			for (int i = 0; i < array.length; i++) {
 				String elemUnquoted = elements[i].substring(1, elements[i].length()-1);
 				String[] parts = elemUnquoted.split(",(?=(?:[^']*'[^']*')*[^']*$)", 2);
