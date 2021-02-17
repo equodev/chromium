@@ -670,7 +670,7 @@ public void test_OpenWindow_Progress_Listener_ValidateEventOrder() {
 
 	browser.setText("<html>"
 			+ "<script type='text/javascript'>"
-			+ "var newWin = window.open();" // opens child window.
+			+ "var newWin = window.open("+(isChromium ? "'http://www.facebook.com'" : "")+");" // opens child window.
 			+ "</script>\n" +
 			"<body>This test uses javascript to open a new window.</body></html>");
 

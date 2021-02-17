@@ -178,6 +178,7 @@ class Chromium extends WebBrowser {
 	private WindowEvent isPopup;
 	private ExtraApi extraApi;
 	private int reentrant = 0;
+	private boolean loadingPage;
 	
 	public Chromium() {
 	}
@@ -1102,12 +1103,15 @@ class Chromium extends WebBrowser {
 			}
 		} else {
 			textReady.thenRun(() -> {
-				debugPrint("progress completed"); 
-				chromium.getDisplay().asyncExec(() -> {
-					for (ProgressListener listener : progressListeners) {
-						listener.completed(event);
-					}
-				});
+				if (loadingPage) {
+					loadingPage = false;
+					debugPrint("progress completed"); 
+					chromium.getDisplay().asyncExec(() -> {
+						for (ProgressListener listener : progressListeners) {
+							listener.completed(event);
+						}
+					});
+				}
 			});
 		}
 	}
@@ -1271,6 +1275,8 @@ class Chromium extends WebBrowser {
 			if (!event.doit) {
 				debugPrint("canceled nav, dependats:"+enableProgress.getNumberOfDependents());
 				enableProgress = new CompletableFuture<>();
+			} else {
+				loadingPage = true;
 			}
 			return event.doit ? 0 : 1;
 //		}
