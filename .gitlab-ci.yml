@@ -4,7 +4,7 @@ include:
     file: '/.chromium.swt-ci.yml'
 
 variables:
-  VER: "76"
+  VER: "76.10"
   QUAL: ".gtk2"
   cef_p2: http://dl.maketechnology.io/chromium-cef/76-64b/repository
   cef32b_p2: http://dl.maketechnology.io/chromium-cef/76-32b/repository

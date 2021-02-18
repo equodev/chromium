@@ -66,7 +66,7 @@ pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char
         } 
     }
 
-    version = &version[0..4];
+    version = &opts[0];
 
     // env::set_current_dir(cefrust_dir).expect("Failed to set current dir");
     // println!("{:?}", env::current_dir().unwrap().to_str());
