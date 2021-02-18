@@ -499,7 +499,7 @@ unsafe fn convert_type(ret: *mut cef::cef_v8value_t, context: *mut cef::cef_v8co
         (CString::new(cstr).expect("Failed to convert v8string to CString"), socket::ReturnType::Str)
     }
     else if (*ret).is_array.unwrap()(ret) == 1 {
-        let length = (*ret).get_array_length.unwrap()(ret);
+        //let length = (*ret).get_array_length.unwrap()(ret); // bug on cef, always 0
         let mut arraystr = String::new();
         let array_val = ret;
         
@@ -509,8 +509,11 @@ unsafe fn convert_type(ret: *mut cef::cef_v8value_t, context: *mut cef::cef_v8co
         }
 
         arraystr.push('"');
-        for i in 0..length {
+        for i in 0..9999 {
             let vali = (*array_val).get_value_byindex.unwrap()(array_val, i);
+            if vali.is_null() || (*vali).is_undefined.unwrap()(vali) == 1 {
+                break; // end of array
+            }
             let (valcstr, valtyp) = convert_type(vali, context);
             let valstr = format!("'{},{}'", valtyp as u32, valcstr.into_string().unwrap());
             if i > 0 {
