@@ -9,4 +9,31 @@
 		<artifactId>swt.chromium</artifactId>
 		<version>76.2.10-SNAPSHOT</version>
 	</parent>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-source-plugin</artifactId>
+				<version>${tycho.version}</version>
+				<configuration>
+					<additionalFileSets>
+						<fileSet>
+							<directory>${project.basedir}/../</directory>
+							<includes>
+								<include>chromium-library/**</include>
+							</includes>
+							<excludes>
+								<exclude>**/target/</exclude>
+								<exclude>**/cef_linux/</exclude>
+								<exclude>**/cef_macosx/</exclude>
+								<exclude>**/cef_win32*/</exclude>
+							</excludes>
+						</fileSet>     
+					</additionalFileSets>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
 </project>

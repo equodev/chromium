@@ -247,7 +247,9 @@ class Chromium extends WebBrowser {
 			@Override
 			public void paintControl(PaintEvent e) {
 				debugPrint("paintControl");
-				chromium.removePaintListener(this);
+				if (isDisposed()) return;
+				if (!Boolean.getBoolean("swt.chromium.headless"))
+					chromium.removePaintListener(this);
 				createBrowser();
 				paintListener = null;
 //				cefInitilized.thenRun(() -> { 
@@ -262,7 +264,11 @@ class Chromium extends WebBrowser {
 //				debugPrint("paintControl Done");
 			}
 		};
-		chromium.addPaintListener(paintListener);
+		if (Boolean.getBoolean("swt.chromium.headless")) {
+			chromium.getDisplay().timerExec(100, () -> {if (paintListener != null) paintListener.paintControl(null);});
+		} else {
+			chromium.addPaintListener(paintListener);
+		}
 	}
 
 	private void debugPrint(String log) {
@@ -548,7 +554,8 @@ class Chromium extends WebBrowser {
 
 	private void createPopup(long /*int*/ windowInfo, long /*int*/ client, WindowEvent event) {
 		if (paintListener != null) {
-			chromium.removePaintListener(paintListener);
+			if (!Boolean.getBoolean("swt.chromium.headless"))
+				chromium.removePaintListener(paintListener);
 			paintListener = null;
 		} else {
 			// TODO: destroy browser first?
@@ -2502,7 +2509,8 @@ class Chromium extends WebBrowser {
 		}
 		if (browser == 0) {
 			if (paintListener != null) {
-				chromium.removePaintListener(paintListener);
+				if (!Boolean.getBoolean("swt.chromium.headless"))
+					chromium.removePaintListener(paintListener);
 				paintListener = null;
 				createBrowser();
 			}

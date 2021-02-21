@@ -31,11 +31,11 @@
 	</distributionManagement>
 
 	<repositories>
-		<!-- <repository>
+		<!-- repository>
 			<id>eclipse</id>
 			<url>http://download.eclipse.org/releases/2018-09</url>
 			<layout>p2</layout>
-		</repository> -->
+		</repository-->
 		<repository>
 			<id>eclipse-updates</id>
 			<url>http://download.eclipse.org/eclipse/updates/4.5</url>
