@@ -495,7 +495,9 @@ unsafe fn convert_type(ret: *mut cef::cef_v8value_t, context: *mut cef::cef_v8co
         // let ret_str = CString::from_raw(ret_str);
         // (ret_str, socket::ReturnType::Str)
         let cstr = utils::str_from_c(ret_str);
-        cef::cef_string_userfree_utf16_free(ret_str_cef);
+        if !ret_str_cef.is_null() {
+            cef::cef_string_userfree_utf16_free(ret_str_cef);
+        }
         (CString::new(cstr).expect("Failed to convert v8string to CString"), socket::ReturnType::Str)
     }
     else if (*ret).is_array.unwrap()(ret) == 1 {
