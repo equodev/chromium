@@ -733,7 +733,7 @@ class Chromium extends WebBrowser {
 	}
 	
 	private void on_before_close(int /*long*/ browser) {
-		if (chromium != null && closeWindowListeners != null) {
+		if (!isDisposed() && closeWindowListeners != null) {
 			Display display = Display.getDefault();
 			org.eclipse.swt.browser.WindowEvent event = new org.eclipse.swt.browser.WindowEvent(chromium);
 			event.display = display;
@@ -1880,6 +1880,7 @@ class Chromium extends WebBrowser {
 	}
 	
 	private int on_key_event(int /*long*/ browser, int /*long*/ event, int /*long*/ os_event) {
+		if (isDisposed()) return 0;
 		cef_key_event_t e = new cef_key_event_t();
 		ChromiumLib.memmove(e, event, ChromiumLib.cef_key_event_t_sizeof());
 
@@ -2010,6 +2011,7 @@ class Chromium extends WebBrowser {
 	}
 
 	private void on_take_focus(int /*long*/ browser, int next) {
+		if (isDisposed()) return;
 		hasFocus = false;
 		Control[] tabOrder = chromium.getParent().getTabList();
 		if (tabOrder.length == 0)
@@ -2065,7 +2067,7 @@ class Chromium extends WebBrowser {
 	}
 
 	private int on_process_message_received(int /*long*/ browser, int source, int /*long*/ processMessage) {
-		if (source != CEFFactory.PID_RENDERER || !jsEnabled || chromium == null) {
+		if (source != CEFFactory.PID_RENDERER || !jsEnabled || isDisposed()) {
 			return 0;
 		}
 		FunctionSt fn = new FunctionSt();
@@ -2707,6 +2709,7 @@ class Chromium extends WebBrowser {
 
 	private CompletableFuture<Void> doSetUrl(String url, String postData, String[] headers) {
 		return enableProgress.thenRun(() -> {
+			if (isDisposed()) return;
 			debugPrint("load url");
 			doSetUrlPost(browser, url, postData, headers);
 		});
