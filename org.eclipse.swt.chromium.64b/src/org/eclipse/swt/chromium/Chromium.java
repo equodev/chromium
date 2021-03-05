@@ -165,7 +165,7 @@ class Chromium extends WebBrowser {
 	private CompletableFuture<Boolean> enableProgress = new CompletableFuture<>();
 	private CompletableFuture<Boolean> created = new CompletableFuture<>();
 	enum Dispose {
-		No, FromDispose, FromClose, FromBrowser, Unload, UnloadClosed, WaitIfClosed, DoIt, 
+		No, FromDispose, FromClose, FromBrowser, Unload, UnloadClosed, UnloadCancel, WaitIfClosed, DoIt, 
 	}
 	private Dispose disposing = Dispose.No;
 	private int instance;
@@ -733,7 +733,7 @@ class Chromium extends WebBrowser {
 	}
 	
 	private void on_before_close(long /*int*/ browser) {
-		if (!isDisposed() && closeWindowListeners != null) {
+		if (chromium != null && closeWindowListeners != null) {
 			Display display = Display.getDefault();
 			org.eclipse.swt.browser.WindowEvent event = new org.eclipse.swt.browser.WindowEvent(chromium);
 			event.display = display;
@@ -1523,6 +1523,8 @@ class Chromium extends WebBrowser {
 		Consumer<Integer> close = open -> {
 			int r = open == SWT.OK || open == SWT.YES ? 1 : 0;
 			debug("JS Dialog Closed with "+r);
+			if (disposing == Dispose.Unload && r == 0)
+				disposing = Dispose.UnloadCancel;
 			chromium.getDisplay().asyncExec(() -> {
 				ChromiumLib.cefswt_dialog_close(callback, r, 0);
 			});
@@ -2180,10 +2182,14 @@ class Chromium extends WebBrowser {
 				//debug("in close, disposing:"+disposing);
 				end += 1000;
 			}
+			else if (disposing == Dispose.UnloadCancel) {
+				debug("in close, disposing:"+disposing);
+				break;
+			}
 			else if (disposing == Dispose.UnloadClosed) {
 				debug("in close, disposing:"+disposing);
 				disposing = Dispose.WaitIfClosed;
-				end = System.currentTimeMillis() + LOOP*4;
+				end = System.currentTimeMillis() + LOOP*6;
 			}
 			else if (disposing == Dispose.DoIt) {
 				debug("in close, disposing:"+disposing);
