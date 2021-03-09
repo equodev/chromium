@@ -82,16 +82,16 @@ Notes: Running with mvn has some test failing due accessing protected fields fro
 
 The full SWT Browser API is supported now, including sync and async Javascript support.
 
-We (**Make Technology**, http://www.maketechnology.io/) have agreed with the **Eclipse Foundation** to do all this work and contribute it under the EPL, but we need your support to make this huge project happen!
+We (https://www.equoplatform.com, former **Make Technology**) agreed with the **Eclipse Foundation** to do all this work and we have contributed it under the EPL. However, we need your support to continue contributing features and bug fixes.
 
 https://medium.com/@mikael.barbero/chromium-eclipse-swt-integration-c61f416e97d1
 
 ## Donations
 
-Funding this work is welcome. If you think your company is interested in and can help, please contact us (guillez@gmail.com).
+Funding this work is welcome. If you think your company is interested in and can help, please contact us (contact@equoplatform.com).
 
 ## Support
 
-If you need (paid) consultancy or support for having the widget integrated into your app, contact us (Make Technology, http://www.maketechnology.io) at guillez@gmail.com. 
+If you need consultancy or support for having the widget integrated into your app, contact us (Equo Platform, https://www.equoplatform.com) at gzunino@equoplatform.com. 
 
 We're offering early support for the widget and consultancy. Note that it will be open source anyway.
