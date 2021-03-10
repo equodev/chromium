@@ -540,7 +540,7 @@ public void test_LocationListener_ProgressListener_noExtraEvents() {
 
 	// We have to wait to check that no extra events are fired.
 	// On Gtk, Quad Core, pcie this takes 80 ms. ~1000ms for stability.
-	waitForMilliseconds(600);
+	waitForMilliseconds(1000);
 	boolean passed = changedCount.get() == 1 && completedCount.get() == 1;
 	String errorMsg = "\nIncorrect event sequences. Events missing or too many fired:"
 			+ "\nExpected one of each, but received:"

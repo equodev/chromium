@@ -11,6 +11,7 @@ extern crate objc;
 use chromium::cef;
 use chromium::utils;
 use chromium::socket;
+use chromium::app::{Base};
 
 mod app;
 #[cfg(target_os = "linux")]
@@ -72,27 +73,28 @@ pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char
     // println!("{:?}", env::current_dir().unwrap().to_str());
 
     let subp = utils::subp_path(cefrust_dir, version);
-    let subp_cef = utils::cef_string(&subp);
+    let mut subp_cef = utils::cef_string(&subp);
 
-    let resources_cef = if cfg!(target_os = "macos") {
+    let mut resources_cef = if cfg!(target_os = "macos") {
         utils::cef_string(cefrust_dir.join("Chromium Embedded Framework.framework").join("Resources").to_str().unwrap())
     } else {
         utils::cef_string(cefrust_dir.to_str().unwrap())
     };
-    let locales_cef = if cfg!(target_os = "macos") {
+    let mut locales_cef = if cfg!(target_os = "macos") {
         utils::cef_string(cefrust_dir.join("Chromium Embedded Framework.framework").join("Resources").to_str().unwrap())
     } else {
         utils::cef_string(cefrust_dir.join("locales").to_str().unwrap())
     };
-    let framework_dir_cef = if cfg!(target_os = "macos") {
+    let mut framework_dir_cef = if cfg!(target_os = "macos") {
         utils::cef_string(cefrust_dir.join("Chromium Embedded Framework.framework").to_str().unwrap())
     } else {
         utils::cef_string_empty()
     };
 
-    let cache_dir_cef = utils::cef_string(cache_path);
+    let mut cache_dir_cef = utils::cef_string(cache_path);
 
-    let logfile_cef = utils::cef_string(cefrust_dir.join("lib.log").to_str().unwrap());
+    let mut logfile_cef = utils::cef_string(cefrust_dir.join("lib.log").to_str().unwrap());
+    let mut app_client_id = utils::cef_string("chromium.swt");
 
     let settings = cef::_cef_settings_t {
         size: std::mem::size_of::<cef::_cef_settings_t>(),
@@ -132,11 +134,21 @@ pub extern fn cefswt_init(japp: *mut cef::cef_app_t, cefrust_path: *const c_char
         enable_net_security_expiration: 0,
         background_color: 0,
         accept_language_list: utils::cef_string_empty(),
-        application_client_id_for_file_scanning: utils::cef_string("chromium.swt"),
+        application_client_id_for_file_scanning: app_client_id,
     };
 
     //println!("Calling cef_initialize");
     do_initialize(main_args, settings, japp);
+
+    unsafe {
+        cef::cef_string_utf16_clear(&mut subp_cef);
+        cef::cef_string_utf16_clear(&mut resources_cef);
+        cef::cef_string_utf16_clear(&mut locales_cef);
+        cef::cef_string_utf16_clear(&mut framework_dir_cef);
+        cef::cef_string_utf16_clear(&mut cache_dir_cef);
+        cef::cef_string_utf16_clear(&mut logfile_cef);
+        cef::cef_string_utf16_clear(&mut app_client_id);
+    }
     // println!("After Calling cef_initialize");
 }
 
@@ -149,6 +161,7 @@ fn do_initialize(main_args: cef::_cef_main_args_t, settings: cef::_cef_settings_
     backup_signal_handlers(&mut signal_handlers);
     restore_signal_handlers(&signal_handlers);
 
+    // Base::add_ref(&mut (*app_raw).base);
     unsafe { cef::cef_initialize(&main_args, &settings, app_raw, std::ptr::null_mut()) };
 
     restore_signal_handlers(&signal_handlers);
@@ -330,6 +343,18 @@ pub extern fn cefswt_do_message_loop_work() -> c_int {
 }
 
 #[no_mangle]
+pub extern fn cefswt_ref(base: *mut cef::_cef_base_ref_counted_t, add: c_int) -> c_int {
+    unsafe {
+        if add == 1 {
+            Base::add_ref(&mut *base);
+        } else {
+            Base::release(&mut *base);
+        }
+        1
+    }
+}
+
+#[no_mangle]
 pub extern fn cefswt_free(obj: *mut cef::cef_browser_t) {
     //println!("freeing {:?}", obj);
     unsafe {
@@ -360,6 +385,7 @@ pub extern fn cefswt_resized(browser: *mut cef::cef_browser_t, width: i32, heigh
     let get_window_handle_fn = unsafe { (*browser_host).get_window_handle.expect("no get_window_handle") };
     let win_handle = unsafe { get_window_handle_fn(browser_host) };
     do_resize(win_handle, width, height);
+    Base::release(unsafe {&mut (*browser_host).base});
 }
 
 #[cfg(target_os = "linux")]
@@ -401,12 +427,13 @@ pub extern fn cefswt_close_browser(browser: *mut cef::cef_browser_t, force: c_in
     let browser_host = get_browser_host(browser);
     let close_fn = unsafe { (*browser_host).close_browser.expect("null close_browser") };
     unsafe { close_fn(browser_host, force) };
+    Base::release(unsafe {&mut (*browser_host).base});
 }
 
 #[no_mangle]
 pub extern fn cefswt_load_url(browser: *mut cef::cef_browser_t, url: *const c_char, post_bytes: *const c_void, post_size: usize, headers: *const c_char, headers_size: usize) {
     let url = utils::str_from_c(url);
-    let url_cef = utils::cef_string(url);
+    let mut url_cef = utils::cef_string(url);
     //println!("url: {:?}", url);
     unsafe {
         let get_frame = (*browser).get_main_frame.expect("null get_main_frame");
@@ -420,9 +447,12 @@ pub extern fn cefswt_load_url(browser: *mut cef::cef_browser_t, url: *const c_ch
                 let post_data = cef::cef_post_data_create();
                 let post_element = cef::cef_post_data_element_create();
                 (*post_element).set_to_bytes.unwrap()(post_element, post_size, post_bytes);
+                Base::add_ref(&mut (*post_element).base);
                 (*post_data).add_element.unwrap()(post_data, post_element);
-
+                Base::add_ref(&mut (*post_data).base);
                 (*request).set_post_data.unwrap()(request, post_data);
+                Base::release(&mut (*post_data).base);
+                Base::release(&mut (*post_element).base);
             }
 
             if !headers.is_null() {
@@ -446,53 +476,68 @@ pub extern fn cefswt_load_url(browser: *mut cef::cef_browser_t, url: *const c_ch
                 }
                 (*request).set_header_map.unwrap()(request, map);
             }
-
+            Base::add_ref(&mut (*request).base);
             (*main_frame).load_request.unwrap()(main_frame, request);
+            Base::release(&mut (*request).base);
         }
+        Base::release(&mut (*main_frame).base);
+        cef::cef_string_utf16_clear(&mut url_cef);
     }
 }
 
 #[no_mangle]
-pub extern fn cefswt_get_url(browser: *mut cef::cef_browser_t) -> *mut c_char {
+pub extern fn cefswt_get_url(browser: *mut cef::cef_browser_t) -> cef::cef_string_userfree_utf8_t {
     let get_frame = unsafe { (*browser).get_main_frame.expect("null get_main_frame") };
     let main_frame = unsafe { get_frame(browser) };
     assert!(!main_frame.is_null());
     let get_url = unsafe { (*main_frame).get_url.expect("null get_url") };
     let url = unsafe { get_url(main_frame) };
-    utils::cstr_from_cef(url)
+    let cef_str = cef_to_utf8(url);
+    Base::release(unsafe {&mut (*main_frame).base});
+    if !url.is_null() {
+        unsafe { cef::cef_string_userfree_utf16_free(url) };
+    }
+    cef_str
 }
 
 #[no_mangle]
-pub extern fn cefswt_cefstring_to_java(cefstring: *mut cef::cef_string_t) -> *const c_char {
-    let r = utils::cstr_from_cef(cefstring);
+pub extern fn cefswt_cefstring_to_java(cefstring: *mut cef::cef_string_t) -> cef::cef_string_userfree_utf8_t {
+    let r = cef_to_utf8(cefstring);
     r
 }
 
 #[no_mangle]
-pub extern fn cefswt_request_to_java(request: *mut cef::cef_request_t) -> *mut c_char {
+pub extern fn cefswt_request_to_java(request: *mut cef::cef_request_t) -> cef::cef_string_userfree_utf8_t {
     let url = unsafe { (*request).get_url.expect("null get_url")(request) };
-    let cstr = utils::cstr_from_cef(url);
-    unsafe { cef::cef_string_userfree_utf16_free(url) };
-    cstr
+    let cefstr = cef_to_utf8(url);
+    if !url.is_null() {
+        unsafe { cef::cef_string_userfree_utf16_free(url) };
+    }
+    cefstr
 }
 
 #[no_mangle]
-pub extern fn cefswt_cookie_to_java(cookie: *mut cef::_cef_cookie_t) -> *mut c_char {
+pub extern fn cefswt_cookie_to_java(cookie: *mut cef::_cef_cookie_t) -> cef::cef_string_userfree_utf8_t {
     let name = unsafe { (*cookie).name };
-    let cstr = utils::cstr_from_cef(&name);
+    let cstr = cef_to_utf8(&name);
     cstr
 }
 
 #[no_mangle]
 pub extern fn cefswt_load_text(browser: *mut cef::cef_browser_t, text: *const c_char) {
     let text = utils::str_from_c(text);
-    let text_cef = utils::cef_string(text);
-    let url_cef = utils::cef_string("http://text/");
+    let mut text_cef = utils::cef_string(text);
+    let mut url_cef = utils::cef_string("http://text/");
     // println!("text: {:?}", text);
     let get_frame = unsafe { (*browser).get_main_frame.expect("null get_main_frame") };
     let main_frame = unsafe { get_frame(browser) };
     let load_string = unsafe { (*main_frame).load_string.expect("null load_string") };
-    unsafe { load_string(main_frame, &text_cef, &url_cef) };
+    unsafe { 
+        load_string(main_frame, &text_cef, &url_cef); 
+        cef::cef_string_utf16_clear(&mut text_cef);
+        cef::cef_string_utf16_clear(&mut url_cef);
+    };
+    Base::release(unsafe {&mut (*main_frame).base});
 }
 
 #[no_mangle]
@@ -513,19 +558,26 @@ pub extern fn cefswt_get_text(browser: *mut cef::cef_browser_t, visitor: *mut ce
     assert!(!main_frame.is_null());
     let get_text = unsafe { (*main_frame).get_source.expect("null get_text") };
     // println!("before get_text");
+    //Base::add_ref(unsafe {&mut (*visitor).base});
     unsafe { get_text(main_frame, visitor) };
+    Base::release(unsafe {&mut (*main_frame).base});
     // println!("after get_text");
 }
 
 #[no_mangle]
 pub extern fn cefswt_execute(browser: *mut cef::cef_browser_t, text: *const c_char) {
     let text = utils::str_from_c(text);
-    let text_cef = utils::cef_string(text);
-    let url_cef = utils::cef_string_empty();
+    let mut text_cef = utils::cef_string(text);
+    let mut url_cef = utils::cef_string_empty();
     let get_frame = unsafe { (*browser).get_main_frame.expect("null get_main_frame") };
     let main_frame = unsafe { get_frame(browser) };
     let execute = unsafe { (*main_frame).execute_java_script.expect("null execute_java_script") };
-    unsafe { execute(main_frame, &text_cef, &url_cef, 0) };
+    unsafe { 
+        execute(main_frame, &text_cef, &url_cef, 0);
+        cef::cef_string_utf16_clear(&mut text_cef);
+        cef::cef_string_utf16_clear(&mut url_cef);
+    };
+    Base::release(unsafe {&mut (*main_frame).base});
 }
 
 #[no_mangle]
@@ -536,7 +588,7 @@ pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char,
     };
     let get_frame = unsafe {(*browser).get_main_frame.expect("null get_main_frame")};
     let main_frame = unsafe {get_frame(browser)};
-    if id != 0 { // reentrant
+    let r = if id != 0 { // reentrant
         let code = utils::str_from_c(text);
         match socket::wait_response(main_frame, std::ptr::null_mut(), id as u16, code, cef::cef_process_id_t::PID_RENDERER, cb) {
             Ok(r) => {
@@ -549,8 +601,8 @@ pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char,
             }
         }    
     } else {
-        let text_cef = utils::cef_string_from_c(text);
-        let name = utils::cef_string("eval");
+        let mut text_cef = utils::cef_string_from_c(text);
+        let mut name = utils::cef_string("eval");
         unsafe {
             let msg = cef::cef_process_message_create(&name);
             let args = (*msg).get_argument_list.unwrap()(msg);
@@ -558,7 +610,7 @@ pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char,
             assert_eq!(s, 1);
             let s = (*args).set_string.unwrap()(args, 2, &text_cef);
             assert_eq!(s, 1);
-            match socket::wait_response(main_frame, msg, 0, "", cef::cef_process_id_t::PID_RENDERER, cb) {
+            let r = match socket::wait_response(main_frame, msg, 0, "", cef::cef_process_id_t::PID_RENDERER, cb) {
                 Ok(r) => {
                     callback(0, r.kind as i32, r.str_value.as_ptr());
                     1
@@ -567,15 +619,22 @@ pub extern fn cefswt_eval(browser: *mut cef::cef_browser_t, text: *const c_char,
                     //println!("Failed in socket server {:?}", e);
                     0
                 }
-            }
+            };
+            Base::release(&mut (*args).base);
+            Base::release(&mut (*msg).base);
+            cef::cef_string_utf16_clear(&mut text_cef);
+            cef::cef_string_utf16_clear(&mut name);
+            r
         }
-    }
+    };
+    Base::release(unsafe {&mut (*main_frame).base});
+    r
 }
 
 #[no_mangle]
 pub extern fn cefswt_function(browser: *mut cef::cef_browser_t, name: *mut c_char, id: i32) -> c_int {
-    let name_cef = utils::cef_string_from_c(name);
-    let msg_name = utils::cef_string("function");
+    let mut name_cef = utils::cef_string_from_c(name);
+    let mut msg_name = utils::cef_string("function");
     unsafe {
         let msg = cef::cef_process_message_create(&msg_name);
         let args = (*msg).get_argument_list.unwrap()(msg);
@@ -585,7 +644,12 @@ pub extern fn cefswt_function(browser: *mut cef::cef_browser_t, name: *mut c_cha
         assert_eq!(s, 1);
         let get_frame = (*browser).get_main_frame.expect("null get_main_frame");
         let main_frame = get_frame(browser);
+        Base::add_ref(&mut (*msg).base);
         (*main_frame).send_process_message.unwrap()(main_frame, cef::cef_process_id_t::PID_RENDERER, msg);
+        Base::release(&mut (*args).base);
+        Base::release(&mut (*main_frame).base);
+        cef::cef_string_utf16_clear(&mut name_cef);
+        cef::cef_string_utf16_clear(&mut msg_name);
         1
     }
 }
@@ -606,7 +670,8 @@ pub unsafe extern fn cefswt_function_id(message: *mut cef::cef_process_message_t
     (*st).id = -1;
     (*st).args = 0;
     (*st).port = 0;
-    if valid == 1 && cef::cef_string_utf16_cmp(&utils::cef_string("function_call"), name) == 0 {
+    let mut fn_call = utils::cef_string("function_call");
+    if valid == 1 && cef::cef_string_utf16_cmp(&fn_call, name) == 0 {
         let args = (*message).get_argument_list.unwrap()(message);
         let args_len = (*args).get_size.unwrap()(args);
         let port = (*args).get_int.unwrap()(args, 0);
@@ -618,7 +683,10 @@ pub unsafe extern fn cefswt_function_id(message: *mut cef::cef_process_message_t
         (*st).id = (*args).get_int.unwrap()(args, 1);
         (*st).args = (args_len-1) / 2;
         (*st).port = port; 
+        Base::release(&mut (*args).base);
     }
+    cef::cef_string_utf16_clear(&mut fn_call);
+    cef::cef_string_userfree_utf16_free(name);
     // let r = Box::new(st);
     // let r = Box::into_raw(r);
     // return r;
@@ -629,9 +697,12 @@ pub unsafe extern fn cefswt_function_arg(message: *mut cef::cef_process_message_
     let args = (*message).get_argument_list.unwrap()(message);
     let kind = (*args).get_int.unwrap()(args, (1+index*2+1) as usize);
     let arg = (*args).get_string.unwrap()(args, (1+index*2+2) as usize);
-    let cstr = utils::cstr_from_cef(arg);
+    let cef_str = cef_to_utf8(arg);
     let kind = socket::ReturnType::from(kind);
-    callback(0, kind as i32, cstr);
+    callback(0, kind as i32, (*cef_str).str);
+    cef::cef_string_userfree_utf8_free(cef_str);
+    cef::cef_string_userfree_utf16_free(arg);
+    Base::release(&mut (*args).base);
     1
 }
 
@@ -656,21 +727,24 @@ pub extern fn cefswt_set_focus(browser: *mut cef::cef_browser_t, set: bool, pare
     if !set && !parent.is_null() {
         do_set_focus(parent, focus);
     }
+    Base::release(unsafe {&mut (*browser_host).base});
 }
 
 #[no_mangle]
 pub extern fn cefswt_set_command(cmd: *mut cef::cef_command_line_t, arg: *const c_char, val: *const c_char) {
     let argstr = utils::str_from_c(arg);
-    let cefarg = chromium::utils::cef_string(argstr);
+    let mut cefarg = utils::cef_string(argstr);
     if val.is_null() {
         println!("cefswt_set_command {}", argstr);
         unsafe {(*cmd).append_switch.unwrap()(cmd, &cefarg)};
     } else {
         let valstr = utils::str_from_c(val);
         println!("cefswt_set_command {} {}", argstr, valstr);
-        let cefval = chromium::utils::cef_string(valstr);
+        let mut cefval = utils::cef_string(valstr);
         unsafe {(*cmd).append_switch_with_value.unwrap()(cmd, &cefarg, &cefval)};
+        unsafe {cef::cef_string_utf16_clear(&mut cefval)};
     }
+    unsafe {cef::cef_string_utf16_clear(&mut cefarg)};
 }
 
 
@@ -694,7 +768,10 @@ fn do_set_focus(_parent: *mut c_void, _focus: i32) {
 
 #[no_mangle]
 pub extern fn cefswt_is_same(browser: *mut cef::cef_browser_t, that: *mut cef::cef_browser_t) -> c_int {
-    unsafe { (*browser).is_same.unwrap()(browser, that) }
+    unsafe { 
+        Base::add_ref(&mut (*that).base);
+        (*browser).is_same.unwrap()(browser, that) 
+    }
 }
 
 #[no_mangle]
@@ -711,9 +788,11 @@ pub extern fn cefswt_context_menu_cancel(callback: *mut cef::_cef_run_context_me
 pub extern fn cefswt_auth_callback(callback: *mut cef::_cef_auth_callback_t, juser: *const c_char, jpass: *const c_char, cont: c_int) {
     unsafe {
         if cont == 1 {
-            let user = utils::cef_string_from_c(juser);
-            let pass = utils::cef_string_from_c(jpass);
-            (*callback).cont.unwrap()(callback, &user, &pass)
+            let mut user = utils::cef_string_from_c(juser);
+            let mut pass = utils::cef_string_from_c(jpass);
+            (*callback).cont.unwrap()(callback, &user, &pass);
+            cef::cef_string_utf16_clear(&mut user);
+            cef::cef_string_utf16_clear(&mut pass);
         } else {
             (*callback).cancel.unwrap()(callback) 
         }
@@ -754,13 +833,13 @@ pub extern fn cefswt_handlekey(browser: *mut cef::cef_browser_t, event: *const c
     unsafe {
         let get_frame = (*browser).get_main_frame.expect("null get_main_frame");
         let main_frame = get_frame(browser);
-        if (*event).modifiers == 128 && (*event).type_ != cef::cef_key_event_type_t::KEYEVENT_RAWKEYDOWN {
+        let r = if (*event).modifiers == 128 && (*event).type_ != cef::cef_key_event_type_t::KEYEVENT_RAWKEYDOWN {
             return match (*event).native_key_code {
                 8..=9 => 1,
                 _ => 0,
             }
         }
-        if (*event).modifiers == 128 && (*event).type_ == cef::cef_key_event_type_t::KEYEVENT_RAWKEYDOWN {
+        else if (*event).modifiers == 128 && (*event).type_ == cef::cef_key_event_type_t::KEYEVENT_RAWKEYDOWN {
             return match (*event).native_key_code {
                 // Select all: command + a
                 0 => {
@@ -796,7 +875,9 @@ pub extern fn cefswt_handlekey(browser: *mut cef::cef_browser_t, event: *const c
                 (*main_frame).redo.unwrap()(main_frame);
                 return 1;
             }
-        }
+        };
+        Base::release(&mut (*main_frame).base);
+        r
     }
     return 0;
 }
@@ -805,14 +886,15 @@ pub extern fn cefswt_handlekey(browser: *mut cef::cef_browser_t, event: *const c
 pub extern fn cefswt_download_callback(callback: *mut c_void, jfile: *const c_char, cont: c_int) {
     unsafe {
         if cont == 1 {
-            let file = utils::cef_string_from_c(jfile);
+            let mut file = utils::cef_string_from_c(jfile);
             let show_save = if cfg!(target_os = "linux") {
                 0
             } else {
                 1
             };
             let callback = callback as *mut cef::_cef_before_download_callback_t;
-            (*callback).cont.unwrap()(callback, &file, show_save)
+            (*callback).cont.unwrap()(callback, &file, show_save);
+            cef::cef_string_utf16_clear(&mut file);
         } else {
             let callback = callback as *mut cef::_cef_download_item_callback_t;
             (*callback).cancel.unwrap()(callback)
@@ -825,8 +907,8 @@ pub extern fn cefswt_download_callback(callback: *mut c_void, jfile: *const c_ch
 pub struct DownloadItem {
     pub id: u32,
     pub status: i32,
-    pub file: *mut cef::cef_string_t,
-    pub url: *mut cef::cef_string_t,
+    pub file: cef::cef_string_userfree_t,
+    pub url: cef::cef_string_userfree_t,
     pub received: i64,
     pub total: i64,
     pub speed: i64,
@@ -835,7 +917,11 @@ pub struct DownloadItem {
 
 #[no_mangle]
 pub unsafe extern fn cefswt_download_item(item: *mut cef::_cef_download_item_t, st: *mut DownloadItem) {
-    if (*item).is_valid.unwrap()(item) == 1 {
+    if item.is_null() {
+        cef::cef_string_userfree_utf16_free((*st).file);
+        cef::cef_string_userfree_utf16_free((*st).url);
+    }
+    else if (*item).is_valid.unwrap()(item) == 1 {
         (*st).id = (*item).get_id.unwrap()(item);
         (*st).status = if (*item).is_in_progress.unwrap()(item) == 1 {
             1
@@ -862,11 +948,11 @@ pub unsafe extern fn cefswt_download_item(item: *mut cef::_cef_download_item_t, 
 #[no_mangle]
 pub extern fn cefswt_set_cookie(jurl: *const c_char, jname: *const c_char, jvalue: *const c_char, jdomain: *const c_char, jpath: *const c_char, secure: i32, httponly: i32, max_age: f64) -> c_int {
     let manager = unsafe { cef::cef_cookie_manager_get_global_manager(std::ptr::null_mut()) };
-    let url = utils::cef_string_from_c(jurl);
-    let domain = utils::cef_string_from_c(jdomain);
-    let path = utils::cef_string_from_c(jpath);
-    let name = utils::cef_string_from_c(jname);
-    let value = utils::cef_string_from_c(jvalue);
+    let mut url = utils::cef_string_from_c(jurl);
+    let mut domain = utils::cef_string_from_c(jdomain);
+    let mut path = utils::cef_string_from_c(jpath);
+    let mut name = utils::cef_string_from_c(jname);
+    let mut value = utils::cef_string_from_c(jvalue);
     let has_expires = if max_age == -1.0 {
         0
     } else {
@@ -890,26 +976,43 @@ pub extern fn cefswt_set_cookie(jurl: *const c_char, jname: *const c_char, jvalu
         creation: expires,
         last_access: expires
     };
-    unsafe { (*manager).set_cookie.expect("null set_cookie")(manager, &url, &cookie, std::ptr::null_mut()) }
+    unsafe {
+        let r = (*manager).set_cookie.expect("null set_cookie")(manager, &url, &cookie, std::ptr::null_mut());
+        cef::cef_string_utf16_clear(&mut url);
+        cef::cef_string_utf16_clear(&mut domain);
+        cef::cef_string_utf16_clear(&mut path);
+        cef::cef_string_utf16_clear(&mut name);
+        cef::cef_string_utf16_clear(&mut value);
+        Base::release(&mut (*manager).base);
+        r
+    }
 }
 
 #[no_mangle]
 pub extern fn cefswt_get_cookie(jurl: *const c_char, jvisitor: *mut cef::_cef_cookie_visitor_t) -> c_int {
-    let manager = unsafe { cef::cef_cookie_manager_get_global_manager(std::ptr::null_mut()) };
-    let url = utils::cef_string_from_c(jurl);
-
-    unsafe { (*manager).visit_url_cookies.expect("null visit_url_cookies")(manager, &url, 1, jvisitor) }
+    unsafe {
+        let manager = cef::cef_cookie_manager_get_global_manager(std::ptr::null_mut());
+        let mut url = utils::cef_string_from_c(jurl);
+        //Base::add_ref(&mut (*jvisitor).base);
+        let r = (*manager).visit_url_cookies.expect("null visit_url_cookies")(manager, &url, 1, jvisitor);
+        cef::cef_string_utf16_clear(&mut url);
+        Base::release(&mut (*manager).base);
+        r
+    }
 }
 
 #[no_mangle]
-pub extern fn cefswt_cookie_value(cookie: *mut cef::_cef_cookie_t) -> *mut c_char {
-    unsafe { utils::cstr_from_cef(&mut (*cookie).value) }
+pub extern fn cefswt_cookie_value(cookie: *mut cef::_cef_cookie_t) -> cef::cef_string_userfree_utf8_t {
+    unsafe { cef_to_utf8(&mut (*cookie).value) }
 }
 
 #[no_mangle]
 pub extern fn cefswt_delete_cookies() {
-    let manager = unsafe { cef::cef_cookie_manager_get_global_manager(std::ptr::null_mut()) };
-    unsafe { (*manager).delete_cookies.expect("null delete_cookies")(manager, std::ptr::null_mut(), std::ptr::null_mut(), std::ptr::null_mut()) };
+    unsafe {
+        let manager = cef::cef_cookie_manager_get_global_manager(std::ptr::null_mut());
+        (*manager).delete_cookies.expect("null delete_cookies")(manager, std::ptr::null_mut(), std::ptr::null_mut(), std::ptr::null_mut());
+        Base::release(&mut (*manager).base);
+    }
 }
 
 #[no_mangle]
@@ -920,6 +1023,7 @@ pub extern fn cefswt_shutdown() {
     // println!("r: After Calling cef_shutdown");
 }
 
+// callers should release
 fn get_browser_host(browser: *mut cef::cef_browser_t) -> *mut cef::_cef_browser_host_t {
     let get_host_fn = unsafe { (*browser).get_host.expect("null get_host") };
     let browser_host = unsafe { get_host_fn(browser) };
@@ -960,4 +1064,18 @@ pub extern fn cefswt_zoom(browser: *mut cef::cef_browser_t, level: f64) {
     let browser_host = get_browser_host(browser);
     let set_zoom = unsafe { (*browser_host).set_zoom_level.expect("no zoom") };
     unsafe { set_zoom(browser_host, level) };
+}
+
+#[no_mangle]
+pub extern fn cefswt_cef_string_free(cef_str: *mut cef::cef_string_utf8_t) {
+    unsafe {cef::cef_string_userfree_utf8_free(cef_str)};
+}
+
+// callers should free string
+fn cef_to_utf8(cefstring: *const cef::cef_string_t) -> cef::cef_string_userfree_utf8_t {
+    let utf8 = unsafe { cef::cef_string_userfree_utf8_alloc() };
+    if !cefstring.is_null() {
+        unsafe { cef::cef_string_utf16_to_utf8((*cefstring).str, (*cefstring).length, utf8) };
+    }
+    utf8
 }

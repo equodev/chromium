@@ -33,7 +33,7 @@
 				<configuration>
 					<useUIHarness>false</useUIHarness>
 					<useUIThread>true</useUIThread>
-					<argLine>${flags}</argLine>
+					<argLine>${flags} ${tycho.testArgLine}</argLine>
 					<trimStackTrace>false</trimStackTrace>
 				</configuration>
 			</plugin>
@@ -58,6 +58,19 @@
 						</extraRequirements>
 					</dependency-resolution>
 				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.6</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

@@ -48,16 +48,17 @@ pub fn create_browser(canvas_hwnd: *mut c_void, url: &str, jclient: &mut cef::_c
         accept_language_list: utils::cef_string_empty()
     };
 
-    let url_cef = utils::cef_string(url);
+    let mut url_cef = utils::cef_string(url);
 
     // Create browser.
     // println!("Calling cef_browser_host_create_browser");
     //if unsafe { cef::cef_browser_host_create_browser(&window_info, client, &url_cef, &browser_settings, null_mut()) } != 1 {
         //println!("Failed calling browserHostCreateBrowser");
     //}
+    //Base::add_ref(&mut (*jclient).base);
     let browser: *mut cef::cef_browser_t = unsafe { cef::cef_browser_host_create_browser_sync(&window_info, jclient, &url_cef, &browser_settings, null_mut(), null_mut()) };
     // println!("after Calling cef_browser_host_create_browser {:?}", browser);
-    
+    unsafe { cef::cef_string_utf16_clear(&mut url_cef) };
     assert_eq!(unsafe{(*browser).base.size}, size_of::<cef::_cef_browser_t>());
     // println!("browser size ok");
     browser

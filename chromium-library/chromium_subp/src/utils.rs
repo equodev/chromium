@@ -89,9 +89,9 @@ pub fn cef_string_empty() -> cef::cef_string_t {
         dtor: Option::Some(dtr)
     };
     
-    let emp = "";
+    // let emp = "";
     //unsafe { cef::cef_string_utf16_set(emp.as_ptr() as *mut cef::char16, 0, &mut empty_str, 1) };
-    unsafe { cef::cef_string_utf8_to_utf16(emp.as_ptr() as *mut c_char, 0, &mut empty_str);}
+    unsafe { cef::cef_string_utf8_to_utf16(::std::ptr::null_mut() as *mut c_char, 0, &mut empty_str);}
 
     empty_str
 }
@@ -100,7 +100,7 @@ unsafe extern "C" fn dtr(_: *mut cef::char16) {
     // println!("DESTROY CEF_STRING");
 }
 
-pub fn str_from_c(cstr: *const c_char) -> &'static str {
+pub fn str_from_c<'a>(cstr: *const c_char) -> &'a str {
     if cstr.is_null() {
         ""
     } else {
@@ -108,13 +108,4 @@ pub fn str_from_c(cstr: *const c_char) -> &'static str {
         let url = ::std::str::from_utf8(slice.to_bytes()).expect("failed from_utf8");
         url
     }
-}
-
-pub fn cstr_from_cef(cefstring: *const cef::cef_string_t) -> *mut c_char {
-    if cefstring.is_null() {
-        return ::std::ptr::null_mut();
-    }
-    let utf8 = unsafe { cef::cef_string_userfree_utf8_alloc() };
-    unsafe { cef::cef_string_utf16_to_utf8((*cefstring).str, (*cefstring).length, utf8) };
-    unsafe {(*utf8).str}
 }

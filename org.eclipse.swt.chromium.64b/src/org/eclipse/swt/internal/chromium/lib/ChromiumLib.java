@@ -19,7 +19,7 @@ public class ChromiumLib extends C {
 	 * @param cmd cast=(void *)
 	 */
 	public static final native void cefswt_set_command(long /*int*/ cmd, String arg, String val);
-	
+
 	public static final native int cefswt_do_message_loop_work();
 
 	/**
@@ -96,6 +96,11 @@ public class ChromiumLib extends C {
 	/**
 	 * @param browser cast=(void *)
 	 */
+	public static final native int cefswt_ref(long /*int*/ browser, int add);
+
+	/**
+	 * @param browser cast=(void *)
+	 */
 	public static final native void cefswt_stop(long /*int*/ browser);
 
 	/**
@@ -137,7 +142,7 @@ public class ChromiumLib extends C {
 	public static final native boolean cefswt_function_return(long /*int*/ browser, int id, int port, int returnType, String ret);
 
 	/** @method flags=no_gen */
-	public static final native String cefswt_cstring_to_java(long /*int*/ string);
+	public static final native String cefswt_cstring_to_java(long /*int*/ string, boolean free);
 
 	/** @method flags=no_gen */
 	public static final native String cefswt_cefstring_to_java(long /*int*/ string);

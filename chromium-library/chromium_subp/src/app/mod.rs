@@ -29,12 +29,12 @@ pub struct Wrapper<T> {
 impl<T> Wrapper<T> {
     fn new(cef: T, log: bool) -> Wrapper<T> {
         if log {
-            println!("{}:Wrapper new {}", std::process::id(), std::any::type_name::<T>());
+            //println!("{}:Wrapper new {}", std::process::id(), std::any::type_name::<T>());
         }
         Wrapper::<T> {
             cef,
             count: AtomicI16::new(0),
-            log
+            log: false
         }
     }
 
@@ -45,19 +45,19 @@ impl<T> Wrapper<T> {
     fn incr_ref(&mut self) {
         self.refs().fetch_add(1, Ordering::Relaxed);
         if self.log {
-            println!("{}:incr_ref {}: {}", std::process::id(), std::any::type_name::<T>(), self.refs().load(Ordering::Relaxed));
+            //println!("{}:incr_ref {}: {}", std::process::id(), std::any::type_name::<T>(), self.refs().load(Ordering::Relaxed));
         }
     }
 
     fn decr_ref(&mut self) -> c_int {
         if self.refs().fetch_sub(1, Ordering::Relaxed) == 1 {
             if self.log {
-                println!("{}:decr_ref {} Release: {}", std::process::id(), std::any::type_name::<T>(), self.refs().load(Ordering::Relaxed));
+                //println!("{}:decr_ref {} Release: {}", std::process::id(), std::any::type_name::<T>(), self.refs().load(Ordering::Relaxed));
             }
             1
         } else {
             if self.log {
-                println!("{}:decr_ref {}: {}", std::process::id(), std::any::type_name::<T>(), self.refs().load(Ordering::Relaxed));
+                //println!("{}:decr_ref {}: {}", std::process::id(), std::any::type_name::<T>(), self.refs().load(Ordering::Relaxed));
             }
             0
         }
@@ -65,7 +65,7 @@ impl<T> Wrapper<T> {
 
     fn one_ref(&self) -> c_int {
         if self.log {
-            println!("{}:one_ref {}: {}", std::process::id(), std::any::type_name::<T>(), self.refs().load(Ordering::Relaxed));
+            //println!("{}:one_ref {}: {}", std::process::id(), std::any::type_name::<T>(), self.refs().load(Ordering::Relaxed));
         }
         if self.refs().load(Ordering::Relaxed) == 1 {
             return 1
@@ -75,7 +75,7 @@ impl<T> Wrapper<T> {
 
     fn atleast_one_ref(&self) -> c_int {
         if self.log {
-            println!("{}:atleast_one_ref {}: {}", std::process::id(), std::any::type_name::<T>(), self.refs().load(Ordering::Relaxed));
+            //println!("{}:atleast_one_ref {}: {}", std::process::id(), std::any::type_name::<T>(), self.refs().load(Ordering::Relaxed));
         }
         if self.refs().load(Ordering::Relaxed) >= 1 {
             return 1
@@ -447,10 +447,12 @@ unsafe fn handle_eval(browser: *mut cef::_cef_browser_t, code: *const cef::cef_s
         //println!("Eval errored");
 
         let ret_str_cef = (*ex).get_message.unwrap()(ex);
-        let ret_str = utils::cstr_from_cef(ret_str_cef);
-        let ret_str = CStr::from_ptr(ret_str);
+        // let ret_str = utils::cstr_from_cef(ret_str_cef);
+        let ret_str_utf8 = cef_to_utf8(ret_str_cef);
+        let ret_str = CStr::from_ptr((*ret_str_utf8).str);
         socket::socket_client(answer_port, ret_str.to_owned(), socket::ReturnType::Error);
         cef::cef_string_userfree_utf16_free(ret_str_cef);
+        cef::cef_string_userfree_utf8_free(ret_str_utf8);
     } else {
         //println!("Eval succeded {:?}", ret);
 
@@ -489,16 +491,22 @@ unsafe fn convert_type(ret: *mut cef::cef_v8value_t, context: *mut cef::cef_v8co
     }
     else if (*ret).is_string.unwrap()(ret) == 1 {
         let ret_str_cef = (*ret).get_string_value.unwrap()(ret);
-        let ret_str = utils::cstr_from_cef(ret_str_cef);
+        // let ret_str = utils::cstr_from_cef(ret_str_cef);
+        let ret_str_utf8 = cef_to_utf8(ret_str_cef);
         //let ret_str = CStr::from_ptr(ret_str);
         //(ret_str.to_owned(), socket::ReturnType::Str)
         // let ret_str = CString::from_raw(ret_str);
         // (ret_str, socket::ReturnType::Str)
-        let cstr = utils::str_from_c(ret_str);
+        // let cstr = utils::str_from_c(ret_str);
+        //let cstr = utils::str_from_c((*ret_str_utf8).str);
+        let cstr = CStr::from_ptr((*ret_str_utf8).str);
         if !ret_str_cef.is_null() {
             cef::cef_string_userfree_utf16_free(ret_str_cef);
         }
-        (CString::new(cstr).expect("Failed to convert v8string to CString"), socket::ReturnType::Str)
+        // let cstring = CString::new(cstr).expect("Failed to convert v8string to CString");
+        let cstring = cstr.to_owned();
+        cef::cef_string_userfree_utf8_free(ret_str_utf8);
+        (cstring, socket::ReturnType::Str)
     }
     else if (*ret).is_array.unwrap()(ret) == 1 {
         //let length = (*ret).get_array_length.unwrap()(ret); // bug on cef, always 0
@@ -579,8 +587,11 @@ impl V8Handler {
             let mut msg_name = utils::cef_string("function_call");
             let msg = cef::cef_process_message_create(&msg_name);
             let args = (*msg).get_argument_list.unwrap()(msg);
-            let nm = utils::str_from_c(utils::cstr_from_cef(name));
+            // let nm = utils::str_from_c(utils::cstr_from_cef(name));
+            let name_uft8 = cef_to_utf8(name);
+            let nm = utils::str_from_c((*name_uft8).str);
             let s = (*args).set_int.unwrap()(args, 1, nm.parse::<i32>().expect("failed to parse i32"));
+            cef::cef_string_userfree_utf8_free(name_uft8);
             assert_eq!(s, 1);
 
             for i in 0..arguments_count {
@@ -711,4 +722,13 @@ fn splitn<'a>(rstr: &'a str, max: usize, quote: char, sep: char) -> Vec<&'a str>
         c == sep && !in_string
     }).collect();
     v
+}
+
+// callers should free string
+fn cef_to_utf8(cefstring: *const cef::cef_string_t) -> *mut cef::cef_string_utf8_t {
+    let utf8 = unsafe { cef::cef_string_userfree_utf8_alloc() };
+    if !cefstring.is_null() {
+        unsafe { cef::cef_string_utf16_to_utf8((*cefstring).str, (*cefstring).length, utf8) };
+    }
+    utf8
 }
