@@ -499,12 +499,14 @@ unsafe fn convert_type(ret: *mut cef::cef_v8value_t, context: *mut cef::cef_v8co
         // (ret_str, socket::ReturnType::Str)
         // let cstr = utils::str_from_c(ret_str);
         //let cstr = utils::str_from_c((*ret_str_utf8).str);
-        let cstr = CStr::from_ptr((*ret_str_utf8).str);
         if !ret_str_cef.is_null() {
             cef::cef_string_userfree_utf16_free(ret_str_cef);
         }
         // let cstring = CString::new(cstr).expect("Failed to convert v8string to CString");
-        let cstring = cstr.to_owned();
+        let cstring = if !(*ret_str_utf8).str.is_null() {
+            let cstr = CStr::from_ptr((*ret_str_utf8).str);
+            cstr.to_owned()
+        } else { CString::new("").unwrap() };
         cef::cef_string_userfree_utf8_free(ret_str_utf8);
         (cstring, socket::ReturnType::Str)
     }

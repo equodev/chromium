@@ -129,7 +129,6 @@ class Chromium extends WebBrowser {
 	private static CompletableFuture<Boolean> cookieVisited;
 	private static AtomicInteger browsers = new AtomicInteger(0);
 	private static Map<Integer, Chromium> instances = new HashMap<>();
-	private static int INSTANCES = 0;
 	private static Deque<Chromium> instancesNew = new ArrayDeque<>();
 	private static Runnable loopWork;
 	private static boolean loopDisable;
@@ -2161,8 +2160,15 @@ class Chromium extends WebBrowser {
 					args[arg] = mapType(type, value);
 				}
 			};
-			Callback callback_cb = new CallbackExt(callback, "invoke", void.class, new Type[] {int.class, int.class, long.class});
-			ChromiumLib.cefswt_function_arg(processMessage, i, checkGetAddress(callback_cb));
+			CallbackExt callback_cb = new CallbackExt(callback, "invoke", void.class, new Type[] {int.class, int.class, long.class});
+			try {
+				ChromiumLib.cefswt_function_arg(processMessage, i, checkGetAddress(callback_cb));
+			} catch(SWTException e) {
+				ReturnType returnType = ReturnType.Error;
+				String returnStr = new SWTException(SWT.ERROR_INVALID_ARGUMENT).getMessage();
+				ChromiumLib.cefswt_function_return(browser, id, fn.port, returnType.intValue(), returnStr);
+				return 1;
+			}
 			disposeCallback(callback_cb);
 		}
 		BrowserFunction browserFunction = functions.get(id);
@@ -2177,7 +2183,7 @@ class Chromium extends WebBrowser {
 			ChromiumLib.cefswt_function_return(browser, id, fn.port, returnType.intValue(), returnStr);
 		} else {
 			ReturnType returnType = ReturnType.Error;
-			String returnStr = "Call to already disposed browser function";
+			String returnStr = new SWTException(SWT.ERROR_FUNCTION_DISPOSED).getMessage();
 			ChromiumLib.cefswt_function_return(browser, id, fn.port, returnType.intValue(), returnStr);
 		}
 		
@@ -2217,7 +2223,7 @@ class Chromium extends WebBrowser {
 			buffer.append("\"");
 			returnStr = buffer.toString();
 		} else {
-			returnStr = "Unsupported return type " + ret.getClass().getName();
+			returnStr = new SWTException(SWT.ERROR_INVALID_RETURN_VALUE).getMessage() + ": " + ret.getClass().getName();
 		}
 		return new Object[] {returnType, returnStr};
 	}
@@ -2602,7 +2608,7 @@ class Chromium extends WebBrowser {
 			}
 		}
 		checkBrowser();
-		Object[] ret = new Object[1];
+		Object[] ret = new Object[2];
 		EvalReturned callback = (loop, type, valuePtr) -> {
 			if (loop == 1) {
 				//debugPrint("eval retured: " +type + ":"+valuePtr);
@@ -2615,7 +2621,11 @@ class Chromium extends WebBrowser {
 			} else {
 				String value = ChromiumLib.cefswt_cstring_to_java(valuePtr, loop == -1);
 				debugPrint("eval returned: " +type +":"+value);
-				ret[0] = mapType(type, value);
+				try {
+					ret[0] = mapType(type, value);
+				} catch (SWTException e) {
+					ret[1] = e;
+				}
 			}
 		};
 		Callback callback_cb = new CallbackExt(callback, "invoke", void.class, new Type[] {int.class, int.class, long.class});
@@ -2629,6 +2639,9 @@ class Chromium extends WebBrowser {
 		disposeCallback(callback_cb);
 		if (!returnSt) {
 			throw new SWTException("Script that was evaluated failed");
+		}
+		if (ret[1] != null) {
+			throw (SWTException) ret[1];
 		}
 		return ret[0];
 	}
@@ -2662,6 +2675,9 @@ class Chromium extends WebBrowser {
 			}
 			return array;
 		}
+		else if (type == ReturnType.Str.intValue() && value == null) {
+			return "";
+		} 
 		else {
 			return value;
 		}

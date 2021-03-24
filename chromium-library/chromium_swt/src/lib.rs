@@ -701,7 +701,9 @@ pub unsafe extern fn cefswt_function_arg(message: *mut cef::cef_process_message_
     let kind = socket::ReturnType::from(kind);
     callback(0, kind as i32, (*cef_str).str);
     cef::cef_string_userfree_utf8_free(cef_str);
-    cef::cef_string_userfree_utf16_free(arg);
+    if !arg.is_null() {
+        cef::cef_string_userfree_utf16_free(arg);
+    }
     Base::release(&mut (*args).base);
     1
 }
@@ -1068,7 +1070,9 @@ pub extern fn cefswt_zoom(browser: *mut cef::cef_browser_t, level: f64) {
 
 #[no_mangle]
 pub extern fn cefswt_cef_string_free(cef_str: *mut cef::cef_string_utf8_t) {
-    unsafe {cef::cef_string_userfree_utf8_free(cef_str)};
+    if !cef_str.is_null() {
+        unsafe {cef::cef_string_userfree_utf8_free(cef_str)};
+    }
 }
 
 // callers should free string
