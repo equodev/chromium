@@ -808,11 +808,14 @@ pub extern fn cefswt_request_callback(callback: *mut cef::_cef_request_callback_
             let provided_bin = cef::cef_binary_value_create(cert_bytes, cert_size);
             let x509 = (*ssl_info).get_x509certificate.unwrap()(ssl_info);
             let x509_der = (*x509).get_derencoded.unwrap()(x509);
+            let x509_pem = (*x509).get_pemencoded.unwrap()(x509);
+
+            Base::add_ref(&mut (*provided_bin).base);
             if (*x509_der).is_equal.unwrap()(x509_der, provided_bin) == 1 {
                 //println!("Provided DER matches!");
                 cont = 1;
             } else {
-                let x509_pem = (*x509).get_pemencoded.unwrap()(x509);
+                Base::add_ref(&mut (*provided_bin).base);
                 if (*x509_pem).is_equal.unwrap()(x509_pem, provided_bin) == 1 {
                     //println!("Provided PEM matches!");
                     cont = 1;
@@ -821,6 +824,7 @@ pub extern fn cefswt_request_callback(callback: *mut cef::_cef_request_callback_
                     cont = 0;
                 }
             }
+            Base::release(&mut (*provided_bin).base);
         }
         if cont == 1 {
             (*callback).cont.unwrap()(callback, cont)

@@ -1421,7 +1421,11 @@ class Chromium extends WebBrowser {
 	static int on_certificate_error(int /*long*/ self, int /*long*/ browser, int cert_error, int /*long*/ request_url, int /*long*/ ssl_info, int /*long*/ callback) {
 		int id = ChromiumLib.cefswt_get_id(browser);
 		debug("on_certificate_error: " + id);
-		return safeGeInstance(id).on_certificate_error(browser, cert_error, request_url, ssl_info, callback);
+		int r = safeGeInstance(id).on_certificate_error(browser, cert_error, request_url, ssl_info, callback);
+		ChromiumLib.cefswt_ref(browser, 0);
+		ChromiumLib.cefswt_ref(ssl_info, 0);
+		ChromiumLib.cefswt_ref(callback, 0);
+		return r;
 	}
 	
 	private int on_certificate_error(int /*long*/ browser, int cert_error, int /*long*/ request_url, int /*long*/ ssl_info, int /*long*/ callback) {
