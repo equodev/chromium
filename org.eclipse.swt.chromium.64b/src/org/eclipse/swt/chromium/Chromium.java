@@ -2802,6 +2802,7 @@ class Chromium extends WebBrowser {
 		jsEnabled = jsEnabledOnNextPage;
 		if (!isDisposed() && browser != 0) {
 			debugPrint("set url: " + getPlainUrl(url));
+			ignoreFirstFocus = true;
 			doSetUrl(url, postData, headers);
 		}
 		return true;
