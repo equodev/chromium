@@ -2001,7 +2001,9 @@ class Chromium extends WebBrowser {
 //		System.out.println("e.native_key_code: " + e.native_key_code + " translated: "+ translateKey(e.native_key_code));
 //		System.out.println("e.character: " + e.character + " e.unmodified_character: " + e.unmodified_character);
 		
-		sendKeyEvent(firedEvent);
+		chromium.getDisplay().asyncExec(() -> {
+			sendKeyEvent(firedEvent);
+		});
 		
 		if (firedEvent.doit && "cocoa".equals(SWT.getPlatform())) {
 			int nativeHandleKey = ChromiumLib.cefswt_handlekey(browser, event);
