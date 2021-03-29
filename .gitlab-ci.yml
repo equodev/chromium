@@ -8,3 +8,4 @@ variables:
   cef_p2: http://dl.maketechnology.io/chromium-cef/76-64b/repository
   cef32b_p2: http://dl.maketechnology.io/chromium-cef/76-32b/repository
   cefdev_p2: http://dl.maketechnology.io/chromium-cef/76-dev/repository
+  LINUX_32B: "true"

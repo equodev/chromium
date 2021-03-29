@@ -391,6 +391,7 @@ pub extern fn cefswt_resized(browser: *mut cef::cef_browser_t, width: i32, heigh
 #[cfg(target_os = "linux")]
 fn do_resize(win_handle: *mut c_void, width: i32, height: i32) {
     use x11::xlib;
+    use std::convert::TryInto;
 
     let xwindow = win_handle;
     let xdisplay = unsafe { cef::linux::cef_get_xdisplay() };
@@ -403,7 +404,7 @@ fn do_resize(win_handle: *mut c_void, width: i32, height: i32) {
         sibling: 0,
         stack_mode: 0
     };
-    unsafe { xlib::XConfigureWindow(std::mem::transmute(xdisplay), xwindow as u64,
+    unsafe { xlib::XConfigureWindow(std::mem::transmute(xdisplay), (xwindow as usize).try_into().unwrap(),
         (xlib::CWX | xlib::CWY | xlib::CWHeight | xlib::CWWidth) as u32, &mut changes) };
 }
 

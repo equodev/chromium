@@ -25,7 +25,7 @@
 							</includes>
 							<excludes>
 								<exclude>**/target/</exclude>
-								<exclude>**/cef_linux/</exclude>
+								<exclude>**/cef_linux*/</exclude>
 								<exclude>**/cef_macosx/</exclude>
 								<exclude>**/cef_win32*/</exclude>
 							</excludes>

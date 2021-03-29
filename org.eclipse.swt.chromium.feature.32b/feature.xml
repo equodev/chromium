@@ -78,4 +78,15 @@
          fragment="true"
          unpack="false"/>
 
+   <plugin
+         id="org.eclipse.swt.chromium.gtk.linux.x86"
+         os="linux"
+         ws="gtk"
+         arch="x86"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         fragment="true"
+         unpack="false"/>
+
 </feature>
