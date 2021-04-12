@@ -925,8 +925,12 @@ pub struct DownloadItem {
 #[no_mangle]
 pub unsafe extern fn cefswt_download_item(item: *mut cef::_cef_download_item_t, st: *mut DownloadItem) {
     if item.is_null() {
-        cef::cef_string_userfree_utf16_free((*st).file);
-        cef::cef_string_userfree_utf16_free((*st).url);
+        if !(*st).file.is_null() {
+            cef::cef_string_userfree_utf16_free((*st).file);
+        }
+        if !(*st).url.is_null() {
+            cef::cef_string_userfree_utf16_free((*st).url);
+        }
     }
     else if (*item).is_valid.unwrap()(item) == 1 {
         (*st).id = (*item).get_id.unwrap()(item);

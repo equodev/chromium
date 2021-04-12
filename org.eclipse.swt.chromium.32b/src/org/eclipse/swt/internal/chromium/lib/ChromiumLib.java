@@ -181,7 +181,7 @@ public class ChromiumLib extends C {
 	public static final native void cefswt_download_callback(int /*long*/ callback, String selected, int cont);
 	/**
 	 * @param download_item cast=(void *)
-	 * @param item flags=no_in
+	 * @param item
 	 */
 	public static final native void cefswt_download_item(int /*long*/ download_item, DownloadItem item);
 

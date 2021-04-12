@@ -101,6 +101,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Monitor;
+import org.eclipse.swt.widgets.ProgressBar;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Widget;
@@ -1728,7 +1729,10 @@ class Chromium extends WebBrowser {
 				ChromiumLib.cefswt_download_callback(callback, selected, 1);
 			}
 		} else {
-			new Download(item, name, this);
+			ChromiumLib.cefswt_download_item(download_item, item);
+			if (item.status != -1) {
+				new Download(item, name, this);
+			}
 			ChromiumLib.cefswt_download_callback(callback, null, 1);
 		}
 	}
@@ -1762,12 +1766,14 @@ class Chromium extends WebBrowser {
 		private Label statusLabel;
 		private Button cancel;
 		private long /*int*/ cancel_cb;
+		private boolean open;
+		private Label nameLabel;
+		private ProgressBar pb;
 		final Listener cancelListener = event -> {
+			pb.setState(SWT.PAUSED);
 			ChromiumLib.cefswt_download_callback(cancel_cb, null, 0);
 			dispose();
 		};
-		private boolean open;
-		private Label nameLabel;
 		
 		public Download(DownloadItem item, String name, Chromium browser) {
 			this.id = item.id;
@@ -1792,6 +1798,14 @@ class Chromium extends WebBrowser {
 			data.horizontalAlignment = GridData.FILL;
 			data.grabExcessHorizontalSpace = true;
 			nameLabel.setLayoutData (data);
+			
+			int pbStyle = item.percent == -1 ? SWT.SMOOTH | SWT.HORIZONTAL | SWT.INDETERMINATE : SWT.SMOOTH | SWT.HORIZONTAL;
+			pb = new ProgressBar(shell, pbStyle);
+			pb.setSelection(item.percent);
+			pb.setMinimum(0);
+			pb.setMaximum(100);
+			pb.setState(SWT.NORMAL);
+			pb.setLayoutData(new GridData(SWT.FILL, SWT.BEGINNING, true, false));
 			
 			statusLabel = new Label (shell, SWT.NONE);
 			statusLabel.setText (Compatibility.getMessage ("SWT_Download_Started")); //$NON-NLS-1$
@@ -1830,8 +1844,10 @@ class Chromium extends WebBrowser {
 			String message = Compatibility.getMessage ("SWT_Download_Status", new Object[] {Long.valueOf(current), new Long(total)}); //$NON-NLS-1$
 			message = message + " at " + (item.speed / 1024L) + " KB/s " + (item.percent != -1 ? "("+item.percent+"%)" : "");
 			statusLabel.setText (message);
+			pb.setSelection(item.percent);
 			
 			if (status == 0 || status == 3) { // error or cancel
+				pb.setState(SWT.ERROR);
 				statusLabel.setText (Compatibility.getMessage ("SWT_Download_Error")); //$NON-NLS-1$
 				cancel.removeListener (SWT.Selection, cancelListener);
 				cancel.addListener (SWT.Selection, event -> dispose());
