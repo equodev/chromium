@@ -1,6 +1,6 @@
 [package]
 name = "chromium"
-version = "76.2.15"
+version = "76.2.16"
 authors = ["Make Technology <http://maketechnology.io>", "Guillermo Zunino <guillez@gmail.com>"]
 
 [[bin]]
