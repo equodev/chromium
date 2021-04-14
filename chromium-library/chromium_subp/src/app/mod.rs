@@ -404,11 +404,30 @@ impl RenderProcessHandler {
 
 fn register_function(id: c_int, name: *mut cef::cef_string_t, global: *mut cef::cef_v8value_t, handler: &mut V8Handler) {
     // Add the "myfunc" function to the "window" object.
-    if unsafe {(*global).has_value_bykey.unwrap()(global, name)} == 1 {
-        // println!("register function skipped {}", id);
+    let mut handler_name = utils::cef_string(&format!("{}", id));
+    let add = unsafe{ if (*global).has_value_bykey.unwrap()(global, name) == 1 {
+        let old_fn = (*global).get_value_bykey.unwrap()(global, name);
+        if !old_fn.is_null() {
+            let old_name = (*old_fn).get_function_name.unwrap()(old_fn);
+            Base::release(&mut (*old_fn).base);
+            let same = if cef::cef_string_utf16_cmp(old_name, &handler_name) == 0 {
+                // println!("register function skipped {}", id);
+                true
+            } else {
+                // println!("delete function {}", id);
+                (*global).delete_value_bykey.unwrap()(global, name);
+                false
+            };
+            cef::cef_string_userfree_utf16_free(old_name);
+            !same
+        } else {
+            true
+        }
     } else {
+        true
+    }};
+    if add {
         // println!("register function {}", id);
-        let mut handler_name = utils::cef_string(&format!("{}", id));
         let cef_v8handler = handler.as_ptr();
         Base::add_ref(&mut (*cef_v8handler).base);
         unsafe {
@@ -417,10 +436,10 @@ fn register_function(id: c_int, name: *mut cef::cef_string_t, global: *mut cef::
             let s = (*global).set_value_bykey.unwrap()(global, name, func, cef::cef_v8_propertyattribute_t::V8_PROPERTY_ATTRIBUTE_NONE);
             Base::release(&mut (*func).base);
             // Base::release(&mut (*cef_v8handler).base);
-            cef::cef_string_utf16_clear(&mut handler_name);
             assert_eq!(s, 1);
         }
     }
+    unsafe {cef::cef_string_utf16_clear(&mut handler_name)};
 }
 
 unsafe fn handle_eval_msg(browser: *mut cef::_cef_browser_t, message: *mut cef::_cef_process_message_t) {
