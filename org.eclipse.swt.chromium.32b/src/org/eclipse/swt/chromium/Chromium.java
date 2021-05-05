@@ -737,6 +737,11 @@ class Chromium extends WebBrowser {
 	private void on_before_close(int /*long*/ browser) {
 		if (disposing != Dispose.FromBrowser)
 			fireCloseListener();
+		for (BrowserFunction function : functions.values()) {
+			function.dispose(false);
+		}
+		functions.clear();
+
 		this.browser = 0;
 		this.chromium = null;
 		debugPrint("closed");
@@ -2164,7 +2169,7 @@ class Chromium extends WebBrowser {
 	}
 
 	private int on_process_message_received(int /*long*/ browser, int source, int /*long*/ processMessage) {
-		if (source != CEFFactory.PID_RENDERER || !jsEnabled || isDisposed()) {
+		if (source != CEFFactory.PID_RENDERER || !jsEnabled) {
 			return 0;
 		}
 		FunctionSt fn = new FunctionSt();
@@ -2191,8 +2196,9 @@ class Chromium extends WebBrowser {
 				String returnStr = new SWTException(SWT.ERROR_INVALID_ARGUMENT).getMessage();
 				ChromiumLib.cefswt_function_return(browser, id, fn.port, returnType.intValue(), returnStr);
 				return 1;
+			} finally {
+				disposeCallback(callback_cb);
 			}
-			disposeCallback(callback_cb);
 		}
 		BrowserFunction browserFunction = functions.get(id);
 		if (browserFunction != null) {
@@ -2326,10 +2332,6 @@ class Chromium extends WebBrowser {
 			chromium.removeListener(SWT.KeyDown, traverseListener);
 			traverseListener = null;
 		}
-		for (BrowserFunction function : functions.values()) {
-			function.dispose(false);
-		}
-		functions.clear();
 //		if (browser != 0 && callClose) {
 ////		browsers.decrementAndGet();
 //			debugPrint("call close_browser");
