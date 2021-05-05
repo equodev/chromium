@@ -1757,7 +1757,8 @@ class Chromium extends WebBrowser {
 			Download download = Download.downloads.get(item.id);
 			if (download != null) {
 				download.update(item, callback);
-				if (!download.open) download.show();
+				if (item.status == 3) download.dispose();
+				else if (!download.open && !Boolean.getBoolean("swt.chromium.disable-download-progress")) download.show();
 			}
 		}
 		ChromiumLib.cefswt_download_item(0, item);
