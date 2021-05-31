@@ -6,5 +6,4 @@ Bundle-Version: 76.2.17.qualifier
 Bundle-Vendor: Make Technology
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Fragment-Host: org.eclipse.swt.chromium
-Eclipse-PlatformFilter: (osgi.arch=x86_64)
 Automatic-Module-Name: org.eclipse.swt.chromium.64b

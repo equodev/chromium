@@ -19,7 +19,7 @@
    </copyright>
 
    <license>
-    Equo Chromium.SWT License
+      Equo Chromium.SWT License
 
     Copyright (c) 2020 Equo.
     All rights reserved.
@@ -63,40 +63,6 @@
 
    <plugin
          id="org.eclipse.swt.chromium.64b"
-         arch="x86_64"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         fragment="true"
-         unpack="false"/>
-
-   <plugin
-         id="org.eclipse.swt.chromium.win32.win32.x86_64"
-         os="win32"
-         ws="win32"
-         arch="x86_64"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         fragment="true"
-         unpack="false"/>
-
-   <plugin
-         id="org.eclipse.swt.chromium.gtk.linux.x86_64"
-         os="linux"
-         ws="gtk"
-         arch="x86_64"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         fragment="true"
-         unpack="false"/>
-
-   <plugin
-         id="org.eclipse.swt.chromium.cocoa.macosx.x86_64"
-         os="macosx"
-         ws="cocoa"
-         arch="x86_64"
          download-size="0"
          install-size="0"
          version="0.0.0"

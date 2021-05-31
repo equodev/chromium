@@ -46,9 +46,6 @@
 	<modules>
 		<module>org.eclipse.swt.chromium</module>
 		<module>org.eclipse.swt.chromium.64b</module>
-		<module>org.eclipse.swt.chromium.cocoa.macosx.x86_64</module>
-		<module>org.eclipse.swt.chromium.gtk.linux.x86_64</module>
-		<module>org.eclipse.swt.chromium.win32.win32.x86_64</module>
 		<module>org.eclipse.swt.chromium.feature</module>
 		<module>org.eclipse.swt.chromium.repository</module>
 		<!-- <module>org.eclipse.swt.chromium.tests</module> -->
@@ -96,16 +93,6 @@
 						</goals>
 					</execution>
 				</executions>
-				<configuration>
-					<excludes>
-						<!-- provide plug-ins not containing any source code -->
-						<plugin id="org.eclipse.swt.chromium.gtk.linux.x86_64" />
-						<plugin id="org.eclipse.swt.chromium.gtk.linux.x86" />
-						<plugin id="org.eclipse.swt.chromium.win32.win32.x86_64" />
-						<plugin id="org.eclipse.swt.chromium.win32.win32.x86" />
-						<plugin id="org.eclipse.swt.chromium.cocoa.macosx.x86_64" />
-					</excludes>
-				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.eclipse.cbi.maven.plugins</groupId>
@@ -172,12 +159,6 @@
 					<name>env.B32</name>
 				</property>
 			</activation>
-			<modules>
-				<module>org.eclipse.swt.chromium.32b</module>
-				<module>org.eclipse.swt.chromium.win32.win32.x86</module>
-				<module>org.eclipse.swt.chromium.gtk.linux.x86</module>
-				<module>org.eclipse.swt.chromium.feature.32b</module>
-			</modules>
 			<build>
 				<plugins>
 					<plugin>
