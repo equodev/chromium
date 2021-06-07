@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="com.equo.swt.chromium.feature"
+      label="Chromium SWT Browser Feature"
+      version="69.0.0.qualifier"
+      provider-name="Make Technology"
+      os="linux,macosx,win32"
+      ws="cocoa,gtk,win32"
+      arch="x86_64,x86">
+
+   <description url="https://www.equoplatform.com">
+      Chromium SWT Browser
+   </description>
+
+   <copyright>
+/****************************************************************************
+**
+** Copyright (C) 2021 Equo
+**
+** This file is part of Equo Chromium.
+**
+****************************************************************************/
+   </copyright>
+
+   <license url="https://www.gnu.org/licenses/gpl-3.0.html">
+   Copyright (C) 2021 Equo
+
+   This file is part of Equo Chromium.
+
+   Commercial License Usage
+   Licensees holding valid commercial Equo licenses may use this file in
+   accordance with the commercial license agreement provided with the
+   Software or, alternatively, in accordance with the terms contained in
+   a written agreement between you and Equo. For licensing terms
+   and conditions see https://www.equoplatform.com/terms.
+
+   GNU General Public License Usage
+   Alternatively, this file may be used under the terms of the GNU
+   General Public License version 3 as published by the Free Software
+   Foundation. Please review the following
+   information to ensure the GNU General Public License requirements will
+   be met: https://www.gnu.org/licenses/gpl-3.0.html.
+   </license>
+
+   <plugin
+         id="com.equo.swt.chromium"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="com.equo.swt.chromium.64b"
+         arch="x86_64"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         fragment="true"
+         unpack="false"/>
+
+   <plugin
+         id="com.equo.swt.chromium.win32.win32.x86_64"
+         os="win32"
+         ws="win32"
+         arch="x86_64"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         fragment="true"
+         unpack="false"/>
+
+   <plugin
+         id="com.equo.swt.chromium.gtk.linux.x86_64"
+         os="linux"
+         ws="gtk"
+         arch="x86_64"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         fragment="true"
+         unpack="false"/>
+
+   <plugin
+         id="com.equo.swt.chromium.cocoa.macosx.x86_64"
+         os="macosx"
+         ws="cocoa"
+         arch="x86_64"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         fragment="true"
+         unpack="false"/>
+
+</feature>

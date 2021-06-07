@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Chromium SWT Browser
+Bundle-SymbolicName: com.equo.swt.chromium
+Bundle-Version: 69.0.0.qualifier
+Bundle-Vendor: Make Technology
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Require-Bundle: org.eclipse.swt
+Export-Package: com.equo.swt.chromium
+Automatic-Module-Name: com.equo.swt.chromium

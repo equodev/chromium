@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature url="features/com.equo.swt.chromium.feature_69.0.0.qualifier.jar" id="com.equo.swt.chromium.feature" version="69.0.0.qualifier">
+      <category name="com.equo.swt.chromium"/>
+   </feature>
+   <category-def name="com.equo.swt.chromium" label="Chromium SWT Browser"/>
+</site>

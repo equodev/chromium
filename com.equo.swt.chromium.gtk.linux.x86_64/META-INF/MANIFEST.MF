@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Chromium SWT Linux x86_64
+Bundle-SymbolicName: com.equo.swt.chromium.gtk.linux.x86_64
+Bundle-Version: 69.0.0.qualifier
+Bundle-Vendor: Make Technology
+Fragment-Host: org.eclipse.swt
+Eclipse-PlatformFilter: (& (osgi.ws=gtk) (osgi.os=linux) (osgi.arch=x86_64))
+Automatic-Module-Name: com.equo.gtk.linux.x86_64
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8

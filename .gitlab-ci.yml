@@ -1,0 +1,4 @@
+include:
+  - project: 'maketech-oss/chromium.build'
+    ref: chromium-swt-28
+    file: '/.chromium.swt-ci.yml'
