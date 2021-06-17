@@ -1,0 +1,184 @@
+package com.equo.chromium.swt.internal;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.security.CodeSource;
+
+import org.cef.CefApp;
+import org.cef.CefAppSwt;
+import org.cef.CefClient;
+import org.cef.CefSettings;
+import org.cef.browser.CefBrowser;
+import org.cef.handler.CefAppHandlerAdapter;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.SWTException;
+import org.eclipse.swt.widgets.Display;
+
+class Engine {
+	static {
+		loadLib();
+	}
+	private static final String CEFVERSION = "3809";
+	private static final String SUBDIR = "chromium-" + CEFVERSION;
+	static final boolean debug = Boolean.valueOf(System.getProperty("chromium.debug", "false"));
+	
+	private static boolean shuttindDown;
+
+	private static CefApp app;
+	
+	private static void loadLib() {
+		Path libsPath = findLibsPath().resolve(SUBDIR);
+		if (!Files.exists(libsPath) || !CefApp.startup(libsPath)) {
+			throw new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY, "Missing binaries for Equo Chromium Browser.");
+		}
+	}
+
+	private static Path findLibsPath() {
+		String chromiumPath = System.getProperty("chromium.path", "");
+		if (!chromiumPath.isEmpty() && Files.exists(Paths.get(chromiumPath).toAbsolutePath()))
+			return Paths.get(chromiumPath).toAbsolutePath().normalize();
+		String binariesBsn = "com.equo.chromium.cef."+SWT.getPlatform()+"."+getOS()+"."+getArch();
+		try {
+			CodeSource codeSource = Class.forName("com.equo.chromium.ChromiumFragment").getProtectionDomain().getCodeSource();
+			if (codeSource != null) {
+				URI loc = codeSource.getLocation().toURI();
+				try {
+					// tycho surefire explodes the jar but does not set files executables.
+					Files.walkFileTree(Paths.get(loc), new SimpleFileVisitor<Path>() {
+						@Override
+						public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+							return FileVisitResult.CONTINUE;
+						}
+						@Override
+						public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+							ResourceExpander.setExecutable(file.toFile());
+							return super.visitFile(file, attrs);
+						}
+					});
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				return Paths.get(loc);
+			}
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+		}
+		SWTException swtError = new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY, "plugin/jar '"+binariesBsn+"' is missing and system property 'chromium.path' is not correctly set.");
+		throw swtError;
+	}
+
+	static void initCEF() {
+		synchronized (Engine.class) {
+			if (app == null) {
+				CefAppSwt appSwt = new CefAppSwt();
+				CefApp.setWindowingToolkit(appSwt);
+				
+				CefSettings settings = new CefSettings();
+				try {
+					settings.remote_debugging_port = Integer.parseInt(System.getProperty("chromium.remote_debugging_port", "0"));
+				} catch (NumberFormatException e) {
+				}
+				
+				String cachePath = System.getProperty("chromium.cache_path", Paths.get(System.getProperty("user.dir"), ".equo", "cache").toString());
+				settings.cache_path = cachePath;
+
+				String[] args = getChromiumArgs();
+				CefApp.addAppHandler(new CefAppHandlerAdapter(args) {
+					@Override
+					public void onScheduleMessagePumpWork(long delay_ms) {
+						if (shuttindDown) {
+							System.out.println("Ignoring onScheduleMessagePumpWork due shuttindDown");
+							return;
+						}
+						super.onScheduleMessagePumpWork(delay_ms);
+					}
+				});
+				try {
+					app = CefApp.getInstance(settings);
+				} catch (UnsatisfiedLinkError e) {
+					if ("gtk".equals(SWT.getPlatform()) && e.getMessage().contains("libgconf")) {
+						System.load(findLibsPath().resolve(SUBDIR).resolve("libgconf-2.so.4").toString());
+						app = CefApp.getInstance(settings);
+					} else {
+						throw e;
+					}
+				}
+				Display.getDefault().disposeExec(() -> {
+					if (shuttindDown) {
+						// already shutdown
+						return;
+					}
+					shuttindDown = true;
+					internalShutdown();
+				});
+			}
+		}
+	}
+	
+	static String[] getChromiumArgs() {
+		String vmArg = System.getProperty("chromium.args", System.getProperty("swt.chromium.args"));
+		if (vmArg != null) {
+			String[] lines = vmArg.split(";");
+			return lines;
+		}
+		return null;
+	}
+
+	private static void internalShutdown() {
+		if (app == null) {
+			return;
+		}
+		app.dispose();
+		app = null;
+	}
+
+	static <T extends CefClient> T createClient() {
+		return app.createClient();
+	}
+
+	private static String getOS() {
+		String os = "";
+		switch (SWT.getPlatform()) {
+		case "gtk":
+			os = "linux";
+			break;
+		case "win32":
+			os = "win32";
+			break;
+		case "cocoa":
+			os = "macosx";
+			break;
+		}
+		return os;
+	}
+	
+	private static String getArch() {
+		String osArch = System.getProperty("os.arch");
+		if (osArch.equals ("i386") || osArch.equals ("i686")) return "x86";
+		if (osArch.equals ("amd64")) return "x86_64";
+		return osArch;
+	}
+
+	static void debug(String log) {
+		if (debug) {
+			System.out.println("J:" + log);
+		}
+	}
+	
+	static void debug(String log, CefBrowser cefBrowser) {
+		if (debug) {
+			int identifier = cefBrowser != null ? cefBrowser.getIdentifier() : -1;
+			System.out.println(System.currentTimeMillis()/1000+":J"+identifier + ":" + Thread.currentThread().getName() +":" + log);
+		}
+	}
+
+}
