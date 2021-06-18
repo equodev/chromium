@@ -10,11 +10,17 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.CodeSource;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.cef.CefApp;
 import org.cef.CefAppSwt;
 import org.cef.CefClient;
 import org.cef.CefSettings;
+import org.cef.OS;
+import org.cef.SystemBootstrap;
+import org.cef.SystemBootstrap.Loader;
 import org.cef.browser.CefBrowser;
 import org.cef.handler.CefAppHandlerAdapter;
 import org.eclipse.swt.SWT;
@@ -25,7 +31,7 @@ class Engine {
 	static {
 		loadLib();
 	}
-	private static final String CEFVERSION = "3809";
+	private static final String CEFVERSION = "3987";
 	private static final String SUBDIR = "chromium-" + CEFVERSION;
 	static final boolean debug = Boolean.valueOf(System.getProperty("chromium.debug", "false"));
 	
@@ -35,7 +41,14 @@ class Engine {
 	
 	private static void loadLib() {
 		Path libsPath = findLibsPath().resolve(SUBDIR);
-		if (!Files.exists(libsPath) || !CefApp.startup(libsPath)) {
+		SystemBootstrap.setLoader(new Loader() {
+			@Override
+			public void loadLibrary(String libname) {
+				System.load(libsPath.resolve(System.mapLibraryName(libname)).toString());
+			}
+		});
+		String[] args = getChromiumArgs(libsPath);
+		if (!Files.exists(libsPath) || !CefApp.startup(args)) {
 			throw new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY, "Missing binaries for Equo Chromium Browser.");
 		}
 	}
@@ -87,16 +100,31 @@ class Engine {
 					settings.remote_debugging_port = Integer.parseInt(System.getProperty("chromium.remote_debugging_port", "0"));
 				} catch (NumberFormatException e) {
 				}
-				
-				String cachePath = System.getProperty("chromium.cache_path", Paths.get(System.getProperty("user.dir"), ".equo", "cache").toString());
-				settings.cache_path = cachePath;
+				Path data = Paths.get(System.getProperty("user.home"), ".equo");
+				settings.cache_path = System.getProperty("chromium.cache_path", data.resolve("cefcache").toString());
+				settings.log_file = data.resolve("cef.log").toString();
+				settings.log_severity = debug ? CefSettings.LogSeverity.LOGSEVERITY_INFO : CefSettings.LogSeverity.LOGSEVERITY_DISABLE;
+				Path libsPath = findLibsPath().resolve(SUBDIR);
 
-				String[] args = getChromiumArgs();
+				if (OS.isMacintosh()) {
+					settings.browser_subprocess_path = libsPath.resolve("jcef Helper.app/Contents/MacOS/jcef Helper").toString();
+					settings.resources_dir_path = libsPath.resolve("Chromium Embedded Framework.framework").resolve("Resources").toString();
+				} else if (OS.isWindows()) {
+					settings.browser_subprocess_path = libsPath.resolve("jcef_helper.exe").toString();
+					settings.resources_dir_path = libsPath.toString();
+					settings.locales_dir_path = libsPath.resolve("locales").toString();
+				} else if (OS.isLinux()) {
+					settings.browser_subprocess_path = libsPath.resolve("jcef_helper").toString();
+					settings.resources_dir_path = libsPath.toString();
+					settings.locales_dir_path = libsPath.resolve("locales").toString();
+				}
+
+				String[] args = getChromiumArgs(libsPath);
 				CefApp.addAppHandler(new CefAppHandlerAdapter(args) {
 					@Override
 					public void onScheduleMessagePumpWork(long delay_ms) {
 						if (shuttindDown) {
-							System.out.println("Ignoring onScheduleMessagePumpWork due shuttindDown");
+							debug("Ignoring onScheduleMessagePumpWork due shuttindDown");
 							return;
 						}
 						super.onScheduleMessagePumpWork(delay_ms);
@@ -106,7 +134,7 @@ class Engine {
 					app = CefApp.getInstance(settings);
 				} catch (UnsatisfiedLinkError e) {
 					if ("gtk".equals(SWT.getPlatform()) && e.getMessage().contains("libgconf")) {
-						System.load(findLibsPath().resolve(SUBDIR).resolve("libgconf-2.so.4").toString());
+						System.load(libsPath.resolve("libgconf-2.so.4").toString());
 						app = CefApp.getInstance(settings);
 					} else {
 						throw e;
@@ -124,13 +152,18 @@ class Engine {
 		}
 	}
 	
-	static String[] getChromiumArgs() {
+	static String[] getChromiumArgs(Path libsPath) {
+		List<String> args = new ArrayList<>();
 		String vmArg = System.getProperty("chromium.args", System.getProperty("swt.chromium.args"));
 		if (vmArg != null) {
 			String[] lines = vmArg.split(";");
-			return lines;
+			args.addAll(Arrays.asList(lines));
 		}
-		return null;
+		if (OS.isMacintosh()) {
+			args.add("--framework-dir-path="+libsPath.resolve("Chromium Embedded Framework.framework"));
+			args.add("--main-bundle-path="+libsPath.resolve("jcef Helper.app"));
+		}
+		return args.toArray(new String[args.size()]);
 	}
 
 	private static void internalShutdown() {
