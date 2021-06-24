@@ -261,7 +261,7 @@ final class Chromium extends WebBrowser {
 	class FunctionsResourceHandler extends CefResourceHandlerAdapter {
 		private byte[] resp;
 		private Throwable ex;
-		private int offset;
+		private int offset = 0;
 		@Override
 		public boolean processRequest(CefRequest request, CefCallback callback) {
 			if (isDisposed())
@@ -338,6 +338,9 @@ final class Chromium extends WebBrowser {
 				bytesRead.set(transfer);
 				return true;
 			}
+			resp = new byte[0];
+			offset = 0;
+			ex = null;
 			return false;
 		}
 
