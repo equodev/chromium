@@ -44,6 +44,14 @@ class Engine {
 	private static CefApp app;
 	
 	private static void loadLib() {
+		if (OS.isLinux()) {
+			String backend = System.getenv("GDK_BACKEND");
+			String session = System.getenv("XDG_SESSION_TYPE");
+			if (session.equals("wayland") && !"x11".equals(backend)) {
+				throw new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY, "To run Chromium on Wayland, set env var GDK_BACKEND=x11");
+			}
+		}
+		
 		libsPath = findLibsPath().resolve(SUBDIR);
 		SystemBootstrap.setLoader(new Loader() {
 			@Override
