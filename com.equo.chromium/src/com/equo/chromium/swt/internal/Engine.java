@@ -3,6 +3,7 @@ package com.equo.chromium.swt.internal;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,6 +34,9 @@ class Engine {
 	}
 	private static final String CEFVERSION = "3987";
 	private static final String SUBDIR = "chromium-" + CEFVERSION;
+	private static final String SCHEME_FILE = "file"; //$NON-NLS-1$
+	private static Path libsPath;
+
 	static final boolean debug = Boolean.valueOf(System.getProperty("chromium.debug", "false"));
 	
 	private static boolean shuttindDown;
@@ -40,7 +44,7 @@ class Engine {
 	private static CefApp app;
 	
 	private static void loadLib() {
-		Path libsPath = findLibsPath().resolve(SUBDIR);
+		libsPath = findLibsPath().resolve(SUBDIR);
 		SystemBootstrap.setLoader(new Loader() {
 			@Override
 			public void loadLibrary(String libname) {
@@ -61,7 +65,7 @@ class Engine {
 		try {
 			CodeSource codeSource = Class.forName("com.equo.chromium.ChromiumFragment").getProtectionDomain().getCodeSource();
 			if (codeSource != null) {
-				URI loc = codeSource.getLocation().toURI();
+				URI loc = toURI(codeSource.getLocation());
 				try {
 					// tycho surefire explodes the jar but does not set files executables.
 					Files.walkFileTree(Paths.get(loc), new SimpleFileVisitor<Path>() {
@@ -89,6 +93,30 @@ class Engine {
 		throw swtError;
 	}
 
+	/**
+	 * Returns the URL as a URI. This method will handle URLs that are
+	 * not properly encoded (for example they contain unencoded space characters).
+	 * 
+	 * @param url The URL to convert into a URI
+	 * @return A URI representing the given URL
+	 */
+	private static URI toURI(URL url) throws URISyntaxException {
+		//URL behaves differently across platforms so for file: URLs we parse from string form
+		if (SCHEME_FILE.equals(url.getProtocol())) {
+			String pathString = url.toExternalForm().substring(5);
+			//ensure there is a leading slash to handle common malformed URLs such as file:c:/tmp
+			if (pathString.indexOf('/') != 0)
+				pathString = '/' + pathString;
+			return new URI(SCHEME_FILE, null, pathString, null);
+		}
+		try {
+			return new URI(url.toExternalForm());
+		} catch (URISyntaxException e) {
+			//try multi-argument URI constructor to perform encoding
+			return new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
+		}
+	}
+	
 	static void initCEF() {
 		synchronized (Engine.class) {
 			if (app == null) {
@@ -104,7 +132,6 @@ class Engine {
 				settings.cache_path = System.getProperty("chromium.cache_path", data.resolve("cefcache").toString());
 				settings.log_file = data.resolve("cef.log").toString();
 				settings.log_severity = debug ? CefSettings.LogSeverity.LOGSEVERITY_INFO : CefSettings.LogSeverity.LOGSEVERITY_DISABLE;
-				Path libsPath = findLibsPath().resolve(SUBDIR);
 
 				if (OS.isMacintosh()) {
 					settings.browser_subprocess_path = libsPath.resolve("jcef Helper.app/Contents/MacOS/jcef Helper").toString();
