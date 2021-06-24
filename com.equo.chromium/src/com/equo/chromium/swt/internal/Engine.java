@@ -133,9 +133,11 @@ class Engine {
 				settings.log_file = data.resolve("cef.log").toString();
 				settings.log_severity = debug ? CefSettings.LogSeverity.LOGSEVERITY_INFO : CefSettings.LogSeverity.LOGSEVERITY_DISABLE;
 
+				boolean external_message_pump = true;
 				if (OS.isMacintosh()) {
 					settings.browser_subprocess_path = libsPath.resolve("jcef Helper.app/Contents/MacOS/jcef Helper").toString();
 					settings.resources_dir_path = libsPath.resolve("Chromium Embedded Framework.framework").resolve("Resources").toString();
+					external_message_pump = false;
 				} else if (OS.isWindows()) {
 					settings.browser_subprocess_path = libsPath.resolve("jcef_helper.exe").toString();
 					settings.resources_dir_path = libsPath.toString();
@@ -144,7 +146,9 @@ class Engine {
 					settings.browser_subprocess_path = libsPath.resolve("jcef_helper").toString();
 					settings.resources_dir_path = libsPath.toString();
 					settings.locales_dir_path = libsPath.resolve("locales").toString();
+					external_message_pump = false;
 				}
+				settings.external_message_pump = System.getProperty("chromium.external_message_pump") != null ? Boolean.getBoolean("chromium.external_message_pump") : external_message_pump;
 
 				String[] args = getChromiumArgs(libsPath);
 				CefApp.addAppHandler(new CefAppHandlerAdapter(args) {
@@ -166,6 +170,9 @@ class Engine {
 					} else {
 						throw e;
 					}
+				}
+				if (!settings.external_message_pump) {
+					app.doMessageLoopWork(0);
 				}
 				Display.getDefault().disposeExec(() -> {
 					if (shuttindDown) {
