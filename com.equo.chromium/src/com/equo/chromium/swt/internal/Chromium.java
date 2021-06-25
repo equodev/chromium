@@ -578,8 +578,9 @@ final class Chromium extends WebBrowser {
 		@Override
 		public boolean doClose(CefBrowser browser) {
 			debug("doClose", browser);
-			getChromium(browser).doClose();
-			return browser.doClose();
+			return getChromium(browser).doClose();
+//			return browser.doClose();
+//			return true;
 		}
 
 		@Override
@@ -635,7 +636,7 @@ final class Chromium extends WebBrowser {
 				fireCloseListener();
 //				if (!"gtk".equals(SWT.getPlatform())) {
 					chromium.dispose();
-					return false;
+//					return false;
 //				}
 			}
 		}
@@ -1589,7 +1590,7 @@ final class Chromium extends WebBrowser {
 	
 	private void onGotFocus() {
 		if (!isDisposed()) {
-			if (chromium.getDisplay().getFocusControl() != chromium) {
+			if (chromium.getDisplay().getFocusControl() != chromium && focusListener != null) {
 				debugPrint("on_got_focus: setFocus");
 				boolean focusListenerPrev = focusListener.enabled;
 				focusListener.enabled = false;
