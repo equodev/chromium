@@ -413,7 +413,8 @@ final class Chromium extends WebBrowser {
 			chromium.addListener(SWT.KeyDown, traverseListener); // required to take focus on tab
 		}
 
-		cefBrowser = (CefBrowserSwt) clientHandler.createBrowser(url, false, false, null);
+		String localUrl = (postData != null || headers != null) ? "about:blank" : url;
+		cefBrowser = (CefBrowserSwt) clientHandler.createBrowser(localUrl, false, false, null);
 		cefBrowser.createImmediately(chromium);
 	}
 
@@ -914,6 +915,7 @@ final class Chromium extends WebBrowser {
 					public void onProtocolExecution(CefBrowser browser, CefFrame frame, CefRequest request,
 							BoolRef allowOsExecution) {
 						debug("onProtocolExecution: "+request.getURL(), browser);
+						allowOsExecution.set(true);
 					}
 				};
 			}
@@ -1986,12 +1988,14 @@ final class Chromium extends WebBrowser {
 	public boolean setUrl(String url, String postData, String[] headers) {
 		// if not yet created will be used when created
 		this.url = url;
-		this.postData = postData;
-		this.headers = headers;
 		jsEnabled = jsEnabledOnNextPage;
-		if (!isDisposed() && cefBrowser != null) {
+		if (cefBrowser != null) {
 			debugPrint("set url: " + getPlainUrl(url));
 			ignoreFirstFocus = true;
+			doSetUrl(url, postData, headers);
+		} else if (postData != null || headers != null) {
+			this.postData = postData;
+			this.headers = headers;
 			doSetUrl(url, postData, headers);
 		}
 		return true;
@@ -2002,6 +2006,8 @@ final class Chromium extends WebBrowser {
 			if (isDisposed()) return;
 //			debugPrint("load url");
 			doSetUrlPost(url, postData, headers);
+			this.postData = null;
+			this.headers = null;
 		});
 	}
 
@@ -2022,7 +2028,7 @@ final class Chromium extends WebBrowser {
 			if (headers != null) {
 				Map<String, String> headersMap = Arrays.stream(headers).map(h -> h.split(":", 2))
 						.collect(Collectors.toMap(k -> k[0], v -> v[1]));
-				request.getHeaderMap(headersMap);
+				request.setHeaderMap(headersMap);
 			}
 			cefBrowser.loadRequest(request);
 		}
