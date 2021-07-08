@@ -1727,7 +1727,12 @@ final class Chromium extends WebBrowser {
 
 	private static void setupCookies() {
 		WebBrowser.NativeClearSessions = () -> {
-			CefCookieManager.getGlobalManager().deleteCookies(null, null);
+			Engine.ready.thenRun(() -> {
+				CefCookieManager globalManager = CefCookieManager.getGlobalManager();
+				if (globalManager != null) {
+					globalManager.deleteCookies(null, null);
+				}
+			});
 		};
 		WebBrowser.NativeSetCookie = () -> {
 			List<HttpCookie> cookies = HttpCookie.parse(WebBrowser.CookieValue);
@@ -1739,7 +1744,13 @@ final class Chromium extends WebBrowser {
 				Date now = new Date();
 				Date expires = new Date(age);
 				CefCookie cefCookie = new CefCookie(cookie.getName(), cookie.getValue(), cookie.getDomain(), cookie.getPath(), cookie.getSecure(), cookie.isHttpOnly(), now, now, cookie.getMaxAge() != -1, expires);
-				WebBrowser.CookieResult = CefCookieManager.getGlobalManager().setCookie(WebBrowser.CookieUrl, cefCookie);
+				String cookieUrl = WebBrowser.CookieUrl;
+				Engine.ready.thenRun(() -> {
+					CefCookieManager globalManager = CefCookieManager.getGlobalManager();
+					if (globalManager != null) {
+						WebBrowser.CookieResult = globalManager.setCookie(cookieUrl, cefCookie);
+					}
+				});
 				break;
 			}
 		};
@@ -1761,7 +1772,11 @@ final class Chromium extends WebBrowser {
 					return true;
 				}
 			};
-			boolean result = CefCookieManager.getGlobalManager().visitUrlCookies(WebBrowser.CookieUrl, true, visitor);
+			CefCookieManager globalManager = CefCookieManager.getGlobalManager();
+			if (globalManager == null) {
+				throw new SWTException("Failed to get cookies, cookie manager not ready");
+			}
+			boolean result = globalManager.visitUrlCookies(WebBrowser.CookieUrl, true, visitor);
 			if (!result) {
 				throw new SWTException("Failed to get cookies");
 			}

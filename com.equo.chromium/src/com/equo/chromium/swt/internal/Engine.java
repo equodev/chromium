@@ -14,6 +14,7 @@ import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import org.cef.CefApp;
 import org.cef.CefAppSwt;
@@ -42,6 +43,7 @@ class Engine {
 	private static boolean shuttindDown;
 
 	private static CefApp app;
+	static CompletableFuture<Boolean> ready = new CompletableFuture<>();
 	
 	private static void loadLib() {
 		if (OS.isLinux()) {
@@ -167,6 +169,11 @@ class Engine {
 							return;
 						}
 						super.onScheduleMessagePumpWork(delay_ms);
+					}
+					
+					@Override
+					public void onContextInitialized() {
+						ready.complete(true);
 					}
 				});
 				try {
