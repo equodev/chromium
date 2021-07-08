@@ -201,7 +201,9 @@ class Engine {
 			String[] lines = vmArg.split(";");
 			args.addAll(Arrays.asList(lines));
 		}
-		if (OS.isMacintosh()) {
+		if (OS.isLinux()) {
+			args.add("--disable-gpu-compositing");
+		} else if (OS.isMacintosh()) {
 			args.add("--framework-dir-path="+libsPath.resolve("Chromium Embedded Framework.framework"));
 			args.add("--main-bundle-path="+libsPath.resolve("jcef Helper.app"));
 		}

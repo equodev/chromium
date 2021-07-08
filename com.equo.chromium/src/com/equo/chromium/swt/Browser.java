@@ -21,7 +21,6 @@ import com.equo.chromium.swt.internal.WebBrowser;
 public class Browser extends Composite {
 	WebBrowser webBrowser;
 	int userStyle;
-	boolean isClosing;
 
 	static final String NO_INPUT_METHOD = "org.eclipse.swt.internal.gtk.noInputMethod"; //$NON-NLS-1$
 
@@ -423,9 +422,7 @@ public class Browser extends Composite {
 	public boolean close () {
 		checkWidget();
 		if (webBrowser.close ()) {
-			isClosing = true;
 			dispose ();
-			isClosing = false;
 			return true;
 		}
 		return false;

@@ -1,5 +1,7 @@
 package com.equo.chromium.swt;
 
+import java.util.List;
+
 public interface ChromiumBrowser {
 
 	/**
@@ -25,4 +27,6 @@ public interface ChromiumBrowser {
 		 */
 		boolean message(int level, String message, String source, int line);
 	}
+
+	List<Object> getErrors();
 }

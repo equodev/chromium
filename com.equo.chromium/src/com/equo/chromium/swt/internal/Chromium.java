@@ -597,12 +597,14 @@ final class Chromium extends WebBrowser {
 	};
 
 	private void onBeforeClose() {
-		if (disposing != Dispose.FromBrowser)
-			fireCloseListener();
+		fireCloseListener();
 		for (BrowserFunction function : functions.values()) {
 			function.dispose(false);
 		}
 		functions.clear();
+		if (disposing == Dispose.FromBrowser) {
+			chromium.dispose();
+		}
 
 		this.chromium = null;
 		debugPrint("closed");
@@ -633,11 +635,7 @@ final class Chromium extends WebBrowser {
 		else if (disposing == Dispose.No) {
 			if (chromium != null) {
 				disposing = Dispose.FromBrowser;
-				fireCloseListener();
-//				if (!"gtk".equals(SWT.getPlatform())) {
-					chromium.dispose();
-//					return false;
-//				}
+				chromium.getDisplay().asyncExec(chromium::dispose);
 			}
 		}
 		debugPrint("AFTER DoClose");
@@ -871,6 +869,11 @@ final class Chromium extends WebBrowser {
 		private static final String FUNCTION_SCHEME = "https";
 		private static final String FUNCTION_HOST = "function"+new Random().nextInt();
 
+		@Override
+		public void onRenderProcessTerminated(CefBrowser browser, TerminationStatus status) {
+			getChromium(browser).extraApi().error(status);
+		}
+		
 		@Override
 		public boolean onBeforeBrowse(CefBrowser browser, CefFrame frame, CefRequest request, boolean user_gesture,
 				boolean is_redirect) {
@@ -1928,6 +1931,10 @@ final class Chromium extends WebBrowser {
 	
 	@Override
 	public Object getWebBrowser() {
+		return extraApi();
+	}
+
+	private ExtraApi extraApi() {
 		if (extraApi == null) {
 			extraApi = new ExtraApi();
 		}
@@ -2015,6 +2022,7 @@ final class Chromium extends WebBrowser {
 	class ExtraApi implements ChromiumBrowser {
 		String lastSearch = null;
 		List<ConsoleListener> consoleListeners = new ArrayList<ConsoleListener>();
+		List<Object> errors;
 
 		@Override
 		public void find(String search, boolean forward, boolean matchCase) {
@@ -2022,6 +2030,22 @@ final class Chromium extends WebBrowser {
 			boolean findNext = Objects.equals(search, lastSearch);
 			lastSearch = search;
 			cefBrowser.find(1, search, forward, matchCase, findNext);
+		}
+
+		private void initErrors() {
+			if (errors == null) {
+				errors = new ArrayList<Object>();
+			}
+		}
+
+		void error(Object status) {
+			initErrors();
+			errors.add(status);
+		}
+
+		public List<Object> getErrors() {
+			initErrors();
+			return errors;
 		}
 
 		public Chromium getChromium() {
