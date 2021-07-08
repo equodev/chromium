@@ -1529,7 +1529,9 @@ final class Chromium extends WebBrowser {
 //		System.out.println("e.character: " + e.character + " e.unmodified_character: " + e.unmodified_character);
 		
 		chromium.getDisplay().asyncExec(() -> {
-			sendKeyEvent(firedEvent);
+			if (!isDisposed()) {
+				sendKeyEvent(firedEvent);
+			}
 		});
 		
 		if (firedEvent.doit && "cocoa".equals(SWT.getPlatform())) {
