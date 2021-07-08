@@ -37,12 +37,15 @@ import org.cef.browser.CefMessageRouter;
 import org.cef.callback.CefAuthCallback;
 import org.cef.callback.CefBeforeDownloadCallback;
 import org.cef.callback.CefCallback;
+import org.cef.callback.CefContextMenuParams;
 import org.cef.callback.CefCookieVisitor;
 import org.cef.callback.CefDownloadItem;
 import org.cef.callback.CefDownloadItemCallback;
 import org.cef.callback.CefJSDialogCallback;
+import org.cef.callback.CefMenuModel;
 import org.cef.callback.CefRequestCallback;
 import org.cef.callback.CefStringVisitor;
+import org.cef.handler.CefContextMenuHandlerAdapter;
 import org.cef.handler.CefDisplayHandlerAdapter;
 import org.cef.handler.CefDownloadHandlerAdapter;
 import org.cef.handler.CefFocusHandler.FocusSource;
@@ -131,7 +134,7 @@ final class Chromium extends WebBrowser {
 	private static DisplayHandler displayHandler;
 	private static RequestHandler requestHandler;
 	private static JsDialogHandler jsDialogHandler;
-//	private static ContextMenuHandler contextMenuHandler;
+	private static ContextMenuHandler contextMenuHandler;
 	private static DownloadHandler downloadHandler;
 //	private static CefClientSwt popupClientHandler;
 //	private static LifeSpanHandler popupLifeSpanHandler;
@@ -1231,21 +1234,23 @@ final class Chromium extends WebBrowser {
 	}
 
 	private static void setContextMenuHandler() {
-//		contextMenuHandler = new ContextMenuHandler();
-//		clientHandler.addContextMenuHandler(contextMenuHandler);
+		contextMenuHandler = new ContextMenuHandler();
+		clientHandler.addContextMenuHandler(contextMenuHandler);
 	}
 	
-//	static class ContextMenuHandler extends CefContextMenuHandlerAdapter {
-//	}
+	static class ContextMenuHandler extends CefContextMenuHandlerAdapter {
+		public void onBeforeContextMenu(CefBrowser browser, CefFrame frame, CefContextMenuParams params, CefMenuModel model) {
+			debug("onBeforeContextMenu", browser);
+			getChromium(browser).onBeforeContextMenu(model);
+		};
+	}
 	
-//	private int run_context_menu(long /*int*/ browser2, long /*int*/ callback) {
-//		if (chromium.getMenu() != null) {
-//			chromium.getMenu().setVisible(true);
-//			ChromiumLib.cefswt_context_menu_cancel(callback);
-//			return 1;
-//		}
-//		return 0;
-//	}
+	private void onBeforeContextMenu(CefMenuModel model) {
+		if (chromium.getMenu() != null) {
+			model.clear();
+			chromium.getMenu().setVisible(true);
+		}
+	}
 
 	private static void setDownloadHandler() {
 		downloadHandler = new DownloadHandler();
