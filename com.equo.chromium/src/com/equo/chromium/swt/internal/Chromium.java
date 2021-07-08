@@ -227,14 +227,16 @@ final class Chromium extends WebBrowser {
 				+ "function "+function.getName()+"() {\n"
 				+ "  var req = encodeType(['"+function.token+"', Array.from(arguments)]);\n"
 				+ "  var request = new XMLHttpRequest();\n"
-				+ "  request.open('POST', '"+RequestHandler.FUNCTION_SCHEME+"://"+RequestHandler.FUNCTION_HOST+"?"+function.index+"', false);\n"
+				+ "  var url = (window.location.origin == 'null' ? '"+RequestHandler.FUNCTION_SCHEME+"://' : '') + '"+RequestHandler.FUNCTION_HOST+"?"+function.index+"';\n"
+//				+ "  console.log('req: '+url);\n"
+				+ "  request.open('POST', url, false);\n"
 				+ "  request.send(req);\n"
-				+ "  console.log(request.status);\n"
-				+ "  console.log(request.statusText);\n"
+//				+ "  console.log(request.status);\n"
+//				+ "  console.log(request.statusText);\n"
 				+ "  if (request.status === 200) {\n"
-				+ "    console.log('resp: '+ request.response);\n"
+//				+ "    console.log('resp: '+ request.response);\n"
 				+ "    var res = JSON.parse(request.responseText);\n"
-				+ "    console.log('resp js: '+ res);\n"
+//				+ "    console.log('resp js: '+ res);\n"
 				+ "    return res;\n"
 				+ "  }"
 				+ "  throw new Error(request.statusText);\n"
@@ -923,7 +925,7 @@ final class Chromium extends WebBrowser {
 		}
 
 		static private boolean isFunction(CefBrowser browser, CefRequest request) {
-			if (!"POST".equals(request.getMethod()) || !request.getURL().startsWith(FUNCTION_SCHEME+"://"+FUNCTION_HOST))
+			if (!"POST".equals(request.getMethod()) || !request.getURL().contains(/*FUNCTION_SCHEME+"://"+*/FUNCTION_HOST))
 				return false;
 			try {
 				int functionIndex = getFunctionIndex(request);

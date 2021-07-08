@@ -67,10 +67,12 @@ class Eval {
 				+ "  try { req = encodeType(ret) } catch(e) { req = encodeType("+SWT.ERROR_INVALID_RETURN_VALUE+", true) };\n"
 				+ "  } catch(e) { req = encodeType(e.toString(), true); }\n"
 				+ "} finally {"
-				+ "  window.chromiumEvaluate({request: req,\n"
-				+ "                     persistent: true,\n"
-				+ "                     onSuccess: function(response) { console.log(response); },\n"
-				+ "                     onFailure: function(error_code, error_message) {console.log(error_message);} });\n"
+				+ "  window.chromiumEvaluate({request: req,";
+		if (debug) {
+			eval += " onSuccess: function(response) { console.log(response); },"
+				+ " onFailure: function(error_code, error_message) {console.log(error_message);},";
+		}
+		eval += " persistent: true });\n"
 				+ "}})();";
 		cefBrowser.executeJavaScript(eval, url, 1);
 		
