@@ -221,13 +221,12 @@ final class Chromium extends WebBrowser {
 	}
 
 	private void injectFunctions(BrowserFunction function) {
-		debug("inject "+function.getName(), cefBrowser);
 		cefBrowser.executeJavaScript(Eval.encodeFn, getPlainUrl(url), 1);
 		String functionJS = function.getName()+"="
 				+ "function "+function.getName()+"() {\n"
 				+ "  var req = encodeType(['"+function.token+"', Array.from(arguments)]);\n"
 				+ "  var request = new XMLHttpRequest();\n"
-				+ "  var url = (window.location.origin == 'null' ? '"+RequestHandler.FUNCTION_SCHEME+"://' : '') + '"+RequestHandler.FUNCTION_HOST+"?"+function.index+"';\n"
+				+ "  var url = (window.location.origin == 'null'|| window.location.origin.startsWith('file://') ? '"+RequestHandler.FUNCTION_SCHEME+"://' : '') + '"+RequestHandler.FUNCTION_HOST+"?"+function.index+"';\n"
 //				+ "  console.log('req: '+url);\n"
 				+ "  request.open('POST', url, false);\n"
 				+ "  request.send(req);\n"
