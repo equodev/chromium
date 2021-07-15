@@ -48,7 +48,7 @@ public final class Windowless implements IBrowser {
 	@Override
 	public Object evaluate(String script) {
 		try {
-			return Eval.eval(script, browser.getURL(), browser, router);
+			return Eval.eval(script, browser.getURL(), browser, router, created);
 		} catch (InterruptedException e) {
 			throw new SWTException("Script that was evaluated failed");
 		} catch (ExecutionException e) {

@@ -35,7 +35,7 @@ class Eval {
 		return CefMessageRouter.create(config);
 	}
 
-	static Object eval(String script, String url, CefBrowser cefBrowser, CefMessageRouter router) throws InterruptedException, ExecutionException {
+	static Object eval(String script, String url, CefBrowser cefBrowser, CefMessageRouter router, CompletableFuture<Boolean> created) throws InterruptedException, ExecutionException {
 		CompletableFuture<Object> evalResult = new CompletableFuture<>();
 		
 		CefMessageRouterHandler handler = new CefMessageRouterHandlerAdapter() {
@@ -74,9 +74,14 @@ class Eval {
 		}
 		eval += " persistent: true });\n"
 				+ "}})();";
+		Display display = Display.getCurrent();
+		while (!created.isDone() && !display.isDisposed()) {
+			if (!display.readAndDispatch())
+				display.sleep();
+		}
+		
 		cefBrowser.executeJavaScript(eval, url, 1);
 		
-		Display display = Display.getCurrent();
 		while (!evalResult.isDone() && !display.isDisposed()) {
 			if (!display.readAndDispatch())
 				display.sleep();

@@ -1875,7 +1875,7 @@ final class Chromium extends WebBrowser {
 		checkBrowser();
 		
 		try {
-			return Eval.eval(script, getPlainUrl(url), cefBrowser, router);
+			return Eval.eval(script, getPlainUrl(url), cefBrowser, router, created);
 		} catch (InterruptedException e) {
 			throw new SWTException("Script that was evaluated failed");
 		} catch (ExecutionException e) {
