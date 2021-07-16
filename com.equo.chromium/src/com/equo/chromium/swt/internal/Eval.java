@@ -63,7 +63,7 @@ class Eval {
 				+ "  ret = (function() {\n"
 				+ "  "+script+"\n"
 				+ "  })();\n"
-				+ "  console.log('eval return: '+ret);\n"
+//				+ "  console.log('eval return: '+ret);\n"
 				+ "  try { req = encodeType(ret) } catch(e) { req = encodeType("+SWT.ERROR_INVALID_RETURN_VALUE+", true) };\n"
 				+ "  } catch(e) { req = encodeType(e.toString(), true); }\n"
 				+ "} finally {"

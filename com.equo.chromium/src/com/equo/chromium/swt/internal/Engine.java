@@ -130,9 +130,6 @@ class Engine {
 	static void initCEF() {
 		synchronized (Engine.class) {
 			if (app == null) {
-				CefAppSwt appSwt = new CefAppSwt();
-				CefApp.setWindowingToolkit(appSwt);
-				
 				CefSettings settings = new CefSettings();
 				try {
 					settings.remote_debugging_port = Integer.parseInt(System.getProperty("chromium.remote_debugging_port", "0"));
@@ -160,6 +157,9 @@ class Engine {
 				}
 				settings.external_message_pump = System.getProperty("chromium.external_message_pump") != null ? Boolean.getBoolean("chromium.external_message_pump") : external_message_pump;
 
+				CefAppSwt appSwt = new CefAppSwt(settings.external_message_pump);
+				CefApp.setWindowingToolkit(appSwt);
+				
 				String[] args = getChromiumArgs(libsPath);
 				CefApp.addAppHandler(new CefAppHandlerAdapter(args) {
 					@Override
@@ -185,9 +185,6 @@ class Engine {
 					} else {
 						throw e;
 					}
-				}
-				if (!settings.external_message_pump) {
-					app.doMessageLoopWork(0);
 				}
 				Display.getDefault().disposeExec(() -> {
 					if (shuttindDown) {

@@ -385,7 +385,7 @@ final class Chromium extends WebBrowser {
 		focusListener = new CefFocusListener();
 		chromium.addFocusListener(focusListener);
 
-		if (clientHandler == null) {
+		if (clientHandler == null || clientHandler.isDisposed()) {
 			createClienthandler();
 		}
 	}
