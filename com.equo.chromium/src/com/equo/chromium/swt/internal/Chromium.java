@@ -333,13 +333,13 @@ final class Chromium extends WebBrowser {
 			public void paintControl(PaintEvent e) {
 				debugPrint("paintControl");
 				if (chromium == null || chromium.isDisposed()) return;
-				if (!Boolean.getBoolean("swt.chromium.headless"))
+				if (!Boolean.getBoolean("chromium.headless"))
 					chromium.removePaintListener(this);
 				createBrowser();
 				paintListener = null;
 			}
 		};
-		if (Boolean.getBoolean("swt.chromium.headless")) {
+		if (Boolean.getBoolean("chromium.headless")) {
 			chromium.getDisplay().timerExec(300, () -> {if (paintListener != null) paintListener.paintControl(null);});
 		} else {
 			chromium.addPaintListener(paintListener);
@@ -399,7 +399,7 @@ final class Chromium extends WebBrowser {
 
 //	private void createPopup(long /*int*/ windowInfo, long /*int*/ client, WindowEvent event) {
 //		if (paintListener != null) {
-//			if (!Boolean.getBoolean("swt.chromium.headless"))
+//			if (!Boolean.getBoolean("chromium.headless"))
 //				chromium.removePaintListener(paintListener);
 //			paintListener = null;
 //		} else {
@@ -1042,7 +1042,7 @@ final class Chromium extends WebBrowser {
 	}
 
 	private boolean onCertificateError(ErrorCode cert_error, String request_url, CefRequestCallback callback) {
-		String derpem = System.getProperty("swt.chromium.ssl", "");
+		String derpem = System.getProperty("chromium.ssl", "");
 		if (!derpem.isEmpty()) {
 			if (Files.isReadable(Paths.get(derpem))) {
 				try {
@@ -1115,7 +1115,7 @@ final class Chromium extends WebBrowser {
 		String prompt = default_prompt_text;
 		String url = origin_url;
 		String title = getPlainUrl(url);
-		String use = System.getProperty("swt.chromium.dialogs", "swt");
+		String use = System.getProperty("chromium.dialogs", "swt");
 		switch (use) {
 		case "swt-host":
 			try {
@@ -1158,7 +1158,7 @@ final class Chromium extends WebBrowser {
 			});
 			chromium.getShell().forceActive();
 		};
-		if (!"test".equals(System.getProperty("swt.chromium.dialogs", ""))) {
+		if (!"test".equals(System.getProperty("chromium.dialogs", ""))) {
 			MessageBox box = new MessageBox(chromium.getShell(), style);
 			box.setText(title);
 			box.setMessage(prompt != null ? msg + "\n\n"+prompt : msg);
@@ -1203,7 +1203,7 @@ final class Chromium extends WebBrowser {
 	}
 
 	private static boolean useSwtDialogs() {
-		return "gtk".equals(SWT.getPlatform()) || !"native".equals(System.getProperty("swt.chromium.dialogs", "swt"));
+		return "gtk".equals(SWT.getPlatform()) || !"native".equals(System.getProperty("chromium.dialogs", "swt"));
 	}
 
 	private static void setContextMenuHandler() {
@@ -1276,7 +1276,7 @@ final class Chromium extends WebBrowser {
 			if (download != null) {
 				download.update(download_item, callback);
 				if (download_item.isCanceled()) download.dispose();
-				else if (!download.open && !Boolean.getBoolean("swt.chromium.disable-download-progress")) download.show();
+				else if (!download.open && !Boolean.getBoolean("chromium.disable-download-progress")) download.show();
 			}
 		}
 	}
@@ -1836,7 +1836,7 @@ final class Chromium extends WebBrowser {
 		}
 		if (cefBrowser == null) {
 			if (paintListener != null) {
-				if (!Boolean.getBoolean("swt.chromium.headless"))
+				if (!Boolean.getBoolean("chromium.headless"))
 					chromium.removePaintListener(paintListener);
 				paintListener = null;
 				createBrowser();
