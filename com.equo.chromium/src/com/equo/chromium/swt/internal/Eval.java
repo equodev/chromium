@@ -23,13 +23,6 @@ import com.github.cliftonlabs.json_simple.Jsoner;
 
 class Eval {
 	
-	static final String encodeFn = "function encodeType(ret, isError) {\n"
-			+ "  if (ret === undefined) ret = null;"
-			+ "  if (isError)\n"
-			+ "    return JSON.stringify({isError: true, error: ret});\n"
-			+ "  return JSON.stringify(ret);\n"
-			+ "}\n";
-	
 	static CefMessageRouter createRouter() {
 		CefMessageRouterConfig config = new CefMessageRouterConfig("chromiumEvaluate", "chromiumEvaluateCancel");
 		return CefMessageRouter.create(config);
@@ -57,15 +50,14 @@ class Eval {
 		String eval = "(function() {\n"
 				+ "var req;\n"
 				+ "try {\n"
-				+ "  "+encodeFn
 				+ "  var ret;\n"
 				+ "  try {\n"
 				+ "  ret = (function() {\n"
 				+ "  "+script+"\n"
 				+ "  })();\n"
 //				+ "  console.log('eval return: '+ret);\n"
-				+ "  try { req = encodeType(ret) } catch(e) { req = encodeType("+SWT.ERROR_INVALID_RETURN_VALUE+", true) };\n"
-				+ "  } catch(e) { req = encodeType(e.toString(), true); }\n"
+				+ "  try { req = __encodeType(ret) } catch(e) { req = __encodeType("+SWT.ERROR_INVALID_RETURN_VALUE+", true) };\n"
+				+ "  } catch(e) { req = __encodeType(e.toString(), true); }\n"
 				+ "} finally {"
 				+ "  window.chromiumEvaluate({request: req,";
 		if (debug) {

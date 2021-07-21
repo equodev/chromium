@@ -2,6 +2,7 @@ package com.equo.chromium.swt;
 
 import java.util.*;
 
+import org.cef.browser.CefMessageRouter;
 import org.eclipse.swt.*;
 /**
  * Instances of this class represent java-side "functions" that
@@ -40,6 +41,7 @@ public class BrowserFunction {
 	public boolean top;
 	public String token;
 	String[] frameNames;
+	public CefMessageRouter router;
 
 /**
  * Constructs a new instance of this class, which will be invokable

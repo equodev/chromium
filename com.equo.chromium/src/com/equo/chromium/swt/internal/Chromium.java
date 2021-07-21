@@ -34,6 +34,7 @@ import org.cef.browser.CefBrowser;
 import org.cef.browser.CefBrowserSwt;
 import org.cef.browser.CefFrame;
 import org.cef.browser.CefMessageRouter;
+import org.cef.browser.CefMessageRouter.CefMessageRouterConfig;
 import org.cef.callback.CefAuthCallback;
 import org.cef.callback.CefBeforeDownloadCallback;
 import org.cef.callback.CefCallback;
@@ -139,6 +140,7 @@ final class Chromium extends WebBrowser {
 //	private static CefClientSwt popupClientHandler;
 //	private static LifeSpanHandler popupLifeSpanHandler;
 	private static CefMessageRouter router;
+	private static int nextId = 0;
 	
 	Browser chromium;
 	OpenWindowListener[] openWindowListeners = new OpenWindowListener[0];
@@ -164,6 +166,7 @@ final class Chromium extends WebBrowser {
 	private FunctionsResourceHandler functionsResourceHandler;
 	
 	Chromium() {
+		++nextId;
 	}
 	
 	public void addOpenWindowListener (OpenWindowListener listener) {
@@ -200,63 +203,33 @@ final class Chromium extends WebBrowser {
 	
 	@Override
 	public void createFunction (BrowserFunction function) {
-		created.thenRun(() -> {
-			checkBrowser();
-			
-			for (BrowserFunction current : functions.values()) {
-				if (current.getName().equals (function.getName())) {
-					deregisterFunction (current);
-					break;
-				}
-			}
-			function.index = getNextFunctionIndex();
-			registerFunction(function);
-			
-			if (functionsResourceHandler == null) {
-				functionsResourceHandler = new FunctionsResourceHandler();
-			}
-			
-			injectFunctions(function);
-		});
-	}
-
-	private void injectFunctions(BrowserFunction function) {
-		cefBrowser.executeJavaScript(Eval.encodeFn, getPlainUrl(url), 1);
-		String functionJS = function.getName()+"="
-				+ "function "+function.getName()+"() {\n"
-				+ "  var req = encodeType(['"+function.token+"', Array.from(arguments)]);\n"
-				+ "  var request = new XMLHttpRequest();\n"
-				+ "  var url = (window.location.origin == 'null'|| window.location.origin.startsWith('file://') ? '"+RequestHandler.FUNCTION_SCHEME+"://' : '') + '"+RequestHandler.FUNCTION_HOST+"?"+function.index+"';\n"
-//				+ "  console.log('req: '+url);\n"
-				+ "  request.open('POST', url, false);\n"
-				+ "  request.send(req);\n"
-//				+ "  console.log(request.status);\n"
-//				+ "  console.log(request.statusText);\n"
-				+ "  if (request.status === 200) {\n"
-//				+ "    console.log('resp: '+ request.response);\n"
-				+ "    var res = JSON.parse(request.responseText);\n"
-//				+ "    console.log('resp js: '+ res);\n"
-				+ "    return res;\n"
-				+ "  }"
-				+ "  throw new Error(request.statusText);\n"
-				+ "}";
-		if (function.top) {
-			debug("injecting "+function.getName(), cefBrowser);
-			cefBrowser.executeJavaScript("window."+functionJS, getPlainUrl(url), 1);
-		}
-		if (function.getFrameNames() != null) {
-			for (String f : function.getFrameNames()) {
-				CefFrame frame = cefBrowser.getFrame(f);
-				if (frame != null) {
-					frame.executeJavaScript("contentWindow."+functionJS, getPlainUrl(url), 1);
-				}
+		for (BrowserFunction current : functions.values()) {
+			if (current.getName().equals (function.getName())) {
+				destroyFunction(current);
+				break;
 			}
 		}
+		function.index = getNextFunctionIndex();
+		registerFunction(function);
+		
+		if (functionsResourceHandler == null) {
+			functionsResourceHandler = new FunctionsResourceHandler();
+		}
+		
+		String frames = function.getFrameNames() != null ? Arrays.stream(function.getFrameNames()).collect(Collectors.joining(";")) : "";
+		int id = cefBrowser != null && cefBrowser.getIdentifier() != -1 ? cefBrowser.getIdentifier() : nextId;
+		String encodedFn = "__browserFunction;"+function.index+";"+function.token+";"+RequestHandler.FUNCTION_HOST+";"+id+";"+function.top+";"+frames;
+		CefMessageRouterConfig config = new CefMessageRouterConfig(encodedFn, function.getName());
+		CefMessageRouter fnRouter = CefMessageRouter.create(config);
+		getClientHandler().addMessageRouter(fnRouter);
+		function.router = fnRouter;
 	}
 
 	public void destroyFunction (BrowserFunction function) {
 		checkBrowser();
-		super.destroyFunction(function);
+		deregisterFunction(function);
+		clientHandler.removeMessageRouter(function.router);
+		function.router.dispose();
 		if (functions.isEmpty()) {
 			functionsResourceHandler = null;
 		}
@@ -385,9 +358,14 @@ final class Chromium extends WebBrowser {
 		focusListener = new CefFocusListener();
 		chromium.addFocusListener(focusListener);
 
+		getClientHandler();
+	}
+
+	private CefClientSwt getClientHandler() {
 		if (clientHandler == null || clientHandler.isDisposed()) {
 			createClienthandler();
 		}
+		return clientHandler;
 	}
 
 	private void createBrowser() {
@@ -603,8 +581,8 @@ final class Chromium extends WebBrowser {
 
 	private void onBeforeClose() {
 		fireCloseListener();
-		for (BrowserFunction function : functions.values()) {
-			function.dispose(false);
+		for (BrowserFunction function : new ArrayList<>(functions.values())) {
+			function.dispose(true);
 		}
 		functions.clear();
 		if (disposing == Dispose.FromBrowser) {
@@ -736,13 +714,6 @@ final class Chromium extends WebBrowser {
 	private void on_loading_state_change(boolean isLoading, boolean canGoBack, boolean canGoForward) {
 		debug("on_loading_state_change: "+isLoading);
 		if (isDisposed()) return;
-//		if (!isLoading) {
-			for (BrowserFunction function : functions.values()) {
-				if (function.index != 0) {
-					injectFunctions(function);
-				}
-			}
-//		}
 		if (isPopup != null) {
 			enableProgress.complete(true);
 		}
@@ -871,7 +842,6 @@ final class Chromium extends WebBrowser {
 	}
 	
 	static class RequestHandler extends CefRequestHandlerAdapter {
-		private static final String FUNCTION_SCHEME = "https";
 		private static final String FUNCTION_HOST = "function"+new Random().nextInt();
 
 		@Override
@@ -924,7 +894,7 @@ final class Chromium extends WebBrowser {
 		}
 
 		static private boolean isFunction(CefBrowser browser, CefRequest request) {
-			if (!"POST".equals(request.getMethod()) || !request.getURL().contains(/*FUNCTION_SCHEME+"://"+*/FUNCTION_HOST))
+			if (!"POST".equals(request.getMethod()) || !request.getURL().contains(FUNCTION_HOST))
 				return false;
 			try {
 				int functionIndex = getFunctionIndex(request);
