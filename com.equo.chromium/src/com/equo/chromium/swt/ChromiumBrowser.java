@@ -29,4 +29,12 @@ public interface ChromiumBrowser {
 	}
 
 	List<Object> getErrors();
+
+	/**
+	 * Early load and init the chromium engine and libraries.
+	 * Usually not required.
+	 */
+	public static void earlyInit() throws ClassNotFoundException {
+		Class.forName("com.equo.chromium.swt.internal.Engine");
+	}
 }
