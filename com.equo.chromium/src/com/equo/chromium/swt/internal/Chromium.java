@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Stack;
 import java.util.Vector;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -163,7 +164,7 @@ final class Chromium extends WebBrowser {
 	private ExtraApi extraApi;
 	private boolean loadingPage;
 	private CefBrowserSwt cefBrowser;
-	private FunctionsResourceHandler functionsResourceHandler;
+	private Stack<FunctionsResourceHandler> functionsResourceHandler = new Stack<FunctionsResourceHandler>();
 	
 	Chromium() {
 		++nextId;
@@ -211,11 +212,7 @@ final class Chromium extends WebBrowser {
 		}
 		function.index = getNextFunctionIndex();
 		registerFunction(function);
-		
-		if (functionsResourceHandler == null) {
-			functionsResourceHandler = new FunctionsResourceHandler();
-		}
-		
+
 		String frames = function.getFrameNames() != null ? Arrays.stream(function.getFrameNames()).collect(Collectors.joining(";")) : "";
 		int id = cefBrowser != null && cefBrowser.getIdentifier() != -1 ? cefBrowser.getIdentifier() : nextId;
 		String encodedFn = "__browserFunction;"+function.index+";"+function.token+";"+RequestHandler.FUNCTION_HOST+";"+id+";"+function.top+";"+frames;
@@ -230,15 +227,15 @@ final class Chromium extends WebBrowser {
 		deregisterFunction(function);
 		clientHandler.removeMessageRouter(function.router);
 		function.router.dispose();
-		if (functions.isEmpty()) {
-			functionsResourceHandler = null;
-		}
 	}
 	
 	class FunctionsResourceHandler extends CefResourceHandlerAdapter {
-		private byte[] resp;
+		private byte[] resp = new byte[0];
 		private Throwable ex;
 		private int offset = 0;
+		private CefCallback callback;
+		private boolean eval;
+		public boolean inFunction;
 		@Override
 		public boolean processRequest(CefRequest request, CefCallback callback) {
 			if (isDisposed())
@@ -258,21 +255,42 @@ final class Chromium extends WebBrowser {
 						break;
 					}
 					Object payload = Eval.decodeType(encoded, SWT.ERROR_INVALID_ARGUMENT);
-					if (payload.getClass().isArray() && ((Object[])payload).length == 2) {
+					if (payload.getClass().isArray() && ((Object[])payload).length >= 2) {
 						String token = (String) ((Object[])payload)[0];
 						Object[] args = (Object[]) ((Object[])payload)[1];
 						BrowserFunction browserFunction = functions.get(index);
 						if (browserFunction != null && browserFunction.token.equals(token)) {
-							debug("processRequest calling function: "+browserFunction.getName());
-							Display.getDefault().asyncExec(() -> {
-								try {
-									Object ret = browserFunction.function(args);
-									resp = encodeType(ret).getBytes();
-								} catch(Throwable t) {
-									ex = t;
+							if (((Object[])payload).length == 3) {
+								debug("processRequest return function result: "+browserFunction.getName());
+								synchronized (browserFunction) {
+									if (resp.length > 0)
+										callback.Continue();
+									else
+										this.callback = callback;
 								}
-								callback.Continue();
-							});
+							} else {
+								debug("processRequest calling function: "+browserFunction.getName());
+								Display.getDefault().asyncExec(() -> {
+									Object ret = null;
+									try {
+										this.callback = callback;
+										inFunction = true;
+										ret = browserFunction.function(args);
+										synchronized (browserFunction) {
+											resp = encodeType(ret).getBytes();
+										}
+									} catch(Throwable t) {
+										ex = t;
+									} finally {
+										inFunction = false;
+										synchronized (browserFunction) {
+											if (this.callback != null)
+												this.callback.Continue();
+											this.callback = null;
+										}
+									}
+								});
+							}
 							return true;
 						}
 					}
@@ -295,6 +313,10 @@ final class Chromium extends WebBrowser {
 				response.setStatus(400);
 				response.setStatusText(ex.getMessage());
 				responseLength.set(0);
+			} else if (eval) {
+				response.setStatus(206);
+				response.setMimeType("text");
+				responseLength.set(resp.length);
 			} else {
 				response.setStatus(200);
 				response.setMimeType("text");
@@ -316,9 +338,23 @@ final class Chromium extends WebBrowser {
 				return true;
 			}
 			resp = new byte[0];
+			if (!eval) {
+				functionsResourceHandler.remove(this);
+			}
+			eval = false;
 			offset = 0;
 			ex = null;
 			return false;
+		}
+
+		public void setEval(String eval) {
+			if (callback != null) {
+				inFunction = false;
+				resp = eval.getBytes();
+				this.eval = true;
+				callback.Continue();
+				callback = null;
+			}
 		}
 
 	}
@@ -879,7 +915,9 @@ final class Chromium extends WebBrowser {
 					@Override
 					public CefResourceHandler getResourceHandler(CefBrowser browser, CefFrame frame,
 							CefRequest request) {
-						return getChromium(browser).functionsResourceHandler;
+						if (isPartial(request))
+							return getChromium(browser).functionsResourceHandler.peek();
+						return getChromium(browser).createFunctionResourceHandler();
 					}
 					
 					@Override
@@ -905,6 +943,15 @@ final class Chromium extends WebBrowser {
 			}
 		}
 
+		protected boolean isPartial(CefRequest request) {
+			try {
+				URI url = new URI(request.getURL());
+				return url.getFragment() != null;
+			} catch (URISyntaxException e) {
+				return false;
+			}
+		}
+		
 		private static int getFunctionIndex(CefRequest request) throws URISyntaxException {
 			URI url = new URI(request.getURL());
 			return Integer.parseInt(url.getQuery());
@@ -936,6 +983,11 @@ final class Chromium extends WebBrowser {
 			loadingPage = true;
 		}
 		return event.doit ? false : true;
+	}
+
+	protected CefResourceHandler createFunctionResourceHandler() {
+		functionsResourceHandler.push(new FunctionsResourceHandler());
+		return functionsResourceHandler.peek();
 	}
 
 	private void getAuthCredentials(String origin_url, String host, int port, String realm, String scheme, CefAuthCallback callback) {
@@ -1845,6 +1897,9 @@ final class Chromium extends WebBrowser {
 		checkBrowser();
 		
 		try {
+			if (!functionsResourceHandler.isEmpty() && functionsResourceHandler.peek().inFunction) {
+				return Eval.eval(script, getPlainUrl(url), cefBrowser, router, created, functionsResourceHandler.peek());
+			}
 			return Eval.eval(script, getPlainUrl(url), cefBrowser, router, created);
 		} catch (InterruptedException e) {
 			throw new SWTException("Script that was evaluated failed");

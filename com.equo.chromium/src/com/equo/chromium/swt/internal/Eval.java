@@ -2,6 +2,7 @@ package com.equo.chromium.swt.internal;
 
 import static com.equo.chromium.swt.internal.Engine.debug;
 
+import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -16,6 +17,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.widgets.Display;
 
+import com.equo.chromium.swt.internal.Chromium.FunctionsResourceHandler;
 import com.github.cliftonlabs.json_simple.JsonArray;
 import com.github.cliftonlabs.json_simple.JsonException;
 import com.github.cliftonlabs.json_simple.JsonObject;
@@ -29,6 +31,11 @@ class Eval {
 	}
 
 	static Object eval(String script, String url, CefBrowser cefBrowser, CefMessageRouter router, CompletableFuture<Boolean> created) throws InterruptedException, ExecutionException {
+		return eval(script, url, cefBrowser, router, created, null);
+	}
+
+	static Object eval(String script, String url, CefBrowser cefBrowser, CefMessageRouter router, CompletableFuture<Boolean> created, FunctionsResourceHandler functionsResourceHandler) throws InterruptedException, ExecutionException {
+		String id = Integer.toString(new Random().nextInt());
 		CompletableFuture<Object> evalResult = new CompletableFuture<>();
 		
 		CefMessageRouterHandler handler = new CefMessageRouterHandlerAdapter() {
@@ -38,7 +45,10 @@ class Eval {
 				debug("evaluate.returned: "+ request);
 				try {
 					callback.success(null);
-					evalResult.complete(decodeType(request, SWT.ERROR_INVALID_RETURN_VALUE));
+					Object[] decodeType = (Object[]) decodeType(request, SWT.ERROR_INVALID_RETURN_VALUE);
+					if (!id.equals(decodeType[0]))
+						return false;
+					evalResult.complete(decodeType[1]);
 				} catch (Throwable t) {
 					evalResult.completeExceptionally(t);
 				}
@@ -55,8 +65,7 @@ class Eval {
 				+ "  ret = (function() {\n"
 				+ "  "+script+"\n"
 				+ "  })();\n"
-//				+ "  console.log('eval return: '+ret);\n"
-				+ "  try { req = __encodeType(ret) } catch(e) { req = __encodeType("+SWT.ERROR_INVALID_RETURN_VALUE+", true) };\n"
+				+ "  try { req = __encodeType(['"+id+"', ret]) } catch(e) { req = __encodeType("+SWT.ERROR_INVALID_RETURN_VALUE+", true) };\n"
 				+ "  } catch(e) { req = __encodeType(e.toString(), true); }\n"
 				+ "} finally {"
 				+ "  window.chromiumEvaluate({request: req,";
@@ -72,7 +81,10 @@ class Eval {
 				display.sleep();
 		}
 		
-		cefBrowser.executeJavaScript(eval, url, 1);
+		if (functionsResourceHandler == null)
+			cefBrowser.executeJavaScript(eval, url, 1);
+		else
+			functionsResourceHandler.setEval(eval);
 		
 		while (!evalResult.isDone() && !display.isDisposed()) {
 			if (!display.readAndDispatch())
