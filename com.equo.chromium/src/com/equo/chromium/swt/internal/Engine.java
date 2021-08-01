@@ -69,16 +69,24 @@ class Engine {
 
 	private static Path findLibsPath() {
 		String chromiumPath = System.getProperty("chromium.path", "");
-		if (!chromiumPath.isEmpty() && Files.exists(Paths.get(chromiumPath).toAbsolutePath()))
+		if (!chromiumPath.isEmpty() && Files.exists(Paths.get(chromiumPath, SUBDIR).toAbsolutePath()))
 			return Paths.get(chromiumPath).toAbsolutePath().normalize();
-		String binariesBsn = "com.equo.chromium.cef."+SWT.getPlatform()+"."+getOS()+"."+getArch();
+		String arch = getArch();
+		String binariesBsn = "com.equo.chromium.cef."+SWT.getPlatform()+"."+getOS()+"."+arch;
 		try {
-			CodeSource codeSource = Class.forName("com.equo.chromium.ChromiumFragment").getProtectionDomain().getCodeSource();
+			Class<?> fragmentClass = Class.forName("com.equo.chromium.ChromiumFragment");
+			CodeSource codeSource = fragmentClass.getProtectionDomain().getCodeSource();
 			if (codeSource != null) {
 				URI loc = toURI(codeSource.getLocation());
+				Path fragment = Paths.get(loc);
 				try {
+					if (Files.isRegularFile(fragment)) {
+						Path extractPath = ResourceExpander.extractFromJar(chromiumPath, arch, SUBDIR, fragmentClass);
+						if (extractPath != null)
+							return extractPath;
+					}
 					// tycho surefire explodes the jar but does not set files executables.
-					Files.walkFileTree(Paths.get(loc), new SimpleFileVisitor<Path>() {
+					Files.walkFileTree(fragment, new SimpleFileVisitor<Path>() {
 						@Override
 						public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
 							return FileVisitResult.CONTINUE;
@@ -92,7 +100,7 @@ class Engine {
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
-				return Paths.get(loc);
+				return fragment;
 			}
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();

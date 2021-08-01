@@ -376,7 +376,7 @@ final class Chromium extends WebBrowser {
 			}
 		};
 		if (Boolean.getBoolean("chromium.headless")) {
-			chromium.getDisplay().timerExec(300, () -> {if (paintListener != null) paintListener.paintControl(null);});
+			chromium.getDisplay().timerExec(100, () -> {if (paintListener != null) paintListener.paintControl(null);});
 		} else {
 			chromium.addPaintListener(paintListener);
 		}
