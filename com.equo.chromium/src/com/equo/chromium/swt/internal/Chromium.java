@@ -9,6 +9,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -250,7 +251,7 @@ final class Chromium extends WebBrowser {
 					for (CefPostDataElement el : elements) {
 						byte[] payload = new byte[el.getBytesCount()];
 						el.getBytes(payload.length, payload);
-						encoded = new String(payload);
+						encoded = new String(payload, StandardCharsets.UTF_8);
 						debug("processRequest el: "+encoded);
 						break;
 					}
@@ -277,7 +278,7 @@ final class Chromium extends WebBrowser {
 										inFunction = true;
 										ret = browserFunction.function(args);
 										synchronized (browserFunction) {
-											resp = encodeType(ret).getBytes();
+											resp = encodeType(ret).getBytes(StandardCharsets.UTF_8);
 										}
 									} catch(Throwable t) {
 										ex = t;
