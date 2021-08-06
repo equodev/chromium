@@ -674,6 +674,9 @@ final class Chromium extends WebBrowser {
 //				enableProgress.complete(true);
 //			}
 		created.complete(true);
+		if (!"about:blank".equals(this.url)) {
+			enableProgress.complete(true);
+		}
 
 		if (isPopup != null) {
 			org.eclipse.swt.browser.WindowEvent event = new org.eclipse.swt.browser.WindowEvent(chromium);
