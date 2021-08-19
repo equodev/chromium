@@ -142,7 +142,6 @@ final class Chromium extends WebBrowser {
 //	private static CefClientSwt popupClientHandler;
 //	private static LifeSpanHandler popupLifeSpanHandler;
 	private static CefMessageRouter router;
-	private static int nextId = 0;
 	
 	Browser chromium;
 	OpenWindowListener[] openWindowListeners = new OpenWindowListener[0];
@@ -168,7 +167,6 @@ final class Chromium extends WebBrowser {
 	private Stack<FunctionsResourceHandler> functionsResourceHandler = new Stack<FunctionsResourceHandler>();
 	
 	Chromium() {
-		++nextId;
 	}
 	
 	public void addOpenWindowListener (OpenWindowListener listener) {
@@ -205,22 +203,24 @@ final class Chromium extends WebBrowser {
 	
 	@Override
 	public void createFunction (BrowserFunction function) {
-		for (BrowserFunction current : functions.values()) {
-			if (current.getName().equals (function.getName())) {
-				destroyFunction(current);
-				break;
+		created.thenRun(() -> {
+			for (BrowserFunction current : functions.values()) {
+				if (current.getName().equals (function.getName())) {
+					destroyFunction(current);
+					break;
+				}
 			}
-		}
-		function.index = getNextFunctionIndex();
-		registerFunction(function);
-
-		String frames = function.getFrameNames() != null ? Arrays.stream(function.getFrameNames()).collect(Collectors.joining(";")) : "";
-		int id = cefBrowser != null && cefBrowser.getIdentifier() != -1 ? cefBrowser.getIdentifier() : nextId;
-		String encodedFn = "__browserFunction;"+function.index+";"+function.token+";"+RequestHandler.FUNCTION_HOST+";"+id+";"+function.top+";"+frames;
-		CefMessageRouterConfig config = new CefMessageRouterConfig(encodedFn, function.getName());
-		CefMessageRouter fnRouter = CefMessageRouter.create(config);
-		getClientHandler().addMessageRouter(fnRouter);
-		function.router = fnRouter;
+			function.index = getNextFunctionIndex();
+			registerFunction(function);
+			
+			String frames = function.getFrameNames() != null ? Arrays.stream(function.getFrameNames()).collect(Collectors.joining(";")) : "";
+			int id = cefBrowser.getIdentifier();
+			String encodedFn = "__browserFunction;"+function.index+";"+function.token+";"+RequestHandler.FUNCTION_HOST+";"+id+";"+function.top+";"+frames;
+			CefMessageRouterConfig config = new CefMessageRouterConfig(encodedFn, function.getName());
+			CefMessageRouter fnRouter = CefMessageRouter.create(config);
+			getClientHandler().addMessageRouter(fnRouter);
+			function.router = fnRouter;
+		});
 	}
 
 	public void destroyFunction (BrowserFunction function) {
@@ -843,6 +843,13 @@ final class Chromium extends WebBrowser {
 			return;
 		}
 		debugPrint("on_address_change to " + event.location + " " + (event.top ? "main" : "!main"));
+		boolean crossOrigin = true;
+		if (crossOrigin) {
+			for (BrowserFunction current : functions.values()) {
+				getClientHandler().removeMessageRouter(current.router);
+				getClientHandler().addMessageRouter(current.router);
+			}
+		}
 		chromium.getDisplay().asyncExec(() -> {
 			for (LocationListener listener : locationListeners) {
 				listener.changed(event);
