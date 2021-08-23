@@ -1862,7 +1862,7 @@ final class Chromium extends WebBrowser {
 	
 	@Override
 	public boolean back() {
-		if (cefBrowser.canGoBack()) {
+		if (cefBrowser != null && cefBrowser.canGoBack()) {
 			cefBrowser.goBack();
 			return true;
 		}
@@ -1871,7 +1871,7 @@ final class Chromium extends WebBrowser {
 
 	@Override
 	public boolean forward() {
-		if (cefBrowser.canGoForward()) {
+		if (cefBrowser != null && cefBrowser.canGoForward()) {
 			cefBrowser.goForward();
 			return true;
 		}
@@ -1979,11 +1979,17 @@ final class Chromium extends WebBrowser {
 
 	@Override
 	public boolean isBackEnabled() {
+		if (cefBrowser == null) {
+			return false;
+		}
 		return cefBrowser.canGoBack();
 	}
 
 	@Override
 	public boolean isForwardEnabled() {
+		if (cefBrowser == null) {
+			return false;
+		}
 		return cefBrowser.canGoForward();
 	}
 	
