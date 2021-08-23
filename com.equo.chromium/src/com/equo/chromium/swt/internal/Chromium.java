@@ -115,9 +115,9 @@ import org.eclipse.swt.widgets.Text;
 import com.equo.chromium.swt.Browser;
 import com.equo.chromium.swt.BrowserFunction;
 import com.equo.chromium.swt.ChromiumBrowser;
+import com.equo.chromium.swt.ChromiumBrowser.ConsoleListener;
 import com.equo.chromium.swt.OpenWindowListener;
 import com.equo.chromium.swt.WindowEvent;
-import com.equo.chromium.swt.ChromiumBrowser.ConsoleListener;
 import com.github.cliftonlabs.json_simple.Jsoner;
 
 @SuppressWarnings("restriction")
@@ -165,7 +165,8 @@ final class Chromium extends WebBrowser {
 	private boolean loadingPage;
 	private CefBrowserSwt cefBrowser;
 	private Stack<FunctionsResourceHandler> functionsResourceHandler = new Stack<FunctionsResourceHandler>();
-	
+	private HashMap<String, Boolean> changedCache = new HashMap<String, Boolean>();
+
 	Chromium() {
 	}
 	
@@ -832,6 +833,15 @@ final class Chromium extends WebBrowser {
 
 	private void onAddressChange(CefFrame frame, String url) {
 		if (isDisposed()) return;
+
+		if (Boolean.getBoolean("chromium.turbolinks") && !"about:blank".equals(url)) {
+			// Filter changed event when there was no changing event.
+			if (!changedCache.containsKey(url)) {
+				return;
+			}
+			changedCache.remove(url);
+		}
+		
 		LocationEvent event = new LocationEvent(chromium);
 		event.display = chromium.getDisplay();
 		event.widget = chromium;
@@ -936,6 +946,18 @@ final class Chromium extends WebBrowser {
 					}
 				};
 			}
+
+			boolean isTurbolinkRequest = "empty".equals(request.getHeaderByName("sec-fetch-dest")) && !"navigate".equals(request.getHeaderByName("Sec-Fetch-Mode"))
+					&& !"websocket".equals(request.getHeaderByName("Sec-Fetch-Mode"));
+
+			if (Boolean.getBoolean("chromium.turbolinks") && isTurbolinkRequest) {
+				return new CefResourceRequestHandlerAdapter() {
+					@Override
+					public boolean onBeforeResourceLoad(CefBrowser browser, CefFrame frame, CefRequest request) {
+						return true;
+					}
+				};
+			}
 			return null;
 		}
 
@@ -984,6 +1006,11 @@ final class Chromium extends WebBrowser {
 		} finally {
 //			loopDisable = false;
 		}
+
+		if(Boolean.getBoolean("chromium.turbolinks")) {
+			changedCache.put(event.location, true);
+		}
+
 		if (!event.doit) {
 			debugPrint("canceled nav, dependats:"+enableProgress.getNumberOfDependents());
 			enableProgress = new CompletableFuture<>();
