@@ -351,7 +351,7 @@ final class Chromium extends WebBrowser {
 		public void setEval(String eval) {
 			if (callback != null) {
 				inFunction = false;
-				resp = eval.getBytes();
+				resp = eval.getBytes(StandardCharsets.UTF_8);
 				this.eval = true;
 				callback.Continue();
 				callback = null;
