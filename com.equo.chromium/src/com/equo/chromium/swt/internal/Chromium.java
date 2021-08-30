@@ -147,8 +147,6 @@ final class Chromium extends WebBrowser {
 	OpenWindowListener[] openWindowListeners = new OpenWindowListener[0];
 	private CefFocusListener focusListener;
 	private String url;
-	private String postData;
-	private String[] headers;
 	private String title = "";
 	private CompletableFuture<Boolean> enableProgress = new CompletableFuture<>();
 	private CompletableFuture<Boolean> created = new CompletableFuture<>();
@@ -166,6 +164,7 @@ final class Chromium extends WebBrowser {
 	private CefBrowserSwt cefBrowser;
 	private Stack<FunctionsResourceHandler> functionsResourceHandler = new Stack<FunctionsResourceHandler>();
 	private HashMap<String, Boolean> changedCache = new HashMap<String, Boolean>();
+	private CompletableFuture<Void> urls = CompletableFuture.completedFuture(null);
 
 	Chromium() {
 	}
@@ -378,7 +377,7 @@ final class Chromium extends WebBrowser {
 			}
 		};
 		if (Boolean.getBoolean("chromium.headless")) {
-			chromium.getDisplay().timerExec(100, () -> {if (paintListener != null) paintListener.paintControl(null);});
+			chromium.getDisplay().timerExec(10, () -> {if (paintListener != null) paintListener.paintControl(null);});
 		} else {
 			chromium.addPaintListener(paintListener);
 		}
@@ -430,8 +429,7 @@ final class Chromium extends WebBrowser {
 			chromium.addListener(SWT.KeyDown, traverseListener); // required to take focus on tab
 		}
 
-		String localUrl = (postData != null || headers != null) ? "about:blank" : url;
-		cefBrowser = (CefBrowserSwt) clientHandler.createBrowser(localUrl, false, false, null);
+		cefBrowser = (CefBrowserSwt) clientHandler.createBrowser("about:blank", false, false, null);
 		cefBrowser.createImmediately(chromium);
 	}
 
@@ -674,9 +672,6 @@ final class Chromium extends WebBrowser {
 //				enableProgress.complete(true);
 //			}
 		created.complete(true);
-		if (!"about:blank".equals(this.url)) {
-			enableProgress.complete(true);
-		}
 
 		if (isPopup != null) {
 			org.eclipse.swt.browser.WindowEvent event = new org.eclipse.swt.browser.WindowEvent(chromium);
@@ -1015,7 +1010,7 @@ final class Chromium extends WebBrowser {
 		}
 
 		if (!event.doit) {
-			debugPrint("canceled nav, dependats:"+enableProgress.getNumberOfDependents());
+			debugPrint("canceled nav");
 			enableProgress = new CompletableFuture<>();
 		} else {
 			loadingPage = true;
@@ -2061,29 +2056,15 @@ final class Chromium extends WebBrowser {
 		// if not yet created will be used when created
 		this.url = url;
 		jsEnabled = jsEnabledOnNextPage;
-		if (cefBrowser != null) {
-			debugPrint("set url: " + getPlainUrl(url));
-			ignoreFirstFocus = true;
-			doSetUrl(url, postData, headers);
-		} else if (postData != null || headers != null) {
-			this.postData = postData;
-			this.headers = headers;
-			doSetUrl(url, postData, headers);
-		}
+		debugPrint("set url: " + getPlainUrl(url));
+		ignoreFirstFocus = true;
+		urls = enableProgress.runAfterBoth(urls, () -> {
+			doSetUrl(Chromium.this.url, postData, headers);
+		});
 		return true;
 	}
 
 	private void doSetUrl(String url, String postData, String[] headers) {
-		enableProgress.thenRun(() -> {
-			if (isDisposed()) return;
-//			debugPrint("load url");
-			doSetUrlPost(url, postData, headers);
-			this.postData = null;
-			this.headers = null;
-		});
-	}
-
-	private void doSetUrlPost(String url, String postData, String[] headers) {
 		if (postData == null && headers == null) {
 			cefBrowser.loadURL(url);
 		} else {
