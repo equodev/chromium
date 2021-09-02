@@ -1814,6 +1814,8 @@ final class Chromium extends WebBrowser {
 					CefCookieManager globalManager = CefCookieManager.getGlobalManager();
 					if (globalManager != null) {
 						WebBrowser.CookieResult = globalManager.setCookie(cookieUrl, cefCookie);
+//						debug("set cookie: "+ WebBrowser.CookieResult + " " + cookie.getName());
+						globalManager.flushStore(null);
 					}
 				});
 				break;
@@ -1831,29 +1833,33 @@ final class Chromium extends WebBrowser {
 						cookieVisited.set(true);
 						return false;
 					}
-					else if (count == total) {
+					else if (count+1 == total) {
 						cookieVisited.set(true);
 					}
 					return true;
 				}
 			};
-			CefCookieManager globalManager = CefCookieManager.getGlobalManager();
-			if (globalManager == null) {
-				throw new SWTException("Failed to get cookies, cookie manager not ready");
-			}
-			boolean result = globalManager.visitUrlCookies(WebBrowser.CookieUrl, true, visitor);
-			if (!result) {
-				throw new SWTException("Failed to get cookies");
-			}
-			long end = System.currentTimeMillis()+1000;
-			Display display = Display.getCurrent();
-			while (!cookieVisited.get() && !display.isDisposed() && System.currentTimeMillis() < end) {
-//				debug("in cookie loop");
-				if (!display.readAndDispatch()) {
-					display.sleep();
+			for (int i = 0; i < 2; i++) {
+				CefCookieManager globalManager = CefCookieManager.getGlobalManager();
+				if (globalManager == null) {
+					throw new SWTException("Failed to get cookies, cookie manager not ready");
 				}
+				boolean result = globalManager.visitUrlCookies(WebBrowser.CookieUrl, true, visitor);
+				if (!result) {
+					throw new SWTException("Failed to get cookies");
+				}
+				long end = System.currentTimeMillis()+250;
+				Display display = Display.getCurrent();
+				while (!cookieVisited.get() && !display.isDisposed() && System.currentTimeMillis() < end) {
+//					debug("in cookie loop");
+					if (!display.readAndDispatch()) {
+						display.sleep();
+					}
+				}
+//				debug("end cookie loop");
+				if (cookieVisited.get())
+					return;
 			}
-//			debug("end cookie loop");
 		};
 	}
 
