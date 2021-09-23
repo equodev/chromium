@@ -53,6 +53,7 @@ import org.cef.handler.CefDisplayHandlerAdapter;
 import org.cef.handler.CefDownloadHandlerAdapter;
 import org.cef.handler.CefFocusHandler.FocusSource;
 import org.cef.handler.CefFocusHandlerAdapter;
+import org.cef.handler.CefJSDialogHandler;
 import org.cef.handler.CefJSDialogHandler.JSDialogType;
 import org.cef.handler.CefJSDialogHandlerAdapter;
 import org.cef.handler.CefKeyboardHandler.CefKeyEvent;
@@ -97,6 +98,7 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.internal.Compatibility;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.program.Program;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -943,6 +945,22 @@ final class Chromium extends WebBrowser {
 						allowOsExecution.set(true);
 					}
 				};
+			} else {
+				String requestUrl = request.getURL();
+				if (!requestUrl.startsWith("http") && !requestUrl.startsWith("data:text/html")
+						&& shouldAllowProtocol(requestUrl, browser)) {
+					return new CefResourceRequestHandlerAdapter() {
+
+						@Override
+						public void onProtocolExecution(CefBrowser browser, CefFrame frame, CefRequest request,
+								BoolRef allowOsExecution) {
+							debug("onProtocolExecution: " + request.getURL(), browser);
+							allowOsExecution.set(true);
+							browser.stopLoad();
+							Program.launch(requestUrl);
+						}
+					};
+				}
 			}
 
 			boolean isTurbolinkRequest = "empty".equals(request.getHeaderByName("sec-fetch-dest")) && !"navigate".equals(request.getHeaderByName("Sec-Fetch-Mode"))
@@ -979,12 +997,50 @@ final class Chromium extends WebBrowser {
 				return false;
 			}
 		}
-		
+
 		private static int getFunctionIndex(CefRequest request) throws URISyntaxException {
 			URI url = new URI(request.getURL());
 			return Integer.parseInt(url.getQuery());
 		}
-		
+	
+		private boolean shouldAllowProtocol(String requestUrl, CefBrowser browser) {
+			String[] protocolProps = System.getProperty("chromium.custom_protocol", "").split(";");
+			if (protocolProps.length > 1) {
+				for (String protocolAllow : protocolProps) {
+					if (requestUrl.startsWith(protocolAllow)) {
+						return true;
+					}
+				}
+				return false;
+			}
+
+			String allowType = protocolProps[0].toLowerCase();
+			if ("true".equals(allowType)) {
+				return true;
+			}
+			if ("confirm".equals(allowType)) {
+				CompletableFuture<Boolean> dialogSuccess = new CompletableFuture<>();
+				CefJSDialogCallback callback = new CefJSDialogCallback() {
+
+					@Override
+					public void Continue(boolean success, String user_input) {
+						dialogSuccess.complete(success);
+					}
+				};
+				Display.getDefault().syncExec(() -> {
+					getChromium(browser).openJsDialog(CefJSDialogHandler.JSDialogType.JSDIALOGTYPE_CONFIRM, "",
+							"The link will be opened with the operating system.", "Do you want to continue?",
+							"default_prompt_text", callback);
+				});
+
+				try {
+					return dialogSuccess.get();
+				} catch (Exception e) {
+				}
+			}
+
+			return false;
+		}
 	}
 	
 	private boolean onBeforeBrowse(CefFrame frame, CefRequest request) {
