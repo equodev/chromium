@@ -1874,6 +1874,7 @@ final class Chromium extends WebBrowser {
 			//debugPrint("focusLost");
 //			browserFocus(false);
 			// System.out.println(Display.getDefault().getFocusControl());
+			cefBrowser.setFocus(false);
 			hasFocus = false;
 			enabled = true;
 		}
@@ -1886,6 +1887,7 @@ final class Chromium extends WebBrowser {
 			enabled = false;
 			chromium.getDisplay().asyncExec(()-> {
 //				browserFocus(true);
+				cefBrowser.setFocus(true);
 			});
 			enabled = true;
 		}
