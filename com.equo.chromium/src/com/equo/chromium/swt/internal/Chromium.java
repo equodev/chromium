@@ -44,11 +44,13 @@ import org.cef.callback.CefContextMenuParams;
 import org.cef.callback.CefCookieVisitor;
 import org.cef.callback.CefDownloadItem;
 import org.cef.callback.CefDownloadItemCallback;
+import org.cef.callback.CefFileDialogCallback;
 import org.cef.callback.CefJSDialogCallback;
 import org.cef.callback.CefMenuModel;
 import org.cef.callback.CefRequestCallback;
 import org.cef.callback.CefStringVisitor;
 import org.cef.handler.CefContextMenuHandlerAdapter;
+import org.cef.handler.CefDialogHandler;
 import org.cef.handler.CefDisplayHandlerAdapter;
 import org.cef.handler.CefDownloadHandlerAdapter;
 import org.cef.handler.CefFocusHandler.FocusSource;
@@ -136,6 +138,7 @@ final class Chromium extends WebBrowser {
 	private static KeyboardHandler keyboardHandler;
 	private static LifeSpanHandler lifeSpanHandler;
 	private static LoadHandler loadHandler;
+	private static DialogHandler dialogHandler;
 	private static DisplayHandler displayHandler;
 	private static RequestHandler requestHandler;
 	private static JsDialogHandler jsDialogHandler;
@@ -568,6 +571,7 @@ final class Chromium extends WebBrowser {
 		setKeyboardHandler();
 		setLifeSpanHandler();
 		setLoadHandler();
+		setDialogHandler();
 		setDisplayHandler();
 		setRequestHandler();
 		setJsdialogHandler();
@@ -787,11 +791,71 @@ final class Chromium extends WebBrowser {
 		}
 	}
 
+	private static void setDialogHandler() {
+		dialogHandler = new DialogHandler();
+		clientHandler.addDialogHandler(dialogHandler);
+	}
+
+	static class DialogHandler implements CefDialogHandler {
+		@Override
+		public boolean onFileDialog(CefBrowser browser, FileDialogMode mode, String title, String defaultFilePath,
+				Vector<String> acceptFilters, int selectedAcceptFilter, CefFileDialogCallback callback) {
+			// debug("onFileDialog", browser);
+			return getChromium(browser).onFileDialog(mode, title, defaultFilePath, acceptFilters, selectedAcceptFilter,
+					callback);
+		}
+	}
+
+	private boolean onFileDialog(CefDialogHandler.FileDialogMode mode, String title, String defaultFilePath,
+			Vector<String> acceptFilters, int selectedAcceptFilter, CefFileDialogCallback callback) {
+		if ("gtk".equals(SWT.getPlatform())) {
+			int swtMode;
+			String defaultDlgTitle;
+			switch (mode) {
+			case FILE_DIALOG_OPEN_MULTIPLE:
+				swtMode = SWT.OPEN | SWT.MULTI;
+				defaultDlgTitle = "Open Files";
+				break;
+			case FILE_DIALOG_SAVE:
+				swtMode = SWT.SAVE;
+				defaultDlgTitle = "Save File";
+				break;
+			default:
+				swtMode = SWT.OPEN;
+				defaultDlgTitle = "Open File";
+				break;
+			}
+
+			String dlgTitle = title == null || title.isEmpty() ? defaultDlgTitle : title;
+
+			FileDialog dlg = new FileDialog(chromium.getShell(), swtMode);
+			dlg.setText(dlgTitle);
+			String[] acceptFiltersArray = MimeTypeLinux.getExtensions(acceptFilters);
+			dlg.setFilterExtensions(acceptFiltersArray);
+			dlg.setOverwrite(true);
+
+			String selected = dlg.open();
+			if (selected != null) {
+				Vector<String> filePaths = new Vector<String>();
+				for (String fileName : dlg.getFileNames()) {
+					filePaths.add(Paths.get(dlg.getFilterPath(), fileName).toString());
+				}
+				int filterIndex = dlg.getFilterIndex();
+				filterIndex = (filterIndex < 0 || filterIndex >= acceptFiltersArray.length) ? selectedAcceptFilter : filterIndex;
+				callback.Continue(filterIndex, filePaths);
+			} else {
+				callback.Cancel();
+			}
+			return true;
+		}
+		return false;
+	}
+
 	private static void setDisplayHandler() {
 		displayHandler = new DisplayHandler();
 		clientHandler.addDisplayHandler(displayHandler);
 	}
-	
+
 	static class DisplayHandler extends CefDisplayHandlerAdapter {
 		@Override
 		public void onAddressChange(CefBrowser browser, CefFrame frame, String url) {
