@@ -1652,36 +1652,36 @@ final class Chromium extends WebBrowser {
 					return true;
 				}
 			} else if (event.modifiers == 128 && event.type == EventType.KEYEVENT_RAWKEYDOWN) {
-//				switch (event.native_key_code) {
-//				// Select all: command + a
-//				case 0:
-//					cefBrowser.getMainFrame().selectAll();
-//					return true;
-//				// Copy: command + c
-//				case 8:
-//					cefBrowser.getMainFrame().copy();
-//					return true;
-//				// Paste: command + v
-//				case 9:
-//					cefBrowser.getMainFrame().paste();
-//					return true;
-//				// Cut: command + x
-//				case 7:
-//					cefBrowser.getMainFrame().cut();
-//					return true;
-//				// Undo: command + z
-//				case 6:
-//					cefBrowser.getMainFrame().undo();
-//					return true;
-//				default:
-//					return false;
-//				}
+				switch (event.native_key_code) {
+				// Select all: command + a
+				case 0:
+					cefBrowser.getMainFrame().selectAll();
+					return true;
+				// Copy: command + c
+				case 8:
+					cefBrowser.getMainFrame().copy();
+					return true;
+				// Paste: command + v
+				case 9:
+					cefBrowser.getMainFrame().paste();
+					return true;
+				// Cut: command + x
+				case 7:
+					cefBrowser.getMainFrame().cut();
+					return true;
+				// Undo: command + z
+				case 6:
+					cefBrowser.getMainFrame().undo();
+					return true;
+				default:
+					return false;
+				}
 			} else if (event.modifiers == 130 && event.type == EventType.KEYEVENT_RAWKEYDOWN) {
 				// Redo: command + shift + z
-//				if (event.native_key_code == 6) {
-//					cefBrowser.getMainFrame().redo();
-//					return true;
-//				}
+				if (event.native_key_code == 6) {
+					cefBrowser.getMainFrame().redo();
+					return true;
+				}
 			}
 		}
 		return false;
