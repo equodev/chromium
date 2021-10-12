@@ -44,6 +44,7 @@ class Engine {
 
 	private static CefApp app;
 	static CompletableFuture<Boolean> ready = new CompletableFuture<>();
+	private static boolean closing;
 	
 	private static void loadLib() {
 		if (OS.isLinux()) {
@@ -144,7 +145,8 @@ class Engine {
 				} catch (NumberFormatException e) {
 				}
 				Path data = Paths.get(System.getProperty("user.home"), ".equo");
-				settings.cache_path = System.getProperty("chromium.cache_path", data.resolve("cefcache").toString());
+				String cache = data.resolve("cefcache").toAbsolutePath().toString();
+				settings.cache_path = System.getProperty("chromium.cache_path", cache);
 				settings.log_file = data.resolve("cef.log").toString();
 				settings.log_severity = debug ? CefSettings.LogSeverity.LOGSEVERITY_INFO : CefSettings.LogSeverity.LOGSEVERITY_DISABLE;
 
@@ -183,6 +185,17 @@ class Engine {
 					public void onContextInitialized() {
 						ready.complete(true);
 					}
+					
+					@Override
+					public boolean onBeforeTerminate() {
+						if (shuttindDown) {
+							// already shutdown
+							return false;
+						}
+						shuttindDown = true;
+						internalShutdown();
+						return true;
+					}
 				});
 				try {
 					app = CefApp.getInstance(settings);
@@ -194,13 +207,18 @@ class Engine {
 						throw e;
 					}
 				}
+				Display.getDefault().addListener(SWT.Close, e -> {
+					closing = true;
+				});
 				Display.getDefault().disposeExec(() -> {
 					if (shuttindDown) {
 						// already shutdown
 						return;
 					}
-					shuttindDown = true;
-					internalShutdown();
+					if (!OS.isMacintosh() || !closing) {
+						shuttindDown = true;
+						internalShutdown();
+					}
 				});
 			}
 		}
