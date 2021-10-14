@@ -12,6 +12,7 @@
 	<properties>
 		<tycho.version>1.4.0</tycho.version>
 		<cbi.jarsigner.skip>true</cbi.jarsigner.skip>
+		<qual></qual>
 		<mvn.space></mvn.space>
 		<mvn.folder></mvn.folder>
 	</properties>
@@ -64,6 +65,14 @@
 				<artifactId>tycho-maven-plugin</artifactId>
 				<version>${tycho.version}</version>
 				<extensions>true</extensions>
+			</plugin>
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-packaging-plugin</artifactId>
+				<version>${tycho.version}</version>
+				<configuration>
+					<format>yyyyMMddHHmm${qual}</format>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
