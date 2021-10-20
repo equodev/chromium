@@ -434,7 +434,7 @@ final class Chromium extends WebBrowser {
 			chromium.addListener(SWT.KeyDown, traverseListener); // required to take focus on tab
 		}
 
-		cefBrowser = (CefBrowserSwt) clientHandler.createBrowser("about:blank", false, false, null);
+		cefBrowser = (CefBrowserSwt) clientHandler.createBrowser(this.url, false, false, null);
 		cefBrowser.createImmediately(chromium);
 	}
 
