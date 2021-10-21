@@ -171,6 +171,7 @@ final class Chromium extends WebBrowser {
 	private Stack<FunctionsResourceHandler> functionsResourceHandler = new Stack<FunctionsResourceHandler>();
 	private HashMap<String, Boolean> changedCache = new HashMap<String, Boolean>();
 	private CompletableFuture<Void> urls = CompletableFuture.completedFuture(null);
+	private boolean isOpenDialog = false;
 
 	Chromium() {
 	}
@@ -1426,7 +1427,9 @@ final class Chromium extends WebBrowser {
 			MessageBox box = new MessageBox(shell, style);
 			box.setText(title);
 			box.setMessage(prompt != null ? msg + "\n\n"+prompt : msg);
+			isOpenDialog = true;
 			int open = box.open();
+			isOpenDialog = false;
 			close.accept(open);
 		} else {
 			@SuppressWarnings("unchecked")
@@ -2081,11 +2084,10 @@ final class Chromium extends WebBrowser {
 				return;
 			//debugPrint("focusGained");
 			enabled = false;
-			chromium.getDisplay().asyncExec(()-> {
 //				browserFocus(true);
-				if (cefBrowser != null)
-					cefBrowser.setFocus(true);
-			});
+			if (cefBrowser != null && !isOpenDialog) {
+				cefBrowser.setFocus(true);
+			}
 			enabled = true;
 		}
 	}
