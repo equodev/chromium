@@ -84,6 +84,13 @@
 						<goals>
 							<goal>plugin-source</goal>
 						</goals>
+						<configuration>
+							<excludes>
+								<exclude>**/internal/spi/**</exclude>
+								<exclude>**/org/**</exclude>
+							</excludes>
+							<labelSuffix></labelSuffix>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>

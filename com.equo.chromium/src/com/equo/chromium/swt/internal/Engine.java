@@ -13,6 +13,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -24,10 +25,20 @@ import org.cef.OS;
 import org.cef.SystemBootstrap;
 import org.cef.SystemBootstrap.Loader;
 import org.cef.browser.CefBrowser;
+import org.cef.browser.CefFrame;
+import org.cef.callback.CefSchemeHandlerFactory;
+import org.cef.callback.CefSchemeRegistrar;
 import org.cef.handler.CefAppHandlerAdapter;
+import org.cef.handler.CefResourceHandler;
+import org.cef.network.CefRequest;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.widgets.Display;
+
+import com.equo.chromium.swt.internal.spi.DelegatingCefResourceHandler;
+import com.equo.chromium.swt.internal.spi.SchemeDomainPair;
+import com.equo.chromium.swt.internal.spi.SchemeHandler;
+import com.equo.chromium.swt.internal.spi.SchemeHandlerManager;
 
 class Engine {
 	static {
@@ -39,8 +50,8 @@ class Engine {
 	private static Path libsPath;
 
 	static final boolean debug = Boolean.valueOf(System.getProperty("chromium.debug", "false"));
-	
-	private static boolean shuttindDown;
+
+	private static boolean shuttingDown;
 
 	private static CefApp app;
 	static CompletableFuture<Boolean> ready = new CompletableFuture<>();
@@ -51,10 +62,11 @@ class Engine {
 			String backend = System.getenv("GDK_BACKEND");
 			String session = System.getenv("XDG_SESSION_TYPE");
 			if ("wayland".equals(session) && !"x11".equals(backend)) {
-				throw new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY, "To run Chromium on Wayland, set env var GDK_BACKEND=x11");
+				throw new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY,
+						"To run Chromium on Wayland, set env var GDK_BACKEND=x11");
 			}
 		}
-		
+
 		libsPath = findLibsPath().resolve(SUBDIR);
 		SystemBootstrap.setLoader(new Loader() {
 			@Override
@@ -73,7 +85,7 @@ class Engine {
 		if (!chromiumPath.isEmpty() && Files.exists(Paths.get(chromiumPath, SUBDIR).toAbsolutePath()))
 			return Paths.get(chromiumPath).toAbsolutePath().normalize();
 		String arch = getArch();
-		String binariesBsn = "com.equo.chromium.cef."+SWT.getPlatform()+"."+getOS()+"."+arch;
+		String binariesBsn = "com.equo.chromium.cef." + SWT.getPlatform() + "." + getOS() + "." + arch;
 		try {
 			Class<?> fragmentClass = Class.forName("com.equo.chromium.ChromiumFragment");
 			CodeSource codeSource = fragmentClass.getProtectionDomain().getCodeSource();
@@ -92,6 +104,7 @@ class Engine {
 						public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
 							return FileVisitResult.CONTINUE;
 						}
+
 						@Override
 						public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 							ResourceExpander.setExecutable(file.toFile());
@@ -108,22 +121,25 @@ class Engine {
 		} catch (URISyntaxException e) {
 			e.printStackTrace();
 		}
-		SWTException swtError = new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY, "plugin/jar '"+binariesBsn+"' is missing and system property 'chromium.path' is not correctly set.");
+		SWTException swtError = new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY, "plugin/jar '" + binariesBsn
+				+ "' is missing and system property 'chromium.path' is not correctly set.");
 		throw swtError;
 	}
 
 	/**
-	 * Returns the URL as a URI. This method will handle URLs that are
-	 * not properly encoded (for example they contain unencoded space characters).
+	 * Returns the URL as a URI. This method will handle URLs that are not properly
+	 * encoded (for example they contain unencoded space characters).
 	 * 
 	 * @param url The URL to convert into a URI
 	 * @return A URI representing the given URL
 	 */
 	private static URI toURI(URL url) throws URISyntaxException {
-		//URL behaves differently across platforms so for file: URLs we parse from string form
+		// URL behaves differently across platforms so for file: URLs we parse from
+		// string form
 		if (SCHEME_FILE.equals(url.getProtocol())) {
 			String pathString = url.toExternalForm().substring(5);
-			//ensure there is a leading slash to handle common malformed URLs such as file:c:/tmp
+			// ensure there is a leading slash to handle common malformed URLs such as
+			// file:c:/tmp
 			if (pathString.indexOf('/') != 0)
 				pathString = '/' + pathString;
 			return new URI(SCHEME_FILE, null, pathString, null);
@@ -131,29 +147,34 @@ class Engine {
 		try {
 			return new URI(url.toExternalForm());
 		} catch (URISyntaxException e) {
-			//try multi-argument URI constructor to perform encoding
-			return new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
+			// try multi-argument URI constructor to perform encoding
+			return new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(),
+					url.getQuery(), url.getRef());
 		}
 	}
-	
+
 	static void initCEF() {
 		synchronized (Engine.class) {
 			if (app == null) {
 				CefSettings settings = new CefSettings();
 				try {
-					settings.remote_debugging_port = Integer.parseInt(System.getProperty("chromium.remote_debugging_port", "0"));
+					settings.remote_debugging_port = Integer
+							.parseInt(System.getProperty("chromium.remote_debugging_port", "0"));
 				} catch (NumberFormatException e) {
 				}
 				Path data = Paths.get(System.getProperty("user.home"), ".equo");
 				String cache = data.resolve("cefcache").toAbsolutePath().toString();
 				settings.cache_path = System.getProperty("chromium.cache_path", cache);
 				settings.log_file = data.resolve("cef.log").toString();
-				settings.log_severity = debug ? CefSettings.LogSeverity.LOGSEVERITY_INFO : CefSettings.LogSeverity.LOGSEVERITY_DISABLE;
+				settings.log_severity = debug ? CefSettings.LogSeverity.LOGSEVERITY_INFO
+						: CefSettings.LogSeverity.LOGSEVERITY_DISABLE;
 
 				boolean external_message_pump = true;
 				if (OS.isMacintosh()) {
-					settings.browser_subprocess_path = libsPath.resolve("jcef Helper.app/Contents/MacOS/jcef Helper").toString();
-					settings.resources_dir_path = libsPath.resolve("Chromium Embedded Framework.framework").resolve("Resources").toString();
+					settings.browser_subprocess_path = libsPath.resolve("jcef Helper.app/Contents/MacOS/jcef Helper")
+							.toString();
+					settings.resources_dir_path = libsPath.resolve("Chromium Embedded Framework.framework")
+							.resolve("Resources").toString();
 					external_message_pump = false;
 				} else if (OS.isWindows()) {
 					settings.browser_subprocess_path = libsPath.resolve("jcef_helper.exe").toString();
@@ -165,38 +186,74 @@ class Engine {
 					settings.locales_dir_path = libsPath.resolve("locales").toString();
 					external_message_pump = false;
 				}
-				settings.external_message_pump = System.getProperty("chromium.external_message_pump") != null ? Boolean.getBoolean("chromium.external_message_pump") : external_message_pump;
+				settings.external_message_pump = System.getProperty("chromium.external_message_pump") != null
+						? Boolean.getBoolean("chromium.external_message_pump")
+						: external_message_pump;
 
 				CefAppSwt appSwt = new CefAppSwt(settings.external_message_pump);
 				CefApp.setWindowingToolkit(appSwt);
-				
+
 				String[] args = getChromiumArgs(libsPath);
+
+				final SchemeHandlerManager schemeHandlerManager = SchemeHandlerManager.get();
+				List<SchemeDomainPair> registeredSchemeData = Collections.emptyList();
+				if (schemeHandlerManager != null) {
+					registeredSchemeData = schemeHandlerManager.getRegisteredSchemes();
+				}
+				final List<SchemeDomainPair> finalRegisteredSchemeData = registeredSchemeData;
+
 				CefApp.addAppHandler(new CefAppHandlerAdapter(args) {
 					@Override
+					public void onRegisterCustomSchemes(CefSchemeRegistrar registrar) {
+						if (!finalRegisteredSchemeData.isEmpty()) {
+							for (SchemeDomainPair schemeDomain : finalRegisteredSchemeData) {
+								String scheme = schemeDomain.getScheme();
+								registrar.addCustomScheme(scheme, false, false, false, true, false, false, false);
+							}
+						}
+					}
+
+					@Override
 					public void onScheduleMessagePumpWork(long delay_ms) {
-						if (shuttindDown) {
-							debug("Ignoring onScheduleMessagePumpWork due shuttindDown");
+						if (shuttingDown) {
+							debug("Ignoring onScheduleMessagePumpWork due shuttingDown");
 							return;
 						}
 						super.onScheduleMessagePumpWork(delay_ms);
 					}
-					
+
 					@Override
 					public void onContextInitialized() {
+						if (!finalRegisteredSchemeData.isEmpty() && app != null) {
+							for (SchemeDomainPair schemeData : finalRegisteredSchemeData) {
+								final SchemeHandler schemeHandler = schemeHandlerManager
+										.getSchemeHandler(schemeData.getScheme(), schemeData.getDomain());
+								app.registerSchemeHandlerFactory(schemeData.getScheme(), schemeData.getDomain(),
+										new CefSchemeHandlerFactory() {
+											@Override
+											public CefResourceHandler create(CefBrowser browser, CefFrame frame,
+													String schemeName, CefRequest request) {
+												return new DelegatingCefResourceHandler(schemeHandler);
+											}
+										});
+							}
+						}
+
 						ready.complete(true);
 					}
 					
 					@Override
 					public boolean onBeforeTerminate() {
-						if (shuttindDown) {
+						if (shuttingDown) {
 							// already shutdown
 							return false;
 						}
-						shuttindDown = true;
+						shuttingDown = true;
 						internalShutdown();
 						return true;
 					}
 				});
+
 				try {
 					app = CefApp.getInstance(settings);
 				} catch (UnsatisfiedLinkError e) {
@@ -211,19 +268,19 @@ class Engine {
 					closing = true;
 				});
 				Display.getDefault().disposeExec(() -> {
-					if (shuttindDown) {
+					if (shuttingDown) {
 						// already shutdown
 						return;
 					}
 					if (!OS.isMacintosh() || !closing) {
-						shuttindDown = true;
+						shuttingDown = true;
 						internalShutdown();
 					}
 				});
 			}
 		}
 	}
-	
+
 	static String[] getChromiumArgs(Path libsPath) {
 		List<String> args = new ArrayList<>();
 		String vmArg = System.getProperty("chromium.args", System.getProperty("swt.chromium.args"));
@@ -234,8 +291,8 @@ class Engine {
 		if (OS.isLinux()) {
 			args.add("--disable-gpu-compositing");
 		} else if (OS.isMacintosh()) {
-			args.add("--framework-dir-path="+libsPath.resolve("Chromium Embedded Framework.framework"));
-			args.add("--main-bundle-path="+libsPath.resolve("jcef Helper.app"));
+			args.add("--framework-dir-path=" + libsPath.resolve("Chromium Embedded Framework.framework"));
+			args.add("--main-bundle-path=" + libsPath.resolve("jcef Helper.app"));
 		}
 		return args.toArray(new String[args.size()]);
 	}
@@ -267,11 +324,13 @@ class Engine {
 		}
 		return os;
 	}
-	
+
 	private static String getArch() {
 		String osArch = System.getProperty("os.arch");
-		if (osArch.equals ("i386") || osArch.equals ("i686")) return "x86";
-		if (osArch.equals ("amd64")) return "x86_64";
+		if (osArch.equals("i386") || osArch.equals("i686"))
+			return "x86";
+		if (osArch.equals("amd64"))
+			return "x86_64";
 		return osArch;
 	}
 
@@ -280,11 +339,12 @@ class Engine {
 			System.out.println("J:" + log);
 		}
 	}
-	
+
 	static void debug(String log, CefBrowser cefBrowser) {
 		if (debug) {
 			int identifier = cefBrowser != null ? cefBrowser.getIdentifier() : -1;
-			System.out.println(System.currentTimeMillis()/1000+":J"+identifier + ":" + Thread.currentThread().getName() +":" + log);
+			System.out.println(System.currentTimeMillis() / 1000 + ":J" + identifier + ":"
+					+ Thread.currentThread().getName() + ":" + log);
 		}
 	}
 
