@@ -37,6 +37,7 @@ import org.cef.browser.CefBrowserSwt;
 import org.cef.browser.CefFrame;
 import org.cef.browser.CefMessageRouter;
 import org.cef.browser.CefMessageRouter.CefMessageRouterConfig;
+import org.cef.browser.CefPopup;
 import org.cef.callback.CefAuthCallback;
 import org.cef.callback.CefBeforeDownloadCallback;
 import org.cef.callback.CefCallback;
@@ -597,27 +598,36 @@ final class Chromium extends WebBrowser {
 		@Override
 		public void onAfterCreated(CefBrowser browser) {
 			debug("onAfterCreated", browser);
-			getChromium(browser).onAfterCreated();
+			if (!browser.isPopup()) {
+				getChromium(browser).onAfterCreated();
+			}
 		}
 		
 		@Override
 		public boolean doClose(CefBrowser browser) {
 			debug("doClose", browser);
-			return getChromium(browser).doClose();
-//			return browser.doClose();
-//			return true;
+			if (!browser.isPopup()) {
+				return getChromium(browser).doClose();
+			}
+			browser.doClose();
+			return "win32".equals(SWT.getPlatform()) ? true : false;
 		}
 
 		@Override
 		public void onBeforeClose(CefBrowser browser) {
 			debug("onBeforeClose", browser);
-			getChromium(browser).onBeforeClose();
+			if (!browser.isPopup()) {
+				getChromium(browser).onBeforeClose();
+			}
 		}
 		
 		@Override
 		public boolean onBeforePopup(CefBrowser browser, CefFrame frame, String target_url, String target_frame_name, String popupFeatures) {
 			debug("onBeforePopup", browser);
-			return getChromium(browser).onBeforePopup(target_url, target_frame_name, popupFeatures);
+			if (!browser.isPopup()) {
+				return getChromium(browser).onBeforePopup(target_url, target_frame_name, popupFeatures);
+			}
+			return false;
 		}
 	};
 
@@ -749,7 +759,9 @@ final class Chromium extends WebBrowser {
 		public void onLoadingStateChange(CefBrowser browser, boolean isLoading, boolean canGoBack,
 				boolean canGoForward) {
 //			debug("onLoadingStateChange", browser);
-			getChromium(browser).on_loading_state_change(isLoading, canGoBack, canGoForward);
+			if (!browser.isPopup()) {
+				getChromium(browser).on_loading_state_change(isLoading, canGoBack, canGoForward);
+			}
 		}
 	}
 	
@@ -801,8 +813,11 @@ final class Chromium extends WebBrowser {
 		public boolean onFileDialog(CefBrowser browser, FileDialogMode mode, String title, String defaultFilePath,
 				Vector<String> acceptFilters, int selectedAcceptFilter, CefFileDialogCallback callback) {
 			// debug("onFileDialog", browser);
-			return getChromium(browser).onFileDialog(mode, title, defaultFilePath, acceptFilters, selectedAcceptFilter,
+			if (!browser.isPopup()) {
+				return getChromium(browser).onFileDialog(mode, title, defaultFilePath, acceptFilters, selectedAcceptFilter,
 					callback);
+			}
+			return false;
 		}
 	}
 
@@ -860,25 +875,34 @@ final class Chromium extends WebBrowser {
 		@Override
 		public void onAddressChange(CefBrowser browser, CefFrame frame, String url) {
 			debug("onAddressChange", browser);
-			getChromium(browser).onAddressChange(frame, url);
+			if (!browser.isPopup()) {
+				getChromium(browser).onAddressChange(frame, url);
+			}
 		}
 
 		@Override
 		public void onTitleChange(CefBrowser browser, String title) {
 //			debug("onTitleChange", browser);
-			getChromium(browser).onTitleChange(title);
+			if (!browser.isPopup()) {
+				getChromium(browser).onTitleChange(title);
+			}
 		}
 
 		@Override
 		public void onStatusMessage(CefBrowser browser, String value) {
 //			debug("onStatusMessage", browser);
-			getChromium(browser).onStatusMessage(value);
+			if (!browser.isPopup()) {
+				getChromium(browser).onStatusMessage(value);
+			}
 		}
 
 		@Override
 		public boolean onConsoleMessage(CefBrowser browser, CefSettings.LogSeverity level, String message,
 				String source, int line) {
-			return getChromium(browser).onConsoleMessage(level, message, source, line);
+			if (!browser.isPopup()) {
+				return getChromium(browser).onConsoleMessage(level, message, source, line);
+			}
+			return false;
 		}
 	}
 	
@@ -964,28 +988,39 @@ final class Chromium extends WebBrowser {
 
 		@Override
 		public void onRenderProcessTerminated(CefBrowser browser, TerminationStatus status) {
-			getChromium(browser).extraApi().error(status);
+			if (!browser.isPopup()) {
+				getChromium(browser).extraApi().error(status);
+			}
 		}
 		
 		@Override
 		public boolean onBeforeBrowse(CefBrowser browser, CefFrame frame, CefRequest request, boolean user_gesture,
 				boolean is_redirect) {
 //			debug("onBeforeBrowse", browser);
-			return getChromium(browser).onBeforeBrowse(frame, request);
+			if (!browser.isPopup()) {
+				return getChromium(browser).onBeforeBrowse(frame, request);
+			}
+			return false;
 		}
 		
 		@Override
 		public boolean getAuthCredentials(CefBrowser browser, String origin_url, boolean isProxy, String host, int port,
 				String realm, String scheme, CefAuthCallback callback) {
-			getChromium(browser).getAuthCredentials(origin_url, host, port, realm, scheme, callback);
-			return true;
+			if (!browser.isPopup()) {
+				getChromium(browser).getAuthCredentials(origin_url, host, port, realm, scheme, callback);
+				return true;
+			}
+			return false;
 		}
 		
 		@Override
 		public boolean onCertificateError(CefBrowser browser, ErrorCode cert_error, String request_url,
 				CefRequestCallback callback) {
 			debug("onCertificateError", browser);
-			return getChromium(browser).onCertificateError(cert_error, request_url, callback);
+			if (!browser.isPopup()) {
+				return getChromium(browser).onCertificateError(cert_error, request_url, callback);
+			}
+			return false;
 		}
 		
 		@Override
@@ -997,9 +1032,12 @@ final class Chromium extends WebBrowser {
 					@Override
 					public CefResourceHandler getResourceHandler(CefBrowser browser, CefFrame frame,
 							CefRequest request) {
-						if (isPartial(request))
-							return getChromium(browser).functionsResourceHandler.peek();
-						return getChromium(browser).createFunctionResourceHandler();
+						if (!browser.isPopup()) {
+							if (isPartial(request))
+								return getChromium(browser).functionsResourceHandler.peek();
+							return getChromium(browser).createFunctionResourceHandler();
+						}
+						return null;
 					}
 					
 					@Override
@@ -1011,15 +1049,18 @@ final class Chromium extends WebBrowser {
 				};
 			} else {
 				String requestUrl = request.getURL();
-				if (!requestUrl.startsWith("http") && !requestUrl.startsWith("data:text/html")
+				if (!requestUrl.startsWith("http") && !requestUrl.startsWith("data") && !requestUrl.startsWith("file")
+						&& !requestUrl.startsWith("chrome") && !requestUrl.startsWith("about")
 						&& shouldAllowProtocol(requestUrl, browser)) {
 					return new CefResourceRequestHandlerAdapter() {
-
+						@Override
+						public boolean onBeforeResourceLoad(CefBrowser browser, CefFrame frame, CefRequest request) {
+							return true;
+						}
 						@Override
 						public void onProtocolExecution(CefBrowser browser, CefFrame frame, CefRequest request,
 								BoolRef allowOsExecution) {
 							debug("onProtocolExecution: " + request.getURL(), browser);
-							allowOsExecution.set(true);
 							browser.stopLoad();
 							Program.launch(requestUrl);
 						}
@@ -1092,7 +1133,9 @@ final class Chromium extends WebBrowser {
 					}
 				};
 				Display.getDefault().syncExec(() -> {
-					getChromium(browser).openJsDialog(CefJSDialogHandler.JSDialogType.JSDIALOGTYPE_CONFIRM, "",
+					boolean isPopup = browser.isPopup();
+					Chromium chromium = isPopup ? getChromium(((CefPopup)browser).getParent()) : getChromium(browser);
+					chromium.openJsDialog(isPopup, CefJSDialogHandler.JSDialogType.JSDIALOGTYPE_CONFIRM, "",
 							"The link will be opened with the operating system.", "Do you want to continue?",
 							"default_prompt_text", callback);
 				});
@@ -1106,7 +1149,7 @@ final class Chromium extends WebBrowser {
 			return false;
 		}
 	}
-	
+
 	private boolean onBeforeBrowse(CefFrame frame, CefRequest request) {
 		if (isDisposed()) return false;
 		LocationEvent event = new LocationEvent(chromium);
@@ -1296,24 +1339,32 @@ final class Chromium extends WebBrowser {
 			if (!useSwtDialogs()) {
 				return false;
 			}
-			return getChromium(browser).onJsdialog(origin_url, dialog_type, message_text, default_prompt_text, callback, suppress_message);
+			if (!browser.isPopup()) {
+				return getChromium(browser).onJsdialog(browser, origin_url, dialog_type, message_text, default_prompt_text, callback, suppress_message);
+			}
+			return false;
 		}
 
 		@Override
 		public boolean onBeforeUnloadDialog(CefBrowser browser, String message_text, boolean is_reload,
 				CefJSDialogCallback callback) {
 			debug("onBeforeUnloadDialog", browser);
-			return getChromium(browser).onBeforeUnloadDialog(message_text, is_reload, callback);
+			if (!browser.isPopup()) {
+				return getChromium(browser).onBeforeUnloadDialog(message_text, is_reload, callback);
+			}
+			return false;
 		}
 
 		@Override
 		public void onDialogClosed(CefBrowser browser) {
 			debug("onDialogClosed", browser);
-			getChromium(browser).onDialogClosed();
+			if (!browser.isPopup()) {
+				getChromium(browser).onDialogClosed();
+			}
 		}
 	}
 	
-	private boolean onJsdialog(String origin_url, JSDialogType dialog_type, String message_text,
+	private boolean onJsdialog(CefBrowser browser, String origin_url, JSDialogType dialog_type, String message_text,
 			String default_prompt_text, CefJSDialogCallback callback, BoolRef suppress_message) {
 		if (isDisposed()) return false;
 		
@@ -1336,11 +1387,12 @@ final class Chromium extends WebBrowser {
 			title = this.title;
 			break;
 		}
-		openJsDialog(dialog_type, title, message_text, prompt, default_prompt_text, callback);
+		openJsDialog(false, dialog_type, title, message_text, prompt, default_prompt_text, callback);
 		return true;
 	}
 
-	private void openJsDialog(JSDialogType dialog_type, String title, String msg, String prompt, String default_prompt_text, CefJSDialogCallback callback) {
+	public void openJsDialog(boolean isPopup, JSDialogType dialog_type, String title, String msg, String prompt,
+			String default_prompt_text, CefJSDialogCallback callback) {
 		int style = SWT.ICON_WORKING;
 		switch (dialog_type) {
 		case JSDIALOGTYPE_ALERT:
@@ -1356,15 +1408,22 @@ final class Chromium extends WebBrowser {
 		Consumer<Integer> close = open -> {
 			boolean r = open == SWT.OK || open == SWT.YES ? true : false;
 			debug("JS Dialog Closed with "+r);
-			if (disposing == Dispose.Unload && !r)
-				disposing = Dispose.UnloadCancel;
-			chromium.getDisplay().asyncExec(() -> {
-				callback.Continue(r, default_prompt_text);
-			});
-			chromium.getShell().forceActive();
+			if(browser != null && !isPopup) {
+				if (disposing == Dispose.Unload && !r)
+					disposing = Dispose.UnloadCancel;
+				chromium.getDisplay().asyncExec(() -> {
+					callback.Continue(r, default_prompt_text);
+				});
+				chromium.getShell().forceActive();
+			} else {
+				Display.getDefault().asyncExec(() -> {
+					callback.Continue(r, default_prompt_text);
+				});
+			}
 		};
-		if (!"test".equals(System.getProperty("chromium.dialogs", ""))) {
-			MessageBox box = new MessageBox(chromium.getShell(), style);
+		if (!"test".equals(System.getProperty("chromium.dialogs", "")) || browser == null) {
+			Shell shell = (browser != null && !isPopup) ?  chromium.getShell() : new Shell();
+			MessageBox box = new MessageBox(shell, style);
 			box.setText(title);
 			box.setMessage(prompt != null ? msg + "\n\n"+prompt : msg);
 			int open = box.open();
@@ -1397,7 +1456,7 @@ final class Chromium extends WebBrowser {
 		if (useSwtDialogs()) {
 //			Display.getDefault().asyncExec(() -> {
 //				ChromiumLib.cefswt_dialog_close(callback, 0, 0);
-				openJsDialog(JSDialogType.JSDIALOGTYPE_CONFIRM, "Are you sure you want to leave this page?", message_text, null, null, callback);
+				openJsDialog(false, JSDialogType.JSDIALOGTYPE_CONFIRM, "Are you sure you want to leave this page?", message_text, null, null, callback);
 				if (disposing == Dispose.Unload) {
 					disposing = Dispose.UnloadClosed;
 				}
@@ -1419,7 +1478,9 @@ final class Chromium extends WebBrowser {
 	static class ContextMenuHandler extends CefContextMenuHandlerAdapter {
 		public void onBeforeContextMenu(CefBrowser browser, CefFrame frame, CefContextMenuParams params, CefMenuModel model) {
 			debug("onBeforeContextMenu", browser);
-			getChromium(browser).onBeforeContextMenu(model);
+			if (!browser.isPopup()) {
+				getChromium(browser).onBeforeContextMenu(model);
+			}
 		};
 	}
 	
@@ -1440,14 +1501,18 @@ final class Chromium extends WebBrowser {
 		public void onBeforeDownload(CefBrowser browser, CefDownloadItem downloadItem, String suggestedName,
 				CefBeforeDownloadCallback callback) {
 			debug("onBeforeDownload", browser);
-			getChromium(browser).onBeforeDownload(downloadItem, suggestedName, callback);
+			if (!browser.isPopup()) {
+				getChromium(browser).onBeforeDownload(downloadItem, suggestedName, callback);
+			}
 		}
 
 		@Override
 		public void onDownloadUpdated(CefBrowser browser, CefDownloadItem downloadItem,
 				CefDownloadItemCallback callback) {
 			debug("onDownloadUpdated", browser);
-			getChromium(browser).onDownloadUpdated(downloadItem, callback);
+			if (!browser.isPopup()) {
+				getChromium(browser).onDownloadUpdated(downloadItem, callback);
+			}
 		}
 	}
 	
@@ -1603,7 +1668,10 @@ final class Chromium extends WebBrowser {
 	static class KeyboardHandler extends CefKeyboardHandlerAdapter {
 		@Override
 		public boolean onKeyEvent(CefBrowser browser, CefKeyEvent event) {
-			return getChromium(browser).on_key_event(event);
+			if (!browser.isPopup()) {
+				return getChromium(browser).on_key_event(event);
+			}
+			return false;
 		}
 	}
 
@@ -1760,19 +1828,26 @@ final class Chromium extends WebBrowser {
 		@Override
 		public void onTakeFocus(CefBrowser browser, boolean next) {
 			debug("onTakeFocus", browser);
-			getChromium(browser).onTakeFocus(next);
+			if (!browser.isPopup()) {
+				getChromium(browser).onTakeFocus(next);
+			}
 		}
 
 		@Override
 		public boolean onSetFocus(CefBrowser browser, FocusSource source) {
 			debug("onSetFocus", browser);
-			return getChromium(browser).onSetFocus(source);
+			if (!browser.isPopup()) {
+				return getChromium(browser).onSetFocus(source);
+			}
+			return false;
 		}
 
 		@Override
 		public void onGotFocus(CefBrowser browser) {
 			debug("onGotFocus", browser);
-			getChromium(browser).onGotFocus();
+			if (!browser.isPopup()) {
+				getChromium(browser).onGotFocus();
+			}
 		}
 	}
 	
