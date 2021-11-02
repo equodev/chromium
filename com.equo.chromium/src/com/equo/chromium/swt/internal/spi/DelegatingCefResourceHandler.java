@@ -58,10 +58,11 @@ public class DelegatingCefResourceHandler implements CefResourceHandler {
 
 		try {
 			int bytesReadPrim = responseData.read(dataOut, 0, bytesToRead);
-			bytesRead.set(bytesReadPrim);
-			if (bytesReadPrim <= bytesToRead) {
+			if (bytesReadPrim == -1) {
 				cancel();
+				return false;
 			}
+			bytesRead.set(bytesReadPrim);
 			return true;
 		} catch (IOException e) {
 			e.printStackTrace();

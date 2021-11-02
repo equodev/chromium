@@ -56,7 +56,7 @@ class Engine {
 	private static CefApp app;
 	static CompletableFuture<Boolean> ready = new CompletableFuture<>();
 	private static boolean closing;
-	
+
 	private static void loadLib() {
 		if (OS.isLinux()) {
 			String backend = System.getenv("GDK_BACKEND");
@@ -208,7 +208,7 @@ class Engine {
 						if (!finalRegisteredSchemeData.isEmpty()) {
 							for (SchemeDomainPair schemeDomain : finalRegisteredSchemeData) {
 								String scheme = schemeDomain.getScheme();
-								registrar.addCustomScheme(scheme, false, false, false, true, false, false, false);
+								registrar.addCustomScheme(scheme, true, false, false, true, true, false, true);
 							}
 						}
 					}
@@ -225,14 +225,15 @@ class Engine {
 					@Override
 					public void onContextInitialized() {
 						if (!finalRegisteredSchemeData.isEmpty() && app != null) {
-							for (SchemeDomainPair schemeData : finalRegisteredSchemeData) {
-								final SchemeHandler schemeHandler = schemeHandlerManager
-										.getSchemeHandler(schemeData.getScheme(), schemeData.getDomain());
+							for (final SchemeDomainPair schemeData : finalRegisteredSchemeData) {
 								app.registerSchemeHandlerFactory(schemeData.getScheme(), schemeData.getDomain(),
 										new CefSchemeHandlerFactory() {
 											@Override
 											public CefResourceHandler create(CefBrowser browser, CefFrame frame,
 													String schemeName, CefRequest request) {
+												final SchemeHandler schemeHandler = schemeHandlerManager
+														.getSchemeHandler(schemeData.getScheme(),
+																schemeData.getDomain());
 												return new DelegatingCefResourceHandler(schemeHandler);
 											}
 										});
@@ -241,7 +242,7 @@ class Engine {
 
 						ready.complete(true);
 					}
-					
+
 					@Override
 					public boolean onBeforeTerminate() {
 						if (shuttingDown) {
