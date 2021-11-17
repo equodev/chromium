@@ -91,7 +91,7 @@ class Engine {
 			CodeSource codeSource = fragmentClass.getProtectionDomain().getCodeSource();
 			if (codeSource != null) {
 				URI loc = toURI(codeSource.getLocation());
-				Path fragment = Paths.get(loc);
+				Path fragment = Paths.get(loc).toAbsolutePath().normalize();
 				try {
 					if (Files.isRegularFile(fragment)) {
 						Path extractPath = ResourceExpander.extractFromJar(chromiumPath, arch, SUBDIR, fragmentClass);
