@@ -413,9 +413,6 @@ final class Chromium extends WebBrowser {
 	}
 
 	private void createBrowser() {
-		if (this.url == null) {
-			this.url = "about:blank";
-		}
 		prepareBrowser();
 		if (!"gtk".equals(SWT.getPlatform())) {
 			traverseListener = new Listener() {
@@ -436,7 +433,7 @@ final class Chromium extends WebBrowser {
 			chromium.addListener(SWT.KeyDown, traverseListener); // required to take focus on tab
 		}
 
-		cefBrowser = (CefBrowserSwt) clientHandler.createBrowser(this.url, false, false, null);
+		cefBrowser = (CefBrowserSwt) clientHandler.createBrowser(this.url == null ? "about:blank" : this.url, false, false, null);
 		cefBrowser.createImmediately(chromium);
 	}
 
@@ -689,6 +686,9 @@ final class Chromium extends WebBrowser {
 //				enableProgress.complete(true);
 //			}
 		created.complete(true);
+		if (this.url != null) {
+			enableProgress.complete(true);
+		}
 
 		if (isPopup != null) {
 			org.eclipse.swt.browser.WindowEvent event = new org.eclipse.swt.browser.WindowEvent(chromium);
@@ -2261,13 +2261,20 @@ final class Chromium extends WebBrowser {
 	@Override
 	public boolean setUrl(String url, String postData, String[] headers) {
 		// if not yet created will be used when created
-		this.url = url;
+		boolean isPost = postData != null || headers != null;
+		boolean isCreating = clientHandler != null && clientHandler.isCreating();
+		if (created.isDone() || (!isPost && !isCreating)) {
+			this.url = url;
+		}
 		jsEnabled = jsEnabledOnNextPage;
 		debugPrint("set url: " + getPlainUrl(url));
-		ignoreFirstFocus = true;
-		urls = enableProgress.runAfterBoth(urls, () -> {
-			doSetUrl(Chromium.this.url, postData, headers);
-		});
+		if (created.isDone() || isCreating || isPost) {
+			ignoreFirstFocus = true;
+			urls = enableProgress.runAfterBoth(urls, () -> {
+				Chromium.this.url = url;
+				doSetUrl(url, postData, headers);
+			});
+		}
 		return true;
 	}
 
