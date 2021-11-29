@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import org.cef.CefApp;
 import org.cef.CefClientSwt;
 import org.cef.CefSettings;
 import org.cef.browser.CefBrowser;
@@ -1800,6 +1801,7 @@ final class Chromium extends WebBrowser {
 				// Paste: command + v
 				case 9:
 					cefBrowser.getMainFrame().paste();
+					CefApp.getInstance().doMessageLoopWork(-1);
 					return true;
 				// Cut: command + x
 				case 7:
@@ -1808,6 +1810,7 @@ final class Chromium extends WebBrowser {
 				// Undo: command + z
 				case 6:
 					cefBrowser.getMainFrame().undo();
+					CefApp.getInstance().doMessageLoopWork(-1);
 					return true;
 				default:
 					return false;
@@ -1816,6 +1819,7 @@ final class Chromium extends WebBrowser {
 				// Redo: command + shift + z
 				if (event.native_key_code == 6) {
 					cefBrowser.getMainFrame().redo();
+					CefApp.getInstance().doMessageLoopWork(-1);
 					return true;
 				}
 			}
