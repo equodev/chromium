@@ -685,6 +685,7 @@ final class Chromium extends WebBrowser {
 //			else if (!"about:blank".equals(this.url)) {
 //				enableProgress.complete(true);
 //			}
+		cefBrowser.resize();
 		created.complete(true);
 		if (this.url != null) {
 			enableProgress.complete(true);
