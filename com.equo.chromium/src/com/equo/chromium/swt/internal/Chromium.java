@@ -1873,15 +1873,22 @@ final class Chromium extends WebBrowser {
 				// debugPrint("on_got_focus: gtk force focus");
 //				browserFocus(true);
 			}
+			if ("win32".equals(SWT.getPlatform()) && focusListener != null) // consider this for all os
+				focusListener.enabled = true;
 			hasFocus = true;
 		}
 	}
 
 	private boolean onSetFocus(FocusSource focusSource) {
-		if (ignoreFirstFocus && focusSource == FocusSource.FOCUS_SOURCE_NAVIGATION) {
-			debugPrint("ignoreFirstFocus");
+		if (ignoreFirstFocus && chromium.getDisplay().getFocusControl() != chromium  && focusSource == FocusSource.FOCUS_SOURCE_NAVIGATION) {
+			debugPrint("ignoreFirstFocus "+chromium.getDisplay().getFocusControl());
 			ignoreFirstFocus = false;
 			return true;
+		}
+		if ("win32".equals(SWT.getPlatform())) { // consider this for all os
+			if (focusListener != null)
+				focusListener.enabled = false;
+			chromium.setFocus();
 		}
 		hasFocus = true;
 		return false;
@@ -2071,10 +2078,10 @@ final class Chromium extends WebBrowser {
 		
 		@Override
 		public void focusLost(FocusEvent e) {
+			//debugPrint("focusLost "+enabled);
 			if (!enabled)
 				return;
 			enabled = false;
-			//debugPrint("focusLost");
 //			browserFocus(false);
 			// System.out.println(Display.getDefault().getFocusControl());
 			if (cefBrowser != null)
@@ -2085,9 +2092,9 @@ final class Chromium extends WebBrowser {
 
 		@Override
 		public void focusGained(FocusEvent e) {
+			//debugPrint("focusGained "+enabled);
 			if (!enabled)
 				return;
-			//debugPrint("focusGained");
 			enabled = false;
 //				browserFocus(true);
 			if (cefBrowser != null && !isOpenDialog) {
