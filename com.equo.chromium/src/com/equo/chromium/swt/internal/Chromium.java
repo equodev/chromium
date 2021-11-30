@@ -168,7 +168,7 @@ final class Chromium extends WebBrowser {
 	private ExtraApi extraApi;
 	private boolean loadingPage;
 	private CefBrowserSwt cefBrowser;
-	private Stack<FunctionsResourceHandler> functionsResourceHandler = new Stack<FunctionsResourceHandler>();
+	Stack<FunctionsResourceHandler> functionsResourceHandler = new Stack<FunctionsResourceHandler>();
 	private HashMap<String, Boolean> changedCache = new HashMap<String, Boolean>();
 	private CompletableFuture<Void> urls = CompletableFuture.completedFuture(null);
 	private boolean isOpenDialog = false;

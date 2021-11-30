@@ -211,6 +211,7 @@ class Engine {
 								registrar.addCustomScheme(scheme, true, false, false, true, true, false, true);
 							}
 						}
+						registrar.addCustomScheme("function", true, false, false, true, true, false, true);
 					}
 
 					@Override
@@ -239,7 +240,28 @@ class Engine {
 										});
 							}
 						}
-
+						app.registerSchemeHandlerFactory("function", "",
+								new CefSchemeHandlerFactory() {
+							@Override
+							public CefResourceHandler create(CefBrowser browser, CefFrame frame,
+									String schemeName, CefRequest request) {
+								if (!browser.isPopup()) {
+									if (isPartial(request))
+										return Chromium.getChromium(browser).functionsResourceHandler.peek();
+									return Chromium.getChromium(browser).createFunctionResourceHandler();
+								}
+								return null;
+							}
+							
+							protected boolean isPartial(CefRequest request) {
+								try {
+									URI url = new URI(request.getURL());
+									return url.getFragment() != null;
+								} catch (URISyntaxException e) {
+									return false;
+								}
+							}
+						});
 						ready.complete(true);
 					}
 
