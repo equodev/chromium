@@ -2,7 +2,7 @@
 <feature
       id="com.equo.chromium.feature"
       label="Chromium SWT Browser Feature"
-      version="84.0.0.qualifier"
+      version="87.0.0.qualifier"
       provider-name="Equo"
       os="linux,macosx,win32"
       ws="cocoa,gtk,win32"
