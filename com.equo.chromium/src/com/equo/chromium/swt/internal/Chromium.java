@@ -318,6 +318,7 @@ final class Chromium extends WebBrowser {
 		public void getResponseHeaders(CefResponse response, IntRef responseLength,
 				StringRef redirectUrl) {
 			debug("getResponseHeaders", cefBrowser);
+			response.setHeaderByName("Access-Control-Allow-Origin", "*", true);
 			if (ex != null) {
 				response.setStatus(400);
 				response.setStatusText(ex.getMessage());
@@ -987,7 +988,7 @@ final class Chromium extends WebBrowser {
 	}
 	
 	static class RequestHandler extends CefRequestHandlerAdapter {
-		private static final String FUNCTION_HOST = "function"+new Random().nextInt();
+		private static final String FUNCTION_HOST = "functions";
 
 		@Override
 		public void onRenderProcessTerminated(CefBrowser browser, TerminationStatus status) {
@@ -1031,25 +1032,7 @@ final class Chromium extends WebBrowser {
 				CefRequest request, boolean isNavigation, boolean isDownload, String requestInitiator,
 				BoolRef disableDefaultHandling) {
 			if (isFunction(browser, request)) {
-				return new CefResourceRequestHandlerAdapter() {
-					@Override
-					public CefResourceHandler getResourceHandler(CefBrowser browser, CefFrame frame,
-							CefRequest request) {
-						if (!browser.isPopup()) {
-							if (isPartial(request))
-								return getChromium(browser).functionsResourceHandler.peek();
-							return getChromium(browser).createFunctionResourceHandler();
-						}
-						return null;
-					}
-					
-					@Override
-					public void onProtocolExecution(CefBrowser browser, CefFrame frame, CefRequest request,
-							BoolRef allowOsExecution) {
-						debug("onProtocolExecution: "+request.getURL(), browser);
-						allowOsExecution.set(true);
-					}
-				};
+				return null;
 			} else {
 				String requestUrl = request.getURL();
 				if (!requestUrl.startsWith("http") && !requestUrl.startsWith("data") && !requestUrl.startsWith("file")

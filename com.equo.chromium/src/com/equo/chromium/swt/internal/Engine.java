@@ -211,7 +211,6 @@ class Engine {
 								registrar.addCustomScheme(scheme, true, false, false, true, true, false, true);
 							}
 						}
-						registrar.addCustomScheme("function", true, false, false, true, true, false, true);
 					}
 
 					@Override
@@ -240,8 +239,7 @@ class Engine {
 										});
 							}
 						}
-						app.registerSchemeHandlerFactory("function", "",
-								new CefSchemeHandlerFactory() {
+						app.registerSchemeHandlerFactory("https", "functions", new CefSchemeHandlerFactory() {
 							@Override
 							public CefResourceHandler create(CefBrowser browser, CefFrame frame,
 									String schemeName, CefRequest request) {
