@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import org.cef.CefApp;
 import org.cef.CefClientSwt;
 import org.cef.CefSettings;
 import org.cef.browser.CefBrowser;
@@ -413,9 +414,6 @@ final class Chromium extends WebBrowser {
 	}
 
 	private void createBrowser() {
-		if (this.url == null) {
-			this.url = "about:blank";
-		}
 		prepareBrowser();
 		if (!"gtk".equals(SWT.getPlatform())) {
 			traverseListener = new Listener() {
@@ -436,7 +434,7 @@ final class Chromium extends WebBrowser {
 			chromium.addListener(SWT.KeyDown, traverseListener); // required to take focus on tab
 		}
 
-		cefBrowser = (CefBrowserSwt) clientHandler.createBrowser(this.url, false, false, null);
+		cefBrowser = (CefBrowserSwt) clientHandler.createBrowser(this.url == null ? "about:blank" : this.url, false, false, null);
 		cefBrowser.createImmediately(chromium);
 	}
 
@@ -688,7 +686,11 @@ final class Chromium extends WebBrowser {
 //			else if (!"about:blank".equals(this.url)) {
 //				enableProgress.complete(true);
 //			}
+		cefBrowser.resize();
 		created.complete(true);
+		if (this.url != null) {
+			enableProgress.complete(true);
+		}
 
 		if (isPopup != null) {
 			org.eclipse.swt.browser.WindowEvent event = new org.eclipse.swt.browser.WindowEvent(chromium);
@@ -1799,6 +1801,7 @@ final class Chromium extends WebBrowser {
 				// Paste: command + v
 				case 9:
 					cefBrowser.getMainFrame().paste();
+					CefApp.getInstance().doMessageLoopWork(-1);
 					return true;
 				// Cut: command + x
 				case 7:
@@ -1807,6 +1810,7 @@ final class Chromium extends WebBrowser {
 				// Undo: command + z
 				case 6:
 					cefBrowser.getMainFrame().undo();
+					CefApp.getInstance().doMessageLoopWork(-1);
 					return true;
 				default:
 					return false;
@@ -1815,6 +1819,7 @@ final class Chromium extends WebBrowser {
 				// Redo: command + shift + z
 				if (event.native_key_code == 6) {
 					cefBrowser.getMainFrame().redo();
+					CefApp.getInstance().doMessageLoopWork(-1);
 					return true;
 				}
 			}
@@ -1868,15 +1873,22 @@ final class Chromium extends WebBrowser {
 				// debugPrint("on_got_focus: gtk force focus");
 //				browserFocus(true);
 			}
+			if ("win32".equals(SWT.getPlatform()) && focusListener != null) // consider this for all os
+				focusListener.enabled = true;
 			hasFocus = true;
 		}
 	}
 
 	private boolean onSetFocus(FocusSource focusSource) {
-		if (ignoreFirstFocus && focusSource == FocusSource.FOCUS_SOURCE_NAVIGATION) {
-			debugPrint("ignoreFirstFocus");
+		if (ignoreFirstFocus && chromium.getDisplay().getFocusControl() != chromium  && focusSource == FocusSource.FOCUS_SOURCE_NAVIGATION) {
+			debugPrint("ignoreFirstFocus "+chromium.getDisplay().getFocusControl());
 			ignoreFirstFocus = false;
 			return true;
+		}
+		if ("win32".equals(SWT.getPlatform())) { // consider this for all os
+			if (focusListener != null)
+				focusListener.enabled = false;
+			chromium.setFocus();
 		}
 		hasFocus = true;
 		return false;
@@ -2066,10 +2078,10 @@ final class Chromium extends WebBrowser {
 		
 		@Override
 		public void focusLost(FocusEvent e) {
+			//debugPrint("focusLost "+enabled);
 			if (!enabled)
 				return;
 			enabled = false;
-			//debugPrint("focusLost");
 //			browserFocus(false);
 			// System.out.println(Display.getDefault().getFocusControl());
 			if (cefBrowser != null)
@@ -2080,9 +2092,9 @@ final class Chromium extends WebBrowser {
 
 		@Override
 		public void focusGained(FocusEvent e) {
+			//debugPrint("focusGained "+enabled);
 			if (!enabled)
 				return;
-			//debugPrint("focusGained");
 			enabled = false;
 //				browserFocus(true);
 			if (cefBrowser != null && !isOpenDialog) {
@@ -2261,13 +2273,20 @@ final class Chromium extends WebBrowser {
 	@Override
 	public boolean setUrl(String url, String postData, String[] headers) {
 		// if not yet created will be used when created
-		this.url = url;
+		boolean isPost = postData != null || headers != null;
+		boolean isCreating = clientHandler != null && clientHandler.isCreating();
+		if (created.isDone() || (!isPost && !isCreating)) {
+			this.url = url;
+		}
 		jsEnabled = jsEnabledOnNextPage;
 		debugPrint("set url: " + getPlainUrl(url));
-		ignoreFirstFocus = true;
-		urls = enableProgress.runAfterBoth(urls, () -> {
-			doSetUrl(Chromium.this.url, postData, headers);
-		});
+		if (created.isDone() || isCreating || isPost) {
+			ignoreFirstFocus = true;
+			urls = enableProgress.runAfterBoth(urls, () -> {
+				Chromium.this.url = url;
+				doSetUrl(url, postData, headers);
+			});
+		}
 		return true;
 	}
 
