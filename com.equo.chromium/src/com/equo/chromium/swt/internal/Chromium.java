@@ -1863,7 +1863,8 @@ final class Chromium extends WebBrowser {
 	}
 
 	private boolean onSetFocus(FocusSource focusSource) {
-		if (ignoreFirstFocus && chromium.getDisplay().getFocusControl() != chromium  && focusSource == FocusSource.FOCUS_SOURCE_NAVIGATION) {
+		boolean chromiumFocusControl = "gtk".equals(SWT.getPlatform()) ? true : chromium.getDisplay().getFocusControl() != chromium;
+		if (ignoreFirstFocus && chromiumFocusControl && focusSource == FocusSource.FOCUS_SOURCE_NAVIGATION) {
 			debugPrint("ignoreFirstFocus "+chromium.getDisplay().getFocusControl());
 			ignoreFirstFocus = false;
 			return true;
