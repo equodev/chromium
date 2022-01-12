@@ -781,18 +781,14 @@ final class Chromium extends WebBrowser {
 		else if (!enableProgress.isDone()) {
 			return;
 		}
-		ProgressEvent event = new ProgressEvent(chromium);
-		event.display = chromium.getDisplay ();
-		event.widget = chromium;
-		event.current = MAX_PROGRESS;
-		event.current = isLoading ? 1 : MAX_PROGRESS;
-		event.total = MAX_PROGRESS;
-		if (isLoading) {
-			debugPrint("progress changed");
-			for (ProgressListener listener : progressListeners) {
-				listener.changed(event);
-			}
-		} else {
+
+		if (!isLoading) {
+			ProgressEvent event = new ProgressEvent(chromium);
+			event.display = chromium.getDisplay ();
+			event.widget = chromium;
+			event.current = MAX_PROGRESS;
+			event.total = MAX_PROGRESS;
+
 			if (loadingPage) {
 				loadingPage = false;
 				debugPrint("progress completed"); 
@@ -907,6 +903,13 @@ final class Chromium extends WebBrowser {
 			}
 			return false;
 		}
+
+		@Override
+		public void onLoadingProgressChange(CefBrowser browser, double progress) {
+			if (!browser.isPopup()) {
+				getChromium(browser).onLoadingProgressChange(browser, progress);
+			}
+		}
 	}
 	
 	private void onTitleChange(String title) {
@@ -979,6 +982,23 @@ final class Chromium extends WebBrowser {
 			}
 		}
 		return prevent;
+	}
+
+	private void onLoadingProgressChange(CefBrowser browser, double progress) {
+		if (!enableProgress.isDone()) {
+			return;
+		}
+
+		ProgressEvent event = new ProgressEvent(chromium);
+		event.display = chromium.getDisplay ();
+		event.widget = chromium;
+		event.current = (int)(progress * MAX_PROGRESS);
+		event.total = MAX_PROGRESS;
+		if (MAX_PROGRESS != event.current) {
+			for (ProgressListener listener : progressListeners) {
+				listener.changed(event);
+			}
+		}
 	}
 
 	private static void setRequestHandler() {
