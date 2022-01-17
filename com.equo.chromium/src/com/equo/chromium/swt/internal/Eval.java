@@ -6,6 +6,7 @@ import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
+import org.cef.CefApp;
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;
 import org.cef.browser.CefMessageRouter;
@@ -77,6 +78,7 @@ class Eval {
 				+ "}})();";
 		Display display = Display.getCurrent();
 		while (!created.isDone() && !display.isDisposed()) {
+			CefApp.getInstance().doMessageLoopWork(-1);
 			if (!display.readAndDispatch())
 				display.sleep();
 		}
