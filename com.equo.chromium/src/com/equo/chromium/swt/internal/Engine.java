@@ -162,7 +162,7 @@ class Engine {
 							.parseInt(System.getProperty("chromium.remote_debugging_port", "0"));
 				} catch (NumberFormatException e) {
 				}
-				Path data = Paths.get(System.getProperty("user.home"), ".equo");
+				Path data = Paths.get(System.getProperty("chromium.home", System.getProperty("user.home")), ".equo");
 				String cache = data.resolve("cefcache").toAbsolutePath().toString();
 				settings.cache_path = System.getProperty("chromium.cache_path", cache);
 				settings.log_file = data.resolve("cef.log").toString();
