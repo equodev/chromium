@@ -25,20 +25,17 @@ import org.cef.OS;
 import org.cef.SystemBootstrap;
 import org.cef.SystemBootstrap.Loader;
 import org.cef.browser.CefBrowser;
-import org.cef.browser.CefFrame;
-import org.cef.callback.CefSchemeHandlerFactory;
 import org.cef.callback.CefSchemeRegistrar;
 import org.cef.handler.CefAppHandlerAdapter;
-import org.cef.handler.CefResourceHandler;
-import org.cef.network.CefRequest;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.widgets.Display;
 
-import com.equo.chromium.swt.internal.spi.DelegatingCefResourceHandler;
+import com.equo.chromium.swt.internal.spi.DynamicCefSchemeHandlerFactory;
 import com.equo.chromium.swt.internal.spi.SchemeDomainPair;
 import com.equo.chromium.swt.internal.spi.SchemeHandler;
 import com.equo.chromium.swt.internal.spi.SchemeHandlerManager;
+import com.equo.chromium.swt.internal.spi.StaticCefSchemeHandlerFactory;
 
 class Engine {
 	static {
@@ -226,17 +223,11 @@ class Engine {
 					public void onContextInitialized() {
 						if (!finalRegisteredSchemeData.isEmpty() && app != null) {
 							for (final SchemeDomainPair schemeData : finalRegisteredSchemeData) {
+								SchemeHandler schemeHandler = schemeHandlerManager
+										.getSchemeHandler(schemeData.getScheme(), schemeData.getDomain());
 								app.registerSchemeHandlerFactory(schemeData.getScheme(), schemeData.getDomain(),
-										new CefSchemeHandlerFactory() {
-											@Override
-											public CefResourceHandler create(CefBrowser browser, CefFrame frame,
-													String schemeName, CefRequest request) {
-												final SchemeHandler schemeHandler = schemeHandlerManager
-														.getSchemeHandler(schemeData.getScheme(),
-																schemeData.getDomain());
-												return new DelegatingCefResourceHandler(schemeHandler);
-											}
-										});
+										schemeHandler == null ? new DynamicCefSchemeHandlerFactory(schemeHandlerManager)
+												: new StaticCefSchemeHandlerFactory(schemeHandlerManager, schemeData));
 							}
 						}
 
