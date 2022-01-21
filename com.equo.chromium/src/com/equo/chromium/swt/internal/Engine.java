@@ -35,10 +35,11 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.widgets.Display;
 
-import com.equo.chromium.swt.internal.spi.DelegatingCefResourceHandler;
+import com.equo.chromium.swt.internal.spi.DynamicCefSchemeHandlerFactory;
 import com.equo.chromium.swt.internal.spi.SchemeDomainPair;
 import com.equo.chromium.swt.internal.spi.SchemeHandler;
 import com.equo.chromium.swt.internal.spi.SchemeHandlerManager;
+import com.equo.chromium.swt.internal.spi.StaticCefSchemeHandlerFactory;
 
 class Engine {
 	static {
@@ -162,7 +163,7 @@ class Engine {
 							.parseInt(System.getProperty("chromium.remote_debugging_port", "0"));
 				} catch (NumberFormatException e) {
 				}
-				Path data = Paths.get(System.getProperty("user.home"), ".equo");
+				Path data = Paths.get(System.getProperty("chromium.home", System.getProperty("user.home")), ".equo");
 				String cache = data.resolve("cefcache").toAbsolutePath().toString();
 				settings.cache_path = System.getProperty("chromium.cache_path", cache);
 				settings.log_file = data.resolve("cef.log").toString();
@@ -226,17 +227,11 @@ class Engine {
 					public void onContextInitialized() {
 						if (!finalRegisteredSchemeData.isEmpty() && app != null) {
 							for (final SchemeDomainPair schemeData : finalRegisteredSchemeData) {
+								SchemeHandler schemeHandler = schemeHandlerManager
+										.getSchemeHandler(schemeData.getScheme(), schemeData.getDomain());
 								app.registerSchemeHandlerFactory(schemeData.getScheme(), schemeData.getDomain(),
-										new CefSchemeHandlerFactory() {
-											@Override
-											public CefResourceHandler create(CefBrowser browser, CefFrame frame,
-													String schemeName, CefRequest request) {
-												final SchemeHandler schemeHandler = schemeHandlerManager
-														.getSchemeHandler(schemeData.getScheme(),
-																schemeData.getDomain());
-												return new DelegatingCefResourceHandler(schemeHandler);
-											}
-										});
+										schemeHandler == null ? new DynamicCefSchemeHandlerFactory(schemeHandlerManager)
+												: new StaticCefSchemeHandlerFactory(schemeHandlerManager, schemeData));
 							}
 						}
 						app.registerSchemeHandlerFactory("https", "functions", new CefSchemeHandlerFactory() {

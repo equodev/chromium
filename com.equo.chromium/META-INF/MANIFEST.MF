@@ -1,5 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
+Bundle-ActivationPolicy: lazy
 Bundle-Name: Chromium SWT Browser
 Bundle-SymbolicName: com.equo.chromium
 Bundle-Version: 88.0.0.qualifier
