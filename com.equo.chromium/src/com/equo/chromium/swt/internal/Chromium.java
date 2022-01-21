@@ -995,7 +995,7 @@ final class Chromium extends WebBrowser {
 	}
 
 	private void onLoadingProgressChange(CefBrowser browser, double progress) {
-		if (!enableProgress.isDone()) {
+		if (!enableProgress.isDone() || isDisposed()) {
 			return;
 		}
 
@@ -1947,6 +1947,7 @@ final class Chromium extends WebBrowser {
 	}
 
 	private boolean onSetFocus(FocusSource focusSource) {
+		if (isDisposed()) return true;
 		boolean chromiumFocusControl = "gtk".equals(SWT.getPlatform()) ? true : chromium.getDisplay().getFocusControl() != chromium;
 		if (ignoreFirstFocus && chromiumFocusControl && focusSource == FocusSource.FOCUS_SOURCE_NAVIGATION) {
 			debugPrint("ignoreFirstFocus "+chromium.getDisplay().getFocusControl());
