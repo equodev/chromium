@@ -277,8 +277,8 @@ class Engine {
 		List<String> args = new ArrayList<>();
 		String vmArg = System.getProperty("chromium.args", System.getProperty("swt.chromium.args"));
 		if (vmArg != null) {
-			String[] lines = vmArg.split(";");
-			args.addAll(Arrays.asList(lines));
+			String[] lines = vmArg.replace("\\;", "\\#$").split(";");
+			Arrays.stream(lines).map(line -> line.replace("\\#$", ";")).forEach(l -> args.add(l));
 		}
 		if (OS.isLinux()) {
 			args.add("--disable-gpu-compositing");
