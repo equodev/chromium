@@ -1890,11 +1890,16 @@ final class Chromium extends WebBrowser {
 			ignoreFirstFocus = false;
 			return true;
 		}
-		if ("win32".equals(SWT.getPlatform())) { // consider this for all os
+
+		if (chromium.isFocusControl()) {
+			if (focusListener != null)
+				focusListener.enabled = true;
+		} else {
 			if (focusListener != null)
 				focusListener.enabled = false;
-			chromium.setFocus();
+			return true;
 		}
+
 		hasFocus = true;
 		return false;
 	}
