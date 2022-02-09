@@ -438,6 +438,7 @@ final class Chromium extends WebBrowser {
 			chromium.addListener(SWT.KeyDown, traverseListener); // required to take focus on tab
 		}
 
+		Net.config();
 		cefBrowser = (CefBrowserSwt) clientHandler.createBrowser(this.url == null ? "about:blank" : this.url, false, false, null);
 		cefBrowser.createImmediately(chromium);
 	}
@@ -2348,6 +2349,7 @@ final class Chromium extends WebBrowser {
 	}
 
 	private void doSetUrl(String url, String postData, String[] headers) {
+		Net.config();
 		if (postData == null && headers == null) {
 			cefBrowser.loadURL(url);
 		} else {
