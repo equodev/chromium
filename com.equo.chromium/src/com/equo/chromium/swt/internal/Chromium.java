@@ -94,6 +94,8 @@ import org.eclipse.swt.browser.StatusTextListener;
 import org.eclipse.swt.browser.TitleEvent;
 import org.eclipse.swt.browser.TitleListener;
 import org.eclipse.swt.browser.VisibilityWindowListener;
+import org.eclipse.swt.events.ControlAdapter;
+import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.PaintEvent;
@@ -173,6 +175,7 @@ final class Chromium extends WebBrowser {
 	private HashMap<String, Boolean> changedCache = new HashMap<String, Boolean>();
 	private CompletableFuture<Void> urls = CompletableFuture.completedFuture(null);
 	private boolean isOpenDialog = false;
+	private ControlAdapter fullscreenListener = null;
 
 	Chromium() {
 	}
@@ -911,6 +914,13 @@ final class Chromium extends WebBrowser {
 				getChromium(browser).onLoadingProgressChange(browser, progress);
 			}
 		}
+
+		@Override
+		public void onFullscreenModeChange(CefBrowser browser, boolean fullscreen) {
+			if (!browser.isPopup()) {
+				getChromium(browser).onFullscreenModeChange(browser, fullscreen);
+			}
+		}
 	}
 	
 	private void onTitleChange(String title) {
@@ -1000,6 +1010,37 @@ final class Chromium extends WebBrowser {
 				listener.changed(event);
 			}
 		}
+	}
+
+	private void onFullscreenModeChange(CefBrowser browser, boolean fullScreen) {
+		if (isDisposed()) return;
+
+		chromium.getShell().setFullScreen(fullScreen);
+		Shell cefBrowserShell = cefBrowser.getComposite().getShell();
+
+		if (!fullScreen) {
+			if (fullscreenListener != null) {
+				cefBrowserShell.removeControlListener(fullscreenListener);
+				fullscreenListener = null;
+			}
+			cefBrowser.resize();
+			return;
+		}
+		
+		// Listen fullscreen changes from swt shell
+		fullscreenListener = new ControlAdapter () {
+			boolean isFirtsResized = !"win32".equals(SWT.getPlatform());
+
+			@Override
+			public void controlResized(ControlEvent arg0) {
+				if (!isFirtsResized) {
+					execute("if(document.exitFullscreen) { document.exitFullscreen(); }");
+				}
+				isFirtsResized = false;
+			}
+		};
+
+		cefBrowserShell.addControlListener(fullscreenListener);
 	}
 
 	private static void setRequestHandler() {
@@ -1826,6 +1867,12 @@ final class Chromium extends WebBrowser {
 					return true;
 				}
 			}
+		}
+		//Exit fullSreen
+		if (fullscreenListener != null && event.windows_key_code == 27
+				&& event.type == EventType.KEYEVENT_RAWKEYDOWN) {
+			cefBrowser.getComposite().getShell().setFullScreen(false);
+			execute("document.exitFullscreen()");
 		}
 		return false;
 	}
