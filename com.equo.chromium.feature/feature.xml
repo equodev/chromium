@@ -6,7 +6,7 @@
       provider-name="Equo"
       os="linux,macosx,win32"
       ws="cocoa,gtk,win32"
-      arch="x86_64,x86">
+      arch="x86_64,x86,aarch64">
 
    <description url="https://www.equoplatform.com">
       Chromium SWT Browser
