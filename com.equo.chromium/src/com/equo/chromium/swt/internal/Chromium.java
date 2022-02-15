@@ -215,6 +215,11 @@ final class Chromium extends WebBrowser {
 	@Override
 	public void createFunction (BrowserFunction function) {
 		created.thenRun(() -> {
+			String[] arrFrames = function.getFrameNames();
+			if (arrFrames == null && !function.top) {
+				return;
+			}
+
 			for (BrowserFunction current : functions.values()) {
 				if (current.getName().equals (function.getName())) {
 					destroyFunction(current);
@@ -223,8 +228,10 @@ final class Chromium extends WebBrowser {
 			}
 			function.index = getNextFunctionIndex();
 			registerFunction(function);
-			
-			String frames = function.getFrameNames() != null ? Arrays.stream(function.getFrameNames()).collect(Collectors.joining(";")) : "";
+
+			String frames = arrFrames != null && arrFrames.length > 0
+					? Arrays.stream(arrFrames).collect(Collectors.joining(";", "", ";"))
+					: arrFrames == null || !function.top ? ";" : "";
 			int id = cefBrowser.getIdentifier();
 			String encodedFn = "__browserFunction;"+function.index+";"+function.token+";"+RequestHandler.FUNCTION_HOST+";"+id+";"+function.top+";"+frames;
 			CefMessageRouterConfig config = new CefMessageRouterConfig(encodedFn, function.getName());
