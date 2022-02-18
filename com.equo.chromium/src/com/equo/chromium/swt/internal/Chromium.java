@@ -425,23 +425,28 @@ final class Chromium extends WebBrowser {
 
 	private void createBrowser() {
 		prepareBrowser();
-		if (!"gtk".equals(SWT.getPlatform())) {
-			traverseListener = new Listener() {
-				@Override
-				public void handleEvent(Event event) {
-					if (event.type == SWT.Traverse) {
+		traverseListener = new Listener() {
+			@Override
+			public void handleEvent(Event event) {
+				if (event.type == SWT.Traverse) {
+					// Set focus when navegation using TAB key.
+					if (event.character == SWT.TAB && !focusListener.enabled) {
+						focusListener.enabled = true;
+						cefBrowser.setFocus(true);
+						return;
+					}
+
+					if (!"gtk".equals(SWT.getPlatform())) {
 						//debugPrint("Ignoring TRAVERSE " + event);
 						event.doit = false;
 					}
 				}
-			};
-		}
+			}
+		};
+
+		chromium.addListener(SWT.KeyDown, traverseListener); // required to take focus on tab
 		if ("win32".equals(SWT.getPlatform())) {
 			chromium.addListener(SWT.Traverse, traverseListener);
-			chromium.addListener(SWT.KeyDown, traverseListener); // required to take focus on tab
-		}
-		if ("cocoa".equals(SWT.getPlatform())) {
-			chromium.addListener(SWT.KeyDown, traverseListener); // required to take focus on tab
 		}
 
 		cefBrowser = (CefBrowserSwt) clientHandler.createBrowser(this.url == null ? "about:blank" : this.url, false, false, null);
@@ -1970,22 +1975,44 @@ final class Chromium extends WebBrowser {
 		return false;
 	}
 
+	private Composite getParent(Composite composite) {
+		Composite parent = composite;
+		while (parent.getParent() != null) {
+			parent = parent.getParent();
+		}
+		return parent;
+	}
+
+	private List<Control> getTabList(Composite composite) {
+		List<Control> tabOrder = new ArrayList<Control>();
+
+		for (Control c: composite.getTabList()) {
+			if (c.isVisible() && !(c instanceof Label)) {
+				if (c instanceof Composite && ((Composite) c).getTabList().length > 0) {
+					tabOrder.addAll(getTabList((Composite)c));
+				} else {
+					tabOrder.add(c);
+				}
+			}
+		}
+		return tabOrder;
+	}
+
 	private void onTakeFocus(boolean next) {
 		if (isDisposed()) return;
 		hasFocus = false;
-		Control[] tabOrder = chromium.getParent().getTabList();
-		if (tabOrder.length == 0)
-			tabOrder = chromium.getParent().getChildren();
-		int indexOf = Arrays.asList(tabOrder).indexOf(chromium);
+		List<Control> tabOrder = getTabList(getParent(chromium));
+		int indexOf = tabOrder.indexOf(chromium);
 		if (indexOf != -1) {
 			int newIndex = (next) ? indexOf + 1 : indexOf - 1;
-			if (newIndex > 0 && newIndex < tabOrder.length && !tabOrder[newIndex].isDisposed()) {
-				tabOrder[newIndex].setFocus();
+			if (newIndex > 0 && newIndex < tabOrder.size() && !tabOrder.get(newIndex).isDisposed()) {
+				tabOrder.get(newIndex).setFocus();
 				return;
 			}
 		}
-		if (!isDisposed() && !chromium.getParent().isDisposed()) {
-			chromium.getParent().setFocus();
+		Control nextFocus = tabOrder.get(0);
+		if (!isDisposed() && !chromium.getParent().isDisposed() && !nextFocus.isDisposed()) {
+			nextFocus.setFocus();
 		}
 	}
 
