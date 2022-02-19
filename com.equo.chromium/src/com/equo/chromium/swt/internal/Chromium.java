@@ -127,6 +127,8 @@ import com.equo.chromium.swt.ChromiumBrowser.ConsoleListener;
 import com.equo.chromium.swt.OpenWindowListener;
 import com.equo.chromium.swt.WindowEvent;
 import com.github.cliftonlabs.json_simple.Jsoner;
+import com.equo.chromium.swt.internal.spi.CommRouterHandler;
+import com.equo.chromium.swt.internal.spi.CommunicationManager;
 
 @SuppressWarnings("restriction")
 final class Chromium extends WebBrowser {
@@ -592,8 +594,14 @@ final class Chromium extends WebBrowser {
 		setJsdialogHandler();
 		setContextMenuHandler();
 		setDownloadHandler();
-		
+
 		router = Eval.createRouter();
+		CommunicationManager commManager = CommunicationManager.get();
+		if (commManager != null) {
+			CefMessageRouter commRouter = CommRouterHandler.createRouter();
+			commRouter.addHandler(new CommRouterHandler(commManager), true);
+			clientHandler.addMessageRouter(commRouter);
+		}
 		clientHandler.addMessageRouter(router);
 	}
 	
@@ -2475,6 +2483,11 @@ final class Chromium extends WebBrowser {
 		public void removeConsoleListener(ConsoleListener listener) {
 			consoleListeners.remove(listener);
 		}
-		
+
+		@Override
+		public void executeJavacript(String script) {
+			execute(script);
+		}
+
 	}
 }
