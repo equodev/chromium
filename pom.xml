@@ -6,7 +6,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.equo</groupId>
 	<artifactId>chromium</artifactId>
-	<version>94.0.0-SNAPSHOT</version>
+	<version>95.0.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<properties>

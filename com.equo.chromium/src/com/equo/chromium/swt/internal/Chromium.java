@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.Stack;
 import java.util.Vector;
 import java.util.concurrent.CompletableFuture;
@@ -49,7 +48,6 @@ import org.cef.callback.CefDownloadItemCallback;
 import org.cef.callback.CefFileDialogCallback;
 import org.cef.callback.CefJSDialogCallback;
 import org.cef.callback.CefMenuModel;
-import org.cef.callback.CefRequestCallback;
 import org.cef.callback.CefStringVisitor;
 import org.cef.handler.CefContextMenuHandlerAdapter;
 import org.cef.handler.CefDialogHandler;
@@ -1080,7 +1078,7 @@ final class Chromium extends WebBrowser {
 		
 		@Override
 		public boolean onCertificateError(CefBrowser browser, ErrorCode cert_error, String request_url,
-				CefRequestCallback callback) {
+				CefCallback callback) {
 			debug("onCertificateError", browser);
 			if (!browser.isPopup()) {
 				return getChromium(browser).onCertificateError(cert_error, request_url, callback);
@@ -1336,13 +1334,13 @@ final class Chromium extends WebBrowser {
 		}
 	}
 
-	private boolean onCertificateError(ErrorCode cert_error, String request_url, CefRequestCallback callback) {
+	private boolean onCertificateError(ErrorCode cert_error, String request_url, CefCallback callback) {
 		String derpem = System.getProperty("chromium.ssl", "");
 		if (!derpem.isEmpty()) {
 			if (Files.isReadable(Paths.get(derpem))) {
 				try {
 					byte[] derpemBytes = Files.readAllBytes(Paths.get(derpem));
-					callback.Continue(true);
+					callback.Continue();
 					return true;
 				} catch (IOException e) {
 					debugPrint("Failed to read file "+derpem);
@@ -1351,7 +1349,7 @@ final class Chromium extends WebBrowser {
 			} else {
 				debugPrint("Cannot read file '"+derpem+"', trying as string");
 				byte[] derpemBytes = derpem.getBytes(Charset.forName("ASCII"));
-				callback.Continue(true);
+				callback.Continue();
 				return true;
 			}
 		}
@@ -1366,9 +1364,9 @@ final class Chromium extends WebBrowser {
 		prompt.setMessage(message);
 		int result = prompt.open();
 		if (result == SWT.YES) {
-			callback.Continue(true);
+			callback.Continue();
 		} else {
-			callback.Cancel();
+			callback.cancel();
 		}
 		return true;
 	}
