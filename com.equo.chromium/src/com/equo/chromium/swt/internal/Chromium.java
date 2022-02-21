@@ -127,6 +127,8 @@ import com.equo.chromium.swt.ChromiumBrowser.ConsoleListener;
 import com.equo.chromium.swt.OpenWindowListener;
 import com.equo.chromium.swt.WindowEvent;
 import com.github.cliftonlabs.json_simple.Jsoner;
+import com.equo.chromium.swt.internal.spi.CommRouterHandler;
+import com.equo.chromium.swt.internal.spi.CommunicationManager;
 
 @SuppressWarnings("restriction")
 final class Chromium extends WebBrowser {
@@ -215,6 +217,11 @@ final class Chromium extends WebBrowser {
 	@Override
 	public void createFunction (BrowserFunction function) {
 		created.thenRun(() -> {
+			String[] arrFrames = function.getFrameNames();
+			if (arrFrames == null && !function.top) {
+				return;
+			}
+
 			for (BrowserFunction current : functions.values()) {
 				if (current.getName().equals (function.getName())) {
 					destroyFunction(current);
@@ -223,8 +230,10 @@ final class Chromium extends WebBrowser {
 			}
 			function.index = getNextFunctionIndex();
 			registerFunction(function);
-			
-			String frames = function.getFrameNames() != null ? Arrays.stream(function.getFrameNames()).collect(Collectors.joining(";")) : "";
+
+			String frames = arrFrames != null && arrFrames.length > 0
+					? Arrays.stream(arrFrames).collect(Collectors.joining(";", "", ";"))
+					: arrFrames == null || !function.top ? ";" : "";
 			int id = cefBrowser.getIdentifier();
 			String encodedFn = "__browserFunction;"+function.index+";"+function.token+";"+RequestHandler.FUNCTION_HOST+";"+id+";"+function.top+";"+frames;
 			CefMessageRouterConfig config = new CefMessageRouterConfig(encodedFn, function.getName());
@@ -419,23 +428,28 @@ final class Chromium extends WebBrowser {
 
 	private void createBrowser() {
 		prepareBrowser();
-		if (!"gtk".equals(SWT.getPlatform())) {
-			traverseListener = new Listener() {
-				@Override
-				public void handleEvent(Event event) {
-					if (event.type == SWT.Traverse) {
+		traverseListener = new Listener() {
+			@Override
+			public void handleEvent(Event event) {
+				if (event.type == SWT.Traverse) {
+					// Set focus when navegation using TAB key.
+					if (event.character == SWT.TAB && !focusListener.enabled) {
+						focusListener.enabled = true;
+						cefBrowser.setFocus(true);
+						return;
+					}
+
+					if (!"gtk".equals(SWT.getPlatform())) {
 						//debugPrint("Ignoring TRAVERSE " + event);
 						event.doit = false;
 					}
 				}
-			};
-		}
+			}
+		};
+
+		chromium.addListener(SWT.KeyDown, traverseListener); // required to take focus on tab
 		if ("win32".equals(SWT.getPlatform())) {
 			chromium.addListener(SWT.Traverse, traverseListener);
-			chromium.addListener(SWT.KeyDown, traverseListener); // required to take focus on tab
-		}
-		if ("cocoa".equals(SWT.getPlatform())) {
-			chromium.addListener(SWT.KeyDown, traverseListener); // required to take focus on tab
 		}
 
 		Net.config();
@@ -582,8 +596,14 @@ final class Chromium extends WebBrowser {
 		setJsdialogHandler();
 		setContextMenuHandler();
 		setDownloadHandler();
-		
+
 		router = Eval.createRouter();
+		CommunicationManager commManager = CommunicationManager.get();
+		if (commManager != null) {
+			CefMessageRouter commRouter = CommRouterHandler.createRouter();
+			commRouter.addHandler(new CommRouterHandler(commManager), true);
+			clientHandler.addMessageRouter(commRouter);
+		}
 		clientHandler.addMessageRouter(router);
 	}
 	
@@ -1952,22 +1972,44 @@ final class Chromium extends WebBrowser {
 		return false;
 	}
 
+	private Composite getParent(Composite composite) {
+		Composite parent = composite;
+		while (parent.getParent() != null) {
+			parent = parent.getParent();
+		}
+		return parent;
+	}
+
+	private List<Control> getTabList(Composite composite) {
+		List<Control> tabOrder = new ArrayList<Control>();
+
+		for (Control c: composite.getTabList()) {
+			if (c.isVisible() && !(c instanceof Label)) {
+				if (c instanceof Composite && ((Composite) c).getTabList().length > 0) {
+					tabOrder.addAll(getTabList((Composite)c));
+				} else {
+					tabOrder.add(c);
+				}
+			}
+		}
+		return tabOrder;
+	}
+
 	private void onTakeFocus(boolean next) {
 		if (isDisposed()) return;
 		hasFocus = false;
-		Control[] tabOrder = chromium.getParent().getTabList();
-		if (tabOrder.length == 0)
-			tabOrder = chromium.getParent().getChildren();
-		int indexOf = Arrays.asList(tabOrder).indexOf(chromium);
+		List<Control> tabOrder = getTabList(getParent(chromium));
+		int indexOf = tabOrder.indexOf(chromium);
 		if (indexOf != -1) {
 			int newIndex = (next) ? indexOf + 1 : indexOf - 1;
-			if (newIndex > 0 && newIndex < tabOrder.length && !tabOrder[newIndex].isDisposed()) {
-				tabOrder[newIndex].setFocus();
+			if (newIndex > 0 && newIndex < tabOrder.size() && !tabOrder.get(newIndex).isDisposed()) {
+				tabOrder.get(newIndex).setFocus();
 				return;
 			}
 		}
-		if (!isDisposed() && !chromium.getParent().isDisposed()) {
-			chromium.getParent().setFocus();
+		Control nextFocus = tabOrder.get(0);
+		if (!isDisposed() && !chromium.getParent().isDisposed() && !nextFocus.isDisposed()) {
+			nextFocus.setFocus();
 		}
 	}
 
@@ -2431,6 +2473,11 @@ final class Chromium extends WebBrowser {
 		public void removeConsoleListener(ConsoleListener listener) {
 			consoleListeners.remove(listener);
 		}
-		
+
+		@Override
+		public void executeJavacript(String script) {
+			execute(script);
+		}
+
 	}
 }
