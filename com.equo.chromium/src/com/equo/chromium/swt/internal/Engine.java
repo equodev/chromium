@@ -58,9 +58,9 @@ class Engine {
 		if (OS.isLinux()) {
 			String backend = System.getenv("GDK_BACKEND");
 			String session = System.getenv("XDG_SESSION_TYPE");
-			if ("wayland".equals(session) && !"x11".equals(backend)) {
+			if ("wayland".equals(session) && !"x11".equals(backend) && Display.getCurrent() != null) {
 				throw new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY,
-						"To run Chromium on Wayland, set env var GDK_BACKEND=x11");
+						"To run Chromium on Wayland, set env var GDK_BACKEND=x11 or call ChromiumBrowser.earlyInit() before creating Display");
 			}
 		}
 
