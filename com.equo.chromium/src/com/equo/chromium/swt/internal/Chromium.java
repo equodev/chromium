@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.Stack;
 import java.util.Vector;
 import java.util.concurrent.CompletableFuture;
@@ -94,13 +93,18 @@ import org.eclipse.swt.browser.StatusTextListener;
 import org.eclipse.swt.browser.TitleEvent;
 import org.eclipse.swt.browser.TitleListener;
 import org.eclipse.swt.browser.VisibilityWindowListener;
+import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.events.ControlAdapter;
 import org.eclipse.swt.events.ControlEvent;
+import org.eclipse.swt.events.ControlListener;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
+import org.eclipse.swt.graphics.GC;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.internal.Compatibility;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -113,12 +117,16 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Monitor;
 import org.eclipse.swt.widgets.ProgressBar;
+import org.eclipse.swt.widgets.Sash;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.Widget;
 
 import com.equo.chromium.swt.Browser;
 import com.equo.chromium.swt.BrowserFunction;
@@ -178,6 +186,7 @@ final class Chromium extends WebBrowser {
 	private CompletableFuture<Void> urls = CompletableFuture.completedFuture(null);
 	private boolean isOpenDialog = false;
 	private ControlAdapter fullscreenListener = null;
+	private ResizeListener resize;
 
 	Chromium() {
 	}
@@ -385,7 +394,7 @@ final class Chromium extends WebBrowser {
 	public void create(Composite parent, int style) {
 		Engine.initCEF();
 //		debugPrint("initCef Done");
-		chromium.setBackground(parent.getDisplay().getSystemColor(SWT.COLOR_TRANSPARENT));
+		chromium.setBackground(parent.getDisplay().getSystemColor(SWT.COLOR_WHITE));
 		paintListener = new PaintListener() {
 			@Override
 			public void paintControl(PaintEvent e) {
@@ -401,6 +410,9 @@ final class Chromium extends WebBrowser {
 			chromium.getDisplay().timerExec(10, () -> {if (paintListener != null) paintListener.paintControl(null);});
 		} else {
 			chromium.addPaintListener(paintListener);
+		}
+		if ("image".equals(System.getProperty("chromium.resize", "live"))) {
+			resize = new ResizeListener();
 		}
 	}
 
@@ -2098,6 +2110,9 @@ final class Chromium extends WebBrowser {
 			chromium.removeListener(SWT.KeyDown, traverseListener);
 			traverseListener = null;
 		}
+		if (resize != null) {
+			resize.remove();
+		}
 	}
 
 	private static void setupCookies() {
@@ -2171,6 +2186,161 @@ final class Chromium extends WebBrowser {
 					return;
 			}
 		};
+	}
+
+	private class ResizeListener implements ControlListener, Listener, Runnable {
+		private boolean mouseDown;
+		private Composite overlay;
+		private Image image;
+		private Image scaledImage;
+		private Runnable loop = new Runnable() {
+			@Override
+			public void run() {
+				CefApp.getInstance().doMessageLoopWork(-1);
+			}
+		};
+		
+		public ResizeListener() {
+			overlay = new Composite(chromium, SWT.NONE);
+			overlay.setBackground(chromium.getDisplay().getSystemColor(SWT.COLOR_WHITE));
+			overlay.setBounds(chromium.getClientArea());
+			overlay.setVisible(false);
+			install();
+		}
+	
+		private Image getImage() {
+			Rectangle bounds = overlay.getBounds();
+			Display display = chromium.getDisplay();
+			if (bounds.width <= 0 || bounds.height <= 0)
+				return null;
+			if (!created.isDone() || !chromium.isVisible())
+				return null;
+			if (image == null) {
+				GC gc = new GC(chromium.getShell());
+				Rectangle cefBounds = cefBrowser.getCurrentBounds();
+				if (cefBounds == null || cefBounds.width == 0 || cefBounds.height == 0)
+					return null;
+				Image orig = new Image(display, cefBounds.width, cefBounds.height);
+				gc.copyArea(orig, cefBounds.x, cefBounds.y);
+				gc.dispose();
+				image = orig;
+			}
+			if (bounds.equals(image.getBounds()))
+				return image;
+			if (scaledImage != null) {
+				if (scaledImage.getBounds().equals(bounds)) {
+					return scaledImage;
+				}
+				scaledImage.dispose();
+				scaledImage = null;
+			}
+			scaledImage = new Image(display, bounds.width, bounds.height);
+			GC gc = new GC(scaledImage);
+			gc.setAntialias(SWT.ON);
+			gc.setInterpolation(SWT.HIGH);
+			gc.drawImage(image, 0, 0, image.getBounds().width, image.getBounds().height, 0, 0, bounds.width, bounds.height);
+			gc.dispose();
+			return scaledImage;
+		}
+	
+		@Override
+		public void run() {
+			hideOverlay();
+		}
+	
+		@Override
+		public void controlResized(ControlEvent e) {
+			if (isDisposed()) return;
+			overlay.setBounds(chromium.getClientArea());
+			showOverlay(e.display);
+		}
+	
+		@Override
+		public void controlMoved(ControlEvent e) {
+			if (isDisposed()) return;
+			overlay.setBounds(chromium.getClientArea());
+			showOverlay(e.display);
+		}
+		
+		@Override
+		public void handleEvent(Event event) {
+			if (isDisposed()) return;
+			mouseDown = event.type == SWT.MouseDown;
+			if (mouseDown && chromium.isVisible() && isSash(event.widget)) {
+				getImage();
+			}
+			if (event.type == SWT.DragDetect && chromium.isVisible() && (event.widget instanceof CTabFolder || event.widget instanceof TabFolder)) {
+				getImage();
+				event.display.timerExec(8000, this::disposeImage);
+			} else if (!mouseDown && (image != null || scaledImage != null)) {
+				disposeImage();
+			}
+		}
+	
+		private void showOverlay(Display display) {
+			if (created.isDone()) {
+				overlay.setVisible(true);
+				Image img = getImage();
+				overlay.setBackgroundImage(img);
+				if (img == null)
+					overlay.setBackground(display.getSystemColor(SWT.COLOR_WHITE));
+				display.timerExec(33*1, loop);
+				display.timerExec(33*4, this);
+			}
+		}
+	
+		private void hideOverlay() {
+			if (overlay.isVisible())
+				overlay.setVisible(false);
+			disposeImage();
+		}
+	
+		private void disposeImage() {
+			if (image != null) {
+				image.dispose();
+				image = null;
+			}
+			if (scaledImage != null) {
+				scaledImage.dispose();
+				scaledImage = null;
+			}
+		}
+	
+		private boolean isSash(Widget widget) {
+			if (widget instanceof Sash && isAncestor(((Sash) widget).getParent()))
+				return true;
+			if (!(widget instanceof Composite))
+				return false;
+			Layout layout = ((Composite) widget).getLayout();
+			if (layout != null && layout.getClass().getSimpleName().contains("SashLayout") && isAncestor((Composite) widget))
+				return true;
+			return false;
+		}
+	
+		private boolean isAncestor(Composite ancestor) {
+			Composite parent = chromium.getParent();
+			while (parent != null) {
+				if (parent == ancestor)
+					return true;
+				parent = parent.getParent();
+			}
+			return false;
+		}
+	
+		public void remove() {
+			chromium.removeControlListener(this);
+			chromium.getDisplay().removeFilter(SWT.KeyDown, this);
+			chromium.getDisplay().removeFilter(SWT.KeyUp, this);
+			chromium.getDisplay().removeFilter(SWT.DragDetect, this);
+			resize = null;
+		}
+	
+		public void install() {
+			chromium.addControlListener(this);
+			chromium.getDisplay().addFilter(SWT.MouseDown, this);
+			chromium.getDisplay().addFilter(SWT.MouseUp, this);
+			chromium.getDisplay().addFilter(SWT.DragDetect, this);
+		}
 	}
 
 	private final class CefFocusListener implements FocusListener {
