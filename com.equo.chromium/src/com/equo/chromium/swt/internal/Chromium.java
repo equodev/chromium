@@ -1735,6 +1735,9 @@ final class Chromium extends WebBrowser {
 			String nameString = download_item.getFullPath();
 			String urlString = download_item.getURL();
 			String msg = Compatibility.getMessage ("SWT_Download_Location", new Object[] {nameString +"\n", urlString}); //$NON-NLS-1$
+			if (urlString.startsWith("data:")) {
+				msg = "Saving...";
+			}
 			nameLabel.setText (msg);
 		}
 
