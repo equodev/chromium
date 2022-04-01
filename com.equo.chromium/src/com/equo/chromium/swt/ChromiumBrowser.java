@@ -10,6 +10,8 @@ import org.cef.CefApp.CefAppState;
 import org.cef.CefClient;
 import org.cef.browser.CefBrowserSwt;
 
+import com.equo.chromium.swt.internal.WebBrowser;
+
 public interface ChromiumBrowser {
 
 	static Collection<ChromiumBrowser> getAllBrowsers() {
@@ -67,5 +69,18 @@ public interface ChromiumBrowser {
 	 */
 	public static void earlyInit() throws ClassNotFoundException {
 		Class.forName("com.equo.chromium.swt.internal.Engine");
+	}
+
+	/**
+	 * Delete cookies matching the url and name regex patterns. Negation patterns
+	 * can be used to exclude cookies from deletion.
+	 * 
+	 * @param urlPattern  the pattern for the matching URL case. Null matches all,
+	 *                    empty matches nothing.
+	 * @param namePattern the pattern for the matching cookie name case. Null
+	 *                    matches all, empty matches nothing.
+	 */
+	static boolean clearCookies(String urlPattern, String namePattern) {
+		return WebBrowser.clearCookie(urlPattern, namePattern);
 	}
 }

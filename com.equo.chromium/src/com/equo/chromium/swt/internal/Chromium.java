@@ -134,9 +134,9 @@ import com.equo.chromium.swt.ChromiumBrowser;
 import com.equo.chromium.swt.ChromiumBrowser.ConsoleListener;
 import com.equo.chromium.swt.OpenWindowListener;
 import com.equo.chromium.swt.WindowEvent;
-import com.github.cliftonlabs.json_simple.Jsoner;
 import com.equo.chromium.swt.internal.spi.CommRouterHandler;
 import com.equo.chromium.swt.internal.spi.CommunicationManager;
+import com.github.cliftonlabs.json_simple.Jsoner;
 
 @SuppressWarnings("restriction")
 final class Chromium extends WebBrowser {
@@ -2124,6 +2124,26 @@ final class Chromium extends WebBrowser {
 				}
 			});
 		};
+		WebBrowser.NativeClearCookies = () -> {
+			Engine.ready.thenRun(() -> {
+				CefCookieManager globalManager = CefCookieManager.getGlobalManager();
+				if (globalManager != null) {
+					CefCookieVisitor visitor = new CefCookieVisitor() {
+						@Override
+						public boolean visit(CefCookie cookie, int count, int total, BoolRef delete) {
+							debug("Debug Cookie: " + cookie.name);
+							if (cookie.domain.matches(WebBrowser.ClearCookieUrl)
+									&& cookie.name.matches(WebBrowser.ClearCookieName)) {
+								delete.set(true);
+							}
+							return true;
+						}
+					};
+					ClearCookieUrl = ClearCookieName = null;
+					WebBrowser.CookieResult = globalManager.visitAllCookies(visitor);
+				}
+			});
+		};
 		WebBrowser.NativeSetCookie = () -> {
 			List<HttpCookie> cookies = HttpCookie.parse(WebBrowser.CookieValue);
 			for (HttpCookie cookie : cookies) {
@@ -2133,7 +2153,9 @@ final class Chromium extends WebBrowser {
 				}
 				Date now = new Date();
 				Date expires = new Date(age);
-				CefCookie cefCookie = new CefCookie(cookie.getName(), cookie.getValue(), cookie.getDomain(), cookie.getPath(), cookie.getSecure(), cookie.isHttpOnly(), now, now, cookie.getMaxAge() != -1, expires);
+				CefCookie cefCookie = new CefCookie(cookie.getName(), cookie.getValue(), cookie.getDomain(),
+						cookie.getPath(), cookie.getSecure(), cookie.isHttpOnly(), now, now, cookie.getMaxAge() != -1,
+						expires);
 				String cookieUrl = WebBrowser.CookieUrl;
 				Engine.ready.thenRun(() -> {
 					CefCookieManager globalManager = CefCookieManager.getGlobalManager();
@@ -2648,6 +2670,5 @@ final class Chromium extends WebBrowser {
 		public void executeJavacript(String script) {
 			execute(script);
 		}
-
 	}
 }
