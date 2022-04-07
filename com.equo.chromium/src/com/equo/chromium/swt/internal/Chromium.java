@@ -158,8 +158,6 @@ final class Chromium extends WebBrowser {
 	private static JsDialogHandler jsDialogHandler;
 	private static ContextMenuHandler contextMenuHandler;
 	private static DownloadHandler downloadHandler;
-//	private static CefClientSwt popupClientHandler;
-//	private static LifeSpanHandler popupLifeSpanHandler;
 	private static CefMessageRouter router;
 	
 	Browser chromium;
@@ -184,7 +182,7 @@ final class Chromium extends WebBrowser {
 	Stack<FunctionsResourceHandler> functionsResourceHandler = new Stack<FunctionsResourceHandler>();
 	private HashMap<String, Boolean> changedCache = new HashMap<String, Boolean>();
 	private CompletableFuture<Void> urls = CompletableFuture.completedFuture(null);
-	private boolean isOpenDialog = false;
+	private static boolean isOpenDialog = false;
 	private ControlAdapter fullscreenListener = null;
 	private ResizeListener resize;
 
@@ -469,109 +467,6 @@ final class Chromium extends WebBrowser {
 		cefBrowser.createImmediately(chromium);
 	}
 
-//	private void createPopup(long /*int*/ windowInfo, long /*int*/ client, WindowEvent event) {
-//		if (paintListener != null) {
-//			if (!Boolean.getBoolean("chromium.headless"))
-//				chromium.removePaintListener(paintListener);
-//			paintListener = null;
-//		} else {
-//			debug("Unregistering chromium phantom popup " + instance);
-//			instances.remove(instance);
-//		}
-//		debug("Registering chromium popup new");
-//		instancesNew.add(this);
-//		isPopup = event;
-//		
-//		String platform = SWT.getPlatform ();
-//		if ("gtk".equals(platform) && chromium.getDisplay().getActiveShell() != chromium.getShell()) {
-//			// on linux the window hosting the popup needs to be created
-//			boolean visible = chromium.getShell().isVisible();
-//			chromium.getShell().open();
-//			chromium.getShell().setVisible(visible);
-//		}
-//
-//		prepareBrowser();
-//		long /*int*/ popupHandle = hwnd;
-//		debugPrint("popup will use hwnd:"+popupHandle);
-//		Point size = new Point(0, 0);
-//		if ("gtk".equals(SWT.getPlatform())) {
-//			size = chromium.getParent().getSize();
-//			// size = DPIUtil.autoScaleUp(size);
-//		}
-//
-////		ChromiumLib.cefswt_set_window_info_parent(windowInfo, client, clientHandler.ptr, popupHandle, 0, 0, size.x, size.y);
-//		debugPrint("reparent popup");
-//	}
-//	
-//	private void createDefaultPopup(long /*int*/ windowInfo, long /*int*/ client, WindowEvent event) {
-//		debugPrint("default popup");
-//		debug("Registering chromium default popup new");
-//
-//		if (popupHandlers == 0) {
-//			popupLifeSpanHandler = CEFFactory.newLifeSpanHandler();
-//			popupLifeSpanHandler.on_after_created_cb = new CallbackExt(Chromium.class, "popup_on_after_created", void.class, new Type[] {long.class, long.class});
-//			popupLifeSpanHandler.on_after_created = checkGetAddress(popupLifeSpanHandler.on_after_created_cb);
-//			popupLifeSpanHandler.on_before_close_cb = new CallbackExt(Chromium.class, "popup_on_before_close", void.class, new Type[] {long.class, long.class});
-//			popupLifeSpanHandler.on_before_close = checkGetAddress(popupLifeSpanHandler.on_before_close_cb);
-//			popupLifeSpanHandler.do_close_cb = new CallbackExt(Chromium.class, "popup_do_close", int.class, new Type[] {long.class, long.class});
-//			popupLifeSpanHandler.do_close = checkGetAddress(popupLifeSpanHandler.do_close_cb);
-//			
-//			popupLifeSpanHandler.ptr = C.malloc (cef_life_span_handler_t.sizeof);
-//			ChromiumLib.memmove(popupLifeSpanHandler.ptr, popupLifeSpanHandler, cef_life_span_handler_t.sizeof);
-//
-//			if (popupClientHandler == null) {
-//				popupClientHandler = CEFFactory.newClient();
-//				popupClientHandler.get_life_span_handler_cb = new CallbackExt(Chromium.class, "popup_get_life_span_handler", long.class, new Type[] {long.class});
-//				popupClientHandler.get_life_span_handler = checkGetAddress(popupClientHandler.get_life_span_handler_cb);
-//			
-//				popupClientHandler.ptr = C.malloc(cef_client_t.sizeof);
-//				ChromiumLib.memmove(popupClientHandler.ptr, popupClientHandler, cef_client_t.sizeof);
-//			}
-//		}
-//		popupHandlers++;
-//
-//		ChromiumLib.cefswt_set_window_info_parent(windowInfo, client, popupClientHandler.ptr, 0, event.location != null ? event.location.x : 0, event.location != null ? event.location.y : 0, event.size != null ? event.size.x : 0, event.size != null ? event.size.y : 0);
-//	}
- 
-//	static long /*int*/ popup_get_life_span_handler(long /*int*/ client) {
-//		if (popupLifeSpanHandler == null)
-//			return 0;
-//		//ChromiumLib.cefswt_ref(popupClientHandler.ptr, 1);
-//		return popupLifeSpanHandler.ptr;
-//	}
-//	
-//	static void popup_on_after_created(long /*int*/ plifeSpanHandler, long /*int*/ browser) {
-//		int id = ChromiumLib.cefswt_get_id(browser);
-//		debug("popup on_after_created: " + id);
-//		try {
-//			// not sleeping here causes deadlock with multiple window.open
-//			Thread.sleep(LOOP);
-//		} catch (InterruptedException e) {
-//		}
-//		ChromiumLib.cefswt_ref(browser, 0);
-//	}
-//	
-//	static void popup_on_before_close(long /*int*/ plifeSpanHandler, long /*int*/ browser) {
-//		debug("popup OnBeforeClose");
-//		popupHandlers--;
-//		if (popupHandlers == 0) {
-//			disposeCallback(popupLifeSpanHandler.on_after_created_cb);
-//			disposeCallback(popupLifeSpanHandler.do_close_cb);
-//			disposeCallback(popupLifeSpanHandler.on_before_close_cb);
-//			C.free(popupLifeSpanHandler.ptr);
-//			popupLifeSpanHandler = null;
-//		}
-//		disposingAny--;
-//		ChromiumLib.cefswt_ref(browser, 0);
-//	}
-//
-//	static int popup_do_close(long /*int*/ plifeSpanHandler, long /*int*/ browser) {
-//		debug("popup DoClose");
-//		disposingAny++;
-//		ChromiumLib.cefswt_ref(browser, 0);
-//		return 0;
-//	}
-	
 	@SuppressWarnings("deprecation")
 	private static void createClienthandler() {
 		boolean suspend = "win32".equals(SWT.getPlatform()) ? false : "true".equalsIgnoreCase(System.getProperty("chromium.suspend_threads", "true"));
@@ -618,8 +513,22 @@ final class Chromium extends WebBrowser {
 		}
 		clientHandler.addMessageRouter(router);
 	}
-	
-	static Chromium getChromium(CefBrowser cefBrowser) {
+
+	private static CefBrowser getTopParentPopup(CefBrowser browser) {
+		CefBrowser parent = browser;
+		while (parent != null && parent.isPopup()) {
+			parent = ((CefPopup)parent).getParent();
+		}
+		return parent;
+	}
+
+	static Chromium getChromium(CefBrowser browser) {
+		CefBrowser cefBrowser = browser;
+		if (cefBrowser.isPopup()) {
+			cefBrowser = getTopParentPopup(browser);
+			//Popup not contains parent
+			if (cefBrowser == null) return null;
+		}
 		Browser composite = (Browser) ((CefBrowserSwt) cefBrowser).getComposite();
 		ExtraApi webBrowser = (ExtraApi) composite.getWebBrowser();
 		return webBrowser.getChromium();
@@ -752,7 +661,7 @@ final class Chromium extends WebBrowser {
 	}
 
 	private boolean onBeforePopup(String target_url, String target_frame_name, String popupFeatures) {
-		if (isDisposed()) 
+		if (isDisposed())
 			return true;
 		WindowEvent event = new WindowEvent(chromium);
 		event.data = target_url;
@@ -775,6 +684,7 @@ final class Chromium extends WebBrowser {
 		}
 
 		if (event.browser != null) {
+			//TODO handle popup when event.browser is received
 //			if (((Chromium) event.browser.webBrowser).cefBrowser == null) {
 //				((Chromium) event.browser.webBrowser).createPopup(windowInfo, client, event);
 //			} else if (event.browser == this.chromium) {
@@ -849,9 +759,10 @@ final class Chromium extends WebBrowser {
 		public boolean onFileDialog(CefBrowser browser, FileDialogMode mode, String title, String defaultFilePath,
 				Vector<String> acceptFilters, int selectedAcceptFilter, CefFileDialogCallback callback) {
 			// debug("onFileDialog", browser);
-			if (!browser.isPopup()) {
-				return getChromium(browser).onFileDialog(mode, title, defaultFilePath, acceptFilters, selectedAcceptFilter,
-					callback);
+			Chromium ch = getChromium(browser);
+			if (ch != null) {
+				return ch.onFileDialog(mode, title, defaultFilePath, acceptFilters, selectedAcceptFilter,
+						callback);
 			}
 			return false;
 		}
@@ -860,6 +771,11 @@ final class Chromium extends WebBrowser {
 	private boolean onFileDialog(CefDialogHandler.FileDialogMode mode, String title, String defaultFilePath,
 			Vector<String> acceptFilters, int selectedAcceptFilter, CefFileDialogCallback callback) {
 		if ("gtk".equals(SWT.getPlatform())) {
+			// Prevent open multiple dialog. Block ui
+			if (isOpenDialog) {
+				return true;
+			}
+
 			int swtMode;
 			String defaultDlgTitle;
 			switch (mode) {
@@ -879,24 +795,30 @@ final class Chromium extends WebBrowser {
 
 			String dlgTitle = title == null || title.isEmpty() ? defaultDlgTitle : title;
 
-			FileDialog dlg = new FileDialog(chromium.getShell(), swtMode);
+			FileDialog dlg = new FileDialog(chromium.getShell(), swtMode | SWT.TOP);
 			dlg.setText(dlgTitle);
 			String[] acceptFiltersArray = MimeTypeLinux.getExtensions(acceptFilters);
 			dlg.setFilterExtensions(acceptFiltersArray);
 			dlg.setOverwrite(true);
 
-			String selected = dlg.open();
-			if (selected != null) {
-				Vector<String> filePaths = new Vector<String>();
-				for (String fileName : dlg.getFileNames()) {
-					filePaths.add(Paths.get(dlg.getFilterPath(), fileName).toString());
+			Thread thread = preventBlockUI();
+			Display.getDefault().asyncExec(() -> {
+				isOpenDialog = true;
+				thread.start();
+				String selected = dlg.open();
+				isOpenDialog = false;
+				if (selected != null) {
+					Vector<String> filePaths = new Vector<String>();
+					for (String fileName : dlg.getFileNames()) {
+						filePaths.add(Paths.get(dlg.getFilterPath(), fileName).toString());
+					}
+					int filterIndex = dlg.getFilterIndex();
+					filterIndex = (filterIndex < 0 || filterIndex >= acceptFiltersArray.length) ? selectedAcceptFilter : filterIndex;
+					callback.Continue(filterIndex, filePaths);
+				} else {
+					callback.Cancel();
 				}
-				int filterIndex = dlg.getFilterIndex();
-				filterIndex = (filterIndex < 0 || filterIndex >= acceptFiltersArray.length) ? selectedAcceptFilter : filterIndex;
-				callback.Continue(filterIndex, filePaths);
-			} else {
-				callback.Cancel();
-			}
+			});
 			return true;
 		}
 		return false;
@@ -1104,8 +1026,9 @@ final class Chromium extends WebBrowser {
 		@Override
 		public boolean getAuthCredentials(CefBrowser browser, String origin_url, boolean isProxy, String host, int port,
 				String realm, String scheme, CefAuthCallback callback) {
-			if (!browser.isPopup()) {
-				getChromium(browser).getAuthCredentials(origin_url, host, port, realm, scheme, callback);
+			Chromium chm = getChromium(browser);
+			if (chm != null) {
+				chm.getAuthCredentials(origin_url, host, port, realm, scheme, callback);
 				return true;
 			}
 			return false;
@@ -1115,8 +1038,9 @@ final class Chromium extends WebBrowser {
 		public boolean onCertificateError(CefBrowser browser, ErrorCode cert_error, String request_url,
 				CefRequestCallback callback) {
 			debug("onCertificateError", browser);
-			if (!browser.isPopup()) {
-				return getChromium(browser).onCertificateError(cert_error, request_url, callback);
+			Chromium chm = getChromium(browser);
+			if (chm != null) {
+				return chm.onCertificateError(cert_error, request_url, callback);
 			}
 			return false;
 		}
@@ -1125,33 +1049,37 @@ final class Chromium extends WebBrowser {
 		public CefResourceRequestHandler getResourceRequestHandler(CefBrowser browser, CefFrame frame,
 				CefRequest request, boolean isNavigation, boolean isDownload, String requestInitiator,
 				BoolRef disableDefaultHandling) {
+			boolean isCustomProtocol = false;
 			if (isFunction(browser, request)) {
 				return null;
 			} else {
 				String requestUrl = request.getURL();
 				if (!requestUrl.startsWith("http") && !requestUrl.startsWith("data") && !requestUrl.startsWith("file")
-						&& !requestUrl.startsWith("chrome") && !requestUrl.startsWith("about")
-						&& shouldAllowProtocol(requestUrl, browser)) {
-					return new CefResourceRequestHandlerAdapter() {
-						@Override
-						public boolean onBeforeResourceLoad(CefBrowser browser, CefFrame frame, CefRequest request) {
-							return true;
-						}
-						@Override
-						public void onProtocolExecution(CefBrowser browser, CefFrame frame, CefRequest request,
-								BoolRef allowOsExecution) {
-							debug("onProtocolExecution: " + request.getURL(), browser);
-							browser.stopLoad();
-							Program.launch(requestUrl);
-						}
-					};
+						&& !requestUrl.startsWith("chrome") && !requestUrl.startsWith("about")) {
+					if (shouldAllowProtocol(requestUrl, browser)) {
+						return new CefResourceRequestHandlerAdapter() {
+							@Override
+							public boolean onBeforeResourceLoad(CefBrowser browser, CefFrame frame, CefRequest request) {
+								return false;
+							}
+							@Override
+							public void onProtocolExecution(CefBrowser browser, CefFrame frame, CefRequest request,
+									BoolRef allowOsExecution) {
+								debug("onProtocolExecution: " + request.getURL(), browser);
+								browser.stopLoad();
+								Program.launch(requestUrl);
+							}
+						};
+					} else {
+						isCustomProtocol = true;
+					}
 				}
 			}
 
 			boolean isTurbolinkRequest = "true".equals(request.getHeaderByName("x-pjax")) || ("empty".equals(request.getHeaderByName("sec-fetch-dest")) && !"navigate".equals(request.getHeaderByName("Sec-Fetch-Mode"))
 					&& !"websocket".equals(request.getHeaderByName("Sec-Fetch-Mode")));
 
-			if (Boolean.getBoolean("chromium.turbolinks") && isTurbolinkRequest) {
+			if (((Boolean.getBoolean("chromium.turbolinks") && isTurbolinkRequest)) || isCustomProtocol) {
 				return new CefResourceRequestHandlerAdapter() {
 					@Override
 					public boolean onBeforeResourceLoad(CefBrowser browser, CefFrame frame, CefRequest request) {
@@ -1167,8 +1095,11 @@ final class Chromium extends WebBrowser {
 				return false;
 			try {
 				int functionIndex = getFunctionIndex(request);
-				
-				return getChromium(browser).functions.containsKey(functionIndex);
+
+				if (!browser.isPopup()) {
+					return getChromium(browser).functions.containsKey(functionIndex);
+				}
+				return false;
 			} catch (NumberFormatException | URISyntaxException e) {
 				return false;
 			}
@@ -1213,9 +1144,8 @@ final class Chromium extends WebBrowser {
 					}
 				};
 				Display.getDefault().syncExec(() -> {
-					boolean isPopup = browser.isPopup();
-					Chromium chromium = isPopup ? getChromium(((CefPopup)browser).getParent()) : getChromium(browser);
-					chromium.openJsDialog(isPopup, CefJSDialogHandler.JSDialogType.JSDIALOGTYPE_CONFIRM, "",
+					Chromium chm = getChromium(browser);
+					if (chm != null) chm.openJsDialog(browser.isPopup(), CefJSDialogHandler.JSDialogType.JSDIALOGTYPE_CONFIRM, "",
 							"The link will be opened with the operating system.", "Do you want to continue?",
 							"default_prompt_text", callback);
 				});
@@ -1416,13 +1346,12 @@ final class Chromium extends WebBrowser {
 		public boolean onJSDialog(CefBrowser browser, String origin_url, JSDialogType dialog_type, String message_text,
 				String default_prompt_text, CefJSDialogCallback callback, BoolRef suppress_message) {
 			debug("onJSDialog", browser);
-			if (!useSwtDialogs()) {
+			Chromium chm = getChromium(browser);
+			if (!useSwtDialogs() || chm == null) {
 				return false;
 			}
-			if (!browser.isPopup()) {
-				return getChromium(browser).onJsdialog(browser, origin_url, dialog_type, message_text, default_prompt_text, callback, suppress_message);
-			}
-			return false;
+			return chm.onJsdialog(browser, origin_url, dialog_type, message_text, default_prompt_text, callback, suppress_message);
+
 		}
 
 		@Override
@@ -1446,7 +1375,7 @@ final class Chromium extends WebBrowser {
 	
 	private boolean onJsdialog(CefBrowser browser, String origin_url, JSDialogType dialog_type, String message_text,
 			String default_prompt_text, CefJSDialogCallback callback, BoolRef suppress_message) {
-		if (isDisposed()) return false;
+		if (isDisposed() && !browser.isPopup()) return false;
 		
 		String prompt = default_prompt_text;
 		String url = origin_url;
@@ -1467,8 +1396,17 @@ final class Chromium extends WebBrowser {
 			title = this.title;
 			break;
 		}
-		openJsDialog(false, dialog_type, title, message_text, prompt, default_prompt_text, callback);
+		openJsDialog(browser.isPopup(), dialog_type, title, message_text, prompt, default_prompt_text, callback);
 		return true;
+	}
+
+	private Shell getShell(boolean condition, AtomicBoolean disposeDialog) {
+		if (condition) {
+			return chromium.getShell();
+		} else {
+			disposeDialog.set(true);
+			return new Shell();
+		}
 	}
 
 	public void openJsDialog(boolean isPopup, JSDialogType dialog_type, String title, String msg, String prompt,
@@ -1502,23 +1440,29 @@ final class Chromium extends WebBrowser {
 			}
 		};
 		if (!"test".equals(System.getProperty("chromium.dialogs", "")) || browser == null) {
-			Shell shell = (browser != null && !isPopup) ?  chromium.getShell() : new Shell();
+			AtomicBoolean disposeDialog = new AtomicBoolean(false);
+			Shell shell = getShell((browser != null && !isPopup), disposeDialog);
 			MessageBox box = new MessageBox(shell, style);
 			box.setText(title);
 			box.setMessage(prompt != null ? msg + "\n\n"+prompt : msg);
 			isOpenDialog = true;
 			int open = box.open();
 			isOpenDialog = false;
+			if (disposeDialog.get()) shell.dispose();
 			close.accept(open);
 		} else {
-			@SuppressWarnings("unchecked")
-			CompletableFuture<Integer> f = (CompletableFuture<Integer>) chromium.getData("chromium.dialogs");
-			if (f != null) {
-				f.thenAccept(close);
-				chromium.setData("chromium.dialogs", null);
-				while (!f.isDone()) {
-					if (!chromium.getDisplay().readAndDispatch()) chromium.getDisplay().sleep();
-				}
+			headlessDialog(close);
+		}
+	}
+
+	private void headlessDialog(Consumer<Integer> close) {
+		@SuppressWarnings("unchecked")
+		CompletableFuture<Integer> f = (CompletableFuture<Integer>) chromium.getData("chromium.dialogs");
+		if (f != null) {
+			f.thenAccept(close);
+			chromium.setData("chromium.dialogs", null);
+			while (!f.isDone()) {
+				if (!chromium.getDisplay().readAndDispatch()) chromium.getDisplay().sleep();
 			}
 		}
 	}
@@ -1583,52 +1527,107 @@ final class Chromium extends WebBrowser {
 		public void onBeforeDownload(CefBrowser browser, CefDownloadItem downloadItem, String suggestedName,
 				CefBeforeDownloadCallback callback) {
 			debug("onBeforeDownload", browser);
-			if (!browser.isPopup()) {
-				getChromium(browser).onBeforeDownload(downloadItem, suggestedName, callback);
-			}
+			Chromium chm = getChromium(browser);
+			if (chm != null) chm.onBeforeDownload(downloadItem, suggestedName, callback);
 		}
 
 		@Override
 		public void onDownloadUpdated(CefBrowser browser, CefDownloadItem downloadItem,
 				CefDownloadItemCallback callback) {
 			debug("onDownloadUpdated", browser);
-			if (!browser.isPopup()) {
-				getChromium(browser).onDownloadUpdated(downloadItem, callback);
-			}
+			Chromium.onDownloadUpdated(browser.getIdentifier(), downloadItem, callback);
 		}
 	}
 	
 	private void onBeforeDownload(CefDownloadItem download_item, String suggested_name, CefBeforeDownloadCallback callback) {
 		String name = suggested_name;
+
+		DownloadItem downloadItem = new DownloadItem(download_item);
+		if ("test".equals(System.getProperty("chromium.dialogs", ""))) {
+			Consumer<Integer> close = open -> {
+				boolean r = open == SWT.OK || open == SWT.YES ? true : false;
+				debug("JS Dialog Closed with " + r);
+				if (r) {
+					if (downloadItem.isValid) {
+						Download d = new Download(downloadItem, name, this);
+						d.isReady = true;
+					}
+					callback.Continue("" , false);
+				}
+			};
+			headlessDialog(close);
+			return;
+		}
 		if ("gtk".equals(SWT.getPlatform())) {
-			FileDialog dlg = new FileDialog(chromium.getShell(), SWT.SAVE);
+			// Dont open multiple donwload dialogs. Prevent block ui.
+			if (isOpenDialog) {
+				Download d = new Download(downloadItem, null, this);
+				d.isReady = true;
+				return;
+			}
+
+			AtomicBoolean disposeDialog = new AtomicBoolean(false);
+			Shell shell = getShell((chromium != null && !chromium.isDisposed()), disposeDialog);
+			FileDialog dlg = new FileDialog(shell, SWT.SAVE | SWT.TOP);
 			dlg.setText("Save File");
 			dlg.setOverwrite(true);
 			if (name != null && !name.isEmpty()) {
 				dlg.setFileName(name);
 			}
-			String selected = dlg.open();
-			if (selected != null) {
-				if (download_item.isValid()) {
-					new Download(download_item, selected, this);
+
+			Thread thread = preventBlockUI();
+
+			Display.getDefault().asyncExec(() -> {
+				isOpenDialog = true;
+				thread.start();
+				String selected = dlg.open();
+				isOpenDialog = false;
+				if (disposeDialog.get()) shell.dispose();
+				if (selected != null) {
+					if (downloadItem.isValid) {
+						Download d = new Download(downloadItem, selected, this);
+						d.isReady = true;
+						callback.Continue(selected, false);
+						return;
+					}
 				}
-				callback.Continue(selected, false);
-			}
+				Download d = new Download(downloadItem, null, this);
+				d.isReady = true;
+			});
 		} else {
-			if (download_item.isValid()) {
-				new Download(download_item, name, this);
+			if (downloadItem.isValid) {
+				new Download(downloadItem, name, this);
 			}
 			callback.Continue("", true);
 		}
 	}
 
-	private void onDownloadUpdated(CefDownloadItem download_item, CefDownloadItemCallback callback) {
+	private Thread preventBlockUI() {
+		// This method is used for prevent block ui when open dialog
+		Thread thread = new Thread(() -> {
+			while (isOpenDialog) {
+				try {
+					Thread.sleep(100);
+					Display.getDefault().asyncExec(null);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		});
+		return thread;
+	}
+
+	private static void onDownloadUpdated(int browserId, CefDownloadItem download_item, CefDownloadItemCallback callback) {
 		if (download_item.isValid()) {
 			Download download = Download.downloads.get(download_item.getId());
-			if (download != null) {
+			if (download != null && download.isReady) {
 				download.update(download_item, callback);
-				if (download_item.isCanceled()) download.dispose();
-				else if (!download.open && !Boolean.getBoolean("chromium.disable-download-progress")) download.show();
+				if (download_item.isCanceled() || !download.isReady) {
+					download.dispose();
+				}
+				else if (!download.open && !Boolean.getBoolean("chromium.disable-download-progress")) {
+					download.show();
+				}
 			}
 		}
 	}
@@ -1636,7 +1635,7 @@ final class Chromium extends WebBrowser {
 	static class Download {
 		static final Map<Integer, Download> downloads = new HashMap<>();
 		private int id;
-		private Shell shell;
+		private Shell shell = null;
 		private Label statusLabel;
 		private Button cancel;
 		private CefDownloadItemCallback cancel_cb;
@@ -1648,10 +1647,15 @@ final class Chromium extends WebBrowser {
 			cancel_cb.cancel();
 			dispose();
 		};
-		
-		public Download(CefDownloadItem download_item, String name, Chromium browser) {
-			this.id = download_item.getId();
-			Download.downloads.put(download_item.getId(), this);
+		public boolean isReady = false;
+
+		public Download(DownloadItem download_item, String name, Chromium browser) {
+			Download.downloads.put(download_item.id, this);
+			// Create empty download for cancel on update
+			if (name == null) {
+				return;
+			}
+			this.id = download_item.id;
 			shell = new Shell();
 			String msg = Compatibility.getMessage ("SWT_FileDownload"); //$NON-NLS-1$
 			shell.setText (msg);
@@ -1664,7 +1668,7 @@ final class Chromium extends WebBrowser {
 			nameLabel = new Label (shell, SWT.WRAP);
 			setText(download_item);
 			GridData data = new GridData ();
-			Monitor monitor = browser.chromium.getMonitor ();
+			Monitor monitor = browser.chromium != null ? browser.chromium.getMonitor () : Display.getDefault().getPrimaryMonitor();
 			int maxWidth = monitor.getBounds ().width / 2;
 			int width = nameLabel.computeSize (SWT.DEFAULT, SWT.DEFAULT).x;
 			data.widthHint = Math.min (width, maxWidth);
@@ -1672,9 +1676,9 @@ final class Chromium extends WebBrowser {
 			data.grabExcessHorizontalSpace = true;
 			nameLabel.setLayoutData (data);
 			
-			int pbStyle = download_item.getPercentComplete() == -1 ? SWT.SMOOTH | SWT.HORIZONTAL | SWT.INDETERMINATE : SWT.SMOOTH | SWT.HORIZONTAL;
+			int pbStyle = download_item.percentComplete == -1 ? SWT.SMOOTH | SWT.HORIZONTAL | SWT.INDETERMINATE : SWT.SMOOTH | SWT.HORIZONTAL;
 			pb = new ProgressBar(shell, pbStyle);
-			pb.setSelection(download_item.getPercentComplete());
+			pb.setSelection(download_item.percentComplete);
 			pb.setMinimum(0);
 			pb.setMaximum(100);
 			pb.setState(SWT.NORMAL);
@@ -1700,6 +1704,12 @@ final class Chromium extends WebBrowser {
 		}
 
 		private void update(CefDownloadItem download_item, CefDownloadItemCallback callback) {
+			// Cancel download when cancel folder dialog
+			if (shell == null) {
+				callback.cancel();
+				isReady = false;
+				return;
+			}
 			this.cancel_cb = callback;
 			if (shell.isDisposed()) {
 				dispose();
@@ -1709,7 +1719,7 @@ final class Chromium extends WebBrowser {
 				Display.getDefault().timerExec(3000, this::dispose);
 			}
 			
-			setText(download_item);
+			setText(new DownloadItem(download_item));
 			
 			long current = download_item.getReceivedBytes() / 1024L;
 			long total = download_item.getTotalBytes() / 1024L;
@@ -1727,9 +1737,9 @@ final class Chromium extends WebBrowser {
 			}
 		}
 
-		private void setText(CefDownloadItem download_item) {
-			String nameString = download_item.getFullPath();
-			String urlString = download_item.getURL();
+		private void setText(DownloadItem download_item) {
+			String nameString = download_item.fullPath;
+			String urlString = download_item.url;
 			String msg = Compatibility.getMessage ("SWT_Download_Location", new Object[] {nameString +"\n", urlString}); //$NON-NLS-1$
 			nameLabel.setText (msg);
 		}
@@ -1738,7 +1748,7 @@ final class Chromium extends WebBrowser {
 			Download.downloads.remove(id);
 			cancel_cb = null;
 			
-			shell.dispose();
+			if (shell != null) shell.dispose();
 		}
 	}
 
