@@ -1741,6 +1741,9 @@ final class Chromium extends WebBrowser {
 			String nameString = download_item.fullPath;
 			String urlString = download_item.url;
 			String msg = Compatibility.getMessage ("SWT_Download_Location", new Object[] {nameString +"\n", urlString}); //$NON-NLS-1$
+			if (urlString.startsWith("data:")) {
+				msg = "Saving...";
+			}
 			nameLabel.setText (msg);
 		}
 
@@ -1871,6 +1874,8 @@ final class Chromium extends WebBrowser {
 		});
 		
 		if (firedEvent.doit && "cocoa".equals(SWT.getPlatform())) {
+			CefFrame focusedFrame = cefBrowser.getFocusedFrame();
+			CefFrame cefFrame = focusedFrame != null ? focusedFrame : cefBrowser.getMainFrame();
 			if (event.modifiers == 128 && event.type != EventType.KEYEVENT_RAWKEYDOWN) {
 				if (event.native_key_code >= 8 && event.native_key_code <= 9) {
 					return true;
@@ -1879,24 +1884,24 @@ final class Chromium extends WebBrowser {
 				switch (event.native_key_code) {
 				// Select all: command + a
 				case 0:
-					cefBrowser.getMainFrame().selectAll();
+					cefFrame.selectAll();
 					return true;
 				// Copy: command + c
 				case 8:
-					cefBrowser.getMainFrame().copy();
+					cefFrame.copy();
 					return true;
 				// Paste: command + v
 				case 9:
-					cefBrowser.getMainFrame().paste();
+					cefFrame.paste();
 					CefApp.getInstance().doMessageLoopWork(-1);
 					return true;
 				// Cut: command + x
 				case 7:
-					cefBrowser.getMainFrame().cut();
+					cefFrame.cut();
 					return true;
 				// Undo: command + z
 				case 6:
-					cefBrowser.getMainFrame().undo();
+					cefFrame.undo();
 					CefApp.getInstance().doMessageLoopWork(-1);
 					return true;
 				default:
@@ -1905,7 +1910,7 @@ final class Chromium extends WebBrowser {
 			} else if (event.modifiers == 130 && event.type == EventType.KEYEVENT_RAWKEYDOWN) {
 				// Redo: command + shift + z
 				if (event.native_key_code == 6) {
-					cefBrowser.getMainFrame().redo();
+					cefFrame.redo();
 					CefApp.getInstance().doMessageLoopWork(-1);
 					return true;
 				}
