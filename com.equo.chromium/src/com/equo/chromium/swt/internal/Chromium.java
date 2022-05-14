@@ -43,6 +43,7 @@ import org.cef.callback.CefBeforeDownloadCallback;
 import org.cef.callback.CefCallback;
 import org.cef.callback.CefContextMenuParams;
 import org.cef.callback.CefCookieVisitor;
+import org.cef.callback.CefDevToolsMessageObserverAdapter;
 import org.cef.callback.CefDownloadItem;
 import org.cef.callback.CefDownloadItemCallback;
 import org.cef.callback.CefFileDialogCallback;
@@ -136,6 +137,8 @@ import com.equo.chromium.swt.OpenWindowListener;
 import com.equo.chromium.swt.WindowEvent;
 import com.equo.chromium.swt.internal.spi.CommRouterHandler;
 import com.equo.chromium.swt.internal.spi.CommunicationManager;
+import com.github.cliftonlabs.json_simple.JsonException;
+import com.github.cliftonlabs.json_simple.JsonObject;
 import com.github.cliftonlabs.json_simple.Jsoner;
 
 @SuppressWarnings("restriction")
@@ -2684,6 +2687,47 @@ final class Chromium extends WebBrowser {
 		@Override
 		public void executeJavacript(String script) {
 			execute(script);
+		}
+
+		@Override
+		public CompletableFuture<byte[]> captureScreenshot() {
+			return captureScreenshot(0,0,0,0,1);
+		}
+
+		@Override
+		public CompletableFuture<byte[]> captureScreenshot(int x, int y, int width, int height, int scale) {
+			CompletableFuture<byte[]> screenshotResult = new CompletableFuture<>();
+			new CefDevToolsMessageObserverAdapter(cefBrowser) {
+				@Override
+				public void onDevToolsMethodResult(CefBrowser cefBrowser, int messageId, boolean success, String result,
+						int resultSize) {
+					try {
+						JsonObject json = (JsonObject)Jsoner.deserialize(result);
+						screenshotResult.complete((byte[])((String)json.getOrDefault("data", "")).getBytes(StandardCharsets.UTF_8));
+					} catch (JsonException e) {
+						screenshotResult.complete("".getBytes(StandardCharsets.UTF_8));
+					} finally {
+						dispose();
+					}
+				}
+			};
+			JsonObject jsonMessage = new JsonObject();
+			jsonMessage.put("id", 0);
+			jsonMessage.put("method", "Page.captureScreenshot");
+			JsonObject clip = new JsonObject();
+			if (width > 0 && height > 0) {
+				JsonObject viewport = new JsonObject();
+				viewport.put("x", x);
+				viewport.put("y", y);
+				viewport.put("width", width);
+				viewport.put("height", height);
+				viewport.put("scale", scale);
+				clip.put("clip", viewport);
+				jsonMessage.put("params", clip);
+			}
+			String message = jsonMessage.toJson();
+			cefBrowser.sendDevToolsMessage(message, message.length());
+			return screenshotResult;
 		}
 	}
 }

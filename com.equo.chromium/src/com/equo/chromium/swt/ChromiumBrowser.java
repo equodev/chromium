@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import org.cef.CefApp;
 import org.cef.CefApp.CefAppState;
@@ -83,4 +84,21 @@ public interface ChromiumBrowser {
 	static boolean clearCookies(String urlPattern, String namePattern) {
 		return WebBrowser.clearCookie(urlPattern, namePattern);
 	}
+
+	/**
+	 * Capture screenshot from browser
+	 * @return CompletableFuture<byte[]> which will contain Base64 encoded image data.
+	 */
+	public CompletableFuture<byte[]> captureScreenshot();
+
+	/**
+	 * Capture screenshot of a specific area.
+	 * @param x
+	 * @param y
+	 * @param width
+	 * @param height
+	 * @param scale
+	 * @return CompletableFuture<byte[]> which will contain Base64 encoded image data.
+	 */
+	public CompletableFuture<byte[]> captureScreenshot(int x, int y, int width, int height, int scale);
 }
