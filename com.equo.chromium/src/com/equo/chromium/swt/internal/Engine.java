@@ -24,6 +24,7 @@ import org.cef.CefSettings;
 import org.cef.OS;
 import org.cef.SystemBootstrap;
 import org.cef.SystemBootstrap.Loader;
+import org.cef.WindowingToolkit;
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;
 import org.cef.callback.CefSchemeHandlerFactory;
@@ -62,9 +63,9 @@ class Engine {
 		if (OS.isLinux()) {
 			String backend = System.getenv("GDK_BACKEND");
 			String session = System.getenv("XDG_SESSION_TYPE");
-			if ("wayland".equals(session) && !"x11".equals(backend)) {
+			if ("wayland".equals(session) && !"x11".equals(backend) && Display.getCurrent() != null) {
 				throw new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY,
-						"To run Chromium on Wayland, set env var GDK_BACKEND=x11");
+						"To run Chromium on Wayland, set env var GDK_BACKEND=x11 or call ChromiumBrowser.earlyInit() before creating Display");
 			}
 		}
 
@@ -191,9 +192,6 @@ class Engine {
 						? Boolean.getBoolean("chromium.external_message_pump")
 						: external_message_pump;
 
-				CefAppSwt appSwt = new CefAppSwt(settings.external_message_pump);
-				CefApp.setWindowingToolkit(appSwt);
-
 				String[] args = getChromiumArgs(libsPath);
 
 				final SchemeHandlerManager schemeHandlerManager = SchemeHandlerManager.get();
@@ -202,6 +200,10 @@ class Engine {
 					registeredSchemeData = schemeHandlerManager.getRegisteredSchemes();
 				}
 				final List<SchemeDomainPair> finalRegisteredSchemeData = registeredSchemeData;
+
+				int loopTime = (!settings.external_message_pump && !finalRegisteredSchemeData.isEmpty()) ? 1000 / 180 : WindowingToolkit.DEFAULT_LOOP_TIME;
+				CefAppSwt appSwt = new CefAppSwt(loopTime, settings.external_message_pump);
+				CefApp.setWindowingToolkit(appSwt);
 
 				CefApp.addAppHandler(new CefAppHandlerAdapter(args) {
 					@Override

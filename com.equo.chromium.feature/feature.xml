@@ -6,7 +6,7 @@
       provider-name="Equo"
       os="linux,macosx,win32"
       ws="cocoa,gtk,win32"
-      arch="x86_64,x86">
+      arch="x86_64,x86,aarch64">
 
    <description url="https://www.equoplatform.com">
       Chromium SWT Browser
@@ -21,7 +21,7 @@
    <license>
     Equo Chromium.SWT License
 
-    Copyright (c) 2020 Equo.
+    Copyright (c) 2022 Equo.
     All rights reserved.
 
     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND

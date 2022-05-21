@@ -1,11 +1,21 @@
 package com.equo.chromium.swt.internal;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import org.eclipse.swt.*;
-import org.eclipse.swt.browser.*;
-import org.eclipse.swt.widgets.*;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.SWTException;
+import org.eclipse.swt.browser.AuthenticationListener;
+import org.eclipse.swt.browser.CloseWindowListener;
+import org.eclipse.swt.browser.LocationListener;
+import org.eclipse.swt.browser.ProgressListener;
+import org.eclipse.swt.browser.StatusTextListener;
+import org.eclipse.swt.browser.TitleListener;
+import org.eclipse.swt.browser.VisibilityWindowListener;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Event;
 
 import com.equo.chromium.swt.Browser;
 import com.equo.chromium.swt.BrowserFunction;
@@ -30,9 +40,10 @@ public abstract class WebBrowser {
 	static final String EXECUTE_ID = "SWTExecuteTemporaryFunction"; // $NON-NLS-1$
 
 	static List<String[]> NativePendingCookies = new ArrayList<> ();
-	static String CookieName, CookieValue, CookieUrl;
+	static String CookieName, CookieValue, CookieUrl, ClearCookieName, ClearCookieUrl;
 	static boolean CookieResult;
 	static Runnable NativeClearSessions;
+	static Runnable NativeClearCookies;
 	static Runnable NativeGetCookie;
 	static Runnable NativeSetCookie;
 
@@ -235,25 +246,46 @@ public static void clearSessions () {
 	if (NativeClearSessions != null) NativeClearSessions.run ();
 }
 
-public static String GetCookie (String name, String url) {
+public static String GetCookie(String name, String url) {
 	CookieName = name; CookieUrl = url; CookieValue = null;
-	if (NativeGetCookie != null) NativeGetCookie.run ();
+	if (NativeGetCookie != null) 
+		NativeGetCookie.run ();
 	String result = CookieValue;
 	CookieName = CookieValue = CookieUrl = null;
 	return result;
 }
 
-public static boolean SetCookie (String value, String url, boolean addToPending) {
-	CookieValue = value; CookieUrl = url;
+public static boolean SetCookie(String value, String url, boolean addToPending) {
+	CookieValue = value;
+	CookieUrl = url;
 	CookieResult = false;
 	if (NativeSetCookie != null) {
-		NativeSetCookie.run ();
+		NativeSetCookie.run();
 	} else {
 		if (addToPending && NativePendingCookies != null) {
-			NativePendingCookies.add (new String[] {value, url});
+			NativePendingCookies.add(new String[] { value, url });
 		}
 	}
 	CookieValue = CookieUrl = null;
+	return CookieResult;
+}
+
+public static boolean clearCookie(String urlPattern, String namePattern) {
+	CookieResult = false;
+	if (urlPattern == null) {
+		urlPattern = ".*";
+	}
+	if (namePattern == null) {
+		namePattern = ".*";
+	}
+	if ("".equals(urlPattern) || "".equals(namePattern)) {
+		return false;
+	}
+	ClearCookieName = namePattern;
+	ClearCookieUrl = urlPattern;
+	if (NativeClearCookies != null) {
+		NativeClearCookies.run();
+	}
 	return CookieResult;
 }
 
