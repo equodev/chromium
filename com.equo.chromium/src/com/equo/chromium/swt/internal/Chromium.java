@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -126,9 +127,10 @@ import com.equo.chromium.swt.ChromiumBrowser;
 import com.equo.chromium.swt.ChromiumBrowser.ConsoleListener;
 import com.equo.chromium.swt.OpenWindowListener;
 import com.equo.chromium.swt.WindowEvent;
-import com.github.cliftonlabs.json_simple.Jsoner;
 import com.equo.chromium.swt.internal.spi.CommRouterHandler;
 import com.equo.chromium.swt.internal.spi.CommunicationManager;
+import com.equo.chromium.swt.internal.spi.ScriptExtension;
+import com.github.cliftonlabs.json_simple.Jsoner;
 
 @SuppressWarnings("restriction")
 final class Chromium extends WebBrowser {
@@ -594,6 +596,15 @@ final class Chromium extends WebBrowser {
 		setJsdialogHandler();
 		setContextMenuHandler();
 		setDownloadHandler();
+
+		if (!Boolean.getBoolean(ScriptExtension.DISABLE_SCRIPT_EXTENSIONS_PROPERTY)) {
+			Iterator<ScriptExtension> scriptExtensions = ScriptExtension.get();
+			scriptExtensions.forEachRemaining(scriptExtensionProvider -> {
+				List<CefMessageRouter> routers = ScriptExtension
+						.createRouter(scriptExtensionProvider.getScriptExtensions());
+				routers.stream().forEach(router -> clientHandler.addMessageRouter(router));
+			});
+		}
 
 		router = Eval.createRouter();
 		CommunicationManager commManager = CommunicationManager.get();
