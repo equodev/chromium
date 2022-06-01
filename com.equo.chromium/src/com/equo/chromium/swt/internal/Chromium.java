@@ -188,6 +188,7 @@ final class Chromium extends WebBrowser {
 	private static boolean isOpenDialog = false;
 	private ControlAdapter fullscreenListener = null;
 	private ResizeListener resize;
+	private boolean inEvalBlocking = false;
 
 	Chromium() {
 	}
@@ -285,7 +286,7 @@ final class Chromium extends WebBrowser {
 						debug("processRequest el: "+encoded);
 						break;
 					}
-					Object payload = Eval.decodeType(encoded, SWT.ERROR_INVALID_ARGUMENT);
+					Object payload = AbstractEval.decodeType(encoded, SWT.ERROR_INVALID_ARGUMENT);
 					if (payload.getClass().isArray() && ((Object[])payload).length >= 2) {
 						String token = (String) ((Object[])payload)[0];
 						Object[] args = (Object[]) ((Object[])payload)[1];
@@ -507,7 +508,7 @@ final class Chromium extends WebBrowser {
 		setContextMenuHandler();
 		setDownloadHandler();
 
-		router = Eval.createRouter();
+		router = AbstractEval.createRouter();
 		CommunicationManager commManager = CommunicationManager.get();
 		if (commManager != null) {
 			CefMessageRouter commRouter = CommRouterHandler.createRouter();
@@ -1165,6 +1166,7 @@ final class Chromium extends WebBrowser {
 
 	private boolean onBeforeBrowse(CefFrame frame, CefRequest request) {
 		if (isDisposed()) return false;
+		inEvalBlocking=true;
 		LocationEvent event = new LocationEvent(chromium);
 		event.display = chromium.getDisplay();
 		event.widget = chromium;
@@ -1179,6 +1181,7 @@ final class Chromium extends WebBrowser {
 			}
 		} finally {
 //			loopDisable = false;
+			inEvalBlocking=false;
 		}
 
 		if(Boolean.getBoolean("chromium.turbolinks")) {
@@ -1191,6 +1194,7 @@ final class Chromium extends WebBrowser {
 		} else {
 			loadingPage = true;
 		}
+
 		return event.doit ? false : true;
 	}
 
@@ -2457,12 +2461,16 @@ final class Chromium extends WebBrowser {
 			}
 		}
 		checkBrowser();
-		
+		Eval eval = null;
 		try {
 			if (!functionsResourceHandler.isEmpty() && functionsResourceHandler.peek().inFunction) {
-				return Eval.eval(script, getPlainUrl(url), cefBrowser, router, created, functionsResourceHandler.peek());
+				eval = new EvalBrowserFunctionImpl(router, functionsResourceHandler.peek());
+			} else if (inEvalBlocking) {
+				eval = new EvalFileImpl(cefBrowser);
+			} else {
+				eval = new EvalSimpleImpl(cefBrowser, router, getPlainUrl(url));
 			}
-			return Eval.eval(script, getPlainUrl(url), cefBrowser, router, created);
+			return eval.eval(script, created);
 		} catch (InterruptedException e) {
 			throw new SWTException("Script that was evaluated failed");
 		} catch (ExecutionException e) {
