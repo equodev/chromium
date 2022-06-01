@@ -60,7 +60,7 @@ public class EvalFileImpl extends AbstractEval {
 					for (WatchEvent<?> event : key.pollEvents()) {
 						if (StandardWatchEventKinds.ENTRY_MODIFY.equals(event.kind())
 								&& file.getName().equals(event.context().toString())) {
-							String evalContext = Files.readString(Paths.get(file.getAbsolutePath()));
+							String evalContext = new String(Files.readAllBytes(Paths.get(file.getAbsolutePath())));
 							file.delete();
 							Object[] decodeType = ((Object[]) decodeType(evalContext, SWT.ERROR_INVALID_RETURN_VALUE));
 							if (!id.equals(decodeType[0]))
