@@ -33,7 +33,7 @@ public final class Windowless implements IBrowser {
 				created.complete(true);
 			}
 		});
-		router = Eval.createRouter();
+		router = AbstractEval.createRouter();
 		clientHandler.addMessageRouter(router);
 	}
 	
@@ -48,7 +48,7 @@ public final class Windowless implements IBrowser {
 	@Override
 	public Object evaluate(String script) {
 		try {
-			return Eval.eval(script, browser.getURL(), browser, router, created);
+			return new EvalSimpleImpl(browser, router, browser.getURL()).eval(script, created);
 		} catch (InterruptedException e) {
 			throw new SWTException("Script that was evaluated failed");
 		} catch (ExecutionException e) {
