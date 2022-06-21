@@ -2008,7 +2008,7 @@ final class Chromium extends WebBrowser {
 			if (focusListener != null)
 				focusListener.enabled = true;
 		} else {
-			if (focusListener != null)
+			if (focusListener != null && !"gtk".equals(SWT.getPlatform()))
 				focusListener.enabled = false;
 			return true;
 		}
@@ -2164,15 +2164,15 @@ final class Chromium extends WebBrowser {
 					CefCookieVisitor visitor = new CefCookieVisitor() {
 						@Override
 						public boolean visit(CefCookie cookie, int count, int total, BoolRef delete) {
-							debug("Debug Cookie: " + cookie.name);
+							
 							if (cookie.domain.matches(WebBrowser.ClearCookieUrl)
 									&& cookie.name.matches(WebBrowser.ClearCookieName)) {
+								debug("Delete Cookie: " + cookie.name);
 								delete.set(true);
 							}
 							return true;
 						}
 					};
-					ClearCookieUrl = ClearCookieName = null;
 					WebBrowser.CookieResult = globalManager.visitAllCookies(visitor);
 				}
 			});
@@ -2206,7 +2206,7 @@ final class Chromium extends WebBrowser {
 			CefCookieVisitor visitor = new CefCookieVisitor() {
 				@Override
 				public boolean visit(CefCookie cookie, int count, int total, BoolRef delete) {
-					debug("Visitor " + count + "/" +total + ": " + cookie.name+ ":" + Thread.currentThread());
+					//debug("Visitor " + count + "/" +total + ": " + cookie.name+ ":" + Thread.currentThread());
 					if (WebBrowser.CookieName != null && WebBrowser.CookieName.equals(cookie.name)) {
 						debug("cookie value: " + cookie.value);
 						WebBrowser.CookieValue = cookie.value;
