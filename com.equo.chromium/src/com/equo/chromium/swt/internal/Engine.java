@@ -58,6 +58,7 @@ class Engine {
 	private static CefApp app;
 	static CompletableFuture<Boolean> ready = new CompletableFuture<>();
 	private static boolean closing;
+	private static boolean multiThreaded;
 
 	private static void loadLib() {
 		if (OS.isLinux()) {
@@ -67,6 +68,7 @@ class Engine {
 				throw new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY,
 						"To run Chromium on Wayland, set env var GDK_BACKEND=x11 or call ChromiumBrowser.earlyInit() before creating Display");
 			}
+			multiThreaded = System.getProperty("chromium.multi_threaded_message_loop") != null ? Boolean.getBoolean("chromium.multi_threaded_message_loop") : Display.getCurrent() == null;
 		}
 
 		libsPath = findLibsPath().resolve(SUBDIR);
@@ -76,7 +78,7 @@ class Engine {
 				System.load(libsPath.resolve(System.mapLibraryName(libname)).toString());
 			}
 		});
-		String[] args = getChromiumArgs(libsPath);
+		String[] args = getChromiumArgs(libsPath, multiThreaded);
 		if (!Files.exists(libsPath) || !CefApp.startup(args)) {
 			throw new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY, "Missing binaries for Equo Chromium Browser.");
 		}
@@ -182,17 +184,19 @@ class Engine {
 					settings.browser_subprocess_path = libsPath.resolve("jcef_helper.exe").toString();
 					settings.resources_dir_path = libsPath.toString();
 					settings.locales_dir_path = libsPath.resolve("locales").toString();
+					settings.multi_threaded_message_loop = System.getProperty("chromium.multi_threaded_message_loop") != null ? Boolean.getBoolean("chromium.multi_threaded_message_loop") : false;
 				} else if (OS.isLinux()) {
 					settings.browser_subprocess_path = libsPath.resolve("jcef_helper").toString();
 					settings.resources_dir_path = libsPath.toString();
 					settings.locales_dir_path = libsPath.resolve("locales").toString();
+					settings.multi_threaded_message_loop = multiThreaded;
 					external_message_pump = false;
 				}
-				settings.external_message_pump = System.getProperty("chromium.external_message_pump") != null
+				settings.external_message_pump = !settings.multi_threaded_message_loop && (System.getProperty("chromium.external_message_pump") != null
 						? Boolean.getBoolean("chromium.external_message_pump")
-						: external_message_pump;
+						: external_message_pump);
 
-				String[] args = getChromiumArgs(libsPath);
+				String[] args = getChromiumArgs(libsPath, false);
 
 				final SchemeHandlerManager schemeHandlerManager = SchemeHandlerManager.get();
 				List<SchemeDomainPair> registeredSchemeData = Collections.emptyList();
@@ -299,7 +303,7 @@ class Engine {
 		}
 	}
 
-	static String[] getChromiumArgs(Path libsPath) {
+	static String[] getChromiumArgs(Path libsPath, boolean addExtra) {
 		List<String> args = new ArrayList<>();
 		String vmArg = System.getProperty("chromium.args", System.getProperty("swt.chromium.args"));
 		if (vmArg != null) {
@@ -308,6 +312,8 @@ class Engine {
 		}
 		if (OS.isLinux()) {
 			args.add("--disable-gpu-compositing");
+			if (addExtra)
+				args.add("XInitThreads");
 		} else if (OS.isMacintosh()) {
 			args.add("--framework-dir-path=" + libsPath.resolve("Chromium Embedded Framework.framework"));
 			args.add("--main-bundle-path=" + libsPath.resolve("jcef Helper.app"));

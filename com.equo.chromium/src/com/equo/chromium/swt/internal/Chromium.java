@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Stack;
 import java.util.Vector;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -306,7 +307,7 @@ final class Chromium extends WebBrowser {
 								}
 							} else {
 								debug("processRequest calling function: "+browserFunction.getName());
-								Display.getDefault().asyncExec(() -> {
+								asyncExec(() -> {
 									Object ret = null;
 									try {
 										this.callback = callback;
@@ -595,13 +596,13 @@ final class Chromium extends WebBrowser {
 	};
 
 	private void onBeforeClose() {
-		fireCloseListener();
+		syncExec(() -> fireCloseListener());
 		for (BrowserFunction function : new ArrayList<>(functions.values())) {
 			function.dispose(true);
 		}
 		functions.clear();
 		if (disposing == Dispose.FromBrowser) {
-			chromium.dispose();
+			syncExec(() -> chromium.dispose());
 		}
 
 		this.chromium = null;
@@ -633,7 +634,7 @@ final class Chromium extends WebBrowser {
 		else if (disposing == Dispose.No) {
 			if (chromium != null) {
 				disposing = Dispose.FromBrowser;
-				chromium.getDisplay().asyncExec(chromium::dispose);
+				asyncExec(chromium::dispose);
 			}
 		}
 		debugPrint("AFTER DoClose");
@@ -650,31 +651,33 @@ final class Chromium extends WebBrowser {
 //			else if (!"about:blank".equals(this.url)) {
 //				enableProgress.complete(true);
 //			}
-		cefBrowser.resize();
+		syncExec(() -> cefBrowser.resize());
 		created.complete(true);
 		if (this.url != null) {
 			enableProgress.complete(true);
 		}
 
 		if (isPopup != null) {
-			org.eclipse.swt.browser.WindowEvent event = new org.eclipse.swt.browser.WindowEvent(chromium);
-			event.display = chromium.getDisplay ();
-			event.widget = chromium;
-			event.size = isPopup.size;
-			event.location = isPopup.location;
-			event.addressBar = isPopup.addressBar;
-			event.menuBar = isPopup.menuBar;
-			event.statusBar = isPopup.statusBar;
-			event.toolBar = isPopup.toolBar;
-			
-			if (event.size != null && !event.size.equals(new Point(0,0))) {
-				Point size = event.size;
-				chromium.getShell().setSize(chromium.getShell().computeSize(size.x, size.y));
-			}
-
-			for (VisibilityWindowListener listener : visibilityWindowListeners) {
-				listener.show(event);
-			}
+			syncExec(() -> {
+				org.eclipse.swt.browser.WindowEvent event = new org.eclipse.swt.browser.WindowEvent(chromium);
+				event.display = chromium.getDisplay ();
+				event.widget = chromium;
+				event.size = isPopup.size;
+				event.location = isPopup.location;
+				event.addressBar = isPopup.addressBar;
+				event.menuBar = isPopup.menuBar;
+				event.statusBar = isPopup.statusBar;
+				event.toolBar = isPopup.toolBar;
+				
+				if (event.size != null && !event.size.equals(new Point(0,0))) {
+					Point size = event.size;
+					chromium.getShell().setSize(chromium.getShell().computeSize(size.x, size.y));
+				}
+				
+				for (VisibilityWindowListener listener : visibilityWindowListeners) {
+					listener.show(event);
+				}
+			});
 		}
 	}
 
@@ -697,9 +700,11 @@ final class Chromium extends WebBrowser {
 //			int height = popupFeatures.heightSet == 1 ? popupFeatures.height : 0;
 //			event.size = popupFeatures.widthSet == 1 || popupFeatures.heightSet == 1 ? new Point(width, height) : null;
 
-		for (OpenWindowListener listener : openWindowListeners) {
-			listener.open(event);
-		}
+		syncExec(() -> {
+			for (OpenWindowListener listener : openWindowListeners) {
+				listener.open(event);
+			}
+		});
 
 		if (event.browser != null) {
 			//TODO handle popup when event.browser is received
@@ -757,7 +762,7 @@ final class Chromium extends WebBrowser {
 			if (loadingPage) {
 				loadingPage = false;
 				debugPrint("progress completed"); 
-				chromium.getDisplay().asyncExec(() -> {
+				asyncExec(() -> {
 					if (isDisposed()) return;
 					for (ProgressListener listener : progressListeners) {
 						listener.completed(event);
@@ -813,14 +818,14 @@ final class Chromium extends WebBrowser {
 
 			String dlgTitle = title == null || title.isEmpty() ? defaultDlgTitle : title;
 
-			FileDialog dlg = new FileDialog(chromium.getShell(), swtMode | SWT.TOP);
-			dlg.setText(dlgTitle);
-			String[] acceptFiltersArray = MimeTypeLinux.getExtensions(acceptFilters);
-			dlg.setFilterExtensions(acceptFiltersArray);
-			dlg.setOverwrite(true);
-
 			Thread thread = preventBlockUI();
-			Display.getDefault().asyncExec(() -> {
+			asyncExec(() -> {
+				FileDialog dlg = new FileDialog(chromium.getShell(), swtMode | SWT.TOP);
+				dlg.setText(dlgTitle);
+				String[] acceptFiltersArray = MimeTypeLinux.getExtensions(acceptFilters);
+				dlg.setFilterExtensions(acceptFiltersArray);
+				dlg.setOverwrite(true);
+
 				isOpenDialog = true;
 				thread.start();
 				String selected = dlg.open();
@@ -904,9 +909,11 @@ final class Chromium extends WebBrowser {
 		event.widget = chromium;
 		event.title = str;
 		this.title = str != null ? str : "";
-		for (TitleListener listener : titleListeners) {
-			listener.changed(event);
-		}
+		asyncExec(() -> {
+			for (TitleListener listener : titleListeners) {
+				listener.changed(event);
+			}
+		});
 	}
 
 	private void onAddressChange(CefFrame frame, String url) {
@@ -938,7 +945,7 @@ final class Chromium extends WebBrowser {
 				getClientHandler().addMessageRouter(current.router);
 			}
 		}
-		chromium.getDisplay().asyncExec(() -> {
+		asyncExec(() -> {
 			for (LocationListener listener : locationListeners) {
 				listener.changed(event);
 			}
@@ -951,21 +958,25 @@ final class Chromium extends WebBrowser {
 		event.display = chromium.getDisplay ();
 		event.widget = chromium;
 		event.text = status;
-		for (StatusTextListener listener : statusTextListeners) {
-			listener.changed(event);
-		}
+		asyncExec(() -> {
+			for (StatusTextListener listener : statusTextListeners) {
+				listener.changed(event);
+			}
+		});
 	}
 
 	private boolean onConsoleMessage(CefSettings.LogSeverity level, String message, String source, int line) {
 		if (isDisposed()) return false;
-		boolean prevent = false;
+		AtomicBoolean prevent = new AtomicBoolean();
 		if (extraApi != null) {
-			for (ConsoleListener listener : extraApi.consoleListeners) {
-				if (listener.message(level.ordinal(), message, source, line))
-					prevent = true;
-			}
+			syncExec(() -> {
+				for (ConsoleListener listener : extraApi.consoleListeners) {
+					if (listener.message(level.ordinal(), message, source, line))
+						prevent.set(true);
+				}
+			});
 		}
-		return prevent;
+		return prevent.get();
 	}
 
 	private void onLoadingProgressChange(CefBrowser browser, double progress) {
@@ -979,41 +990,45 @@ final class Chromium extends WebBrowser {
 		event.current = (int)(progress * MAX_PROGRESS);
 		event.total = MAX_PROGRESS;
 		if (MAX_PROGRESS != event.current) {
-			for (ProgressListener listener : progressListeners) {
-				listener.changed(event);
-			}
+			asyncExec(() -> {
+				for (ProgressListener listener : progressListeners) {
+					listener.changed(event);
+				}
+			});
 		}
 	}
 
 	private void onFullscreenModeChange(CefBrowser browser, boolean fullScreen) {
 		if (isDisposed()) return;
-
-		chromium.getShell().setFullScreen(fullScreen);
-		Shell cefBrowserShell = cefBrowser.getComposite().getShell();
-
-		if (!fullScreen) {
-			if (fullscreenListener != null) {
-				cefBrowserShell.removeControlListener(fullscreenListener);
-				fullscreenListener = null;
-			}
-			cefBrowser.resize();
-			return;
-		}
 		
-		// Listen fullscreen changes from swt shell
-		fullscreenListener = new ControlAdapter () {
-			boolean isFirtsResized = !"win32".equals(SWT.getPlatform());
-
-			@Override
-			public void controlResized(ControlEvent arg0) {
-				if (!isFirtsResized) {
-					execute("if(document.exitFullscreen) { document.exitFullscreen(); }");
+		syncExec(() -> {
+			chromium.getShell().setFullScreen(fullScreen);
+			Shell cefBrowserShell = cefBrowser.getComposite().getShell();
+			
+			if (!fullScreen) {
+				if (fullscreenListener != null) {
+					cefBrowserShell.removeControlListener(fullscreenListener);
+					fullscreenListener = null;
 				}
-				isFirtsResized = false;
+				cefBrowser.resize();
+				return;
 			}
-		};
-
-		cefBrowserShell.addControlListener(fullscreenListener);
+			
+			// Listen fullscreen changes from swt shell
+			fullscreenListener = new ControlAdapter () {
+				boolean isFirtsResized = !"win32".equals(SWT.getPlatform());
+				
+				@Override
+				public void controlResized(ControlEvent arg0) {
+					if (!isFirtsResized) {
+						execute("if(document.exitFullscreen) { document.exitFullscreen(); }");
+					}
+					isFirtsResized = false;
+				}
+			};
+			
+			cefBrowserShell.addControlListener(fullscreenListener);
+		});
 	}
 
 	private static void setRequestHandler() {
@@ -1161,12 +1176,10 @@ final class Chromium extends WebBrowser {
 						dialogSuccess.complete(success);
 					}
 				};
-				Display.getDefault().syncExec(() -> {
-					Chromium chm = getChromium(browser);
-					if (chm != null) chm.openJsDialog(browser.isPopup(), CefJSDialogHandler.JSDialogType.JSDIALOGTYPE_CONFIRM, "",
-							"The link will be opened with the operating system.", "Do you want to continue?",
-							"default_prompt_text", callback);
-				});
+				Chromium chm = getChromium(browser);
+				if (chm != null) chm.openJsDialog(browser.isPopup(), CefJSDialogHandler.JSDialogType.JSDIALOGTYPE_CONFIRM, "",
+						"The link will be opened with the operating system.", "Do you want to continue?",
+						"default_prompt_text", callback);
 
 				try {
 					return dialogSuccess.get();
@@ -1190,9 +1203,11 @@ final class Chromium extends WebBrowser {
 		debugPrint("on_before_browse:" + event.location + " top:"+event.top);
 		try {
 //			loopDisable = true;
-			for (LocationListener listener : locationListeners) {
-				listener.changing(event);
-			}
+			syncExec(() -> {
+				for (LocationListener listener : locationListeners) {
+					listener.changing(event);
+				}
+			});
 		} finally {
 //			loopDisable = false;
 			inEvalBlocking=false;
@@ -1231,7 +1246,7 @@ final class Chromium extends WebBrowser {
 		event.doit = true;
 		event.location = protocol + "://" + host;
 		debugPrint("get_auth_credentials: " + event.location);
-		chromium.getDisplay().syncExec(() -> {
+		syncExec(() -> {
 			for (AuthenticationListener listener : authenticationListeners) {
 				listener.authenticate(event);
 			}
@@ -1345,15 +1360,17 @@ final class Chromium extends WebBrowser {
 			return true;
 		}
 
-		String javaHost = request_url;
-		MessageBox prompt = new MessageBox (chromium.getShell(), SWT.YES | SWT.NO);
-		prompt.setText(SWT.getMessage("SWT_InvalidCert_Title"));
-		String cefError = cert_error.toString();
-		String specific = cefError.isEmpty() ? "\n\n" : "\n\n" + cefError + "\n\n";
-		String message = SWT.getMessage("SWT_InvalidCert_Message", new Object[] {javaHost}) +
-				specific + SWT.getMessage("SWT_InvalidCert_Connect");
-		prompt.setMessage(message);
-		int result = prompt.open();
+		int result = syncExec(() -> {
+			String javaHost = request_url;
+			MessageBox prompt = new MessageBox (chromium.getShell(), SWT.YES | SWT.NO);
+			prompt.setText(SWT.getMessage("SWT_InvalidCert_Title"));
+			String cefError = cert_error.toString();
+			String specific = cefError.isEmpty() ? "\n\n" : "\n\n" + cefError + "\n\n";
+			String message = SWT.getMessage("SWT_InvalidCert_Message", new Object[] {javaHost}) +
+					specific + SWT.getMessage("SWT_InvalidCert_Connect");
+			prompt.setMessage(message);
+			return prompt.open();
+		});
 		if (result == SWT.YES) {
 			callback.Continue(true);
 		} else {
@@ -1437,48 +1454,50 @@ final class Chromium extends WebBrowser {
 
 	public void openJsDialog(boolean isPopup, JSDialogType dialog_type, String title, String msg, String prompt,
 			String default_prompt_text, CefJSDialogCallback callback) {
-		int style = SWT.ICON_WORKING;
-		switch (dialog_type) {
-		case JSDIALOGTYPE_ALERT:
-			style = SWT.ICON_INFORMATION;
-			break;
-		case JSDIALOGTYPE_CONFIRM:
-			style = SWT.ICON_WARNING | SWT.CANCEL | SWT.OK;
-			break;
-		case JSDIALOGTYPE_PROMPT:
-			style = SWT.ICON_QUESTION | SWT.CANCEL | SWT.OK;
-			break;
-		}
 		Consumer<Integer> close = open -> {
 			boolean r = open == SWT.OK || open == SWT.YES ? true : false;
 			debug("JS Dialog Closed with "+r);
 			if(browser != null && !isPopup) {
 				if (disposing == Dispose.Unload && !r)
 					disposing = Dispose.UnloadCancel;
-				chromium.getDisplay().asyncExec(() -> {
+				asyncExec(() -> {
 					callback.Continue(r, default_prompt_text);
 				});
 				chromium.getShell().forceActive();
 			} else {
-				Display.getDefault().asyncExec(() -> {
+				asyncExec(() -> {
 					callback.Continue(r, default_prompt_text);
 				});
 			}
 		};
-		if (!"test".equals(System.getProperty("chromium.dialogs", "")) || browser == null) {
-			AtomicBoolean disposeDialog = new AtomicBoolean(false);
-			Shell shell = getShell((browser != null && !isPopup), disposeDialog);
-			MessageBox box = new MessageBox(shell, style);
-			box.setText(title);
-			box.setMessage(prompt != null ? msg + "\n\n"+prompt : msg);
-			isOpenDialog = true;
-			int open = box.open();
-			isOpenDialog = false;
-			if (disposeDialog.get()) shell.dispose();
-			close.accept(open);
-		} else {
-			headlessDialog(close);
-		}
+		asyncExec(() -> {
+			int style = SWT.ICON_WORKING;
+			switch (dialog_type) {
+			case JSDIALOGTYPE_ALERT:
+				style = SWT.ICON_INFORMATION;
+				break;
+			case JSDIALOGTYPE_CONFIRM:
+				style = SWT.ICON_WARNING | SWT.CANCEL | SWT.OK;
+				break;
+			case JSDIALOGTYPE_PROMPT:
+				style = SWT.ICON_QUESTION | SWT.CANCEL | SWT.OK;
+				break;
+			}
+			if (!"test".equals(System.getProperty("chromium.dialogs", "")) || browser == null) {
+				AtomicBoolean disposeDialog = new AtomicBoolean(false);
+				Shell shell = getShell((browser != null && !isPopup), disposeDialog);
+				MessageBox box = new MessageBox(shell, style);
+				box.setText(title);
+				box.setMessage(prompt != null ? msg + "\n\n"+prompt : msg);
+				isOpenDialog = true;
+				int open = box.open();
+				isOpenDialog = false;
+				if (disposeDialog.get()) shell.dispose();
+				close.accept(open);
+			} else {
+				headlessDialog(close);
+			}
+		});
 	}
 
 	private void headlessDialog(Consumer<Integer> close) {
@@ -1506,13 +1525,10 @@ final class Chromium extends WebBrowser {
 			disposing = Dispose.Unload;
 		}	
 		if (useSwtDialogs()) {
-//			Display.getDefault().asyncExec(() -> {
-//				ChromiumLib.cefswt_dialog_close(callback, 0, 0);
-				openJsDialog(false, JSDialogType.JSDIALOGTYPE_CONFIRM, "Are you sure you want to leave this page?", message_text, null, null, callback);
-				if (disposing == Dispose.Unload) {
-					disposing = Dispose.UnloadClosed;
-				}
-//			});
+			openJsDialog(false, JSDialogType.JSDIALOGTYPE_CONFIRM, "Are you sure you want to leave this page?", message_text, null, null, callback);
+			if (disposing == Dispose.Unload) {
+				disposing = Dispose.UnloadClosed;
+			}
 			return true;
 		}
 		return false;
@@ -1537,10 +1553,12 @@ final class Chromium extends WebBrowser {
 	}
 	
 	private void onBeforeContextMenu(CefMenuModel model) {
-		if (chromium.getMenu() != null) {
-			model.clear();
-			chromium.getMenu().setVisible(true);
-		}
+		syncExec(() -> {
+			if (chromium.getMenu() != null) {
+				model.clear();
+				chromium.getMenu().setVisible(true);
+			}
+		});
 	}
 
 	private static void setDownloadHandler() {
@@ -1569,63 +1587,65 @@ final class Chromium extends WebBrowser {
 		String name = suggested_name;
 
 		DownloadItem downloadItem = new DownloadItem(download_item);
-		if ("test".equals(System.getProperty("chromium.dialogs", ""))) {
-			Consumer<Integer> close = open -> {
-				boolean r = open == SWT.OK || open == SWT.YES ? true : false;
-				debug("JS Dialog Closed with " + r);
-				if (r) {
-					if (downloadItem.isValid) {
-						Download d = new Download(downloadItem, name, this);
-						d.isReady = true;
+		asyncExec(() -> {
+			if ("test".equals(System.getProperty("chromium.dialogs", ""))) {
+				Consumer<Integer> close = open -> {
+					boolean r = open == SWT.OK || open == SWT.YES ? true : false;
+					debug("JS Dialog Closed with " + r);
+					if (r) {
+						if (downloadItem.isValid) {
+							Download d = new Download(downloadItem, name, this);
+							d.isReady = true;
+						}
+						callback.Continue("" , false);
 					}
-					callback.Continue("" , false);
-				}
-			};
-			headlessDialog(close);
-			return;
-		}
-		if ("gtk".equals(SWT.getPlatform())) {
-			// Dont open multiple donwload dialogs. Prevent block ui.
-			if (isOpenDialog) {
-				Download d = new Download(downloadItem, null, this);
-				d.isReady = true;
+				};
+				headlessDialog(close);
 				return;
 			}
-
-			AtomicBoolean disposeDialog = new AtomicBoolean(false);
-			Shell shell = getShell((chromium != null && !chromium.isDisposed()), disposeDialog);
-			FileDialog dlg = new FileDialog(shell, SWT.SAVE | SWT.TOP);
-			dlg.setText("Save File");
-			dlg.setOverwrite(true);
-			if (name != null && !name.isEmpty()) {
-				dlg.setFileName(name);
-			}
-
-			Thread thread = preventBlockUI();
-
-			Display.getDefault().asyncExec(() -> {
-				isOpenDialog = true;
-				thread.start();
-				String selected = dlg.open();
-				isOpenDialog = false;
-				if (disposeDialog.get()) shell.dispose();
-				if (selected != null) {
-					if (downloadItem.isValid) {
-						Download d = new Download(downloadItem, selected, this);
-						d.isReady = true;
-						callback.Continue(selected, false);
-						return;
-					}
+			if ("gtk".equals(SWT.getPlatform())) {
+				// Dont open multiple donwload dialogs. Prevent block ui.
+				if (isOpenDialog) {
+					Download d = new Download(downloadItem, null, this);
+					d.isReady = true;
+					return;
 				}
-				Download d = new Download(downloadItem, null, this);
-				d.isReady = true;
-			});
-		} else {
-			if (downloadItem.isValid) {
-				new Download(downloadItem, name, this);
+				
+				AtomicBoolean disposeDialog = new AtomicBoolean(false);
+				Shell shell = getShell((chromium != null && !chromium.isDisposed()), disposeDialog);
+				FileDialog dlg = new FileDialog(shell, SWT.SAVE | SWT.TOP);
+				dlg.setText("Save File");
+				dlg.setOverwrite(true);
+				if (name != null && !name.isEmpty()) {
+					dlg.setFileName(name);
+				}
+				
+				Thread thread = preventBlockUI();
+				
+				asyncExec(() -> {
+					isOpenDialog = true;
+					thread.start();
+					String selected = dlg.open();
+					isOpenDialog = false;
+					if (disposeDialog.get()) shell.dispose();
+					if (selected != null) {
+						if (downloadItem.isValid) {
+							Download d = new Download(downloadItem, selected, this);
+							d.isReady = true;
+							callback.Continue(selected, false);
+							return;
+						}
+					}
+					Download d = new Download(downloadItem, null, this);
+					d.isReady = true;
+				});
+			} else {
+				if (downloadItem.isValid) {
+					new Download(downloadItem, name, this);
+				}
+				callback.Continue("", true);
 			}
-			callback.Continue("", true);
-		}
+		});
 	}
 
 	private Thread preventBlockUI() {
@@ -1645,16 +1665,18 @@ final class Chromium extends WebBrowser {
 
 	private static void onDownloadUpdated(int browserId, CefDownloadItem download_item, CefDownloadItemCallback callback) {
 		if (download_item.isValid()) {
-			Download download = Download.downloads.get(download_item.getId());
-			if (download != null && download.isReady) {
-				download.update(download_item, callback);
-				if (download_item.isCanceled() || !download.isReady) {
-					download.dispose();
+			asyncExec(() -> {
+				Download download = Download.downloads.get(download_item.getId());
+				if (download != null && download.isReady) {
+					download.update(download_item, callback);
+					if (download_item.isCanceled() || !download.isReady) {
+						download.dispose();
+					}
+					else if (!download.open && !Boolean.getBoolean("chromium.disable-download-progress")) {
+						download.show();
+					}
 				}
-				else if (!download.open && !Boolean.getBoolean("chromium.disable-download-progress")) {
-					download.show();
-				}
-			}
+			});
 		}
 	}
 
@@ -1893,7 +1915,7 @@ final class Chromium extends WebBrowser {
 //		System.out.println("e.native_key_code: " + e.native_key_code + " translated: "+ translateKey(e.native_key_code));
 //		System.out.println("e.character: " + e.character + " e.unmodified_character: " + e.unmodified_character);
 		
-		chromium.getDisplay().asyncExec(() -> {
+		asyncExec(() -> {
 			if (!isDisposed()) {
 				sendKeyEvent(firedEvent);
 			}
@@ -1945,7 +1967,7 @@ final class Chromium extends WebBrowser {
 		//Exit fullSreen
 		if (fullscreenListener != null && event.windows_key_code == 27
 				&& event.type == EventType.KEYEVENT_RAWKEYDOWN) {
-			cefBrowser.getComposite().getShell().setFullScreen(false);
+			syncExec(() -> cefBrowser.getComposite().getShell().setFullScreen(false));
 			execute("document.exitFullscreen()");
 		}
 		return false;
@@ -1984,7 +2006,9 @@ final class Chromium extends WebBrowser {
 	}
 	
 	private void onGotFocus() {
-		if (!isDisposed()) {
+		syncExec(() -> {
+			if (isDisposed())
+				return;
 			if (chromium.getDisplay().getFocusControl() != chromium && focusListener != null) {
 				debugPrint("on_got_focus: setFocus");
 				boolean focusListenerPrev = focusListener.enabled;
@@ -2000,19 +2024,19 @@ final class Chromium extends WebBrowser {
 			if ("win32".equals(SWT.getPlatform()) && focusListener != null) // consider this for all os
 				focusListener.enabled = true;
 			hasFocus = true;
-		}
+		});
 	}
 
 	private boolean onSetFocus(FocusSource focusSource) {
 		if (isDisposed()) return true;
-		boolean chromiumFocusControl = "gtk".equals(SWT.getPlatform()) ? true : chromium.getDisplay().getFocusControl() != chromium;
+		boolean chromiumFocusControl = "gtk".equals(SWT.getPlatform()) ? true : syncExec(() -> chromium.getDisplay().getFocusControl()) != chromium;
 		if (ignoreFirstFocus && chromiumFocusControl && focusSource == FocusSource.FOCUS_SOURCE_NAVIGATION) {
-			debugPrint("ignoreFirstFocus "+chromium.getDisplay().getFocusControl());
+			debugPrint("ignoreFirstFocus");
 			ignoreFirstFocus = false;
 			return true;
 		}
 
-		if (chromium.isFocusControl()) {
+		if (syncExec(() -> isDisposed() ? true : chromium.isFocusControl())) {
 			if (focusListener != null)
 				focusListener.enabled = true;
 		} else {
@@ -2051,19 +2075,21 @@ final class Chromium extends WebBrowser {
 	private void onTakeFocus(boolean next) {
 		if (isDisposed()) return;
 		hasFocus = false;
-		List<Control> tabOrder = getTabList(getParent(chromium));
-		int indexOf = tabOrder.indexOf(chromium);
-		if (indexOf != -1) {
-			int newIndex = (next) ? indexOf + 1 : indexOf - 1;
-			if (newIndex > 0 && newIndex < tabOrder.size() && !tabOrder.get(newIndex).isDisposed()) {
-				tabOrder.get(newIndex).setFocus();
-				return;
+		syncExec(() -> {
+			List<Control> tabOrder = getTabList(getParent(chromium));
+			int indexOf = tabOrder.indexOf(chromium);
+			if (indexOf != -1) {
+				int newIndex = (next) ? indexOf + 1 : indexOf - 1;
+				if (newIndex > 0 && newIndex < tabOrder.size() && !tabOrder.get(newIndex).isDisposed()) {
+					tabOrder.get(newIndex).setFocus();
+					return;
+				}
 			}
-		}
-		Control nextFocus = tabOrder.get(0);
-		if (!isDisposed() && !chromium.getParent().isDisposed() && !nextFocus.isDisposed()) {
-			nextFocus.setFocus();
-		}
+			Control nextFocus = tabOrder.get(0);
+			if (!isDisposed() && !chromium.getParent().isDisposed() && !nextFocus.isDisposed()) {
+				nextFocus.setFocus();
+			}
+		});
 	}
 
 	@Override
@@ -2660,6 +2686,53 @@ final class Chromium extends WebBrowser {
 	
 	boolean isDisposed() {
 		return chromium == null || chromium.isDisposed();
+	}
+
+	void syncExec(Runnable run) {
+		if (Display.getCurrent() != null) {
+			run.run();
+		} else {
+			Display.getDefault().syncExec(run);
+		}
+	}
+
+	<V> V syncExec(Callable<V> run) {
+		ErrorHandlingCallable<V> handling = new ErrorHandlingCallable<V>(run);
+		if (Display.getCurrent() != null) {
+			handling.run();
+		} else {
+			Display.getDefault().syncExec(handling);
+		}
+		if (handling.exception != null)
+			throw new RuntimeException(handling.exception);
+		return handling.result;
+	}
+	
+	static void asyncExec(Runnable run) {
+		Display.getDefault().asyncExec(run);
+	}
+	
+	private static class ErrorHandlingCallable<T> implements Runnable {
+
+		private Callable<T> runnable;
+
+		private T result;
+
+		private Exception exception;
+
+		private ErrorHandlingCallable(Callable<T> runnable) {
+			super();
+			this.runnable = runnable;
+		}
+
+		@Override
+		public void run() {
+			try {
+				result = runnable.call();
+			} catch (Exception e) {
+				exception = e;
+			}
+		}
 	}
 	
 	class ExtraApi implements ChromiumBrowser {
