@@ -101,4 +101,15 @@ public interface ChromiumBrowser {
 	 * @return CompletableFuture<byte[]> which will contain Base64 encoded image data.
 	 */
 	public CompletableFuture<byte[]> captureScreenshot(int x, int y, int width, int height, int scale);
+
+	/**
+	 * Ignore certificate errors on browser. If used when the browser is defined, a
+	 * new request context is created for the browser and will not affect the
+	 * others. Otherwise if used with an already initialized browser, it will affect
+	 * all other browser instances as the change to the global requestContent will
+	 * be used.
+	 * Default is false.
+	 * @param enable 
+	 */
+	public void ignoreCertificateErrors(boolean enable);
 }

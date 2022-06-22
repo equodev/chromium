@@ -39,6 +39,7 @@ import org.cef.browser.CefFrame;
 import org.cef.browser.CefMessageRouter;
 import org.cef.browser.CefMessageRouter.CefMessageRouterConfig;
 import org.cef.browser.CefPopup;
+import org.cef.browser.CefRequestContext;
 import org.cef.callback.CefAuthCallback;
 import org.cef.callback.CefBeforeDownloadCallback;
 import org.cef.callback.CefCallback;
@@ -191,6 +192,7 @@ final class Chromium extends WebBrowser {
 	private ControlAdapter fullscreenListener = null;
 	private ResizeListener resize;
 	private boolean inEvalBlocking = false;
+	private boolean ignoreCertificateErrors = false;
 
 	Chromium() {
 	}
@@ -469,7 +471,8 @@ final class Chromium extends WebBrowser {
 		}
 
 		Net.config();
-		cefBrowser = (CefBrowserSwt) clientHandler.createBrowser(this.url == null ? "about:blank" : this.url, false, false, null);
+		cefBrowser = (CefBrowserSwt) clientHandler.createBrowser(this.url == null ? "about:blank" : this.url, false,
+				false, ignoreCertificateErrors ? CefRequestContext.createContext(null) : null);
 		cefBrowser.createImmediately(chromium);
 	}
 
@@ -1336,7 +1339,12 @@ final class Chromium extends WebBrowser {
 				return true;
 			}
 		}
-		
+
+		if (ignoreCertificateErrors) {
+			callback.Continue(true);
+			return true;
+		}
+
 		String javaHost = request_url;
 		MessageBox prompt = new MessageBox (chromium.getShell(), SWT.YES | SWT.NO);
 		prompt.setText(SWT.getMessage("SWT_InvalidCert_Title"));
@@ -2747,6 +2755,14 @@ final class Chromium extends WebBrowser {
 			String message = jsonMessage.toJson();
 			cefBrowser.sendDevToolsMessage(message, message.length());
 			return screenshotResult;
+		}
+
+		@Override
+		public void ignoreCertificateErrors(boolean enable) {
+			ignoreCertificateErrors = enable;
+			if (!enable && cefBrowser != null) {
+				//TODO reset requestContext
+			}
 		}
 	}
 }
