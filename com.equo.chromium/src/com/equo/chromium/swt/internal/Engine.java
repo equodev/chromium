@@ -68,7 +68,9 @@ class Engine {
 				throw new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY,
 						"To run Chromium on Wayland, set env var GDK_BACKEND=x11 or call ChromiumBrowser.earlyInit() before creating Display");
 			}
-			multiThreaded = System.getProperty("chromium.multi_threaded_message_loop") != null ? Boolean.getBoolean("chromium.multi_threaded_message_loop") : Display.getCurrent() == null;
+			multiThreaded = System.getProperty("chromium.multi_threaded_message_loop") != null ? Boolean.getBoolean("chromium.multi_threaded_message_loop") : false;
+			if (multiThreaded && Boolean.valueOf(System.getProperty("chromium.debug", "false")))
+				System.out.println("J: multi_threaded_message_loop enabled");
 		}
 
 		libsPath = findLibsPath().resolve(SUBDIR);
@@ -78,7 +80,7 @@ class Engine {
 				System.load(libsPath.resolve(System.mapLibraryName(libname)).toString());
 			}
 		});
-		String[] args = getChromiumArgs(libsPath, multiThreaded);
+		String[] args = getChromiumArgs(libsPath, Boolean.getBoolean("chromium.init_threads"));
 		if (!Files.exists(libsPath) || !CefApp.startup(args)) {
 			throw new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY, "Missing binaries for Equo Chromium Browser.");
 		}
