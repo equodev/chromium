@@ -44,6 +44,7 @@ import org.cef.browser.CefRequestContext;
 import org.cef.callback.CefAuthCallback;
 import org.cef.callback.CefBeforeDownloadCallback;
 import org.cef.callback.CefCallback;
+import org.cef.callback.CefCompletionCallback;
 import org.cef.callback.CefContextMenuParams;
 import org.cef.callback.CefCookieVisitor;
 import org.cef.callback.CefDevToolsMessageObserverAdapter;
@@ -194,6 +195,7 @@ final class Chromium extends WebBrowser {
 	private ResizeListener resize;
 	private boolean inEvalBlocking = false;
 	private boolean ignoreCertificateErrors = false;
+	private CefRequestContext requestContext;
 
 	Chromium() {
 	}
@@ -472,8 +474,9 @@ final class Chromium extends WebBrowser {
 		}
 
 		Net.config();
+		requestContext = ignoreCertificateErrors ? CefRequestContext.createContext(null) : null;
 		cefBrowser = (CefBrowserSwt) clientHandler.createBrowser(this.url == null ? "about:blank" : this.url, false,
-				false, ignoreCertificateErrors ? CefRequestContext.createContext(null) : null);
+				false, requestContext);
 		cefBrowser.createImmediately(chromium);
 	}
 
@@ -1336,47 +1339,53 @@ final class Chromium extends WebBrowser {
 	}
 
 	private boolean onCertificateError(ErrorCode cert_error, String request_url, CefRequestCallback callback) {
+		if (ignoreCertificateErrors) {
+			callback.Continue(true);
+			return true;
+		}
 		String derpem = System.getProperty("chromium.ssl", "");
 		if (!derpem.isEmpty()) {
 			if (Files.isReadable(Paths.get(derpem))) {
 				try {
 					byte[] derpemBytes = Files.readAllBytes(Paths.get(derpem));
-					callback.Continue(true);
-					return true;
+					System.setProperty("chromium.ssl.cert", new String(derpemBytes , "ASCII").replaceAll("\\r\\n", "\n"));
 				} catch (IOException e) {
 					debugPrint("Failed to read file "+derpem);
 					e.printStackTrace();
 				}
 			} else {
 				debugPrint("Cannot read file '"+derpem+"', trying as string");
-				byte[] derpemBytes = derpem.getBytes(Charset.forName("ASCII"));
-				callback.Continue(true);
-				return true;
+				System.setProperty("chromium.ssl.cert", derpem.replaceAll("\\r\\n", "\n"));
 			}
+			return false;	
 		}
-
-		if (ignoreCertificateErrors) {
-			callback.Continue(true);
+		else {
+			asyncExec(() -> {
+				String javaHost = request_url;
+				Consumer<Integer> close = result -> {
+					if (result == SWT.YES) {
+						callback.Continue(true);
+					} else {
+						callback.Cancel();
+					}
+				};
+				if ("test".equals(System.getProperty("chromium.dialogs", ""))) {
+					headlessDialog(close);
+					return;
+				}
+				
+				MessageBox prompt = new MessageBox (chromium.getShell(), SWT.YES | SWT.NO); 
+				prompt.setText(SWT.getMessage("SWT_InvalidCert_Title"));
+				String cefError = cert_error.toString();
+				String specific = cefError.isEmpty() ? "\n\n" : "\n\n" + cefError + "\n\n";
+				String message = SWT.getMessage("SWT_InvalidCert_Message", new Object[] {javaHost}) +
+						specific + SWT.getMessage("SWT_InvalidCert_Connect");
+				prompt.setMessage(message);
+				int result = prompt.open();
+				close.accept(result);
+			});
 			return true;
 		}
-
-		int result = syncExec(() -> {
-			String javaHost = request_url;
-			MessageBox prompt = new MessageBox (chromium.getShell(), SWT.YES | SWT.NO);
-			prompt.setText(SWT.getMessage("SWT_InvalidCert_Title"));
-			String cefError = cert_error.toString();
-			String specific = cefError.isEmpty() ? "\n\n" : "\n\n" + cefError + "\n\n";
-			String message = SWT.getMessage("SWT_InvalidCert_Message", new Object[] {javaHost}) +
-					specific + SWT.getMessage("SWT_InvalidCert_Connect");
-			prompt.setMessage(message);
-			return prompt.open();
-		});
-		if (result == SWT.YES) {
-			callback.Continue(true);
-		} else {
-			callback.Cancel();
-		}
-		return true;
 	}
 
 	private static void setJsdialogHandler() {
@@ -2189,6 +2198,14 @@ final class Chromium extends WebBrowser {
 				if (globalManager != null) {
 					globalManager.deleteCookies(null, null);
 				}
+				CefCompletionCallback callback = new CefCompletionCallback() {
+					
+					@Override
+					public void onComplete() {
+						debug("certificate exceptions cleared");
+					}
+				};
+				CefRequestContext.getGlobalContext().clearCertificateExceptions(callback);
 			});
 		};
 		WebBrowser.NativeClearCookies = () -> {
@@ -2834,7 +2851,12 @@ final class Chromium extends WebBrowser {
 		public void ignoreCertificateErrors(boolean enable) {
 			ignoreCertificateErrors = enable;
 			if (!enable && cefBrowser != null) {
-				//TODO reset requestContext
+				if (requestContext == null) {
+					CefRequestContext.getGlobalContext().clearCertificateExceptions(null);
+				}
+				else {
+					requestContext.clearCertificateExceptions(null);
+				}
 			}
 		}
 	}
