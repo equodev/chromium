@@ -2850,11 +2850,17 @@ final class Chromium extends WebBrowser {
 		public void ignoreCertificateErrors(boolean enable) {
 			ignoreCertificateErrors = enable;
 			if (!enable && cefBrowser != null) {
+				CefCompletionCallback callback = new CefCompletionCallback() {
+					@Override
+					public void onComplete() {
+						debug("certificate exceptions cleared");
+					}
+				};
 				if (requestContext == null) {
-					CefRequestContext.getGlobalContext().clearCertificateExceptions(null);
+					CefRequestContext.getGlobalContext().clearCertificateExceptions(callback);
 				}
 				else {
-					requestContext.clearCertificateExceptions(null);
+					requestContext.clearCertificateExceptions(callback);
 				}
 			}
 		}
