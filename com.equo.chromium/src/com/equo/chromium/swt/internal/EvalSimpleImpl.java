@@ -12,7 +12,7 @@ public class EvalSimpleImpl extends AbstractEval {
 	private CefMessageRouter router;
 	private CefBrowser cefBrowser;
 
-	EvalSimpleImpl(CefBrowser cefBrowser, CefMessageRouter router, String url) {
+	public EvalSimpleImpl(CefBrowser cefBrowser, CefMessageRouter router, String url) {
 		this.url = url;
 		this.router = router;
 		this.cefBrowser = cefBrowser;

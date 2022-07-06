@@ -1,6 +1,6 @@
 package com.equo.chromium.swt.internal;
 
-import static com.equo.chromium.swt.internal.Engine.debug;
+import static com.equo.chromium.internal.Engine.debug;
 
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
@@ -24,7 +24,7 @@ import com.github.cliftonlabs.json_simple.JsonException;
 import com.github.cliftonlabs.json_simple.JsonObject;
 import com.github.cliftonlabs.json_simple.Jsoner;
 
-public abstract class AbstractEval implements Eval {
+public abstract class AbstractEval {
 
 	public static CefMessageRouter createRouter() {
 		CefMessageRouterConfig config = new CefMessageRouterConfig("chromiumEvaluate", "chromiumEvaluateCancel");
@@ -46,6 +46,8 @@ public abstract class AbstractEval implements Eval {
 				+      finallyExec
 				+ "  }})();";
 	}
+
+	public abstract Object eval(String script, CompletableFuture<Boolean> created) throws InterruptedException, ExecutionException;
 
 	protected Object executeEvalWithHandler(CefMessageRouter router, String url, BiConsumer<String, String> function,
 			String script, CompletableFuture<Boolean> created) throws InterruptedException, ExecutionException {

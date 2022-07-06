@@ -1,9 +1,11 @@
-package com.equo.chromium.swt.internal;
+package com.equo.chromium.internal;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,8 +18,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.cef.CefApp;
+import org.cef.CefAppStandalone;
 import org.cef.CefAppSwt;
 import org.cef.CefClient;
 import org.cef.CefSettings;
@@ -26,23 +30,17 @@ import org.cef.SystemBootstrap;
 import org.cef.SystemBootstrap.Loader;
 import org.cef.WindowingToolkit;
 import org.cef.browser.CefBrowser;
-import org.cef.browser.CefFrame;
-import org.cef.callback.CefSchemeHandlerFactory;
 import org.cef.callback.CefSchemeRegistrar;
 import org.cef.handler.CefAppHandlerAdapter;
-import org.cef.handler.CefResourceHandler;
-import org.cef.network.CefRequest;
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.SWTException;
-import org.eclipse.swt.widgets.Display;
 
+import com.equo.chromium.swt.internal.SWTEngine;
 import com.equo.chromium.swt.internal.spi.DynamicCefSchemeHandlerFactory;
 import com.equo.chromium.swt.internal.spi.SchemeDomainPair;
 import com.equo.chromium.swt.internal.spi.SchemeHandler;
 import com.equo.chromium.swt.internal.spi.SchemeHandlerManager;
 import com.equo.chromium.swt.internal.spi.StaticCefSchemeHandlerFactory;
 
-class Engine {
+public class Engine {
 	static {
 		loadLib();
 	}
@@ -51,23 +49,17 @@ class Engine {
 	private static final String SCHEME_FILE = "file"; //$NON-NLS-1$
 	private static Path libsPath;
 
-	static final boolean debug = Boolean.valueOf(System.getProperty("chromium.debug", "false"));
+	public static final boolean debug = Boolean.valueOf(System.getProperty("chromium.debug", "false"));
 
-	private static boolean shuttingDown;
+	private static AtomicBoolean shuttingDown = new AtomicBoolean();
 
 	private static CefApp app;
-	static CompletableFuture<Boolean> ready = new CompletableFuture<>();
-	private static boolean closing;
+	public static final CompletableFuture<Boolean> ready = new CompletableFuture<>();
+	private static AtomicBoolean closing = new AtomicBoolean();
 	private static boolean multiThreaded;
 
 	private static void loadLib() {
 		if (OS.isLinux()) {
-			String backend = System.getenv("GDK_BACKEND");
-			String session = System.getenv("XDG_SESSION_TYPE");
-			if ("wayland".equals(session) && !"x11".equals(backend) && Display.getCurrent() != null) {
-				throw new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY,
-						"To run Chromium on Wayland, set env var GDK_BACKEND=x11 or call ChromiumBrowser.earlyInit() before creating Display");
-			}
 			multiThreaded = System.getProperty("chromium.multi_threaded_message_loop") != null ? Boolean.getBoolean("chromium.multi_threaded_message_loop") : false;
 			if (multiThreaded && Boolean.valueOf(System.getProperty("chromium.debug", "false")))
 				System.out.println("J: multi_threaded_message_loop enabled");
@@ -80,10 +72,25 @@ class Engine {
 				System.load(libsPath.resolve(System.mapLibraryName(libname)).toString());
 			}
 		});
-		String[] args = getChromiumArgs(libsPath, Boolean.getBoolean("chromium.init_threads"));
-		if (!Files.exists(libsPath) || !CefApp.startup(args)) {
-			throw new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY, "Missing binaries for Equo Chromium Browser.");
+		if (!Files.exists(libsPath))
+			throw new RuntimeException("Missing binaries for Equo Chromium Browser.");
+		boolean checkGtkInit = checkGtkInit();
+		String[] args = getChromiumArgs(libsPath, Boolean.getBoolean("chromium.init_threads"), checkGtkInit);
+		if (!CefApp.startup(args)) {
+			if (checkGtkInit) {
+				throw new RuntimeException("To run Chromium on Wayland, set env var GDK_BACKEND=x11 or call ChromiumBrowser.earlyInit() before creating a window");
+			}
+			throw new RuntimeException("Failed to load binaries for Equo Chromium Browser.");
 		}
+	}
+
+	private static boolean checkGtkInit() {
+		if (!OS.isLinux()) 
+			return false;
+		String backend = System.getenv("GDK_BACKEND");
+		String session = System.getenv("XDG_SESSION_TYPE");
+		boolean checkGtkInit = "wayland".equals(session) && !"x11".equals(backend);
+		return checkGtkInit;
 	}
 
 	private static Path findLibsPath() {
@@ -91,7 +98,7 @@ class Engine {
 		if (!chromiumPath.isEmpty() && Files.exists(Paths.get(chromiumPath, SUBDIR).toAbsolutePath()))
 			return Paths.get(chromiumPath).toAbsolutePath().normalize();
 		String arch = getArch();
-		String binariesBsn = "com.equo.chromium.cef." + SWT.getPlatform() + "." + getOS() + "." + arch;
+		String binariesBsn = "com.equo.chromium.cef." + Utils.getWindowing() + "." + Utils.getOS() + "." + arch;
 		try {
 			Class<?> fragmentClass = Class.forName("com.equo.chromium.ChromiumFragment");
 			CodeSource codeSource = fragmentClass.getProtectionDomain().getCodeSource();
@@ -122,14 +129,11 @@ class Engine {
 				}
 				return fragment;
 			}
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (URISyntaxException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		SWTException swtError = new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY, "plugin/jar '" + binariesBsn
+		throw new RuntimeException("plugin/jar '" + binariesBsn
 				+ "' is missing and system property 'chromium.path' is not correctly set.");
-		throw swtError;
 	}
 
 	/**
@@ -138,8 +142,9 @@ class Engine {
 	 * 
 	 * @param url The URL to convert into a URI
 	 * @return A URI representing the given URL
+	 * @throws UnsupportedEncodingException 
 	 */
-	private static URI toURI(URL url) throws URISyntaxException {
+	private static URI toURI(URL url) throws URISyntaxException, UnsupportedEncodingException {
 		// URL behaves differently across platforms so for file: URLs we parse from
 		// string form
 		if (SCHEME_FILE.equals(url.getProtocol())) {
@@ -148,7 +153,7 @@ class Engine {
 			// file:c:/tmp
 			if (pathString.indexOf('/') != 0)
 				pathString = '/' + pathString;
-			return new URI(SCHEME_FILE, null, pathString, null);
+			return new URI(SCHEME_FILE, null, URLDecoder.decode(pathString, "UTF-8"), null);
 		}
 		try {
 			return new URI(url.toExternalForm());
@@ -159,7 +164,11 @@ class Engine {
 		}
 	}
 
-	static void initCEF() {
+	public static void initCEF() {
+		initCEF(false);
+	}
+
+	static void initCEF(boolean standalone) {
 		synchronized (Engine.class) {
 			if (app == null) {
 				CefSettings settings = new CefSettings();
@@ -198,7 +207,7 @@ class Engine {
 						? Boolean.getBoolean("chromium.external_message_pump")
 						: external_message_pump);
 
-				String[] args = getChromiumArgs(libsPath, false);
+				String[] args = getChromiumArgs(libsPath, false, false);
 
 				final SchemeHandlerManager schemeHandlerManager = SchemeHandlerManager.get();
 				List<SchemeDomainPair> registeredSchemeData = Collections.emptyList();
@@ -208,8 +217,15 @@ class Engine {
 				final List<SchemeDomainPair> finalRegisteredSchemeData = registeredSchemeData;
 
 				int loopTime = (!settings.external_message_pump && !finalRegisteredSchemeData.isEmpty()) ? 1000 / 180 : WindowingToolkit.DEFAULT_LOOP_TIME;
-				CefAppSwt appSwt = new CefAppSwt(loopTime, settings.external_message_pump);
-				CefApp.setWindowingToolkit(appSwt);
+				WindowingToolkit windowToolkit = null;
+				if (standalone) {
+					windowToolkit = new CefAppStandalone();
+					settings.multi_threaded_message_loop = false;
+					settings.external_message_pump = false;
+				} else {
+					windowToolkit = new CefAppSwt(loopTime, settings.external_message_pump);
+				}
+				CefApp.setWindowingToolkit(windowToolkit);
 
 				CefApp.addAppHandler(new CefAppHandlerAdapter(args) {
 					@Override
@@ -224,7 +240,7 @@ class Engine {
 
 					@Override
 					public void onScheduleMessagePumpWork(long delay_ms) {
-						if (shuttingDown) {
+						if (shuttingDown.get()) {
 							debug("Ignoring onScheduleMessagePumpWork due shuttingDown");
 							return;
 						}
@@ -242,37 +258,19 @@ class Engine {
 												: new StaticCefSchemeHandlerFactory(schemeHandlerManager, schemeData));
 							}
 						}
-						app.registerSchemeHandlerFactory("https", "functions", new CefSchemeHandlerFactory() {
-							@Override
-							public CefResourceHandler create(CefBrowser browser, CefFrame frame,
-									String schemeName, CefRequest request) {
-								if (!browser.isPopup()) {
-									if (isPartial(request))
-										return Chromium.getChromium(browser).functionsResourceHandler.peek();
-									return Chromium.getChromium(browser).createFunctionResourceHandler();
-								}
-								return null;
-							}
-							
-							protected boolean isPartial(CefRequest request) {
-								try {
-									URI url = new URI(request.getURL());
-									return url.getFragment() != null;
-								} catch (URISyntaxException e) {
-									return false;
-								}
-							}
-						});
+						if (!standalone) {
+							SWTEngine.onContextInitialized(app);
+						}
 						ready.complete(true);
 					}
 
 					@Override
 					public boolean onBeforeTerminate() {
-						if (shuttingDown) {
+						if (shuttingDown.get()) {
 							// already shutdown
 							return false;
 						}
-						shuttingDown = true;
+						shuttingDown.set(true);
 						internalShutdown();
 						return true;
 					}
@@ -281,31 +279,22 @@ class Engine {
 				try {
 					app = CefApp.getInstance(settings);
 				} catch (UnsatisfiedLinkError e) {
-					if ("gtk".equals(SWT.getPlatform()) && e.getMessage().contains("libgconf")) {
+					if ("gtk".equals(Utils.getWindowing()) && e.getMessage().contains("libgconf")) {
 						System.load(libsPath.resolve("libgconf-2.so.4").toString());
 						app = CefApp.getInstance(settings);
 					} else {
 						throw e;
 					}
 				}
-				Display.getDefault().addListener(SWT.Close, e -> {
-					closing = true;
-				});
-				Display.getDefault().disposeExec(() -> {
-					if (shuttingDown) {
-						// already shutdown
-						return;
-					}
-					if (!OS.isMacintosh() || !closing) {
-						shuttingDown = true;
-						internalShutdown();
-					}
-				});
+				if (!standalone) {
+					SWTEngine.initCef(closing, shuttingDown, () -> internalShutdown());
+				}
+
 			}
 		}
 	}
 
-	static String[] getChromiumArgs(Path libsPath, boolean addExtra) {
+	static String[] getChromiumArgs(Path libsPath, boolean addXInitThreads, boolean addGtkInitCheck) {
 		List<String> args = new ArrayList<>();
 		String vmArg = System.getProperty("chromium.args", System.getProperty("swt.chromium.args"));
 		if (vmArg != null) {
@@ -314,8 +303,10 @@ class Engine {
 		}
 		if (OS.isLinux()) {
 			args.add("--disable-gpu-compositing");
-			if (addExtra)
+			if (addXInitThreads)
 				args.add("XInitThreads");
+			if (addGtkInitCheck)
+				args.add("GTKInitCheck");
 		} else if (OS.isMacintosh()) {
 			args.add("--framework-dir-path=" + libsPath.resolve("Chromium Embedded Framework.framework"));
 			args.add("--main-bundle-path=" + libsPath.resolve("jcef Helper.app"));
@@ -331,24 +322,12 @@ class Engine {
 		app = null;
 	}
 
-	static <T extends CefClient> T createClient() {
+	public static <T extends CefClient> T createClient() {
 		return app.createClient();
 	}
 
-	private static String getOS() {
-		String os = "";
-		switch (SWT.getPlatform()) {
-		case "gtk":
-			os = "linux";
-			break;
-		case "win32":
-			os = "win32";
-			break;
-		case "cocoa":
-			os = "macosx";
-			break;
-		}
-		return os;
+	public static void startCefLoop() {
+		app.runMessageLoop();
 	}
 
 	private static String getArch() {
@@ -360,13 +339,13 @@ class Engine {
 		return osArch;
 	}
 
-	static void debug(String log) {
+	public static void debug(String log) {
 		if (debug) {
 			System.out.println("J:" + log);
 		}
 	}
 
-	static void debug(String log, CefBrowser cefBrowser) {
+	public static void debug(String log, CefBrowser cefBrowser) {
 		if (debug) {
 			int identifier = cefBrowser != null ? cefBrowser.getIdentifier() : -1;
 			System.out.println(System.currentTimeMillis() / 1000 + ":J" + identifier + ":"

@@ -1,4 +1,4 @@
-package com.equo.chromium.swt;
+package com.equo.chromium;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -10,7 +10,12 @@ import org.cef.CefApp;
 import org.cef.CefApp.CefAppState;
 import org.cef.CefClient;
 import org.cef.browser.CefBrowserSwt;
+import org.cef.misc.Rectangle;
 
+import com.equo.chromium.internal.Engine;
+import com.equo.chromium.internal.Standalone;
+import com.equo.chromium.internal.Windowless;
+import com.equo.chromium.swt.Browser;
 import com.equo.chromium.swt.internal.WebBrowser;
 
 public interface ChromiumBrowser {
@@ -34,6 +39,52 @@ public interface ChromiumBrowser {
 		return browsers;
 	}
 
+	static ChromiumBrowser windowless(String url) {
+		return new Windowless(url);
+	}
+
+	static ChromiumBrowser standalone(String url) {
+		return new Standalone(url);
+	}
+
+	static ChromiumBrowser standalone(String url, Rectangle window) {
+		return new Standalone(url, window);
+	}
+
+	/**
+	 * Early load and init the chromium engine and libraries. Usually not required.
+	 */
+	public static void earlyInit() throws ClassNotFoundException {
+		Class.forName("com.equo.chromium.internal.Engine");
+	}
+
+	public static void startBrowsers() {
+		Engine.startCefLoop();
+	}
+
+	/**
+	 * Delete cookies matching the url and name regex patterns. Negation patterns
+	 * can be used to exclude cookies from deletion.
+	 * 
+	 * @param urlPattern  the pattern for the matching URL case. Null matches all,
+	 *                    empty matches nothing.
+	 * @param namePattern the pattern for the matching cookie name case. Null
+	 *                    matches all, empty matches nothing.
+	 */
+	static boolean clearCookies(String urlPattern, String namePattern) {
+		return WebBrowser.clearCookie(urlPattern, namePattern);
+	}
+
+	boolean setUrl(String url);
+
+	/**
+	 * Deprecated. Use {@code executeJavacript} instead or Comm.
+	 */
+	@Deprecated
+	Object evaluate(String script);
+
+	boolean close();
+
 	public void executeJavacript(String script);
 
 	/**
@@ -53,37 +104,7 @@ public interface ChromiumBrowser {
 
 	public void removeConsoleListener(ConsoleListener listener);
 
-	@FunctionalInterface
-	public interface ConsoleListener {
-		/**
-		 * level: 2 (INFO), 3 (WARNING), 4 (ERROR).
-		 * 
-		 * @return true to stop message from being output to console.
-		 */
-		boolean message(int level, String message, String source, int line);
-	}
-
 	List<Object> getErrors();
-
-	/**
-	 * Early load and init the chromium engine and libraries. Usually not required.
-	 */
-	public static void earlyInit() throws ClassNotFoundException {
-		Class.forName("com.equo.chromium.swt.internal.Engine");
-	}
-
-	/**
-	 * Delete cookies matching the url and name regex patterns. Negation patterns
-	 * can be used to exclude cookies from deletion.
-	 * 
-	 * @param urlPattern  the pattern for the matching URL case. Null matches all,
-	 *                    empty matches nothing.
-	 * @param namePattern the pattern for the matching cookie name case. Null
-	 *                    matches all, empty matches nothing.
-	 */
-	static boolean clearCookies(String urlPattern, String namePattern) {
-		return WebBrowser.clearCookie(urlPattern, namePattern);
-	}
 
 	/**
 	 * Capture screenshot from browser
@@ -112,4 +133,14 @@ public interface ChromiumBrowser {
 	 * @param enable 
 	 */
 	public void ignoreCertificateErrors(boolean enable);
+
+	@FunctionalInterface
+	public interface ConsoleListener {
+		/**
+		 * level: 2 (INFO), 3 (WARNING), 4 (ERROR).
+		 * 
+		 * @return true to stop message from being output to console.
+		 */
+		boolean message(int level, String message, String source, int line);
+	}
 }

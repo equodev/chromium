@@ -1,8 +1,7 @@
 package com.equo.chromium.swt.internal;
 
-import static com.equo.chromium.swt.internal.Engine.debug;
+import static com.equo.chromium.internal.Engine.debug;
 
-import java.io.IOException;
 import java.net.HttpCookie;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -10,7 +9,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -21,7 +19,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Stack;
 import java.util.Vector;
 import java.util.concurrent.Callable;
@@ -34,6 +31,7 @@ import java.util.stream.Collectors;
 import org.cef.CefApp;
 import org.cef.CefClientSwt;
 import org.cef.CefSettings;
+import org.cef.CefSettings.LogSeverity;
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefBrowserSwt;
 import org.cef.browser.CefFrame;
@@ -47,7 +45,6 @@ import org.cef.callback.CefCallback;
 import org.cef.callback.CefCompletionCallback;
 import org.cef.callback.CefContextMenuParams;
 import org.cef.callback.CefCookieVisitor;
-import org.cef.callback.CefDevToolsMessageObserverAdapter;
 import org.cef.callback.CefDownloadItem;
 import org.cef.callback.CefDownloadItemCallback;
 import org.cef.callback.CefFileDialogCallback;
@@ -132,17 +129,16 @@ import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Widget;
 
+import com.equo.chromium.ChromiumBrowser;
+import com.equo.chromium.internal.Engine;
+import com.equo.chromium.internal.IndependentBrowser;
 import com.equo.chromium.swt.Browser;
 import com.equo.chromium.swt.BrowserFunction;
-import com.equo.chromium.swt.ChromiumBrowser;
-import com.equo.chromium.swt.ChromiumBrowser.ConsoleListener;
 import com.equo.chromium.swt.OpenWindowListener;
 import com.equo.chromium.swt.WindowEvent;
 import com.equo.chromium.swt.internal.spi.CommRouterHandler;
 import com.equo.chromium.swt.internal.spi.CommunicationManager;
 import com.equo.chromium.swt.internal.spi.ScriptExtension;
-import com.github.cliftonlabs.json_simple.JsonException;
-import com.github.cliftonlabs.json_simple.JsonObject;
 import com.github.cliftonlabs.json_simple.Jsoner;
 
 @SuppressWarnings("restriction")
@@ -193,8 +189,6 @@ final class Chromium extends WebBrowser {
 	private ControlAdapter fullscreenListener = null;
 	private ResizeListener resize;
 	private boolean inEvalBlocking = false;
-	private boolean ignoreCertificateErrors = false;
-	private CefRequestContext requestContext;
 
 	Chromium() {
 	}
@@ -473,9 +467,8 @@ final class Chromium extends WebBrowser {
 		}
 
 		Net.config();
-		requestContext = ignoreCertificateErrors ? CefRequestContext.createContext(null) : null;
 		cefBrowser = (CefBrowserSwt) clientHandler.createBrowser(this.url == null ? "about:blank" : this.url, false,
-				false, requestContext);
+				false, extraApi().createRequestContext());
 		cefBrowser.createImmediately(chromium);
 	}
 
@@ -972,10 +965,7 @@ final class Chromium extends WebBrowser {
 		AtomicBoolean prevent = new AtomicBoolean();
 		if (extraApi != null) {
 			syncExec(() -> {
-				for (ConsoleListener listener : extraApi.consoleListeners) {
-					if (listener.message(level.ordinal(), message, source, line))
-						prevent.set(true);
-				}
+				prevent.set(extraApi.onConsoleMessage(cefBrowser, level, message, source, line));
 			});
 		}
 		return prevent.get();
@@ -1338,27 +1328,13 @@ final class Chromium extends WebBrowser {
 	}
 
 	private boolean onCertificateError(ErrorCode cert_error, String request_url, CefCallback callback) {
-		if (ignoreCertificateErrors) {
+		if (extraApi().isIgnoreCertificateErrors()) {
 			callback.Continue();
 			return true;
 		}
-		String derpem = System.getProperty("chromium.ssl", "");
-		if (!derpem.isEmpty()) {
-			if (Files.isReadable(Paths.get(derpem))) {
-				try {
-					byte[] derpemBytes = Files.readAllBytes(Paths.get(derpem));
-					System.setProperty("chromium.ssl.cert", new String(derpemBytes , "ASCII").replaceAll("\\r\\n", "\n"));
-				} catch (IOException e) {
-					debugPrint("Failed to read file "+derpem);
-					e.printStackTrace();
-				}
-			} else {
-				debugPrint("Cannot read file '"+derpem+"', trying as string");
-				System.setProperty("chromium.ssl.cert", derpem.replaceAll("\\r\\n", "\n"));
-			}
-			return false;	
-		}
-		else {
+		if (extraApi().handleCertificateProperty()) {
+			return false;
+		} else {
 			asyncExec(() -> {
 				String javaHost = request_url;
 				Consumer<Integer> close = result -> {
@@ -2522,7 +2498,7 @@ final class Chromium extends WebBrowser {
 			}
 		}
 		checkBrowser();
-		Eval eval = null;
+		AbstractEval eval = null;
 		try {
 			if (!functionsResourceHandler.isEmpty() && functionsResourceHandler.peek().inFunction) {
 				eval = new EvalBrowserFunctionImpl(router, functionsResourceHandler.peek());
@@ -2751,17 +2727,23 @@ final class Chromium extends WebBrowser {
 		}
 	}
 	
-	class ExtraApi implements ChromiumBrowser {
-		String lastSearch = null;
-		List<ConsoleListener> consoleListeners = new ArrayList<ConsoleListener>();
+	class ExtraApi extends IndependentBrowser implements ChromiumBrowser {
 		List<Object> errors;
+
+		@Override
+		protected CefBrowser getBrowser() {
+			return cefBrowser;
+		}
+		
+		@Override
+		protected CefRequestContext createRequestContext() {
+			return super.createRequestContext();
+		}
 
 		@Override
 		public void find(String search, boolean forward, boolean matchCase) {
 			checkBrowser();
-			boolean findNext = Objects.equals(search, lastSearch);
-			lastSearch = search;
-			cefBrowser.find(1, search, forward, matchCase, findNext);
+			super.find(search, forward, matchCase);
 		}
 
 		private void initErrors() {
@@ -2787,17 +2769,17 @@ final class Chromium extends WebBrowser {
 		@Override
 		public void zoom(double zoomLevel) {
 			checkBrowser();
-			cefBrowser.setZoomLevel(zoomLevel);
+			super.zoom(zoomLevel);
 		}
 
 		@Override
-		public void addConsoleListener(ConsoleListener listener) {
-			consoleListeners.add(listener);
+		protected boolean onConsoleMessage(CefBrowser browser, LogSeverity level, String message, String source, int line) {
+			return super.onConsoleMessage(browser, level, message, source, line);
 		}
 
 		@Override
-		public void removeConsoleListener(ConsoleListener listener) {
-			consoleListeners.remove(listener);
+		protected boolean handleCertificateProperty() {
+			return super.handleCertificateProperty();
 		}
 
 		@Override
@@ -2806,63 +2788,18 @@ final class Chromium extends WebBrowser {
 		}
 
 		@Override
-		public CompletableFuture<byte[]> captureScreenshot() {
-			return captureScreenshot(0,0,0,0,1);
+		public boolean setUrl(String url) {
+			return Chromium.this.setUrl(url, null, null);
 		}
 
 		@Override
-		public CompletableFuture<byte[]> captureScreenshot(int x, int y, int width, int height, int scale) {
-			CompletableFuture<byte[]> screenshotResult = new CompletableFuture<>();
-			new CefDevToolsMessageObserverAdapter(cefBrowser) {
-				@Override
-				public void onDevToolsMethodResult(CefBrowser cefBrowser, int messageId, boolean success, String result,
-						int resultSize) {
-					try {
-						JsonObject json = (JsonObject)Jsoner.deserialize(result);
-						screenshotResult.complete((byte[])((String)json.getOrDefault("data", "")).getBytes(StandardCharsets.UTF_8));
-					} catch (JsonException e) {
-						screenshotResult.complete("".getBytes(StandardCharsets.UTF_8));
-					} finally {
-						dispose();
-					}
-				}
-			};
-			JsonObject jsonMessage = new JsonObject();
-			jsonMessage.put("id", 0);
-			jsonMessage.put("method", "Page.captureScreenshot");
-			JsonObject clip = new JsonObject();
-			if (width > 0 && height > 0) {
-				JsonObject viewport = new JsonObject();
-				viewport.put("x", x);
-				viewport.put("y", y);
-				viewport.put("width", width);
-				viewport.put("height", height);
-				viewport.put("scale", scale);
-				clip.put("clip", viewport);
-				jsonMessage.put("params", clip);
-			}
-			String message = jsonMessage.toJson();
-			cefBrowser.sendDevToolsMessage(message, message.length());
-			return screenshotResult;
+		public Object evaluate(String script) {
+			return Chromium.this.evaluate(script);
 		}
 
 		@Override
-		public void ignoreCertificateErrors(boolean enable) {
-			ignoreCertificateErrors = enable;
-			if (!enable && cefBrowser != null) {
-				CefCompletionCallback callback = new CefCompletionCallback() {
-					@Override
-					public void onComplete() {
-						debug("certificate exceptions cleared");
-					}
-				};
-				if (requestContext == null) {
-					CefRequestContext.getGlobalContext().clearCertificateExceptions(callback);
-				}
-				else {
-					requestContext.clearCertificateExceptions(callback);
-				}
-			}
+		public boolean close() {
+			return Chromium.this.close();
 		}
 	}
 }

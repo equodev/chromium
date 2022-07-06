@@ -1,4 +1,4 @@
-package com.equo.chromium.swt.internal;
+package com.equo.chromium.internal;
 
 import static java.util.Arrays.asList;
 
@@ -14,9 +14,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
-
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.SWTException;
 
 public class ResourceExpander {
 
@@ -52,7 +49,7 @@ public class ResourceExpander {
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
-				throw new SWTException(SWT.ERROR_FAILED_LOAD_LIBRARY, "Failed to extract "+resource+ "from jar");
+				throw new RuntimeException("Failed to extract "+resource+ "from jar");
 			}
 		}
 		throw new UnsatisfiedLinkError("Could not find resource " + resource);
