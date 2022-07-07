@@ -186,18 +186,18 @@ public class Engine {
 
 				boolean external_message_pump = true;
 				if (OS.isMacintosh()) {
-					settings.browser_subprocess_path = libsPath.resolve("jcef Helper.app/Contents/MacOS/jcef Helper")
+					settings.browser_subprocess_path = libsPath.resolve("equochro Helper.app/Contents/MacOS/equochro Helper")
 							.toString();
 					settings.resources_dir_path = libsPath.resolve("Chromium Embedded Framework.framework")
 							.resolve("Resources").toString();
 					external_message_pump = false;
 				} else if (OS.isWindows()) {
-					settings.browser_subprocess_path = libsPath.resolve("jcef_helper.exe").toString();
+					settings.browser_subprocess_path = libsPath.resolve("equochro_helper.exe").toString();
 					settings.resources_dir_path = libsPath.toString();
 					settings.locales_dir_path = libsPath.resolve("locales").toString();
 					settings.multi_threaded_message_loop = System.getProperty("chromium.multi_threaded_message_loop") != null ? Boolean.getBoolean("chromium.multi_threaded_message_loop") : false;
 				} else if (OS.isLinux()) {
-					settings.browser_subprocess_path = libsPath.resolve("jcef_helper").toString();
+					settings.browser_subprocess_path = libsPath.resolve("equochro_helper").toString();
 					settings.resources_dir_path = libsPath.toString();
 					settings.locales_dir_path = libsPath.resolve("locales").toString();
 					settings.multi_threaded_message_loop = multiThreaded;
@@ -309,7 +309,7 @@ public class Engine {
 				args.add("GTKInitCheck");
 		} else if (OS.isMacintosh()) {
 			args.add("--framework-dir-path=" + libsPath.resolve("Chromium Embedded Framework.framework"));
-			args.add("--main-bundle-path=" + libsPath.resolve("jcef Helper.app"));
+			args.add("--main-bundle-path=" + libsPath.resolve("equochro Helper.app"));
 		}
 		return args.toArray(new String[args.size()]);
 	}
