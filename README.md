@@ -1,6 +1,6 @@
 # Equo Chromium Community Edition
 
-The [Equo Chromium](https://www.equo.dev/chromium) Community widget is a cross platform SWT browser that allows users to create and render modern web-based UIs inside a Java SWT or an Eclipse RCP application. It can be used in a standalone Java application, or it can also be easily embedded in an Eclipse view, using the same API that is used with other SWT browsers.
+The [Equo Chromium](https://www.equoplatform.com/chromium) Community widget is a cross platform SWT browser that allows users to create and render modern web-based UIs inside a Java SWT or an Eclipse RCP application. It can be used in a standalone Java application, or it can also be easily embedded in an Eclipse view, using the same API that is used with other SWT browsers.
 
 No more custom code for each platform, no more installations of specific libraries for Linux, no more problems in Windows with IE, no more platform-dependant and browser-specific issues at all. This is a truly **cross platform** SWT Browser that runs seamlessly in all operating systems and in embedded devices.
 
@@ -8,7 +8,7 @@ It is based on and uses the CEF Framework (https://bitbucket.org/chromiumembedde
 
 ## License
 
-[Equo Chromium](https://www.equo.dev/chromium) is dual-licensed under commercial and open source licenses (GPLv3). This repository is licensed under GPLv3. To get a commercial license and to not worry about the obligations associated with the GPLv3 license please contact the [Equo Platform support team](https://www.equo.dev/request-a-demo).
+[Equo Chromium](https://www.equoplatform.com/chromium) is dual-licensed under commercial and open source licenses (GPLv3). This repository is licensed under GPLv3. To get a commercial license and to not worry about the obligations associated with the GPLv3 license please contact the [Equo Platform support team](https://www.equoplatform.com/request-a-demo).
 
 ## Distribution
 
@@ -27,16 +27,16 @@ An Eclipse P2 repository is available with the bundle and fragments for Linux, W
 1. Repository Equo Chromium Community widget:
 
 ```
-https://dl.equo.dev/chromium-swt-ce/69.0.0/repository
+https://dl.equoplatform.com/chromium-swt-ce/69.0.0/repository
 ```
 
 2. CEF binaries P2 repository:
 
 ```
-https://dl.equo.dev/chromium-cef-ce/69.0.0/repository
+https://dl.equoplatform.com/chromium-cef-ce/69.0.0/repository
 ```
 
-If you need support for other platforms (i.e 32 bits architectures) please [contact us](https://www.equo.dev/request-a-demo).
+If you need support for other platforms (i.e 32 bits architectures) please [contact us](https://www.equoplatform.com/request-a-demo).
 
 ## Usage
 
@@ -83,4 +83,4 @@ Notes: Running with mvn has some test failing due accessing protected fields fro
 
 ## Support
 
-If you need consultancy or support for having the widget integrated into your app, contact our [Enterprise support team](mailto:support@equo.dev).
+If you need consultancy or support for having the widget integrated into your app, contact our [Enterprise support team](mailto:support@equoplatform.com).
