@@ -1,7 +1,7 @@
 [package]
 name = "chromium_swt"
 version = "69.0.0"
-authors = ["Equo <https://www.equoplatform.com>"]
+authors = ["Equo <https://www.equo.dev>"]
 
 [lib]
 name = "chromium_swt_6900"
