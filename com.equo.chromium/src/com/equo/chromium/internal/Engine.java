@@ -190,7 +190,6 @@ public class Engine {
 							.toString();
 					settings.resources_dir_path = libsPath.resolve("Chromium Embedded Framework.framework")
 							.resolve("Resources").toString();
-					external_message_pump = false;
 				} else if (OS.isWindows()) {
 					settings.browser_subprocess_path = libsPath.resolve("equochro_helper.exe").toString();
 					settings.resources_dir_path = libsPath.toString();

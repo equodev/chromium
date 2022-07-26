@@ -1571,6 +1571,21 @@ final class Chromium extends WebBrowser {
 		String name = suggested_name;
 
 		DownloadItem downloadItem = new DownloadItem(download_item);
+
+		if (Boolean.getBoolean("chromium.downloadLocationListener")) {
+			LocationEvent event = new LocationEvent(chromium);
+			event.display = chromium.getDisplay();
+			event.widget = chromium;
+			event.doit = true;
+			event.location = getPlainUrl(downloadItem.url);
+			for (LocationListener listener : locationListeners) {
+				listener.changing(event);
+			}
+			if (!event.doit) {
+				return;
+			}
+		}
+
 		asyncExec(() -> {
 			if ("test".equals(System.getProperty("chromium.dialogs", ""))) {
 				Consumer<Integer> close = open -> {
