@@ -7,6 +7,9 @@ Bundle-Version: 80.0.16.qualifier
 Bundle-Vendor: Equo
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Require-Bundle: org.eclipse.swt;resolution:=optional
+Service-Component: OSGI-INF/com.equo.comm.chromium.service.provider.ChromiumEventHandler.xml,
+ OSGI-INF/com.equo.middleware.provider.MiddlewareCollectionManager.xml,
+ OSGI-INF/com.equo.middleware.provider.MiddlewareServiceImpl.xml
 Export-Package: com.equo.chromium.swt,
  com.equo.chromium.wl
 Automatic-Module-Name: com.equo.chromium
