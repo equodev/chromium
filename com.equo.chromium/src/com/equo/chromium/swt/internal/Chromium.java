@@ -2188,6 +2188,16 @@ final class Chromium extends WebBrowser {
 
 	public void dispose() {
 		debugPrint("in dispose, disposing "+ disposing);
+		if (created != null && !created.isDone() && cefBrowser != null) {
+			cefBrowser.close(false);
+			Shell shell = chromium.getShell();
+			Display display = shell.getDisplay();
+			while (!shell.isDisposed() && !created.isDone()) {
+				if (!display.readAndDispatch()) {
+					display.sleep();
+				}
+			}
+		}
 		if (disposing == Dispose.FromDispose || isDisposed())
 			return;
 		if (disposing != Dispose.FromBrowser)
