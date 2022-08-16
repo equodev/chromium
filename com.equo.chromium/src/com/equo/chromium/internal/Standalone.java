@@ -39,24 +39,26 @@ public final class Standalone extends IndependentBrowser {
 
 	public void addMessageRoute(String queryFunctionName, String cancelQueryFunctionName,
 			Function<String, String> result) {
-		CefMessageRouterConfig config = new CefMessageRouterConfig(queryFunctionName, cancelQueryFunctionName);
-		CefMessageRouter messageRouter_ = CefMessageRouter.create(config);
-		CefMessageRouterHandler newHandler = new CefMessageRouterHandlerAdapter() {
-			@Override
-			public boolean onQuery(CefBrowser browser, CefFrame frame, long queryId, String request, boolean persistent,
-					CefQueryCallback callback) {
-				try {
-					executor.submit(() -> callback.success(result.apply(request)));
-					return true;
-				} catch (Exception e) {
-					e.printStackTrace();
+		getCreated().thenRun(() -> {
+			CefMessageRouterConfig config = new CefMessageRouterConfig(queryFunctionName, cancelQueryFunctionName);
+			CefMessageRouter messageRouter_ = CefMessageRouter.create(config);
+			CefMessageRouterHandler newHandler = new CefMessageRouterHandlerAdapter() {
+				@Override
+				public boolean onQuery(CefBrowser browser, CefFrame frame, long queryId, String request, boolean persistent,
+						CefQueryCallback callback) {
+					try {
+						executor.submit(() -> callback.success(result.apply(request)));
+						return true;
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					return false;
 				}
-				return false;
-			}
 
-		};
-		messageRouter_.addHandler(newHandler, false);
-		getClientHandler().addMessageRouter(messageRouter_);
+			};
+			messageRouter_.addHandler(newHandler, false);
+			getClientHandler().addMessageRouter(messageRouter_);
+		});
 	}
 
 	@Override
