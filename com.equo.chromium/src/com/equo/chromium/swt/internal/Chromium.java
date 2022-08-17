@@ -53,6 +53,7 @@ import org.cef.callback.CefDownloadItemCallback;
 import org.cef.callback.CefFileDialogCallback;
 import org.cef.callback.CefJSDialogCallback;
 import org.cef.callback.CefMenuModel;
+import org.cef.callback.CefQueryCallback;
 import org.cef.callback.CefRequestCallback;
 import org.cef.callback.CefStringVisitor;
 import org.cef.handler.CefContextMenuHandlerAdapter;
@@ -70,6 +71,7 @@ import org.cef.handler.CefKeyboardHandlerAdapter;
 import org.cef.handler.CefLifeSpanHandlerAdapter;
 import org.cef.handler.CefLoadHandler.ErrorCode;
 import org.cef.handler.CefLoadHandlerAdapter;
+import org.cef.handler.CefMessageRouterHandlerAdapter;
 import org.cef.handler.CefRequestHandlerAdapter;
 import org.cef.handler.CefResourceHandler;
 import org.cef.handler.CefResourceHandlerAdapter;
@@ -99,6 +101,9 @@ import org.eclipse.swt.browser.TitleEvent;
 import org.eclipse.swt.browser.TitleListener;
 import org.eclipse.swt.browser.VisibilityWindowListener;
 import org.eclipse.swt.custom.CTabFolder;
+import org.eclipse.swt.dnd.Clipboard;
+import org.eclipse.swt.dnd.TextTransfer;
+import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.ControlAdapter;
 import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.ControlListener;
@@ -534,6 +539,7 @@ final class Chromium extends WebBrowser {
 			clientHandler.addMessageRouter(commRouter);
 		}
 		clientHandler.addMessageRouter(router);
+		createClipboardRouters();
 	}
 
 	private static CefBrowser getTopParentPopup(CefBrowser browser) {
@@ -2891,4 +2897,45 @@ final class Chromium extends WebBrowser {
 			}
 		}
 	}
+	
+	private static void createClipboardRouters() {
+		CefMessageRouter writeText = CefMessageRouter.create(new CefMessageRouterConfig("__writeText", "__writeTextCancel"));
+		CefMessageRouter readText = CefMessageRouter.create(new CefMessageRouterConfig("__readText", "__readTextCancel"));
+		CefMessageRouterHandlerAdapter writeTextHandler = new CefMessageRouterHandlerAdapter() {
+			@Override
+			public boolean onQuery(CefBrowser browser, CefFrame frame, long queryId, String request, boolean persistent, CefQueryCallback callback) {
+				Display display = Display.getDefault();
+				final Clipboard cb = new Clipboard(display);
+				Transfer transfer = TextTransfer.getInstance();
+				try {
+					cb.setContents(new Object[] { request }, new Transfer[] { transfer });
+					callback.success(request);
+				} catch (Exception e) {
+					callback.failure(0, null);
+				}
+				cb.dispose();
+				return true;
+			}
+		};
+		CefMessageRouterHandlerAdapter readTextHandler = new CefMessageRouterHandlerAdapter() {
+			@Override
+			public boolean onQuery(CefBrowser browser, CefFrame frame, long queryId, String request, boolean persistent, CefQueryCallback callback) {
+				Display display = Display.getDefault();
+				final Clipboard cb = new Clipboard(display);
+				TextTransfer transfer = TextTransfer.getInstance();
+				try {
+					String text = (String) cb.getContents(transfer);
+					callback.success(text);
+				} catch (Exception e) {
+					callback.failure(0, null);
+				}
+				cb.dispose();
+				return true;	
+			}
+		};
+		writeText.addHandler(writeTextHandler, true);
+		readText.addHandler(readTextHandler, true);
+		clientHandler.addMessageRouter(writeText);
+		clientHandler.addMessageRouter(readText);
+	};
 }
