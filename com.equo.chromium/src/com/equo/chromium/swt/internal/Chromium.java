@@ -1094,6 +1094,8 @@ final class Chromium extends WebBrowser {
 			boolean isCustomProtocol = false;
 			if (isFunction(browser, request)) {
 				return null;
+			} else if (Engine.isRegisteredProtocol(request.getURL())) {
+				return null;
 			} else {
 				String requestUrl = request.getURL();
 				if (!requestUrl.startsWith("http") && !requestUrl.startsWith("data") && !requestUrl.startsWith("file")
