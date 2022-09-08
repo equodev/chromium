@@ -52,6 +52,7 @@ public class Engine {
 	public static final boolean debug = Boolean.valueOf(System.getProperty("chromium.debug", "false"));
 
 	private static AtomicBoolean shuttingDown = new AtomicBoolean();
+	private static List<SchemeDomainPair> registeredSchemeData;
 
 	private static CefApp app;
 	public static final CompletableFuture<Boolean> ready = new CompletableFuture<>();
@@ -209,13 +210,14 @@ public class Engine {
 				String[] args = getChromiumArgs(libsPath, false, false);
 
 				final SchemeHandlerManager schemeHandlerManager = SchemeHandlerManager.get();
-				List<SchemeDomainPair> registeredSchemeData = Collections.emptyList();
+
 				if (schemeHandlerManager != null) {
 					registeredSchemeData = schemeHandlerManager.getRegisteredSchemes();
+				} else {
+					registeredSchemeData = Collections.emptyList();
 				}
-				final List<SchemeDomainPair> finalRegisteredSchemeData = registeredSchemeData;
 
-				int loopTime = (!settings.external_message_pump && !finalRegisteredSchemeData.isEmpty()) ? 1000 / 180 : WindowingToolkit.DEFAULT_LOOP_TIME;
+				int loopTime = (!settings.external_message_pump && !registeredSchemeData.isEmpty()) ? 1000 / 180 : WindowingToolkit.DEFAULT_LOOP_TIME;
 				WindowingToolkit windowToolkit = null;
 				if (standalone) {
 					windowToolkit = new CefAppStandalone();
@@ -229,8 +231,8 @@ public class Engine {
 				CefApp.addAppHandler(new CefAppHandlerAdapter(args) {
 					@Override
 					public void onRegisterCustomSchemes(CefSchemeRegistrar registrar) {
-						if (!finalRegisteredSchemeData.isEmpty()) {
-							for (SchemeDomainPair schemeDomain : finalRegisteredSchemeData) {
+						if (!registeredSchemeData.isEmpty()) {
+							for (SchemeDomainPair schemeDomain : registeredSchemeData) {
 								String scheme = schemeDomain.getScheme();
 								registrar.addCustomScheme(scheme, true, false, false, true, true, false, true);
 							}
@@ -248,8 +250,8 @@ public class Engine {
 
 					@Override
 					public void onContextInitialized() {
-						if (!finalRegisteredSchemeData.isEmpty() && app != null) {
-							for (final SchemeDomainPair schemeData : finalRegisteredSchemeData) {
+						if (!registeredSchemeData.isEmpty() && app != null) {
+							for (final SchemeDomainPair schemeData : registeredSchemeData) {
 								SchemeHandler schemeHandler = schemeHandlerManager
 										.getSchemeHandler(schemeData.getScheme(), schemeData.getDomain());
 								app.registerSchemeHandlerFactory(schemeData.getScheme(), schemeData.getDomain(),
@@ -352,4 +354,15 @@ public class Engine {
 		}
 	}
 
+	public static boolean isRegisteredProtocol(String url) {
+		if (registeredSchemeData != null) {
+			for (SchemeDomainPair schemeDomain : registeredSchemeData) {
+				String scheme = schemeDomain.getScheme();
+				if (url.startsWith(scheme)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 }

@@ -560,6 +560,9 @@ final class Chromium extends WebBrowser {
 	}
 	
 	static class LifeSpanHandler extends CefLifeSpanHandlerAdapter {
+
+		private final boolean scriptExtensionsAreEnabled = !Boolean.getBoolean(ScriptExtension.DISABLE_SCRIPT_EXTENSIONS_PROPERTY);
+
 		@Override
 		public void onAfterCreated(CefBrowser browser) {
 			debug("onAfterCreated", browser);
@@ -581,6 +584,15 @@ final class Chromium extends WebBrowser {
 		@Override
 		public void onBeforeClose(CefBrowser browser) {
 			debug("onBeforeClose", browser);
+			if (scriptExtensionsAreEnabled) {
+				Iterator<ScriptExtension> scriptExtensions = ScriptExtension.get();
+				scriptExtensions.forEachRemaining(scriptExtensionProvider -> {
+					try {
+						scriptExtensionProvider.onClose();
+					} catch (NoSuchMethodError e) {
+					}
+				});
+			}
 			if (!browser.isPopup()) {
 				getChromium(browser).onBeforeClose();
 			}
@@ -1082,6 +1094,8 @@ final class Chromium extends WebBrowser {
 				BoolRef disableDefaultHandling) {
 			boolean isCustomProtocol = false;
 			if (isFunction(browser, request)) {
+				return null;
+			} else if (Engine.isRegisteredProtocol(request.getURL())) {
 				return null;
 			} else {
 				String requestUrl = request.getURL();
@@ -2841,15 +2855,23 @@ final class Chromium extends WebBrowser {
 			@Override
 			public boolean onQuery(CefBrowser browser, CefFrame frame, long queryId, String request, boolean persistent, CefQueryCallback callback) {
 				Display display = Display.getDefault();
-				final Clipboard cb = new Clipboard(display);
-				Transfer transfer = TextTransfer.getInstance();
-				try {
-					cb.setContents(new Object[] { request }, new Transfer[] { transfer });
-					callback.success(request);
-				} catch (Exception e) {
-					callback.failure(0, null);
-				}
-				cb.dispose();
+				asyncExec(() -> {
+					final Clipboard cb = new Clipboard(display);
+					try {
+						if (request == null || request.isEmpty()) {
+							cb.clearContents();
+						}
+						else {
+							Transfer transfer = TextTransfer.getInstance();
+							cb.setContents(new Object[] { request }, new Transfer[] { transfer });
+						}	
+						callback.success(request);
+					} catch (Exception e) {
+						e.printStackTrace();
+						callback.failure(0, e.getMessage());
+					}
+					cb.dispose();
+				});	
 				return true;
 			}
 		};
@@ -2857,15 +2879,18 @@ final class Chromium extends WebBrowser {
 			@Override
 			public boolean onQuery(CefBrowser browser, CefFrame frame, long queryId, String request, boolean persistent, CefQueryCallback callback) {
 				Display display = Display.getDefault();
-				final Clipboard cb = new Clipboard(display);
-				TextTransfer transfer = TextTransfer.getInstance();
-				try {
-					String text = (String) cb.getContents(transfer);
-					callback.success(text);
-				} catch (Exception e) {
-					callback.failure(0, null);
-				}
-				cb.dispose();
+				asyncExec(() -> {
+					final Clipboard cb = new Clipboard(display);
+					TextTransfer transfer = TextTransfer.getInstance();
+					try {
+						String text = (String) cb.getContents(transfer);
+						callback.success(text);
+					} catch (Exception e) {
+						e.printStackTrace();
+						callback.failure(0, e.getMessage());
+					}
+					cb.dispose();
+				});	
 				return true;	
 			}
 		};

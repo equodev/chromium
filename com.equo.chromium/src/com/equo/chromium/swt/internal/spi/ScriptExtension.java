@@ -28,4 +28,6 @@ public interface ScriptExtension {
 
 	public List<String> getScriptExtensions();
 
+	public void onClose();
+
 }
