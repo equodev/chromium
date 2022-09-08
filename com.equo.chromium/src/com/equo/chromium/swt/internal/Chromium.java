@@ -568,6 +568,9 @@ final class Chromium extends WebBrowser {
 	}
 	
 	static class LifeSpanHandler extends CefLifeSpanHandlerAdapter {
+
+		private final boolean scriptExtensionsAreEnabled = !Boolean.getBoolean(ScriptExtension.DISABLE_SCRIPT_EXTENSIONS_PROPERTY);
+
 		@Override
 		public void onAfterCreated(CefBrowser browser) {
 			debug("onAfterCreated", browser);
@@ -589,6 +592,15 @@ final class Chromium extends WebBrowser {
 		@Override
 		public void onBeforeClose(CefBrowser browser) {
 			debug("onBeforeClose", browser);
+			if (scriptExtensionsAreEnabled) {
+				Iterator<ScriptExtension> scriptExtensions = ScriptExtension.get();
+				scriptExtensions.forEachRemaining(scriptExtensionProvider -> {
+					try {
+						scriptExtensionProvider.onClose();
+					} catch (NoSuchMethodError e) {
+					}
+				});
+			}
 			if (!browser.isPopup()) {
 				getChromium(browser).onBeforeClose();
 			}
