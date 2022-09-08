@@ -2919,15 +2919,23 @@ final class Chromium extends WebBrowser {
 			@Override
 			public boolean onQuery(CefBrowser browser, CefFrame frame, long queryId, String request, boolean persistent, CefQueryCallback callback) {
 				Display display = Display.getDefault();
-				final Clipboard cb = new Clipboard(display);
-				Transfer transfer = TextTransfer.getInstance();
-				try {
-					cb.setContents(new Object[] { request }, new Transfer[] { transfer });
-					callback.success(request);
-				} catch (Exception e) {
-					callback.failure(0, null);
-				}
-				cb.dispose();
+				asyncExec(() -> {
+					final Clipboard cb = new Clipboard(display);
+					try {
+						if (request == null || request.isEmpty()) {
+							cb.clearContents();
+						}
+						else {
+							Transfer transfer = TextTransfer.getInstance();
+							cb.setContents(new Object[] { request }, new Transfer[] { transfer });
+						}	
+						callback.success(request);
+					} catch (Exception e) {
+						e.printStackTrace();
+						callback.failure(0, e.getMessage());
+					}
+					cb.dispose();
+				});	
 				return true;
 			}
 		};
@@ -2935,15 +2943,18 @@ final class Chromium extends WebBrowser {
 			@Override
 			public boolean onQuery(CefBrowser browser, CefFrame frame, long queryId, String request, boolean persistent, CefQueryCallback callback) {
 				Display display = Display.getDefault();
-				final Clipboard cb = new Clipboard(display);
-				TextTransfer transfer = TextTransfer.getInstance();
-				try {
-					String text = (String) cb.getContents(transfer);
-					callback.success(text);
-				} catch (Exception e) {
-					callback.failure(0, null);
-				}
-				cb.dispose();
+				asyncExec(() -> {
+					final Clipboard cb = new Clipboard(display);
+					TextTransfer transfer = TextTransfer.getInstance();
+					try {
+						String text = (String) cb.getContents(transfer);
+						callback.success(text);
+					} catch (Exception e) {
+						e.printStackTrace();
+						callback.failure(0, e.getMessage());
+					}
+					cb.dispose();
+				});	
 				return true;	
 			}
 		};
