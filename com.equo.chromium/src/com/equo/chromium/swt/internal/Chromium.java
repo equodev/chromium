@@ -1132,8 +1132,11 @@ final class Chromium extends WebBrowser {
 				}
 			}
 
-			boolean isTurbolinkRequest = "true".equals(request.getHeaderByName("x-pjax")) || ("empty".equals(request.getHeaderByName("sec-fetch-dest")) && !"navigate".equals(request.getHeaderByName("Sec-Fetch-Mode"))
-					&& !"websocket".equals(request.getHeaderByName("Sec-Fetch-Mode")));
+			boolean isTurbolinkRequest = "true".equals(request.getHeaderByName("x-pjax"))
+					|| !request.getHeaderByName("Turbo-Frame").isEmpty()
+					|| ("empty".equals(request.getHeaderByName("sec-fetch-dest"))
+							&& !"navigate".equals(request.getHeaderByName("Sec-Fetch-Mode"))
+							&& !"websocket".equals(request.getHeaderByName("Sec-Fetch-Mode")));
 
 			if (((Boolean.getBoolean("chromium.turbolinks") && isTurbolinkRequest)) || isCustomProtocol) {
 				return new CefResourceRequestHandlerAdapter() {
