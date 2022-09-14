@@ -593,13 +593,13 @@ final class Chromium extends WebBrowser {
 		public void onBeforeClose(CefBrowser browser) {
 			debug("onBeforeClose", browser);
 			if (scriptExtensionsAreEnabled) {
-				Iterator<ScriptExtension> scriptExtensions = ScriptExtension.get();
-				scriptExtensions.forEachRemaining(scriptExtensionProvider -> {
+				for (Iterator<ScriptExtension> scriptExtensions = ScriptExtension.get(); scriptExtensions.hasNext();) {
 					try {
-						scriptExtensionProvider.onClose();
-					} catch (NoSuchMethodError e) {
+						scriptExtensions.next().onClose();
+					} catch (NoSuchMethodError | AbstractMethodError e) {
+						break;
 					}
-				});
+				}
 			}
 			if (!browser.isPopup()) {
 				getChromium(browser).onBeforeClose();
