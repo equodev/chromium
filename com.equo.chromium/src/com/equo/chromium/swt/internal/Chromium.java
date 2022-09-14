@@ -585,13 +585,13 @@ final class Chromium extends WebBrowser {
 		public void onBeforeClose(CefBrowser browser) {
 			debug("onBeforeClose", browser);
 			if (scriptExtensionsAreEnabled) {
-				Iterator<ScriptExtension> scriptExtensions = ScriptExtension.get();
-				scriptExtensions.forEachRemaining(scriptExtensionProvider -> {
+				for (Iterator<ScriptExtension> scriptExtensions = ScriptExtension.get(); scriptExtensions.hasNext();) {
 					try {
-						scriptExtensionProvider.onClose();
-					} catch (NoSuchMethodError e) {
+						scriptExtensions.next().onClose();
+					} catch (NoSuchMethodError | AbstractMethodError e) {
+						break;
 					}
-				});
+				}
 			}
 			if (!browser.isPopup()) {
 				getChromium(browser).onBeforeClose();
@@ -1121,8 +1121,11 @@ final class Chromium extends WebBrowser {
 				}
 			}
 
-			boolean isTurbolinkRequest = "true".equals(request.getHeaderByName("x-pjax")) || ("empty".equals(request.getHeaderByName("sec-fetch-dest")) && !"navigate".equals(request.getHeaderByName("Sec-Fetch-Mode"))
-					&& !"websocket".equals(request.getHeaderByName("Sec-Fetch-Mode")));
+			boolean isTurbolinkRequest = "true".equals(request.getHeaderByName("x-pjax"))
+					|| !request.getHeaderByName("Turbo-Frame").isEmpty()
+					|| ("empty".equals(request.getHeaderByName("sec-fetch-dest"))
+							&& !"navigate".equals(request.getHeaderByName("Sec-Fetch-Mode"))
+							&& !"websocket".equals(request.getHeaderByName("Sec-Fetch-Mode")));
 
 			if (((Boolean.getBoolean("chromium.turbolinks") && isTurbolinkRequest)) || isCustomProtocol) {
 				return new CefResourceRequestHandlerAdapter() {
