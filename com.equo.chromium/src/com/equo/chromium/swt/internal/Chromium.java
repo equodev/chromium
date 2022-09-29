@@ -522,6 +522,13 @@ final class Chromium extends WebBrowser {
 		setContextMenuHandler();
 		setDownloadHandler();
 
+		CommunicationManager commManager = CommunicationManager.get();
+		if (commManager != null) {
+			CefMessageRouter commRouter = CommRouterHandler.createRouter();
+			commRouter.addHandler(new CommRouterHandler(commManager), true);
+			clientHandler.addMessageRouter(commRouter);
+		}
+
 		if (!Boolean.getBoolean(ScriptExtension.DISABLE_SCRIPT_EXTENSIONS_PROPERTY)) {
 			Iterator<ScriptExtension> scriptExtensions = ScriptExtension.get();
 			scriptExtensions.forEachRemaining(scriptExtensionProvider -> {
@@ -532,13 +539,8 @@ final class Chromium extends WebBrowser {
 		}
 
 		router = AbstractEval.createRouter();
-		CommunicationManager commManager = CommunicationManager.get();
-		if (commManager != null) {
-			CefMessageRouter commRouter = CommRouterHandler.createRouter();
-			commRouter.addHandler(new CommRouterHandler(commManager), true);
-			clientHandler.addMessageRouter(commRouter);
-		}
 		clientHandler.addMessageRouter(router);
+
 		createClipboardRouters();
 	}
 
@@ -569,8 +571,6 @@ final class Chromium extends WebBrowser {
 	
 	static class LifeSpanHandler extends CefLifeSpanHandlerAdapter {
 
-		private final boolean scriptExtensionsAreEnabled = !Boolean.getBoolean(ScriptExtension.DISABLE_SCRIPT_EXTENSIONS_PROPERTY);
-
 		@Override
 		public void onAfterCreated(CefBrowser browser) {
 			debug("onAfterCreated", browser);
@@ -592,15 +592,6 @@ final class Chromium extends WebBrowser {
 		@Override
 		public void onBeforeClose(CefBrowser browser) {
 			debug("onBeforeClose", browser);
-			if (scriptExtensionsAreEnabled) {
-				for (Iterator<ScriptExtension> scriptExtensions = ScriptExtension.get(); scriptExtensions.hasNext();) {
-					try {
-						scriptExtensions.next().onClose();
-					} catch (NoSuchMethodError | AbstractMethodError e) {
-						break;
-					}
-				}
-			}
 			if (!browser.isPopup()) {
 				getChromium(browser).onBeforeClose();
 			}
@@ -1818,7 +1809,7 @@ final class Chromium extends WebBrowser {
 			
 			long current = download_item.getReceivedBytes() / 1024L;
 			long total = download_item.getTotalBytes() / 1024L;
-			String message = Compatibility.getMessage ("SWT_Download_Status", new Object[] {Long.valueOf(current), new Long(total)}); //$NON-NLS-1$
+			String message = Compatibility.getMessage ("SWT_Download_Status", new Object[] {Long.valueOf(current), Long.valueOf(total)}); //$NON-NLS-1$
 			message = message + " at " + (download_item.getCurrentSpeed() / 1024L) + " KB/s " + (download_item.getPercentComplete() != -1 ? "("+download_item.getPercentComplete()+"%)" : "");
 			statusLabel.setText (message);
 			pb.setSelection(download_item.getPercentComplete());
