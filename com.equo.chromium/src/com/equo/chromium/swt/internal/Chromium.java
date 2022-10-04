@@ -931,7 +931,7 @@ final class Chromium extends WebBrowser {
 	private void onAddressChange(CefFrame frame, String url) {
 		if (isDisposed()) return;
 
-		if (Boolean.getBoolean("chromium.turbolinks") && !"about:blank".equals(url)) {
+		if (allowTurboLink() && !"about:blank".equals(url)) {
 			// Filter changed event when there was no changing event.
 			if (!changedCache.containsKey(url)) {
 				return;
@@ -1047,7 +1047,12 @@ final class Chromium extends WebBrowser {
 		requestHandler = new RequestHandler();
 		clientHandler.addRequestHandler(requestHandler);
 	}
-	
+
+	private static boolean allowTurboLink() {
+		String[] turbolink = System.getProperty("chromium.turbolinks", "").split(";");
+		return "true".equals(turbolink[0]) || turbolink[0].contains("=");
+	}
+
 	static class RequestHandler extends CefRequestHandlerAdapter {
 		private static final String FUNCTION_HOST = "functions";
 
@@ -1123,13 +1128,7 @@ final class Chromium extends WebBrowser {
 				}
 			}
 
-			boolean isTurbolinkRequest = "true".equals(request.getHeaderByName("x-pjax"))
-					|| !request.getHeaderByName("Turbo-Frame").isEmpty()
-					|| ("empty".equals(request.getHeaderByName("sec-fetch-dest"))
-							&& !"navigate".equals(request.getHeaderByName("Sec-Fetch-Mode"))
-							&& !"websocket".equals(request.getHeaderByName("Sec-Fetch-Mode")));
-
-			if (((Boolean.getBoolean("chromium.turbolinks") && isTurbolinkRequest)) || isCustomProtocol) {
+			if (((allowTurboLink() && containsTurbolinkHeader(request))) || isCustomProtocol) {
 				return new CefResourceRequestHandlerAdapter() {
 					@Override
 					public boolean onBeforeResourceLoad(CefBrowser browser, CefFrame frame, CefRequest request) {
@@ -1138,6 +1137,26 @@ final class Chromium extends WebBrowser {
 				};
 			}
 			return null;
+		}
+
+		private boolean containsTurbolinkHeader(CefRequest request) {
+			Map<String, String> headers = new HashMap<String, String>();
+			request.getHeaderMap(headers);
+			String[] turbolinkHeaders = System.getProperty("chromium.turbolinks", "").split(";");
+			for (String turbolinkHeader : turbolinkHeaders) {
+				if (turbolinkHeader.contains("=")) {
+					String hKey = turbolinkHeader.split("=")[0];
+					String hValue = turbolinkHeader.split("=")[1];
+					if (headers.containsKey(hKey) && headers.get(hKey).equals(hValue)) {
+						return true;
+					}
+				}
+			}
+			return "true".equals(request.getHeaderByName("x-pjax"))
+					|| !request.getHeaderByName("Turbo-Frame").isEmpty()
+					|| ("empty".equals(request.getHeaderByName("sec-fetch-dest"))
+							&& !"navigate".equals(request.getHeaderByName("Sec-Fetch-Mode"))
+							&& !"websocket".equals(request.getHeaderByName("Sec-Fetch-Mode")));
 		}
 
 		static private boolean isFunction(CefBrowser browser, CefRequest request) {
@@ -1230,7 +1249,7 @@ final class Chromium extends WebBrowser {
 			inEvalBlocking=false;
 		}
 
-		if(Boolean.getBoolean("chromium.turbolinks")) {
+		if(allowTurboLink()) {
 			changedCache.put(event.location, true);
 		}
 
