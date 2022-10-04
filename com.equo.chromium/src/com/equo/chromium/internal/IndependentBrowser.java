@@ -146,7 +146,11 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 	public void find(String search, boolean forward, boolean matchCase) {
 		boolean findNext = Objects.equals(search, lastSearch);
 		lastSearch = search;
-		getBrowser().find(1, search, forward, matchCase, findNext);
+		if (search == null || search.isEmpty()) {
+			getBrowser().stopFinding(true);
+		} else {
+			getBrowser().find(1, search, forward, matchCase, findNext);
+		}
 	}
 
 	@Override

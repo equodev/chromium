@@ -105,6 +105,8 @@ import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.ControlListener;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
+import org.eclipse.swt.events.KeyAdapter;
+import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.GC;
@@ -420,6 +422,17 @@ final class Chromium extends WebBrowser {
 		}
 		if ("image".equals(System.getProperty("chromium.resize", "live"))) {
 			resize = new ResizeListener();
+		}
+		if (Boolean.getBoolean("chromium.find_dialog")) {
+			chromium.addKeyListener(new KeyAdapter() {
+				@Override
+				public void keyPressed(KeyEvent e) {
+					if (((e.stateMask & SWT.CTRL) == SWT.CTRL) && (e.keyCode == 'f') && !FindDialog.isOpen()) {
+						FindDialog findDialog = new FindDialog(extraApi(), chromium.getShell());
+						findDialog.open();
+					}
+				}
+			});
 		}
 	}
 
