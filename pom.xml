@@ -11,10 +11,12 @@
 
 	<properties>
 		<tycho.version>1.4.0</tycho.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<repo.url>http://download.eclipse.org/eclipse/updates/4.5/R-4.5.2-201602121500</repo.url>
 		<cbi.jarsigner.skip>true</cbi.jarsigner.skip>
 		<qual></qual>
-		<mvn.space></mvn.space>
-		<mvn.folder></mvn.folder>
+		<skipArchive>false</skipArchive>
+		<repo.skip.deploy>false</repo.skip.deploy>
 	</properties>
 
 	<pluginRepositories>
@@ -24,22 +26,10 @@
 		</pluginRepository>
 	</pluginRepositories>
 
-	<distributionManagement>
-		<snapshotRepository>
-			<id>equo-chromium-swt</id>
-			<url>s3://${mvn.space}/${mvn.folder}/mvn</url>
-		</snapshotRepository>
-	</distributionManagement>
-
 	<repositories>
-		<!-- repository>
-			<id>eclipse</id>
-			<url>http://download.eclipse.org/releases/2018-09</url>
-			<layout>p2</layout>
-		</repository-->
 		<repository>
-			<id>eclipse-updates</id>
-			<url>http://download.eclipse.org/eclipse/updates/4.5</url>
+			<id>eclipse</id>
+			<url>${repo.url}</url>
 			<layout>p2</layout>
 		</repository>
 	</repositories>
@@ -51,14 +41,6 @@
 	</modules>
 
 	<build>
-		<extensions>
-			<extension>
-				<groupId>com.gkatzioura.maven.cloud</groupId>
-				<artifactId>s3-storage-wagon</artifactId>
-				<version>2.3</version>
-			</extension>
-		</extensions>
-
 		<plugins>
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
@@ -72,6 +54,17 @@
 				<version>${tycho.version}</version>
 				<configuration>
 					<format>yyyyMMddHHmm${qual}</format>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-p2-repository-plugin</artifactId>
+				<version>${tycho.version}</version>
+				<configuration>
+					<includeAllDependencies>false</includeAllDependencies>
+					<skipArchive>${skipArchive}</skipArchive>
+					<compress>false</compress>
+					<xzCompress>false</xzCompress>
 				</configuration>
 			</plugin>
 			<plugin>
