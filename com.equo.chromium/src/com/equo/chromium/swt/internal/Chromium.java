@@ -527,6 +527,13 @@ final class Chromium extends WebBrowser {
 		setContextMenuHandler();
 		setDownloadHandler();
 
+		CommunicationManager commManager = CommunicationManager.get();
+		if (commManager != null) {
+			CefMessageRouter commRouter = CommRouterHandler.createRouter();
+			commRouter.addHandler(new CommRouterHandler(commManager), true);
+			clientHandler.addMessageRouter(commRouter);
+		}
+
 		if (!Boolean.getBoolean(ScriptExtension.DISABLE_SCRIPT_EXTENSIONS_PROPERTY)) {
 			Iterator<ScriptExtension> scriptExtensions = ScriptExtension.get();
 			scriptExtensions.forEachRemaining(scriptExtensionProvider -> {
@@ -537,13 +544,8 @@ final class Chromium extends WebBrowser {
 		}
 
 		router = AbstractEval.createRouter();
-		CommunicationManager commManager = CommunicationManager.get();
-		if (commManager != null) {
-			CefMessageRouter commRouter = CommRouterHandler.createRouter();
-			commRouter.addHandler(new CommRouterHandler(commManager), true);
-			clientHandler.addMessageRouter(commRouter);
-		}
 		clientHandler.addMessageRouter(router);
+
 		createClipboardRouters();
 	}
 
@@ -574,8 +576,6 @@ final class Chromium extends WebBrowser {
 	
 	static class LifeSpanHandler extends CefLifeSpanHandlerAdapter {
 
-		private final boolean scriptExtensionsAreEnabled = !Boolean.getBoolean(ScriptExtension.DISABLE_SCRIPT_EXTENSIONS_PROPERTY);
-
 		@Override
 		public void onAfterCreated(CefBrowser browser) {
 			debug("onAfterCreated", browser);
@@ -597,15 +597,6 @@ final class Chromium extends WebBrowser {
 		@Override
 		public void onBeforeClose(CefBrowser browser) {
 			debug("onBeforeClose", browser);
-			if (scriptExtensionsAreEnabled) {
-				for (Iterator<ScriptExtension> scriptExtensions = ScriptExtension.get(); scriptExtensions.hasNext();) {
-					try {
-						scriptExtensions.next().onClose();
-					} catch (NoSuchMethodError | AbstractMethodError e) {
-						break;
-					}
-				}
-			}
 			if (!browser.isPopup()) {
 				getChromium(browser).onBeforeClose();
 			}
@@ -945,7 +936,7 @@ final class Chromium extends WebBrowser {
 	private void onAddressChange(CefFrame frame, String url) {
 		if (isDisposed()) return;
 
-		if (Boolean.getBoolean("chromium.turbolinks") && !"about:blank".equals(url)) {
+		if (allowTurboLink() && !"about:blank".equals(url)) {
 			// Filter changed event when there was no changing event.
 			if (!changedCache.containsKey(url)) {
 				return;
@@ -1058,7 +1049,12 @@ final class Chromium extends WebBrowser {
 		requestHandler = new RequestHandler();
 		clientHandler.addRequestHandler(requestHandler);
 	}
-	
+
+	private static boolean allowTurboLink() {
+		String[] turbolink = System.getProperty("chromium.turbolinks", "").split(";");
+		return "true".equals(turbolink[0]) || turbolink[0].contains("=");
+	}
+
 	static class RequestHandler extends CefRequestHandlerAdapter {
 		private static final String FUNCTION_HOST = "functions";
 
@@ -1134,13 +1130,7 @@ final class Chromium extends WebBrowser {
 				}
 			}
 
-			boolean isTurbolinkRequest = "true".equals(request.getHeaderByName("x-pjax"))
-					|| !request.getHeaderByName("Turbo-Frame").isEmpty()
-					|| ("empty".equals(request.getHeaderByName("sec-fetch-dest"))
-							&& !"navigate".equals(request.getHeaderByName("Sec-Fetch-Mode"))
-							&& !"websocket".equals(request.getHeaderByName("Sec-Fetch-Mode")));
-
-			if (((Boolean.getBoolean("chromium.turbolinks") && isTurbolinkRequest)) || isCustomProtocol) {
+			if (((allowTurboLink() && containsTurbolinkHeader(request))) || isCustomProtocol) {
 				return new CefResourceRequestHandlerAdapter() {
 					@Override
 					public boolean onBeforeResourceLoad(CefBrowser browser, CefFrame frame, CefRequest request) {
@@ -1149,6 +1139,26 @@ final class Chromium extends WebBrowser {
 				};
 			}
 			return null;
+		}
+
+		private boolean containsTurbolinkHeader(CefRequest request) {
+			Map<String, String> headers = new HashMap<String, String>();
+			request.getHeaderMap(headers);
+			String[] turbolinkHeaders = System.getProperty("chromium.turbolinks", "").split(";");
+			for (String turbolinkHeader : turbolinkHeaders) {
+				if (turbolinkHeader.contains("=")) {
+					String hKey = turbolinkHeader.split("=")[0];
+					String hValue = turbolinkHeader.split("=")[1];
+					if (headers.containsKey(hKey) && headers.get(hKey).equals(hValue)) {
+						return true;
+					}
+				}
+			}
+			return "true".equals(request.getHeaderByName("x-pjax"))
+					|| !request.getHeaderByName("Turbo-Frame").isEmpty()
+					|| ("empty".equals(request.getHeaderByName("sec-fetch-dest"))
+							&& !"navigate".equals(request.getHeaderByName("Sec-Fetch-Mode"))
+							&& !"websocket".equals(request.getHeaderByName("Sec-Fetch-Mode")));
 		}
 
 		static private boolean isFunction(CefBrowser browser, CefRequest request) {
@@ -1241,7 +1251,7 @@ final class Chromium extends WebBrowser {
 			inEvalBlocking=false;
 		}
 
-		if(Boolean.getBoolean("chromium.turbolinks")) {
+		if(allowTurboLink()) {
 			changedCache.put(event.location, true);
 		}
 
@@ -1806,7 +1816,7 @@ final class Chromium extends WebBrowser {
 			
 			long current = download_item.getReceivedBytes() / 1024L;
 			long total = download_item.getTotalBytes() / 1024L;
-			String message = Compatibility.getMessage ("SWT_Download_Status", new Object[] {Long.valueOf(current), new Long(total)}); //$NON-NLS-1$
+			String message = Compatibility.getMessage ("SWT_Download_Status", new Object[] {Long.valueOf(current), Long.valueOf(total)}); //$NON-NLS-1$
 			message = message + " at " + (download_item.getCurrentSpeed() / 1024L) + " KB/s " + (download_item.getPercentComplete() != -1 ? "("+download_item.getPercentComplete()+"%)" : "");
 			statusLabel.setText (message);
 			pb.setSelection(download_item.getPercentComplete());
