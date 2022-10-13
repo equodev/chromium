@@ -177,6 +177,7 @@ final class Chromium extends WebBrowser {
 	private String title = "";
 	private CompletableFuture<Boolean> enableProgress = new CompletableFuture<>();
 	private CompletableFuture<Boolean> created = new CompletableFuture<>();
+	private CompletableFuture<Boolean> loaded = new CompletableFuture<>();
 	enum Dispose {
 		No, FromDispose, FromClose, FromBrowser, Unload, UnloadClosed, UnloadCancel, WaitIfClosed, DoIt, 
 	}
@@ -234,7 +235,7 @@ final class Chromium extends WebBrowser {
 	
 	@Override
 	public void createFunction (BrowserFunction function) {
-		created.thenRun(() -> {
+		loaded.thenRun(() -> {
 			String[] arrFrames = function.getFrameNames();
 			if (arrFrames == null && !function.top) {
 				return;
@@ -670,6 +671,7 @@ final class Chromium extends WebBrowser {
 //			}
 		syncExec(() -> cefBrowser.resize());
 		created.complete(true);
+		loaded.complete(true);
 		if (this.url != null) {
 			enableProgress.complete(true);
 		}
@@ -966,6 +968,7 @@ final class Chromium extends WebBrowser {
 			for (LocationListener listener : locationListeners) {
 				listener.changed(event);
 			}
+			loaded.complete(true);
 		});
 	}
 
@@ -2717,6 +2720,7 @@ final class Chromium extends WebBrowser {
 	}
 
 	private void doSetUrl(String url, String postData, String[] headers) {
+		loaded = new CompletableFuture<>();
 		Net.config();
 		if (postData == null && headers == null) {
 			cefBrowser.loadURL(url);
@@ -2743,6 +2747,7 @@ final class Chromium extends WebBrowser {
 	@Override
 	public void stop() {
 		if (cefBrowser != null) {
+			loaded.complete(true);
 			cefBrowser.stopLoad();
 		}
 	}
