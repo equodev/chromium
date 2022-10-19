@@ -149,7 +149,7 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 		if (search == null || search.isEmpty()) {
 			getBrowser().stopFinding(true);
 		} else {
-			getBrowser().find(1, search, forward, matchCase, findNext);
+			getBrowser().find(search, forward, matchCase, findNext);
 		}
 	}
 
