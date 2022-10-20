@@ -799,11 +799,11 @@ final class Chromium extends WebBrowser {
 	static class DialogHandler implements CefDialogHandler {
 		@Override
 		public boolean onFileDialog(CefBrowser browser, FileDialogMode mode, String title, String defaultFilePath,
-				Vector<String> acceptFilters, int selectedAcceptFilter, CefFileDialogCallback callback) {
+				Vector<String> acceptFilters, CefFileDialogCallback callback) {
 			// debug("onFileDialog", browser);
 			Chromium ch = getChromium(browser);
 			if (ch != null) {
-				return ch.onFileDialog(mode, title, defaultFilePath, acceptFilters, selectedAcceptFilter,
+				return ch.onFileDialog(mode, title, defaultFilePath, acceptFilters,
 						callback);
 			}
 			return false;
@@ -811,7 +811,7 @@ final class Chromium extends WebBrowser {
 	}
 
 	private boolean onFileDialog(CefDialogHandler.FileDialogMode mode, String title, String defaultFilePath,
-			Vector<String> acceptFilters, int selectedAcceptFilter, CefFileDialogCallback callback) {
+			Vector<String> acceptFilters, CefFileDialogCallback callback) {
 		if ("gtk".equals(SWT.getPlatform())) {
 			// Prevent open multiple dialog. Block ui
 			if (isOpenDialog) {
@@ -854,9 +854,7 @@ final class Chromium extends WebBrowser {
 					for (String fileName : dlg.getFileNames()) {
 						filePaths.add(Paths.get(dlg.getFilterPath(), fileName).toString());
 					}
-					int filterIndex = dlg.getFilterIndex();
-					filterIndex = (filterIndex < 0 || filterIndex >= acceptFiltersArray.length) ? selectedAcceptFilter : filterIndex;
-					callback.Continue(filterIndex, filePaths);
+					callback.Continue(filePaths);
 				} else {
 					callback.Cancel();
 				}
