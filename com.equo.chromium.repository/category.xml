@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature url="features/com.equo.chromium.feature_106.0.0.qualifier.jar" id="com.equo.chromium.feature" version="106.0.0.qualifier">
+      <category name="com.equo.chromium"/>
+   </feature>
+   <feature id="com.equo.chromium.feature.source" version="106.0.0.qualifier">
+      <category name="com.equo.chromium.source"/>
+   </feature>
+   <category-def name="com.equo.chromium" label="Equo Chromium Browser"/>
+   <category-def name="com.equo.chromium.source" label="Equo Chromium Browser Source"/>
+</site>
