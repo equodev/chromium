@@ -1,6 +1,6 @@
-# Equo Chromium Community Edition. (**V106**)
+# Equo Chromium Community Edition (**V106**)
 
-The [Equo Chromium](https://www.equo.dev/chromium) Community widget is a cross platform SWT browser that allows users to create and render modern web-based UIs inside a Java SWT or an Eclipse RCP application. It can be used in standalone Java applications, Windowless, Swing(coming soon), or Eclipse RCP applications.
+The [Equo Chromium](https://www.equo.dev/chromium) Community widget is a cross platform browser that allows users to create and render modern web-based UIs inside a Java application. It can be used in standalone Java applications, Windowless, Swing(coming soon), SWT, or Eclipse RCP applications.
 
 No more custom code for each platform, no more installations of specific libraries for Linux, no more problems in Windows with IE, no more platform-dependant and browser-specific issues at all. This is a truly **cross platform** SWT Browser that runs seamlessly in all operating systems and in embedded devices.
 
@@ -12,7 +12,7 @@ It is based on and uses the CEF Framework (https://bitbucket.org/chromiumembedde
 
 ## Distribution
 
-The Equo Chromium SWT Browser is provided as ready-to-use P2, MVN and OSGi repositories, which contains:
+The Equo Chromium Browser is provided as ready-to-use P2, MVN and OSGi repositories, which contains:
 
 - a Chromium bundle
 - a Chromium native library per platform fragments
@@ -22,7 +22,7 @@ The Equo Chromium SWT Browser is provided as ready-to-use P2, MVN and OSGi repos
 
 Repositories are available for Linux, Windows and macOS (x86_64 only)
 
-[Equo Chromium repositories](https://dl.equo.dev/chromium-swt-ce/trial/mvn/index.html)
+[Equo Chromium repositories](https://dl.equo.dev/chromium-swt-ce/oss/mvn/index.html)
 
 If you need support for other platforms (i.e 32 bits or ARM architectures) please [contact us](https://www.equo.dev/request-a-demo).
 
@@ -69,6 +69,8 @@ This repo uses GIT LFS, please install (https://git-lfs.github.com/) before clon
 
 - Clone this repo.
 - `mvn clean package`
+
+## [Release Notes](https://docs.equo.dev/chromium/ce-106.x/reference/release-notes.html)
 
 ## Support
 
