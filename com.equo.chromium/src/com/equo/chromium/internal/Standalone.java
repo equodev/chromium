@@ -18,7 +18,7 @@ public final class Standalone extends IndependentBrowser {
 	private static ExecutorService executor = Executors.newCachedThreadPool();
 
 	private void init(String url) {
-		Engine.initCEF(true);
+		Engine.initCEF(Engine.BrowserType.STANDALONE);
 		createClient();
 		setBrowser(getClientHandler().createBrowser(url, false, false, createRequestContext()));
 	}

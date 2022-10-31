@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -37,6 +38,7 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 	private boolean ignoreCertificateErrors = false;
 	private List<ConsoleListener> consoleListeners = new ArrayList<ConsoleListener>();
 	private String lastSearch = null;
+	private static final String DATA_TEXT_URL = "data:text/html;base64,";
 
 	protected CompletableFuture<Boolean> getCreated() {
 		return created;
@@ -138,6 +140,15 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 	public boolean setUrl(String url) {
 		created.thenRun(() -> {
 			browser.loadURL(url);
+		});
+		return true;
+	}
+
+	@Override
+	public boolean setText(String html) {
+		created.thenRun(() -> {
+			String texturl = DATA_TEXT_URL + Base64.getEncoder().encodeToString(html.getBytes());
+			browser.loadURL(texturl);
 		});
 		return true;
 	}

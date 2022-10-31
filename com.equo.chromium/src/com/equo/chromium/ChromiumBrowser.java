@@ -14,6 +14,7 @@ import org.cef.misc.Rectangle;
 
 import com.equo.chromium.internal.Engine;
 import com.equo.chromium.internal.Standalone;
+import com.equo.chromium.internal.SwingBrowser;
 import com.equo.chromium.internal.Windowless;
 import com.equo.chromium.swt.Browser;
 import com.equo.chromium.swt.internal.WebBrowser;
@@ -51,6 +52,14 @@ public interface ChromiumBrowser {
 		return new Standalone(url, window);
 	}
 
+	static ChromiumBrowser swing(Object container, String layout, String url) {
+		return new SwingBrowser(container, layout, url);
+	}
+
+	static ChromiumBrowser swing(String url) {
+		return new SwingBrowser(url);
+	}
+
 	/**
 	 * Early load and init the chromium engine and libraries. Usually not required.
 	 */
@@ -76,6 +85,8 @@ public interface ChromiumBrowser {
 	}
 
 	boolean setUrl(String url);
+
+	boolean setText(String html);
 
 	/**
 	 * Deprecated. Use {@code executeJavacript} instead or Comm.
