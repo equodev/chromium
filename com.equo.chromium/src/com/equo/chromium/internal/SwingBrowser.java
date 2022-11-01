@@ -1,9 +1,11 @@
 package com.equo.chromium.internal;
 
 import java.awt.Container;
+import java.awt.KeyboardFocusManager;
 
 import javax.swing.JPanel;
 
+import org.cef.OS;
 import org.cef.browser.CefBrowser;
 import org.cef.handler.CefFocusHandlerAdapter;
 
@@ -21,6 +23,14 @@ public class SwingBrowser extends IndependentBrowser {
 					return true;
 				}
 				return false;
+			}
+
+			@Override
+			public void onGotFocus(CefBrowser browser) {
+				if (OS.isWindows()) {
+					KeyboardFocusManager.getCurrentKeyboardFocusManager().clearGlobalFocusOwner();
+					browser.setFocus(true);
+				}
 			}
 		});
 		setBrowser(getClientHandler().createBrowser(url, false, false));
