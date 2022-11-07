@@ -1147,12 +1147,14 @@ final class Chromium extends WebBrowser {
 		private boolean containsTurbolinkHeader(CefRequest request) {
 			Map<String, String> headers = new HashMap<String, String>();
 			request.getHeaderMap(headers);
+			Map<String, String> headersLowerCase = headers.keySet().stream()
+					.collect(Collectors.toMap(key -> key.toLowerCase(), key -> headers.get(key)));
 			String[] turbolinkHeaders = System.getProperty("chromium.turbolinks", "").split(";");
 			for (String turbolinkHeader : turbolinkHeaders) {
 				if (turbolinkHeader.contains("=")) {
-					String hKey = turbolinkHeader.split("=")[0];
+					String hKey = turbolinkHeader.split("=")[0].toLowerCase();
 					String hValue = turbolinkHeader.split("=")[1];
-					if (headers.containsKey(hKey) && headers.get(hKey).equals(hValue)) {
+					if (headersLowerCase.containsKey(hKey) && headersLowerCase.get(hKey).equals(hValue)) {
 						return true;
 					}
 				}
