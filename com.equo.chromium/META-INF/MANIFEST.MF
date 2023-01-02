@@ -8,6 +8,7 @@ Bundle-Vendor: Equo
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Require-Bundle: org.eclipse.swt;resolution:=optional
 Service-Component: OSGI-INF/*.xml
-Export-Package: com.equo.chromium.swt,
- com.equo.chromium
+Export-Package: com.equo.chromium,
+ com.equo.chromium.swt,
+ com.equo.chromium.utils
 Automatic-Module-Name: com.equo.chromium

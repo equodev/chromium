@@ -188,7 +188,7 @@ public class Engine {
 				Path data = Paths.get(System.getProperty("chromium.home", System.getProperty("user.home")), ".equo");
 				String cache = data.resolve("cefcache").toAbsolutePath().toString();
 				settings.cache_path = System.getProperty("chromium.cache_path", cache);
-				settings.log_file = data.resolve("cef.log").toString();
+				settings.log_file = System.getProperty("chromium.log_file", data.resolve("cef.log").toString());
 				settings.log_severity = debug ? CefSettings.LogSeverity.LOGSEVERITY_INFO
 						: CefSettings.LogSeverity.LOGSEVERITY_DISABLE;
 
@@ -348,6 +348,10 @@ public class Engine {
 
 	public static void startCefLoop() {
 		app.runMessageLoop();
+	}
+
+	public static void quitCefLoop() {
+		app.quitMessageLoop();
 	}
 
 	private static String getArch() {

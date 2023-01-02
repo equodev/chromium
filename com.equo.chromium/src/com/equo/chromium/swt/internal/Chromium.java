@@ -2677,6 +2677,7 @@ final class Chromium extends WebBrowser {
 		if (extraApi == null) {
 			extraApi = new ExtraApi();
 		}
+		extraApi.setCreated();
 		return extraApi;
 	}
 
@@ -2878,6 +2879,20 @@ final class Chromium extends WebBrowser {
 		@Override
 		public boolean close() {
 			return Chromium.this.close();
+		}
+
+		@Override
+		public Object getUIComponent() {
+			return Chromium.this.cefBrowser.getComposite();
+		}
+
+		@Override
+		public boolean setText(String html) {
+			return Chromium.this.setText(html, true);
+		}
+
+		public void setCreated() {
+			isCreated().complete(true);
 		}
 	}
 	

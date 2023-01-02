@@ -16,6 +16,7 @@ public final class Windowless extends IndependentBrowser {
 		Engine.initCEF();
 		createClient();
 		setBrowser(getClientHandler().createBrowser(url, true, false, createRequestContext()));
+		getBrowser().setReference(this);
 		getBrowser().createImmediately();
 	}
 	
@@ -31,7 +32,7 @@ public final class Windowless extends IndependentBrowser {
 		CefBrowser browser = getBrowser();
 		try {
 			EvalSimpleImpl eval = new EvalSimpleImpl(browser, router, "");
-			return eval.eval(script, getCreated());
+			return eval.eval(script, isCreated());
 		} catch (InterruptedException e) {
 			throw new RuntimeException("Script that was evaluated failed");
 		} catch (ExecutionException e) {
