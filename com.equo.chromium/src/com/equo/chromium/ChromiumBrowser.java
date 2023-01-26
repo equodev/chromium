@@ -62,10 +62,34 @@ public interface ChromiumBrowser {
 
 	/**
 	 * @param url The url that will be loaded in the browser.
+	 * @param x the x coordinate of the origin of the window
+	 * @param y the y coordinate of the origin of the window
+	 * @param width the width of the window
+	 * @param height the height of the window
+	 * @return Returns a new Windowless browser instance.
+	 */
+	static ChromiumBrowser windowless(String url, int x, int y, int width, int height) {
+		return new Windowless(url, new Rectangle(x, y, width, height));
+	}
+
+	/**
+	 * @param url The url that will be loaded in the browser.
 	 * @return Returns a new Standalone browser instance.
 	 */
 	static ChromiumBrowser standalone(String url) {
 		return new Standalone(url);
+	}
+
+	/**
+	 * @param url The url that will be loaded in the browser.
+	 * @param x the x coordinate of the origin of the window
+	 * @param y the y coordinate of the origin of the window
+	 * @param width the width of the window
+	 * @param height the height of the window
+	 * @return Returns a new Standalone browser instance.
+	 */
+	static ChromiumBrowser standalone(String url, int x, int y, int width, int height) {
+		return standalone(url, new Rectangle(x, y, width, height));
 	}
 
 	/**
