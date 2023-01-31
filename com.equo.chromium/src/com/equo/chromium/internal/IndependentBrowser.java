@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -42,6 +43,9 @@ import org.cef.network.CefRequest.TransitionType;
 import com.equo.chromium.ChromiumBrowser;
 import com.equo.chromium.utils.EventAction;
 import com.equo.chromium.utils.EventType;
+import com.equo.chromium.swt.internal.spi.CommRouterHandler;
+import com.equo.chromium.swt.internal.spi.CommunicationManager;
+import com.equo.chromium.swt.internal.spi.ScriptExtension;
 import com.github.cliftonlabs.json_simple.JsonException;
 import com.github.cliftonlabs.json_simple.JsonObject;
 import com.github.cliftonlabs.json_simple.Jsoner;
@@ -189,6 +193,22 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 				}
 			}
 		});
+
+		CommunicationManager commManager = CommunicationManager.get();
+		if (commManager != null) {
+			CefMessageRouter commRouter = CommRouterHandler.createRouter();
+			commRouter.addHandler(new CommRouterHandler(commManager), true);
+			clientHandler.addMessageRouter(commRouter);
+		}
+
+		if (!Boolean.getBoolean(ScriptExtension.DISABLE_SCRIPT_EXTENSIONS_PROPERTY)) {
+			Iterator<ScriptExtension> scriptExtensions = ScriptExtension.get();
+			scriptExtensions.forEachRemaining(scriptExtensionProvider -> {
+				List<CefMessageRouter> routers = ScriptExtension
+						.createRouter(scriptExtensionProvider.getScriptExtensions());
+				routers.stream().forEach(router -> clientHandler.addMessageRouter(router));
+			});
+		}
 	}
 
 	protected void notifySubscribers(EventType eventType) {
