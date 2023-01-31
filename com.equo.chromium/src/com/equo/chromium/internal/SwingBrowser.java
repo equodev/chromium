@@ -1,5 +1,6 @@
 package com.equo.chromium.internal;
 
+import java.awt.Component;
 import java.awt.Container;
 import java.awt.KeyboardFocusManager;
 import java.awt.Toolkit;
@@ -7,21 +8,38 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Vector;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
+import javax.swing.filechooser.FileFilter;
 
 import org.cef.OS;
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;
 import org.cef.browser.CefMessageRouter;
 import org.cef.browser.CefMessageRouter.CefMessageRouterConfig;
+import org.cef.callback.CefBeforeDownloadCallback;
+import org.cef.callback.CefDownloadItem;
+import org.cef.callback.CefFileDialogCallback;
+import org.cef.callback.CefJSDialogCallback;
 import org.cef.callback.CefQueryCallback;
+import org.cef.handler.CefDialogHandler;
+import org.cef.handler.CefDialogHandler.FileDialogMode;
+import org.cef.handler.CefDownloadHandlerAdapter;
 import org.cef.handler.CefFocusHandlerAdapter;
+import org.cef.handler.CefJSDialogHandler.JSDialogType;
+import org.cef.handler.CefJSDialogHandlerAdapter;
 import org.cef.handler.CefMessageRouterHandlerAdapter;
+import org.cef.misc.BoolRef;
 
+import com.equo.chromium.swt.internal.MimeTypeLinux;
 import com.equo.chromium.utils.EventType;
 
 public class SwingBrowser extends IndependentBrowser {
@@ -46,6 +64,30 @@ public class SwingBrowser extends IndependentBrowser {
 					KeyboardFocusManager.getCurrentKeyboardFocusManager().clearGlobalFocusOwner();
 					browser.setFocus(true);
 				}
+			}
+		});
+		getClientHandler().addDialogHandler(new CefDialogHandler() {
+			@Override
+			public boolean onFileDialog(CefBrowser browser, FileDialogMode mode, String title, String defaultFilePath,
+					Vector<String> acceptFilters, int selectedAcceptFilter, CefFileDialogCallback callback) {
+				return SwingBrowser.onFileDialog(browser, mode, title, defaultFilePath, acceptFilters, selectedAcceptFilter,
+						callback);
+			}
+		});
+		getClientHandler().addDownloadHandler(new CefDownloadHandlerAdapter() {
+			@Override
+			public void onBeforeDownload(CefBrowser browser, CefDownloadItem downloadItem, String suggestedName,
+					CefBeforeDownloadCallback callback) {
+				((SwingBrowser) getBrowser().getReference()).onBeforeDownload(browser, downloadItem, suggestedName,
+						callback);
+			}
+		});
+		getClientHandler().addJSDialogHandler(new CefJSDialogHandlerAdapter() {
+			@Override
+			public boolean onJSDialog(CefBrowser browser, String origin_url, JSDialogType dialog_type,
+					String message_text, String default_prompt_text, CefJSDialogCallback callback,
+					BoolRef suppress_message) {
+				return openJsDialog(dialog_type, origin_url, message_text, default_prompt_text, default_prompt_text, callback);
 			}
 		});
 		setBrowser(getClientHandler().createBrowser(url, false, false));
@@ -135,4 +177,134 @@ public class SwingBrowser extends IndependentBrowser {
 		getBrowser().getClient().addMessageRouter(writeText);
 		getBrowser().getClient().addMessageRouter(readText);
 	};
+
+	private static File[] openDialog(FileDialogMode mode, String title, String defaultFilePath, String[] acceptFilters,
+			AtomicInteger selectedAcceptFilter) {
+
+		int swingMode;
+		String defaultDlgTitle;
+		switch (mode) {
+		case FILE_DIALOG_OPEN_MULTIPLE:
+			swingMode = JFileChooser.CUSTOM_DIALOG;
+			defaultDlgTitle = "Open Files";
+			break;
+		case FILE_DIALOG_SAVE:
+			swingMode = JFileChooser.SAVE_DIALOG;
+			defaultDlgTitle = "Save File";
+			break;
+		default:
+			swingMode = JFileChooser.OPEN_DIALOG;
+			defaultDlgTitle = "Open File";
+			break;
+		}
+
+		String dlgTitle = title == null || title.isEmpty() ? defaultDlgTitle : title;
+
+		final JFileChooser fc = new JFileChooser();
+		fc.setDialogTitle(dlgTitle);
+		fc.setDialogType(swingMode);
+
+		Map<String, Integer> indexFilters = new HashMap<String, Integer>();
+		int index = 1;
+		if (acceptFilters != null && acceptFilters.length > 0) {
+			for (String acceptFilter : acceptFilters) {
+				indexFilters.put(acceptFilter, index++);
+				fc.addChoosableFileFilter(new FileFilter() {
+
+					@Override
+					public String getDescription() {
+						return acceptFilter;
+					}
+
+					@Override
+					public boolean accept(File f) {
+						if (f.isDirectory()) {
+							return true;
+						} else {
+							return f.getName().toLowerCase().endsWith(acceptFilter.replace("*", ""));
+						}
+					}
+				});
+			}
+		}
+
+		int returnVal = fc.showDialog(null, null);
+
+		if (returnVal == JFileChooser.APPROVE_OPTION) {
+			File[] files = fc.getSelectedFiles();
+			File[] allFiles = new File[files.length + 1];
+			for (int i = 0; i < files.length; i++) {
+				allFiles[i] = files[i];
+			}
+			allFiles[files.length] = fc.getSelectedFile();
+			Object selectedFilter = indexFilters.get(fc.getFileFilter().getDescription());
+			if (selectedFilter != null) {
+				selectedAcceptFilter.set((int) selectedFilter);
+			}
+			return allFiles;
+		} else {
+			return null;
+		}
+	}
+
+	private static boolean onFileDialog(CefBrowser browser, FileDialogMode mode, String title, String defaultFilePath,
+			Vector<String> acceptFilters, int selectedAcceptFilter, CefFileDialogCallback callback) {
+		if (OS.isLinux()) {
+			String[] acceptFiltersArray = MimeTypeLinux.getExtensions(acceptFilters);
+			AtomicInteger filterIndex = new AtomicInteger(-1);
+			File[] files = openDialog(mode, title, defaultFilePath, acceptFiltersArray, filterIndex);
+			if (files != null) {
+				Vector<String> filePaths = new Vector<String>();
+				for (File file : files) {
+					filePaths.add(file.getAbsolutePath().toString());
+				}
+				filterIndex.set(
+						(filterIndex.get() < 0 || filterIndex.get() >= acceptFiltersArray.length) ? selectedAcceptFilter
+								: filterIndex.get());
+				((IndependentBrowser)browser.getReference()).notifySubscribers(EventType.onOpenFile);
+				callback.Continue(filterIndex.get(), filePaths);
+			} else {
+				((IndependentBrowser)browser.getReference()).notifySubscribers(EventType.onCancelOpenFile);
+				callback.Cancel();
+			}
+			return true;
+		}
+		return false;
+	}
+
+	private static boolean openJsDialog(JSDialogType dialog_type, String title, String msg, String prompt,
+			String default_prompt_text, CefJSDialogCallback callback) {
+		if (OS.isLinux()) {
+			int selected = 0;
+			String userInput = default_prompt_text;
+			switch (dialog_type) {
+			case JSDIALOGTYPE_ALERT:
+				selected = JOptionPane.showConfirmDialog(null, prompt != null ? msg + "\n\n" + prompt : msg, title,
+						JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE);
+				break;
+			case JSDIALOGTYPE_CONFIRM:
+				selected = JOptionPane.showConfirmDialog(null, prompt != null ? msg + "\n\n" + prompt : msg, title,
+						JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+				break;
+			case JSDIALOGTYPE_PROMPT:
+				userInput = JOptionPane.showInputDialog(prompt != null ? msg + "\n\n" + prompt : msg);
+				break;
+			}
+			callback.Continue(selected == JOptionPane.OK_OPTION && userInput != null, userInput);
+			return true;
+		}
+		return false;
+	}
+
+	private void onBeforeDownload(CefBrowser browser, CefDownloadItem download_item, String suggestedName,
+			CefBeforeDownloadCallback callback) {
+		if (OS.isLinux()) {
+			File[] files = openDialog(FileDialogMode.FILE_DIALOG_SAVE, null, null, null, null);
+			if (files != null) {
+				callback.Continue(files[0].getAbsolutePath(), false);
+			}
+		} else {
+			callback.Continue("", true);
+		}
+	}
 }

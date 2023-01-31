@@ -12,5 +12,14 @@ public enum EventType {
 	onConsoleMessage,
 
 	onClipboardWriteText,
-	onClipboardReadText
+	onClipboardReadText,
+
+	onFullScreenEntered,
+	onFullScreenExited,
+	
+	onFindResult,
+
+	onOpenFile,
+	onCancelOpenFile,
+
 }

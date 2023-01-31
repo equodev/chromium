@@ -11,7 +11,6 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -22,20 +21,22 @@ import org.cef.CefSettings.LogSeverity;
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;
 import org.cef.browser.CefMessageRouter;
-import org.cef.browser.CefRequestContext;
 import org.cef.browser.CefMessageRouter.CefMessageRouterConfig;
+import org.cef.browser.CefRequestContext;
 import org.cef.callback.CefCallback;
 import org.cef.callback.CefCompletionCallback;
 import org.cef.callback.CefDevToolsMessageObserverAdapter;
 import org.cef.callback.CefQueryCallback;
 import org.cef.callback.CefStringVisitor;
 import org.cef.handler.CefDisplayHandlerAdapter;
+import org.cef.handler.CefFindHandler;
 import org.cef.handler.CefLifeSpanHandlerAdapter;
 import org.cef.handler.CefLoadHandler;
+import org.cef.handler.CefLoadHandler.ErrorCode;
 import org.cef.handler.CefMessageRouterHandler;
 import org.cef.handler.CefMessageRouterHandlerAdapter;
-import org.cef.handler.CefLoadHandler.ErrorCode;
 import org.cef.handler.CefRequestHandlerAdapter;
+import org.cef.misc.Rectangle;
 import org.cef.network.CefRequest.TransitionType;
 
 import com.equo.chromium.ChromiumBrowser;
@@ -128,6 +129,15 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 				notifySubscribers(EventType.onConsoleMessage, mapData);
 				return IndependentBrowser.this.onConsoleMessage(browser, level, message, source, line);
 			}
+
+			@Override
+			public void onFullscreenModeChange(CefBrowser browser, boolean fullscreen) {
+				if (fullscreen) {
+					notifySubscribers(EventType.onFullScreenEntered);
+				} else {
+					notifySubscribers(EventType.onFullScreenExited);
+				}
+			}
 		});
 		clientHandler.addLoadHandler(new CefLoadHandler() {
 			
@@ -167,13 +177,25 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 				});
 			}
 		});
+		clientHandler.addFindHandler(new CefFindHandler() {
+			@Override
+			public void onFindResult(CefBrowser browser, int identifier, int count, Rectangle selectionRect,
+					int activeMatchOrdinal, boolean finalUpdate) {
+				if (finalUpdate) {
+					Map<String, Object> mapData = new HashMap<>();
+					mapData.put("count", count);
+					mapData.put("activeMatchOrdinal", activeMatchOrdinal);
+					notifySubscribers(EventType.onFindResult, mapData);
+				}
+			}
+		});
 	}
 
 	protected void notifySubscribers(EventType eventType) {
 		notifySubscribers(eventType, new HashMap<String, Object>());
 	}
 
-	protected void notifySubscribers(EventType eventType, Map<String, Object> mapData) {
+	protected synchronized void notifySubscribers(EventType eventType, Map<String, Object> mapData) {
 		subscribeEvents.computeIfAbsent(eventType, m -> new ArrayList<EventAction>()).forEach(e -> {
 			e.setJsonData(mapData);
 			CompletableFuture.runAsync(e);
@@ -267,12 +289,17 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 
 	@Override
 	public void find(String search, boolean forward, boolean matchCase) {
-		boolean findNext = Objects.equals(search, lastSearch);
-		lastSearch = search;
+		// Stop finding when search is empty.
 		if (search == null || search.isEmpty()) {
 			getBrowser().stopFinding(true);
 		} else {
-			getBrowser().find(1, search, forward, matchCase, findNext);
+			// Stop the search when the search text is changed, so that the new search
+			// starts at the first result.
+			if (lastSearch != null && !lastSearch.contains(search)) {
+				getBrowser().stopFinding(true);
+			}
+			getBrowser().find(1, search, forward, matchCase, true);
+			lastSearch = search;
 		}
 	}
 
