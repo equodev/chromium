@@ -9,9 +9,11 @@ import java.util.concurrent.CompletableFuture;
 import org.cef.CefApp;
 import org.cef.CefApp.CefAppState;
 import org.cef.CefClient;
+import org.cef.browser.CefBrowser;
 import org.cef.browser.CefBrowserStandalone;
 import org.cef.browser.CefBrowserSwt;
 import org.cef.browser.CefBrowserWl;
+import org.cef.browser.PopupBrowser;
 import org.cef.browser.CefBrowserSwing;
 import org.cef.misc.Rectangle;
 
@@ -25,32 +27,39 @@ import com.equo.chromium.swt.internal.WebBrowser;
 public interface ChromiumBrowser {
 
 	/**
-	 * @return Returns all active browsers.
-	 */
-	static Collection<ChromiumBrowser> getAllBrowsers() {
-		Collection<ChromiumBrowser> browsers = new ArrayList<ChromiumBrowser>();
-		if (CefAppState.INITIALIZED.equals(CefApp.getState())) {
-			CefApp app = CefApp.getInstance();
-			Set<CefClient> clients = app.getAllClients();
-			for (CefClient client : clients) {
-				Object[] clientBrowsers = client.getAllBrowser();
-				for (Object browser : clientBrowsers) {
-					if (browser instanceof CefBrowserSwt) {
-						Browser composite = (Browser) ((CefBrowserSwt) browser).getComposite();
-						browsers.add((ChromiumBrowser) composite.getWebBrowser());
-					} else if (browser instanceof CefBrowserStandalone) {
-						browsers.add((ChromiumBrowser) ((CefBrowserStandalone) browser).getReference());
-					} else if (browser instanceof CefBrowserWl) {
-						browsers.add((ChromiumBrowser) ((CefBrowserWl) browser).getReference());
-					} else if (browser instanceof CefBrowserSwing) {
-						browsers.add((ChromiumBrowser) ((CefBrowserSwing) browser).getReference());
-					}
+     * @return Returns all active browsers.
+     */
+    static Collection<ChromiumBrowser> getAllBrowsers() {
+        Collection<ChromiumBrowser> browsers = new ArrayList<ChromiumBrowser>();
+        if (CefAppState.INITIALIZED.equals(CefApp.getState())) {
+            CefApp app = CefApp.getInstance();
+            Set<CefClient> clients = app.getAllClients();
+            for (CefClient client : clients) {
+                Object[] clientBrowsers = client.getAllBrowser();
+                for (Object browser : clientBrowsers) {
+                    CefBrowser castedCefBrowser = (CefBrowser) browser;
+                    if (browser instanceof CefBrowserSwt) {
+                        Browser composite = (Browser) ((CefBrowserSwt) browser).getComposite();
+                        if (composite != null) {
+                            browsers.add((ChromiumBrowser) composite.getWebBrowser());
+                        } else {
+                            browsers.add(new PopupBrowser((CefBrowser) browser));
+                        }
+                    } else if (castedCefBrowser.getReference() == null) {
+                        browsers.add(new PopupBrowser((CefBrowser) browser));
+                    } else if (browser instanceof CefBrowserStandalone) {
+                        browsers.add((ChromiumBrowser) ((CefBrowserStandalone) browser).getReference());
+                    } else if (browser instanceof CefBrowserWl) {
+                        browsers.add((ChromiumBrowser) ((CefBrowserWl) browser).getReference());
+                    } else if (browser instanceof CefBrowserSwing) {
+                        browsers.add((ChromiumBrowser) ((CefBrowserSwing) browser).getReference());
+                    }
 
-				}
-			}
-		}
-		return browsers;
-	}
+                }
+            }
+        }
+        return browsers;
+    }
 
 	/**
 	 * @param url The url that will be loaded in the browser.
@@ -319,4 +328,6 @@ public interface ChromiumBrowser {
 	 *         is created.
 	 */
 	public CompletableFuture<Boolean> isCreated();
+	
+	public void showDevTools();
 }

@@ -1112,7 +1112,7 @@ final class Chromium extends WebBrowser {
 			} else {
 				String requestUrl = request.getURL();
 				if (!requestUrl.startsWith("http") && !requestUrl.startsWith("data") && !requestUrl.startsWith("file")
-						&& !requestUrl.startsWith("chrome") && !requestUrl.startsWith("about")) {
+						&& !requestUrl.startsWith("chrome") && !requestUrl.startsWith("about") && !requestUrl.startsWith("devtools")) {
 					if (shouldAllowProtocol(requestUrl, browser)) {
 						return new CefResourceRequestHandlerAdapter() {
 							@Override
@@ -2893,6 +2893,13 @@ final class Chromium extends WebBrowser {
 
 		public void setCreated() {
 			isCreated().complete(true);
+		}
+		
+		@Override
+		public void showDevTools() {
+			created.thenRun(()-> {
+				getBrowser().getDevTools().createImmediately();
+			});
 		}
 	}
 	

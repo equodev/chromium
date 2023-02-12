@@ -561,4 +561,10 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 			getClientHandler().addMessageRouter(messageRouter_);
 		});
 	}
+
+	public void showDevTools() {
+		isCreated().thenRun(() -> {
+			getBrowser().getDevTools().createImmediately();
+		});
+	}
 }
