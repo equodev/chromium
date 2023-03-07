@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.cef.CefApp;
 import org.cef.CefAppStandalone;
+import org.cef.CefAppSwing;
 import org.cef.CefAppSwt;
 import org.cef.CefClient;
 import org.cef.CefSettings;
@@ -59,9 +60,15 @@ public class Engine {
 	private static AtomicBoolean closing = new AtomicBoolean();
 	private static boolean multiThreaded;
 
+	public static enum BrowserType {
+		SWT,
+		STANDALONE,
+		SWING
+	}
+
 	private static void loadLib() {
 		if (OS.isLinux()) {
-			multiThreaded = System.getProperty("chromium.multi_threaded_message_loop") != null ? Boolean.getBoolean("chromium.multi_threaded_message_loop") : false;
+			multiThreaded = Boolean.getBoolean("chromium.multi_threaded_message_loop");
 			if (multiThreaded && Boolean.valueOf(System.getProperty("chromium.debug", "false")))
 				System.out.println("J: multi_threaded_message_loop enabled");
 		}
@@ -166,10 +173,10 @@ public class Engine {
 	}
 
 	public static void initCEF() {
-		initCEF(false);
+		initCEF(BrowserType.SWT);
 	}
 
-	static void initCEF(boolean standalone) {
+	static void initCEF(BrowserType browserType) {
 		synchronized (Engine.class) {
 			if (app == null) {
 				CefSettings settings = new CefSettings();
@@ -181,7 +188,7 @@ public class Engine {
 				Path data = Paths.get(System.getProperty("chromium.home", System.getProperty("user.home")), ".equo");
 				String cache = data.resolve("cefcache").toAbsolutePath().toString();
 				settings.cache_path = System.getProperty("chromium.cache_path", cache);
-				settings.log_file = data.resolve("cef.log").toString();
+				settings.log_file = System.getProperty("chromium.log_file", data.resolve("cef.log").toString());
 				settings.log_severity = debug ? CefSettings.LogSeverity.LOGSEVERITY_INFO
 						: CefSettings.LogSeverity.LOGSEVERITY_DISABLE;
 
@@ -217,15 +224,27 @@ public class Engine {
 					registeredSchemeData = Collections.emptyList();
 				}
 
-				int loopTime = (!settings.external_message_pump && !registeredSchemeData.isEmpty()) ? 1000 / 180 : WindowingToolkit.DEFAULT_LOOP_TIME;
 				WindowingToolkit windowToolkit = null;
-				if (standalone) {
+				switch (browserType) {
+				case STANDALONE:
 					windowToolkit = new CefAppStandalone();
 					settings.multi_threaded_message_loop = false;
 					settings.external_message_pump = false;
-				} else {
+					break;
+				case SWING:
+					if (OS.isLinux()) {
+						System.loadLibrary("jawt");
+					}
+					windowToolkit = new CefAppSwing();
+					settings.external_message_pump = false;
+					settings.multi_threaded_message_loop = !OS.isMacintosh();
+					break;
+				default:
+					int loopTime = (!settings.external_message_pump && !registeredSchemeData.isEmpty()) ? 1000 / 180 : WindowingToolkit.DEFAULT_LOOP_TIME;
 					windowToolkit = new CefAppSwt(loopTime, settings.external_message_pump);
+					break;
 				}
+
 				CefApp.setWindowingToolkit(windowToolkit);
 
 				CefApp.addAppHandler(new CefAppHandlerAdapter(args) {
@@ -259,7 +278,7 @@ public class Engine {
 												: new StaticCefSchemeHandlerFactory(schemeHandlerManager, schemeData));
 							}
 						}
-						if (!standalone) {
+						if (BrowserType.SWT.equals(browserType)) {
 							SWTEngine.onContextInitialized(app);
 						}
 						ready.complete(true);
@@ -287,7 +306,7 @@ public class Engine {
 						throw e;
 					}
 				}
-				if (!standalone) {
+				if (BrowserType.SWT.equals(browserType)) {
 					SWTEngine.initCef(closing, shuttingDown, () -> internalShutdown());
 				}
 
@@ -329,6 +348,10 @@ public class Engine {
 
 	public static void startCefLoop() {
 		app.runMessageLoop();
+	}
+
+	public static void quitCefLoop() {
+		app.quitMessageLoop();
 	}
 
 	private static String getArch() {

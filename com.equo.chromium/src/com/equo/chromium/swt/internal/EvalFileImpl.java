@@ -14,6 +14,7 @@ import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
+import org.cef.CefApp;
 import org.cef.browser.CefBrowser;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
@@ -38,9 +39,11 @@ public class EvalFileImpl extends AbstractEval {
 		try {
 			WatchService ws = FileSystems.getDefault().newWatchService();
 			Paths.get(file.getParent()).register(ws, StandardWatchEventKinds.ENTRY_MODIFY);
-			awaitCondition(display, created, true);
-			startFileWatcher(display, file, received, ws, id);
-			cefBrowser.sendEvalMessage(file.getAbsolutePath(), eval);
+			created.thenRun(() -> {
+				CefApp.getInstance().doMessageLoopWork(-1);
+				startFileWatcher(display, file, received, ws, id);
+				cefBrowser.sendEvalMessage(file.getAbsolutePath(), eval);
+			});
 
 			awaitCondition(display, received, true);
 		} catch (IOException e) {
@@ -82,7 +85,8 @@ public class EvalFileImpl extends AbstractEval {
 
 	private void finish(Display display, CompletableFuture<Object> received, WatchService ws, Object decodeType) {
 		received.complete(decodeType);
-		display.wake();
+		if (display != null) 
+			display.wake();
 		try {
 			ws.close();
 		} catch (IOException e) {}

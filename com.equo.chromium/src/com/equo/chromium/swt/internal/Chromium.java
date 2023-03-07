@@ -1110,7 +1110,7 @@ final class Chromium extends WebBrowser {
 			} else {
 				String requestUrl = request.getURL();
 				if (!requestUrl.startsWith("http") && !requestUrl.startsWith("data") && !requestUrl.startsWith("file")
-						&& !requestUrl.startsWith("chrome") && !requestUrl.startsWith("about")) {
+						&& !requestUrl.startsWith("chrome") && !requestUrl.startsWith("about") && !requestUrl.startsWith("devtools")) {
 					if (shouldAllowProtocol(requestUrl, browser)) {
 						return new CefResourceRequestHandlerAdapter() {
 							@Override
@@ -1145,12 +1145,14 @@ final class Chromium extends WebBrowser {
 		private boolean containsTurbolinkHeader(CefRequest request) {
 			Map<String, String> headers = new HashMap<String, String>();
 			request.getHeaderMap(headers);
+			Map<String, String> headersLowerCase = headers.keySet().stream()
+					.collect(Collectors.toMap(key -> key.toLowerCase(), key -> headers.get(key)));
 			String[] turbolinkHeaders = System.getProperty("chromium.turbolinks", "").split(";");
 			for (String turbolinkHeader : turbolinkHeaders) {
 				if (turbolinkHeader.contains("=")) {
-					String hKey = turbolinkHeader.split("=")[0];
+					String hKey = turbolinkHeader.split("=")[0].toLowerCase();
 					String hValue = turbolinkHeader.split("=")[1];
-					if (headers.containsKey(hKey) && headers.get(hKey).equals(hValue)) {
+					if (headersLowerCase.containsKey(hKey) && headersLowerCase.get(hKey).equals(hValue)) {
 						return true;
 					}
 				}
@@ -2327,7 +2329,7 @@ final class Chromium extends WebBrowser {
 					throw new SWTException("Failed to get cookies");
 				}
 				long end = System.currentTimeMillis()+250;
-				Display display = Display.getCurrent();
+				Display display = Display.getCurrent() == null ? Display.getDefault() : Display.getCurrent();
 				while (!cookieVisited.get() && !display.isDisposed() && System.currentTimeMillis() < end) {
 //					debug("in cookie loop");
 					if (!display.readAndDispatch()) {
@@ -2673,6 +2675,7 @@ final class Chromium extends WebBrowser {
 		if (extraApi == null) {
 			extraApi = new ExtraApi();
 		}
+		extraApi.setCreated();
 		return extraApi;
 	}
 
@@ -2874,6 +2877,27 @@ final class Chromium extends WebBrowser {
 		@Override
 		public boolean close() {
 			return Chromium.this.close();
+		}
+
+		@Override
+		public Object getUIComponent() {
+			return Chromium.this.cefBrowser.getComposite();
+		}
+
+		@Override
+		public boolean setText(String html) {
+			return Chromium.this.setText(html, true);
+		}
+
+		public void setCreated() {
+			isCreated().complete(true);
+		}
+		
+		@Override
+		public void showDevTools() {
+			created.thenRun(()-> {
+				getBrowser().getDevTools().createImmediately();
+			});
 		}
 	}
 	
