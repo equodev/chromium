@@ -34,6 +34,10 @@ public class SWTEngine {
 	}
 
 	public static void onContextInitialized(CefApp app) {
+		registerBrowserFunctions(app);
+	}
+
+	public static void registerBrowserFunctions(CefApp app) {
 		app.registerSchemeHandlerFactory("https", "functions", new CefSchemeHandlerFactory() {
 			@Override
 			public CefResourceHandler create(CefBrowser browser, CefFrame frame,

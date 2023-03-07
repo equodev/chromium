@@ -152,6 +152,7 @@ import com.github.cliftonlabs.json_simple.Jsoner;
 final class Chromium extends WebBrowser {
 	private static final String DATA_TEXT_URL = "data:text/html;base64,";
 	private static final int MAX_PROGRESS = 100;
+	static String SETTEXT_URL = System.getProperty("chromium.setTextAsUrl", "").replaceAll("/$", "");
 	
 	static {
 		setupCookies();
@@ -2301,6 +2302,10 @@ final class Chromium extends WebBrowser {
 				break;
 			}
 		};
+		if (NativePendingCookies != null) {
+			SetPendingCookies(NativePendingCookies);
+			NativePendingCookies = null;
+		}
 		WebBrowser.NativeGetCookie = () -> {
 			AtomicBoolean cookieVisited = new AtomicBoolean();
 			CefCookieVisitor visitor = new CefCookieVisitor() {
@@ -2689,10 +2694,16 @@ final class Chromium extends WebBrowser {
 
 	@Override
 	public boolean setText(String html, boolean trusted) {
-		String texturl = DATA_TEXT_URL + Base64.getEncoder().encodeToString(html.getBytes());
-		return setUrl(texturl, null, null);
+		String texturl = Base64.getEncoder().encodeToString(html.getBytes());
+		if (!SETTEXT_URL.isEmpty()) {
+			created.thenRun(() -> {
+				setUrl(SETTEXT_URL + "/__text__", null, new String[] { "dataText:" + texturl, "chromium:setText" });
+			});
+			return true;
+		}
+		return setUrl(DATA_TEXT_URL + texturl, null, null);
 	}
-	
+
 	private static String getPlainUrl(String url) {
 		if (url != null && url.startsWith(DATA_TEXT_URL)) {
 			return url.substring(0, DATA_TEXT_URL.length()-8);
