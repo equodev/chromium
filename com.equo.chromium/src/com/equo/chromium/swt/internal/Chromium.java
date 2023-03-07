@@ -2331,7 +2331,7 @@ final class Chromium extends WebBrowser {
 					throw new SWTException("Failed to get cookies");
 				}
 				long end = System.currentTimeMillis()+250;
-				Display display = Display.getCurrent();
+				Display display = Display.getCurrent() == null ? Display.getDefault() : Display.getCurrent();
 				while (!cookieVisited.get() && !display.isDisposed() && System.currentTimeMillis() < end) {
 //					debug("in cookie loop");
 					if (!display.readAndDispatch()) {

@@ -1,13 +1,15 @@
 package com.equo.chromium.internal;
 
-import java.awt.Component;
 import java.awt.Container;
 import java.awt.KeyboardFocusManager;
 import java.awt.Toolkit;
+import java.awt.Window;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -103,7 +105,18 @@ public class SwingBrowser extends IndependentBrowser {
 
 	public SwingBrowser(Object parent, String layout, String url) {
 		init(url);
-		((Container) parent).add((JPanel) getBrowser().getUIComponent(), layout);
+		Container parentContainer = (Container) parent;
+		parentContainer.add((JPanel) getBrowser().getUIComponent(), layout);
+
+		// Close browser when window is closed
+		Window parentWindow = SwingUtilities.windowForComponent(parentContainer);
+		parentWindow.addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosed(WindowEvent windowEvent) {
+				close();
+				parentWindow.removeWindowListener(this);
+			}
+		});
 	}
 
 	public SwingBrowser(String url) {

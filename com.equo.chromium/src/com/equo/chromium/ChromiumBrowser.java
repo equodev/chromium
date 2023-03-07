@@ -13,11 +13,11 @@ import org.cef.browser.CefBrowser;
 import org.cef.browser.CefBrowserStandalone;
 import org.cef.browser.CefBrowserSwt;
 import org.cef.browser.CefBrowserWl;
-import org.cef.browser.PopupBrowser;
 import org.cef.browser.CefBrowserSwing;
 import org.cef.misc.Rectangle;
 
 import com.equo.chromium.internal.Engine;
+import com.equo.chromium.internal.PopupBrowser;
 import com.equo.chromium.internal.Standalone;
 import com.equo.chromium.internal.SwingBrowser;
 import com.equo.chromium.internal.Windowless;
