@@ -241,10 +241,9 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 		return false;
 	}
 
-	public void unSubscribeAll() {
-		subscribeIndex.forEach((eventId, action) -> {
-			unSubscribe(eventId);
-		});
+	public synchronized void unSubscribeAll() {
+		subscribeIndex.clear();
+		subscribeEvents.clear();
 	}
 
 	protected CefRequestContext createRequestContext() {
@@ -423,6 +422,7 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 	@Override
 	public boolean close() {
 		getBrowser().setCloseAllowed();
+		getBrowser().setReference(null);
 		getBrowser().close(true);
 		clientHandler.dispose();
 		unSubscribeAll();
