@@ -110,13 +110,15 @@ public class SwingBrowser extends IndependentBrowser {
 
 		// Close browser when window is closed
 		Window parentWindow = SwingUtilities.windowForComponent(parentContainer);
-		parentWindow.addWindowListener(new WindowAdapter() {
-			@Override
-			public void windowClosed(WindowEvent windowEvent) {
-				close();
-				parentWindow.removeWindowListener(this);
-			}
-		});
+		if (parentWindow != null) {
+			parentWindow.addWindowListener(new WindowAdapter() {
+				@Override
+				public void windowClosed(WindowEvent windowEvent) {
+					close();
+					parentWindow.removeWindowListener(this);
+				}
+			});
+		}
 	}
 
 	public SwingBrowser(String url) {
