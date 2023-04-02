@@ -2881,11 +2881,6 @@ final class Chromium extends WebBrowser {
 		}
 
 		@Override
-		public Object evaluate(String script) {
-			return Chromium.this.evaluate(script);
-		}
-
-		@Override
 		public boolean close() {
 			return Chromium.this.close();
 		}

@@ -127,11 +127,6 @@ public class SwingBrowser extends IndependentBrowser {
 	}
 
 	@Override
-	public Object evaluate(String script) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public Object getUIComponent() {
 		return getBrowser().getUIComponent();
 	}

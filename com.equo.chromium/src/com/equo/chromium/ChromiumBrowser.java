@@ -177,12 +177,6 @@ public interface ChromiumBrowser {
 	boolean setText(String html);
 
 	/**
-	 * Deprecated. Use {@code executeJavacript} instead or Comm.
-	 */
-	@Deprecated
-	Object evaluate(String script);
-
-	/**
 	 * @return Returns true if the browser will be closed and false otherwise.
 	 */
 	boolean close();

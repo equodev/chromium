@@ -10,11 +10,6 @@ public class PopupBrowser extends IndependentBrowser {
     }
 
     @Override
-    public Object evaluate(String script) {
-        throw new UnsupportedOperationException();
-    }
-    
-    @Override
     public Object getUIComponent() {
         throw new UnsupportedOperationException();
     }

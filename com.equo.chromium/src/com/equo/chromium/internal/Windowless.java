@@ -1,6 +1,5 @@
 package com.equo.chromium.internal;
 
-import java.util.concurrent.ExecutionException;
 
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefBrowserWl;
@@ -8,7 +7,6 @@ import org.cef.browser.CefMessageRouter;
 import org.cef.misc.Rectangle;
 
 import com.equo.chromium.swt.internal.AbstractEval;
-import com.equo.chromium.swt.internal.EvalSimpleImpl;
 
 public final class Windowless extends IndependentBrowser {
 
@@ -37,19 +35,6 @@ public final class Windowless extends IndependentBrowser {
 		getClientHandler().addMessageRouter(router);
 	}
 
-	@Override
-	public Object evaluate(String script) {
-		CefBrowser browser = getBrowser();
-		try {
-			EvalSimpleImpl eval = new EvalSimpleImpl(browser, router, "");
-			return eval.eval(script, isCreated());
-		} catch (InterruptedException e) {
-			throw new RuntimeException("Script that was evaluated failed");
-		} catch (ExecutionException e) {
-			throw (RuntimeException)e.getCause();
-		}
-	}
-	
 	@Override
 	public boolean close() {
 		getClientHandler().removeMessageRouter(router);

@@ -27,9 +27,4 @@ public final class Standalone extends IndependentBrowser {
 		browser.createImmediately();
 	}
 
-	@Override
-	public Object evaluate(String script) {
-		throw new UnsupportedOperationException();
-	}
-	
 }
