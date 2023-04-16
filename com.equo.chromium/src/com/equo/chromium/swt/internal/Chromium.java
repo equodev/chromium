@@ -198,6 +198,7 @@ final class Chromium extends WebBrowser {
 	private ControlAdapter fullscreenListener = null;
 	private ResizeListener resize;
 	private boolean inEvalBlocking = false;
+	private EvalFileImpl eval;
 
 	Chromium() {
 	}
@@ -296,12 +297,12 @@ final class Chromium extends WebBrowser {
 						break;
 					}
 					Object payload = AbstractEval.decodeType(encoded, SWT.ERROR_INVALID_ARGUMENT);
-					if (payload.getClass().isArray() && ((Object[])payload).length >= 2) {
+					if (payload.getClass().isArray() && ((Object[])payload).length >= 3) {
 						String token = (String) ((Object[])payload)[0];
-						Object[] args = (Object[]) ((Object[])payload)[1];
+						Object[] args = (Object[]) ((Object[])payload)[2];
 						BrowserFunction browserFunction = functions.get(index);
 						if (browserFunction != null && browserFunction.token.equals(token)) {
-							if (((Object[])payload).length == 3) {
+							if (((Object[])payload).length == 4) {
 								debug("processRequest return function result: "+browserFunction.getName());
 								synchronized (browserFunction) {
 									if (resp.length > 0)
@@ -2578,11 +2579,16 @@ final class Chromium extends WebBrowser {
 		}
 		checkBrowser();
 		AbstractEval eval = null;
+		boolean destroy = false;
 		try {
 			if (!functionsResourceHandler.isEmpty() && functionsResourceHandler.peek().inFunction) {
 				eval = new EvalBrowserFunctionImpl(router, functionsResourceHandler.peek());
 			} else if (inEvalBlocking) {
-				eval = new EvalFileImpl(cefBrowser);
+				if (this.eval == null) {
+					this.eval = new EvalFileImpl(this, cefBrowser);
+					destroy = true;
+				}
+				eval = this.eval;
 			} else {
 				eval = new EvalSimpleImpl(cefBrowser, router, getPlainUrl(url));
 			}
@@ -2591,10 +2597,13 @@ final class Chromium extends WebBrowser {
 			throw new SWTException("Script that was evaluated failed");
 		} catch (ExecutionException e) {
 			throw (SWTException) e.getCause();
+		} finally {
+			if (destroy)
+				this.eval = null;
 		}
 	}
 
-	private String encodeType(Object ret) {
+	static String encodeType(Object ret) {
 		try {
 			return Jsoner.serialize(ret);
 		} catch(IllegalArgumentException e) {
@@ -2768,7 +2777,7 @@ final class Chromium extends WebBrowser {
 		return chromium == null || chromium.isDisposed();
 	}
 
-	void syncExec(Runnable run) {
+	static void syncExec(Runnable run) {
 		if (Display.getCurrent() != null) {
 			run.run();
 		} else {
