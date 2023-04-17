@@ -14,6 +14,9 @@ public class SetTextResourceHandler {
 	private Object middlewareService;
 
 	public void configureSchemes() {
+		if ("".equals(Chromium.SETTEXT_URL)) {
+			return;
+		}
 		try {
 			URI uri = URI.create(Chromium.SETTEXT_URL);
 			Class<?> iResponseHandlerClass = Class.forName("com.equo.middleware.api.handler.IResponseHandler");
