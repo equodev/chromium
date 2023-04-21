@@ -12,19 +12,35 @@ import java.util.Map;
 public class SetTextResourceHandler {
 
 	private Object middlewareService;
+	private static SetTextResourceHandler textResourceHandler = null;
 
-	public void configureSchemes() {
-		if ("".equals(Chromium.SETTEXT_URL)) {
-			return;
-		}
+	public static void configureScheme(String textUrl) {
+		if (textResourceHandler != null)
+			textResourceHandler.configureSchemes(true, textUrl);
+	}
+
+
+	public static void unregisterScheme(String textUrl) {
+		if (textResourceHandler != null)
+			textResourceHandler.configureSchemes(false, textUrl);
+	}
+
+	public void configureSchemes(boolean addResourceHandler, String textUrl) {
 		try {
-			URI uri = URI.create(Chromium.SETTEXT_URL);
+			URI uri = URI.create(textUrl);
 			Class<?> iResponseHandlerClass = Class.forName("com.equo.middleware.api.handler.IResponseHandler");
-			Method addResourceHandlerMethod = Class.forName("com.equo.middleware.api.IMiddlewareService")
-					.getDeclaredMethod("addResourceHandler",
-							new Class[] { String.class, String.class, iResponseHandlerClass });
-			addResourceHandlerMethod.invoke(middlewareService,
-					new Object[] { uri.getScheme(), uri.getHost(), createResponseHandler(iResponseHandlerClass) });
+			if (addResourceHandler) {
+				Method addResourceHandlerMethod = Class.forName("com.equo.middleware.api.IMiddlewareService")
+						.getDeclaredMethod("addResourceHandler",
+								new Class[] { String.class, String.class, iResponseHandlerClass });
+				addResourceHandlerMethod.invoke(middlewareService, new Object[] { uri.getScheme(), uri.getAuthority(),
+						createResponseHandler(iResponseHandlerClass) });
+			} else {
+				Method removeResourceHandlerMethod = Class.forName("com.equo.middleware.api.IMiddlewareService")
+						.getDeclaredMethod("removeResourceHandler", new Class[] { String.class, String.class });
+				removeResourceHandlerMethod.invoke(middlewareService,
+						new Object[] { uri.getScheme(), uri.getAuthority() });
+			}
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
 				| SecurityException | ClassNotFoundException e) {
 
@@ -56,6 +72,7 @@ public class SetTextResourceHandler {
 
 	public void setMiddlewareService(Object middlewareService) {
 		this.middlewareService = middlewareService;
+		textResourceHandler = this;
 	}
 
 	public void unsetMiddlewareService(Object middlewareService) {

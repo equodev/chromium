@@ -152,8 +152,8 @@ import com.github.cliftonlabs.json_simple.Jsoner;
 final class Chromium extends WebBrowser {
 	private static final String DATA_TEXT_URL = "data:text/html;base64,";
 	private static final int MAX_PROGRESS = 100;
-	static String SETTEXT_URL = System.getProperty("chromium.setTextAsUrl", "").replaceAll("/$", "");
-	
+	private static String setTextUrl = "";
+
 	static {
 		setupCookies();
 	}
@@ -2704,9 +2704,17 @@ final class Chromium extends WebBrowser {
 	@Override
 	public boolean setText(String html, boolean trusted) {
 		String texturl = Base64.getEncoder().encodeToString(html.getBytes());
-		if (!SETTEXT_URL.isEmpty()) {
+		String setTextNewUrl = System.getProperty("chromium.setTextAsUrl", "").replaceAll("/$", "");
+		if (!setTextNewUrl.isEmpty()) {
+			if (!setTextUrl.equals(setTextNewUrl)) {
+				if (!setTextUrl.isEmpty()) {
+					SetTextResourceHandler.unregisterScheme(setTextUrl);
+				}
+				setTextUrl = setTextNewUrl;
+				SetTextResourceHandler.configureScheme(setTextUrl);
+			}
 			created.thenRun(() -> {
-				setUrl(SETTEXT_URL + "/__text__", null, new String[] { "dataText:" + texturl, "chromium:setText" });
+				setUrl(setTextUrl + "/__text__", null, new String[] { "dataText:" + texturl, "chromium:setText" });
 			});
 			return true;
 		}
