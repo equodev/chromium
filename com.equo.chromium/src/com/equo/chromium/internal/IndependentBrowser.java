@@ -64,6 +64,7 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 	private long eventId = 0;
 	private static ExecutorService executor = Executors.newCachedThreadPool();
 	private int messageId = 0;
+	protected static EventAction eventActionOfAfterCreated = null;
 
 	class ActionData {
 		public EventType eventType;
@@ -101,6 +102,12 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 		clientHandler.addLifeSpanHandler(new CefLifeSpanHandlerAdapter() {
 			@Override
 			public void onAfterCreated(CefBrowser browser) {
+				if (eventActionOfAfterCreated != null && !created.isDone()) {
+					Map<String, Object> mapData = new HashMap<>();
+					mapData.put("chromium_instance", (ChromiumBrowser)browser.getReference());
+					eventActionOfAfterCreated.setJsonData(mapData);
+					eventActionOfAfterCreated.run();
+				}
 				created.complete(true);
 				notifySubscribers(EventType.onAfterCreated);
 			}
@@ -220,6 +227,10 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 			e.setJsonData(mapData);
 			CompletableFuture.runAsync(e);
 		});
+	}
+	
+	public static void subscribeOnAfterCreated(EventAction eventAction) {
+		eventActionOfAfterCreated = eventAction;
 	}
 
 	public synchronized long subscribe(EventType eventType, EventAction action) {

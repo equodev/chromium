@@ -2892,6 +2892,12 @@ final class Chromium extends WebBrowser {
 		}
 
 		public void setCreated() {
+			if (eventActionOfAfterCreated != null && !isCreated().isDone()) {
+				Map<String, Object> mapData = new HashMap<>();
+				mapData.put("chromium_instance", (ChromiumBrowser)this);
+				eventActionOfAfterCreated.setJsonData(mapData);
+				eventActionOfAfterCreated.run();
+			}
 			isCreated().complete(true);
 		}
 		
