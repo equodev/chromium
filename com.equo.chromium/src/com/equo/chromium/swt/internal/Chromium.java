@@ -171,7 +171,7 @@ final class Chromium extends WebBrowser {
 	private static DownloadHandler downloadHandler;
 	private static CefMessageRouter router;
 	
-	Browser chromium;
+	Composite chromium;
 	OpenWindowListener[] openWindowListeners = new OpenWindowListener[0];
 	private CefFocusListener focusListener;
 	private String url;
@@ -229,7 +229,8 @@ final class Chromium extends WebBrowser {
 		openWindowListeners = newOpenWindowListeners;
 	}
 	
-	public void setBrowser (Browser browser) {
+	@Override
+	public void setBrowser (Composite browser) {
 		super.setBrowser(browser);
 		this.chromium = browser;
 	}
@@ -564,11 +565,19 @@ final class Chromium extends WebBrowser {
 		CefBrowser cefBrowser = browser;
 		if (cefBrowser.isPopup()) {
 			cefBrowser = getTopParentPopup(browser);
-			//Popup not contains parent
-			if (cefBrowser == null) return null;
+			// Popup not contains parent
+			if (cefBrowser == null)
+				return null;
 		}
-		Browser composite = (Browser) ((CefBrowserSwt) cefBrowser).getComposite();
-		ExtraApi webBrowser = (ExtraApi) composite.getWebBrowser();
+		Composite composite = ((CefBrowserSwt) cefBrowser).getComposite();
+		ExtraApi webBrowser = null;
+		if (composite instanceof Browser) {
+			Browser chromiumBrowser = (Browser) composite;
+			webBrowser = (ExtraApi) chromiumBrowser.getWebBrowser();
+		} else {
+			org.eclipse.swt.browser.Browser swtBrowser = (org.eclipse.swt.browser.Browser) composite;
+			webBrowser = (ExtraApi) swtBrowser.getWebBrowser();
+		}
 		return webBrowser.getChromium();
 	}
 
