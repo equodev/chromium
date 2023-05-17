@@ -23,7 +23,10 @@ public class DynamicCefSchemeHandlerFactory implements CefSchemeHandlerFactory {
 			final SchemeHandler schemeHandler = schemeHandlerManager.getSchemeHandler(schemeName,
 					requestUri.getAuthority());
 			if (schemeHandler != null) {
-				return new DelegatingCefResourceHandler(schemeHandler);
+				CefResourceHandler handler = new DelegatingCefResourceHandler(schemeHandler);
+				if (handler.processRequest(request, null)) {
+					return handler;
+				}
 			}
 			return null;
 		} catch (Throwable t) {

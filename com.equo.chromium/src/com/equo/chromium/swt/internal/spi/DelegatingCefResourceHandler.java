@@ -14,6 +14,7 @@ import org.cef.network.CefResponse;
 
 public class DelegatingCefResourceHandler implements CefResourceHandler {
 	private InputStream responseData;
+	private Boolean processRequest;
 
 	private final SchemeHandler schemeHandler;
 
@@ -23,14 +24,19 @@ public class DelegatingCefResourceHandler implements CefResourceHandler {
 
 	@Override
 	public boolean processRequest(CefRequest request, CefCallback callback) {
-		Map<String, String> headers = new HashMap<String, String>();
-		request.getHeaderMap(headers);
-		boolean isRequestToProcess = schemeHandler.processRequest(request.getURL(), request.getMethod(), headers);
+		if (processRequest == null) {
+			Map<String, String> headers = new HashMap<String, String>();
+			request.getHeaderMap(headers);
+			boolean shouldProcessRequest = schemeHandler.processRequest(request.getURL(), request.getMethod(), headers);
+			processRequest = Boolean.valueOf(shouldProcessRequest);
+		}
 
-		if (isRequestToProcess) {
+		boolean shouldProcessRequest = processRequest.booleanValue();
+
+		if (shouldProcessRequest && callback != null) {
 			callback.Continue();
 		}
-		return isRequestToProcess;
+		return shouldProcessRequest;
 	}
 
 	@Override
