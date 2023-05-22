@@ -182,7 +182,8 @@ public class Engine {
 				CefSettings settings = new CefSettings();
 				try {
 					settings.remote_debugging_port = Integer
-							.parseInt(System.getProperty("chromium.remote_debugging_port", "0"));
+							.parseInt(System.getProperty("chromium.debug_port",
+								System.getProperty("chromium.remote_debugging_port", "0")));
 				} catch (NumberFormatException e) {
 				}
 				Path data = Paths.get(System.getProperty("chromium.home", System.getProperty("user.home")), ".equo");
