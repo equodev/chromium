@@ -3,21 +3,18 @@ package com.equo.chromium.internal;
 
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefBrowserWl;
-import org.cef.browser.CefMessageRouter;
 import org.cef.misc.Rectangle;
 
-import com.equo.chromium.swt.internal.AbstractEval;
+import com.equo.chromium.internal.Engine.BrowserType;
 
 public final class Windowless extends IndependentBrowser {
-
-	private CefMessageRouter router;
 
 	public Windowless(String url) {
 		this(url, null);
 	}
 
 	public Windowless(String url, Rectangle window) {
-		Engine.initCEF();
+		Engine.initCEF(BrowserType.STANDALONE);
 		createClient();
 		setBrowser(getClientHandler().createBrowser(url, true, false, createRequestContext()));
 		CefBrowser browser = getBrowser();
@@ -27,19 +24,4 @@ public final class Windowless extends IndependentBrowser {
 			((CefBrowserWl) browser).setWindow(window);
 		}
 	}
-
-	@Override
-	protected void createClient() {
-		super.createClient();
-		router = AbstractEval.createRouter();
-		getClientHandler().addMessageRouter(router);
-	}
-
-	@Override
-	public boolean close() {
-		getClientHandler().removeMessageRouter(router);
-		router.dispose();
-		return super.close();
-	}
-
 }

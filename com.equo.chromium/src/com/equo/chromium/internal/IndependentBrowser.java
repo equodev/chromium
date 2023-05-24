@@ -62,7 +62,11 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 	private Map<EventType, List<EventAction>> subscribeEvents = new HashMap<>();
 	private Map<Long, ActionData> subscribeIndex = new HashMap<>();
 	private long eventId = 0;
-	private static ExecutorService executor = Executors.newCachedThreadPool();
+	private static ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
+		Thread thread = new Thread(r, "chromium-MessageRoute");
+		thread.setDaemon(true);
+		return thread;
+	});
 	private int messageId = 0;
 	protected static EventAction eventActionOfAfterCreated = null;
 
@@ -437,6 +441,7 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 		getBrowser().close(true);
 		clientHandler.dispose();
 		unSubscribeAll();
+		executor.shutdown();
 		return true;
 	}
 
