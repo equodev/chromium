@@ -229,7 +229,6 @@ public class Engine {
 				switch (browserType) {
 				case STANDALONE:
 					windowToolkit = new CefAppStandalone();
-					settings.multi_threaded_message_loop = false;
 					settings.external_message_pump = false;
 					break;
 				case SWING:
