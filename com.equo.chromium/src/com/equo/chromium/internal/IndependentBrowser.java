@@ -27,6 +27,7 @@ import org.cef.browser.CefRequestContext;
 import org.cef.callback.CefCallback;
 import org.cef.callback.CefCompletionCallback;
 import org.cef.callback.CefDevToolsMessageObserverAdapter;
+import org.cef.callback.CefPdfPrintCallback;
 import org.cef.callback.CefQueryCallback;
 import org.cef.callback.CefStringVisitor;
 import org.cef.handler.CefDisplayHandlerAdapter;
@@ -36,16 +37,19 @@ import org.cef.handler.CefLoadHandler;
 import org.cef.handler.CefLoadHandler.ErrorCode;
 import org.cef.handler.CefMessageRouterHandler;
 import org.cef.handler.CefMessageRouterHandlerAdapter;
+import org.cef.handler.CefPrintHandlerAdapter;
 import org.cef.handler.CefRequestHandlerAdapter;
+import org.cef.misc.CefPdfPrintSettings;
 import org.cef.misc.Rectangle;
 import org.cef.network.CefRequest.TransitionType;
 
 import com.equo.chromium.ChromiumBrowser;
-import com.equo.chromium.utils.EventAction;
-import com.equo.chromium.utils.EventType;
 import com.equo.chromium.swt.internal.spi.CommRouterHandler;
 import com.equo.chromium.swt.internal.spi.CommunicationManager;
 import com.equo.chromium.swt.internal.spi.ScriptExtension;
+import com.equo.chromium.utils.EventAction;
+import com.equo.chromium.utils.EventType;
+import com.equo.chromium.utils.PdfPrintSettings;
 import com.github.cliftonlabs.json_simple.JsonException;
 import com.github.cliftonlabs.json_simple.JsonObject;
 import com.github.cliftonlabs.json_simple.Jsoner;
@@ -204,7 +208,7 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 				}
 			}
 		});
-
+		clientHandler.addPrintHandler(new  CefPrintHandlerAdapter() { });
 		CommunicationManager commManager = CommunicationManager.get();
 		if (commManager != null) {
 			CefMessageRouter commRouter = CommRouterHandler.createRouter();
@@ -582,5 +586,46 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 		isCreated().thenRun(() -> {
 			getBrowser().getDevTools().createImmediately();
 		});
+	}
+
+	public CompletableFuture<Boolean> printToPdf(String path, PdfPrintSettings settings) {
+		CompletableFuture<Boolean> result = new CompletableFuture<Boolean>();
+		CefPdfPrintSettings pdfPrintSettings = new CefPdfPrintSettings();
+		if (settings != null) {
+			pdfPrintSettings.header_footer_enabled = settings.header_footer_enabled;
+			pdfPrintSettings.header_footer_title = settings.header_footer_title;
+			pdfPrintSettings.header_footer_url = settings.header_footer_url;
+			pdfPrintSettings.landscape = settings.landscape;
+			pdfPrintSettings.backgrounds_enabled = settings.backgrounds_enabled;
+			if (settings.page_width >= 1000) {
+				pdfPrintSettings.page_width = settings.page_width;
+			}
+			if (settings.page_height >= 1000) {
+				pdfPrintSettings.page_height = settings.page_height;
+			}
+			pdfPrintSettings.selection_only = settings.selection_only;
+			pdfPrintSettings.scale_factor = settings.scale_factor;
+			pdfPrintSettings.margin_top = settings.margin_top;
+			pdfPrintSettings.margin_right = settings.margin_right;
+			pdfPrintSettings.margin_bottom = settings.margin_bottom;
+			pdfPrintSettings.margin_left = settings.margin_left;
+			if (settings.margin_type != null) {
+				pdfPrintSettings.margin_type = CefPdfPrintSettings.MarginType.valueOf(settings.margin_type.name());;
+			}
+		}
+
+		isCreated().thenRun(() -> {
+			getBrowser().printToPDF(path, pdfPrintSettings, new CefPdfPrintCallback() {
+				@Override
+				public void onPdfPrintFinished(String path, boolean ok) {
+					result.complete(ok);
+				}
+			});
+		});
+		return result;
+	}
+
+	public CompletableFuture<Boolean> printToPdf(String path) {
+		return printToPdf(path, null);
 	}
 }

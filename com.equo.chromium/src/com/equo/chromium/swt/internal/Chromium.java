@@ -68,6 +68,7 @@ import org.cef.handler.CefLifeSpanHandlerAdapter;
 import org.cef.handler.CefLoadHandler.ErrorCode;
 import org.cef.handler.CefLoadHandlerAdapter;
 import org.cef.handler.CefMessageRouterHandlerAdapter;
+import org.cef.handler.CefPrintHandlerAdapter;
 import org.cef.handler.CefRequestHandlerAdapter;
 import org.cef.handler.CefResourceHandler;
 import org.cef.handler.CefResourceHandlerAdapter;
@@ -529,6 +530,7 @@ final class Chromium extends WebBrowser {
 		setJsdialogHandler();
 		setContextMenuHandler();
 		setDownloadHandler();
+		setPrintHandler();
 
 		CommunicationManager commManager = CommunicationManager.get();
 		if (commManager != null) {
@@ -1617,7 +1619,11 @@ final class Chromium extends WebBrowser {
 			Chromium.onDownloadUpdated(browser.getIdentifier(), downloadItem, callback);
 		}
 	}
-	
+
+	private static void setPrintHandler() {
+		clientHandler.addPrintHandler(new  CefPrintHandlerAdapter() { });
+	}
+
 	private void onBeforeDownload(CefDownloadItem download_item, String suggested_name, CefBeforeDownloadCallback callback) {
 		String name = suggested_name;
 

@@ -23,6 +23,7 @@ import com.equo.chromium.internal.SwingBrowser;
 import com.equo.chromium.internal.Windowless;
 import com.equo.chromium.swt.Browser;
 import com.equo.chromium.swt.internal.WebBrowser;
+import com.equo.chromium.utils.PdfPrintSettings;
 
 public interface ChromiumBrowser {
 
@@ -322,6 +323,27 @@ public interface ChromiumBrowser {
 	 *         is created.
 	 */
 	public CompletableFuture<Boolean> isCreated();
-	
+
+	/**
+	 * Opens a new browser with the devtools view of the current browser instance.
+	 */
 	public void showDevTools();
+
+	/**
+	 * Print the current browser contents to a PDF.
+	 * 
+	 * @param path The path of the file to write to (will be overwritten if it already
+	 *        exists). Cannot be null.
+	 * @param com.equo.chromium.utils.settings The pdf print settings to use. If
+	 *        null then defaults will be used.
+	 */
+	public CompletableFuture<Boolean> printToPdf(String path, PdfPrintSettings settings);
+
+	/**
+	 * Print the current browser contents to a PDF.
+	 * 
+	 * @param path The path of the file to write to (will be overwritten if it already
+	 *        exists). Cannot be null.
+	 */
+	public CompletableFuture<Boolean> printToPdf(String path);
 }
