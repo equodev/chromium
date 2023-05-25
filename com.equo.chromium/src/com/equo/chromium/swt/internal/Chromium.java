@@ -2,6 +2,7 @@ package com.equo.chromium.swt.internal;
 
 import static com.equo.chromium.internal.Engine.debug;
 
+import java.io.IOException;
 import java.net.HttpCookie;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -9,6 +10,8 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -626,6 +629,8 @@ final class Chromium extends WebBrowser {
 		if (disposing == Dispose.FromBrowser) {
 			syncExec(() -> chromium.dispose());
 		}
+		
+		deleteTempFolder();
 
 		this.chromium = null;
 		debugPrint("closed");
@@ -2247,6 +2252,25 @@ final class Chromium extends WebBrowser {
 			resize.remove();
 		}
 	}
+	
+	private void deleteTempFolder() {
+		Path tempFilesToDelete = getBrowserTempFolder();
+		if (!Files.exists(tempFilesToDelete)) {
+			return;
+		}
+		try {
+			// sorted is necessary to delete files first
+			Files.walk(tempFilesToDelete).sorted((path1, path2) -> -path1.compareTo(path2)).forEach(t -> {
+				try {
+					Files.deleteIfExists(t);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			});
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	private static void setupCookies() {
 		WebBrowser.NativeClearSessions = () -> {
@@ -2706,6 +2730,12 @@ final class Chromium extends WebBrowser {
 			cefBrowser.reload();
 		}
 	}
+	
+	public Path getBrowserTempFolder() {
+		String tempPath = System.getProperty("java.io.tmpdir");
+		String id = "chromium" + this.cefBrowser.getIdentifier() + "-" + this.hashCode();
+		return Paths.get(tempPath, id);
+	}
 
 	@Override
 	public boolean setText(String html, boolean trusted) {
@@ -2716,12 +2746,32 @@ final class Chromium extends WebBrowser {
 				if (!setTextUrl.isEmpty()) {
 					SetTextResourceHandler.unregisterScheme(setTextUrl);
 				}
-				setTextUrl = setTextNewUrl;
-				SetTextResourceHandler.configureScheme(setTextUrl);
+				if (setTextNewUrl.startsWith("file:")) {
+					created.thenRun(() -> {
+						try {
+							Path browserTempFolder = getBrowserTempFolder();
+							if (!Files.exists(browserTempFolder)) {
+								Files.createDirectory(browserTempFolder);
+							}
+							Path file = Files.createTempFile(browserTempFolder, "tempfile", ".html");
+							Files.write(file, html.getBytes(StandardCharsets.UTF_8.toString()));
+							file.toFile().deleteOnExit();
+							setTextUrl = file.toAbsolutePath().toUri().toString();
+							setUrl(setTextUrl, null, null);
+						} catch (IOException e) {
+							e.printStackTrace();
+							setUrl(DATA_TEXT_URL + texturl, null, null);
+						}
+					});
+				} else {
+					setTextUrl = setTextNewUrl;
+					SetTextResourceHandler.configureScheme(setTextUrl);
+					created.thenRun(() -> {
+						setUrl(setTextUrl + "/__text__", null,
+								new String[] { "dataText:" + texturl, "chromium:setText" });
+					});
+				}
 			}
-			created.thenRun(() -> {
-				setUrl(setTextUrl + "/__text__", null, new String[] { "dataText:" + texturl, "chromium:setText" });
-			});
 			return true;
 		}
 		return setUrl(DATA_TEXT_URL + texturl, null, null);
