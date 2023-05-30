@@ -1593,7 +1593,13 @@ final class Chromium extends WebBrowser {
 		syncExec(() -> {
 			if (chromium.getMenu() != null) {
 				model.clear();
-				chromium.getMenu().setVisible(true);
+				if ("gtk".equals(SWT.getPlatform())) {
+					Display.getDefault().timerExec(100, () -> {
+						chromium.getMenu().setVisible(true);
+					});
+				} else {
+					chromium.getMenu().setVisible(true);
+				}
 			}
 		});
 	}
