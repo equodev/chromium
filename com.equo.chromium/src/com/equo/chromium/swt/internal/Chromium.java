@@ -2757,35 +2757,34 @@ final class Chromium extends WebBrowser {
 		String texturl = Base64.getEncoder().encodeToString(html.getBytes());
 		String setTextNewUrl = System.getProperty("chromium.setTextAsUrl", "").replaceAll("/$", "");
 		if (!setTextNewUrl.isEmpty()) {
-			if (!setTextUrl.equals(setTextNewUrl)) {
-				if (!setTextUrl.isEmpty()) {
-					SetTextResourceHandler.unregisterScheme(setTextUrl);
-				}
-				if (setTextNewUrl.startsWith("file:")) {
-					created.thenRun(() -> {
-						try {
-							Path browserTempFolder = getBrowserTempFolder();
-							if (!Files.exists(browserTempFolder)) {
-								Files.createDirectory(browserTempFolder);
-							}
-							Path file = Files.createTempFile(browserTempFolder, "tempfile", ".html");
-							Files.write(file, html.getBytes(StandardCharsets.UTF_8.toString()));
-							file.toFile().deleteOnExit();
-							setTextUrl = file.toAbsolutePath().toUri().toString();
-							setUrl(setTextUrl, null, null);
-						} catch (IOException e) {
-							e.printStackTrace();
-							setUrl(DATA_TEXT_URL + texturl, null, null);
+			if (!setTextUrl.isEmpty() && !setTextUrl.equals(setTextNewUrl)) {
+				SetTextResourceHandler.unregisterScheme(setTextUrl);
+			}
+			if (setTextNewUrl.startsWith("file:")) {
+				created.thenRun(() -> {
+					try {
+						Path browserTempFolder = getBrowserTempFolder();
+						if (!Files.exists(browserTempFolder)) {
+							Files.createDirectory(browserTempFolder);
 						}
-					});
-				} else {
-					setTextUrl = setTextNewUrl;
-					SetTextResourceHandler.configureScheme(setTextUrl);
-					created.thenRun(() -> {
-						setUrl(setTextUrl + "/__text__", null,
-								new String[] { "dataText:" + texturl, "chromium:setText" });
-					});
-				}
+						Path file = Files.createTempFile(browserTempFolder, "tempfile", ".html");
+						Files.write(file, html.getBytes(StandardCharsets.UTF_8.toString()));
+						file.toFile().deleteOnExit();
+						setTextUrl = file.toAbsolutePath().toUri().toString();
+						setUrl(setTextUrl, null, null);
+					} catch (IOException e) {
+						e.printStackTrace();
+						setUrl(DATA_TEXT_URL + texturl, null, null);
+					}
+				});
+			} else {
+				if (!setTextUrl.equals(setTextNewUrl)) 
+					SetTextResourceHandler.configureScheme(setTextNewUrl);
+				setTextUrl = setTextNewUrl;
+				created.thenRun(() -> {
+					setUrl(setTextUrl + "/__text__", null,
+							new String[] { "dataText:" + texturl, "chromium:setText" });
+				});
 			}
 			return true;
 		}
