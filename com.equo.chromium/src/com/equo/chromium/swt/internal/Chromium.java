@@ -2748,7 +2748,7 @@ final class Chromium extends WebBrowser {
 	
 	public Path getBrowserTempFolder() {
 		String tempPath = System.getProperty("java.io.tmpdir");
-		String id = "chromium" + this.cefBrowser.getIdentifier() + "-" + this.hashCode();
+		String id = "chromium" + "-" + this.hashCode();
 		return Paths.get(tempPath, id);
 	}
 
@@ -2761,30 +2761,26 @@ final class Chromium extends WebBrowser {
 				SetTextResourceHandler.unregisterScheme(setTextUrl);
 			}
 			if (setTextNewUrl.startsWith("file:")) {
-				created.thenRun(() -> {
-					try {
-						Path browserTempFolder = getBrowserTempFolder();
-						if (!Files.exists(browserTempFolder)) {
-							Files.createDirectory(browserTempFolder);
-						}
-						Path file = Files.createTempFile(browserTempFolder, "tempfile", ".html");
-						Files.write(file, html.getBytes(StandardCharsets.UTF_8.toString()));
-						file.toFile().deleteOnExit();
-						setTextUrl = file.toAbsolutePath().toUri().toString();
-						setUrl(setTextUrl, null, null);
-					} catch (IOException e) {
-						e.printStackTrace();
-						setUrl(DATA_TEXT_URL + texturl, null, null);
+				try {
+					Path browserTempFolder = getBrowserTempFolder();
+					if (!Files.exists(browserTempFolder)) {
+						Files.createDirectory(browserTempFolder);
 					}
-				});
+					Path file = Files.createTempFile(browserTempFolder, "tempfile", ".html");
+					Files.write(file, html.getBytes(StandardCharsets.UTF_8.toString()));
+					file.toFile().deleteOnExit();
+					setTextUrl = file.toAbsolutePath().toUri().toString();
+					setUrl(setTextUrl, null, null);
+				} catch (IOException e) {
+					e.printStackTrace();
+					setUrl(DATA_TEXT_URL + texturl, null, null);
+				}
 			} else {
 				if (!setTextUrl.equals(setTextNewUrl)) 
 					SetTextResourceHandler.configureScheme(setTextNewUrl);
 				setTextUrl = setTextNewUrl;
-				created.thenRun(() -> {
-					setUrl(setTextUrl + "/__text__", null,
-							new String[] { "dataText:" + texturl, "chromium:setText" });
-				});
+				setUrl(setTextUrl + "/__text__", null,
+						new String[] { "dataText:" + texturl, "chromium:setText" });
 			}
 			return true;
 		}
