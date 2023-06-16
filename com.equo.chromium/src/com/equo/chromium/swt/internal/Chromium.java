@@ -1605,18 +1605,19 @@ final class Chromium extends WebBrowser {
 	}
 	
 	private void onBeforeContextMenu(CefMenuModel model) {
-		syncExec(() -> {
-			if (chromium.getMenu() != null) {
-				model.clear();
+		boolean hasMenu = syncExec(() -> chromium.getMenu() != null);
+		if (hasMenu) {
+			model.clear();
+			asyncExec(() -> {
 				if ("gtk".equals(SWT.getPlatform())) {
-					Display.getDefault().timerExec(100, () -> {
+					Display.getDefault().timerExec(200, () -> {
 						chromium.getMenu().setVisible(true);
 					});
 				} else {
 					chromium.getMenu().setVisible(true);
 				}
-			}
-		});
+			});
+		}
 	}
 
 	private static void setDownloadHandler() {
