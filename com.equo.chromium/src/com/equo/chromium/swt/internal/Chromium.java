@@ -2,6 +2,9 @@ package com.equo.chromium.swt.internal;
 
 import static com.equo.chromium.internal.Engine.debug;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.net.HttpCookie;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -153,6 +156,7 @@ import com.github.cliftonlabs.json_simple.Jsoner;
 final class Chromium extends WebBrowser {
 	private static final String DATA_TEXT_URL = "data:text/html;base64,";
 	private static final int MAX_PROGRESS = 100;
+	private static String setTextUrl = "";
 	
 	static {
 		setupCookies();
@@ -633,6 +637,8 @@ final class Chromium extends WebBrowser {
 		if (disposing == Dispose.FromBrowser) {
 			syncExec(() -> chromium.dispose());
 		}
+
+		deleteTempFolder();
 
 		this.chromium = null;
 		debugPrint("closed");
@@ -2263,6 +2269,25 @@ final class Chromium extends WebBrowser {
 		}
 	}
 
+	private void deleteTempFolder() {
+		Path tempFilesToDelete = getBrowserTempFolder();
+		if (!Files.exists(tempFilesToDelete)) {
+			return;
+		}
+		try {
+			// sorted is necessary to delete files first
+			Files.walk(tempFilesToDelete).sorted((path1, path2) -> -path1.compareTo(path2)).forEach(t -> {
+				try {
+					Files.deleteIfExists(t);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			});
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	private static void setupCookies() {
 		WebBrowser.NativeClearSessions = () -> {
 			Engine.ready.thenRun(() -> {
@@ -2710,10 +2735,36 @@ final class Chromium extends WebBrowser {
 		}
 	}
 
+	public Path getBrowserTempFolder() {
+		String tempPath = System.getProperty("java.io.tmpdir");
+		String id = "chromium" + "-" + this.hashCode();
+		return Paths.get(tempPath, id);
+	}
+
 	@Override
 	public boolean setText(String html, boolean trusted) {
-		String texturl = DATA_TEXT_URL + Base64.getEncoder().encodeToString(html.getBytes());
-		return setUrl(texturl, null, null);
+		String texturl = Base64.getEncoder().encodeToString(html.getBytes());
+		String setTextNewUrl = System.getProperty("chromium.setTextAsUrl", "").replaceAll("/$", "");
+		if (!setTextNewUrl.isEmpty()) {
+			if (setTextNewUrl.startsWith("file:")) {
+				try {
+					Path browserTempFolder = getBrowserTempFolder();
+					if (!Files.exists(browserTempFolder)) {
+						Files.createDirectory(browserTempFolder);
+					}
+					Path file = Files.createTempFile(browserTempFolder, "tempfile", ".html");
+					Files.write(file, html.getBytes(StandardCharsets.UTF_8.toString()));
+					file.toFile().deleteOnExit();
+					setTextUrl = file.toAbsolutePath().toUri().toString();
+					setUrl(setTextUrl, null, null);
+				} catch (IOException e) {
+					e.printStackTrace();
+					setUrl(DATA_TEXT_URL + texturl, null, null);
+				}
+			}
+			return true;
+		}
+		return setUrl(DATA_TEXT_URL + texturl, null, null);
 	}
 	
 	private static String getPlainUrl(String url) {
@@ -2946,7 +2997,7 @@ final class Chromium extends WebBrowser {
 						else {
 							Transfer transfer = TextTransfer.getInstance();
 							cb.setContents(new Object[] { request }, new Transfer[] { transfer });
-						}	
+						}
 						callback.success(request);
 					} catch (Exception e) {
 						e.printStackTrace();
