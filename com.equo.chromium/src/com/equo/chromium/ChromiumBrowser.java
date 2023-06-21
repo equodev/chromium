@@ -149,7 +149,10 @@ public interface ChromiumBrowser {
 	 * Start Cef event loop when created Standalone and Windowless browsers.
 	 */
 	public static void startBrowsers() {
-		Engine.startCefLoop();
+		String multiThread = System.getProperty("chromium.multi_threaded_message_loop", "");
+		if (!Boolean.valueOf(multiThread)) {
+			Engine.startCefLoop();
+		}
 	}
 
 	/**
