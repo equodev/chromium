@@ -629,13 +629,15 @@ final class Chromium extends WebBrowser {
 	};
 
 	private void onBeforeClose() {
-		syncExec(() -> fireCloseListener());
 		for (BrowserFunction function : new ArrayList<>(functions.values())) {
 			function.dispose(true);
 		}
 		functions.clear();
 		if (disposing == Dispose.FromBrowser) {
-			syncExec(() -> chromium.dispose());
+			syncExec(() -> {
+				fireCloseListener();
+				chromium.dispose();
+			});
 		}
 
 		deleteTempFolder();
