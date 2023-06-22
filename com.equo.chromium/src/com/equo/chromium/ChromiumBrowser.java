@@ -234,7 +234,7 @@ public interface ChromiumBrowser {
 	/**
 	 * Capture screenshot from browser
 	 * 
-	 * @return CompletableFuture<byte[]> which will contain Base64 encoded image
+	 * @return CompletableFuture<byte[]> which will contain Base64 encoded png image
 	 *         data.
 	 */
 	public CompletableFuture<byte[]> captureScreenshot();
@@ -247,7 +247,7 @@ public interface ChromiumBrowser {
 	 * @param width
 	 * @param height
 	 * @param scale
-	 * @return CompletableFuture<byte[]> which will contain Base64 encoded image
+	 * @return CompletableFuture<byte[]> which will contain Base64 encoded png image
 	 *         data.
 	 */
 	public CompletableFuture<byte[]> captureScreenshot(int x, int y, int width, int height, int scale);
