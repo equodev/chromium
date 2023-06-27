@@ -154,7 +154,8 @@ import com.github.cliftonlabs.json_simple.Jsoner;
 
 @SuppressWarnings("restriction")
 final class Chromium extends WebBrowser {
-	private static final String DATA_TEXT_URL = "data:text/html;base64,";
+	private static final String DATA_TEXT_URL = "data:text/html";
+	private static final String DATA_TEXT_BASE64_URL = DATA_TEXT_URL + ";base64,";
 	private static final int MAX_PROGRESS = 100;
 	private static String setTextUrl = "";
 	
@@ -2747,7 +2748,7 @@ final class Chromium extends WebBrowser {
 	@Override
 	public boolean setText(String html, boolean trusted) {
 		String texturl = Base64.getEncoder().encodeToString(html.getBytes());
-		String setTextNewUrl = System.getProperty("chromium.setTextAsUrl", "").replaceAll("/$", "");
+		String setTextNewUrl = System.getProperty("chromium.setTextAsUrl", "");
 		if (!setTextNewUrl.isEmpty()) {
 			if (setTextNewUrl.startsWith("file:")) {
 				try {
@@ -2762,17 +2763,22 @@ final class Chromium extends WebBrowser {
 					setUrl(setTextUrl, null, null);
 				} catch (IOException e) {
 					e.printStackTrace();
-					setUrl(DATA_TEXT_URL + texturl, null, null);
+					setUrl(DATA_TEXT_BASE64_URL + texturl, null, null);
 				}
 			}
 			return true;
 		}
-		return setUrl(DATA_TEXT_URL + texturl, null, null);
+		return setUrl(DATA_TEXT_BASE64_URL + texturl, null, null);
 	}
-	
-	private static String getPlainUrl(String url) {
-		if (url != null && url.startsWith(DATA_TEXT_URL)) {
-			return url.substring(0, DATA_TEXT_URL.length()-8);
+
+	private String getPlainUrl(String url) {
+		if (url != null && url.startsWith(DATA_TEXT_BASE64_URL)) {
+			return DATA_TEXT_URL;
+		}
+		String setTextNewUrl = System.getProperty("chromium.setTextAsUrl", "");
+		if (!setTextNewUrl.isEmpty() && url != null && url.startsWith("file:")
+				&& url.contains(getBrowserTempFolder().toString())) {
+			return DATA_TEXT_URL;
 		}
 		return url;
 	}
