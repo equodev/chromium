@@ -53,6 +53,7 @@ import org.cef.callback.CefDownloadItemCallback;
 import org.cef.callback.CefFileDialogCallback;
 import org.cef.callback.CefJSDialogCallback;
 import org.cef.callback.CefMenuModel;
+import org.cef.callback.CefMenuModel.MenuId;
 import org.cef.callback.CefQueryCallback;
 import org.cef.callback.CefStringVisitor;
 import org.cef.handler.CefContextMenuHandlerAdapter;
@@ -131,6 +132,8 @@ import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Monitor;
 import org.eclipse.swt.widgets.ProgressBar;
@@ -158,9 +161,37 @@ final class Chromium extends WebBrowser {
 	private static final String DATA_TEXT_BASE64_URL = DATA_TEXT_URL + ";base64,";
 	private static final int MAX_PROGRESS = 100;
 	private static String setTextUrl = "";
+	private static int GTK_VERSION = 0;
 
 	static {
 		setupCookies();
+		try {
+			if ("gtk".equals(SWT.getPlatform())) {				
+				GTK_VERSION = getGtkVersion();
+			}
+		} catch (ReflectiveOperationException e) {
+		}
+	}
+	
+	static int getGtkVersion() throws ReflectiveOperationException {
+		String swtGtk3 = System.getenv().get("SWT_GTK3");
+		if (swtGtk3 != null && "0".equals(swtGtk3)) {
+			return 2;
+		}
+
+		Class<?> gtkClass = null;
+		String major = null;
+		try {
+			gtkClass = Class.forName("org.eclipse.swt.internal.gtk.GTK");
+			major = "gtk_get_major_version";
+		} catch (ClassNotFoundException e) {
+			try {
+				gtkClass = Class.forName("org.eclipse.swt.internal.gtk.OS");
+				major = "gtk_major_version";
+			} catch (ClassNotFoundException e1) {
+			}
+		}
+		return (int) gtkClass.getDeclaredMethod(major).invoke(null);
 	}
 	
 	private static CefClientSwt clientHandler;
@@ -1596,30 +1627,130 @@ final class Chromium extends WebBrowser {
 		contextMenuHandler = new ContextMenuHandler();
 		clientHandler.addContextMenuHandler(contextMenuHandler);
 	}
-	
+
 	static class ContextMenuHandler extends CefContextMenuHandlerAdapter {
-		public void onBeforeContextMenu(CefBrowser browser, CefFrame frame, CefContextMenuParams params, CefMenuModel model) {
+		@Override
+		public void onBeforeContextMenu(CefBrowser browser, CefFrame frame, CefContextMenuParams params,
+				CefMenuModel model) {
 			debug("onBeforeContextMenu", browser);
 			if (!browser.isPopup()) {
 				getChromium(browser).onBeforeContextMenu(model);
 			}
 		};
+
+		@Override
+		public boolean onContextMenuCommand(CefBrowser browser, CefFrame frame, CefContextMenuParams params,
+				int commandId, int eventFlags) {
+			debug("onContextMenuCommand", browser);
+			if (!browser.isPopup()) {
+				return getChromium(browser).onContextMenuCommand(params, commandId);
+			}
+			return false;
+		}
 	}
-	
+
 	private void onBeforeContextMenu(CefMenuModel model) {
 		boolean hasMenu = syncExec(() -> chromium.getMenu() != null);
+
 		if (hasMenu) {
 			model.clear();
-			asyncExec(() -> {
-				if ("gtk".equals(SWT.getPlatform())) {
-					Display.getDefault().timerExec(200, () -> {
+			boolean isGTK = "gtk".equals(SWT.getPlatform());
+			if (isGTK && GTK_VERSION == 2) {
+				int commandIdCounter = MenuId.MENU_ID_USER_FIRST;
+				syncExec(() -> {
+					copyMenu(chromium.getMenu(), model, commandIdCounter);
+				});
+			} else {
+				asyncExec(() -> {
+					if (isGTK) {
+						Display.getDefault().timerExec(200, () -> {
+							chromium.getMenu().setVisible(true);
+						});
+					} else {
 						chromium.getMenu().setVisible(true);
-					});
-				} else {
-					chromium.getMenu().setVisible(true);
+					}
+				});
+			}
+		}
+	}
+
+	public boolean onContextMenuCommand(CefContextMenuParams params, int commandId) {
+		if (GTK_VERSION == 2) {
+			AtomicBoolean ab = new AtomicBoolean();
+			syncExec(() -> {
+				Menu menu = chromium.getMenu();
+				if (menu != null) {
+					ab.set(handleMenuEvent(menu, commandId, params));
 				}
 			});
+			return ab.get();
+		} else {
+			return false;
 		}
+	}
+
+	private boolean handleMenuEvent(Menu menu, int commandId, CefContextMenuParams params) {
+		for (MenuItem menuItem : menu.getItems()) {
+			boolean wasHandled = false;
+			if (menuItem.getMenu() != null) {
+				wasHandled = handleMenuEvent(menuItem.getMenu(), commandId, params);
+			}
+			if (!wasHandled) {
+				int myCommandId = (int) menuItem.getData("commandId");
+				if (commandId == myCommandId) {
+					Listener[] listeners = menuItem.getListeners(SWT.Selection);
+
+					Event event = new Event();
+					event.display = menuItem.getDisplay();
+					event.data = menuItem.getData();
+					event.item = menuItem;
+					event.widget = menuItem;
+					event.type = SWT.Selection;
+					event.y = params.getYCoord();
+					event.x = params.getXCoord();
+
+					for (Listener listener : listeners) {
+						listener.handleEvent(event);
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	public static CefMenuModel copyMenu(Menu originalMenu, CefMenuModel copiedMenu, int commandIdCounter) {
+		for (MenuItem menuItem : originalMenu.getItems()) {
+			commandIdCounter++;
+			menuItem.setData("commandId", commandIdCounter);
+			int style = menuItem.getStyle();
+			String label = menuItem.getText();
+			boolean enabled = menuItem.isEnabled();
+			boolean checked = menuItem.getSelection();
+
+			if ((style & SWT.CHECK) != 0) {
+				copiedMenu.addCheckItem(commandIdCounter, label);
+				copiedMenu.setEnabledAt(commandIdCounter, enabled);
+				copiedMenu.setChecked(commandIdCounter, checked);
+			} else if ((style & SWT.PUSH) != 0) {
+				copiedMenu.addItem(commandIdCounter, label);
+			} else if ((style & SWT.RADIO) != 0) {
+				copiedMenu.addRadioItem(commandIdCounter, label, 0);
+				copiedMenu.setEnabledAt(commandIdCounter, enabled);
+				copiedMenu.setChecked(commandIdCounter, checked);
+			} else if ((style & SWT.CASCADE) != 0) {
+				Menu subMenu = menuItem.getMenu();
+				if (subMenu != null) {
+					CefMenuModel subMenuModel = copiedMenu.addSubMenu(commandIdCounter, label);
+					copyMenu(subMenu, subMenuModel, commandIdCounter);
+				}
+			} else if ((style & SWT.SEPARATOR) != 0) {
+				copiedMenu.addSeparator();
+			}
+			copiedMenu.setEnabledAt(commandIdCounter, enabled);
+			copiedMenu.setVisible(commandIdCounter, true);
+		}
+		return copiedMenu;
 	}
 
 	private static void setDownloadHandler() {
