@@ -521,7 +521,7 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 							return;
 						}
 						JsonObject json = (JsonObject) Jsoner.deserialize(result);
-						messageResult.complete(json.get("result"));
+						messageResult.complete(wanted == null || wanted.isEmpty() ? json : json.get(wanted));
 					} catch (JsonException e) {
 						messageResult.completeExceptionally(e.getCause());
 					} finally {
