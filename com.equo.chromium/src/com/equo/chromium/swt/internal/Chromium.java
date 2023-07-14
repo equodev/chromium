@@ -654,7 +654,10 @@ final class Chromium extends WebBrowser {
 		@Override
 		public boolean onBeforePopup(CefBrowser browser, CefFrame frame, String target_url, String target_frame_name, String popupFeatures) {
 			debug("onBeforePopup", browser);
-			if (!browser.isPopup()) {
+			if ("_external".equals(target_frame_name)) {
+				return Program.launch(target_url);
+			}
+			else if (!browser.isPopup()) {
 				return getChromium(browser).onBeforePopup(target_url, target_frame_name, popupFeatures);
 			}
 			return false;
