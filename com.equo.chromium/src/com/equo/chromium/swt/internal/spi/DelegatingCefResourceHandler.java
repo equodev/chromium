@@ -2,6 +2,8 @@ package com.equo.chromium.swt.internal.spi;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,13 +49,45 @@ public class DelegatingCefResourceHandler implements CefResourceHandler {
 		if (responseData == null) {
 			response.setStatus(404);
 		} else {
-			String contentType = responseHeaders.remove("Content-Type");
+			String contentType = responseHeaders.get("Content-Type");
 			if (contentType != null) {
-				response.setMimeType(contentType);
+				String mimeType = contentType;
+				String charset = null;
+				int index = contentType.indexOf(";");
+				if (index != -1) {
+					mimeType = contentType.substring(0, index);
+					index = contentType.indexOf("charset=", index+1);
+					if (index != -1) {
+						charset = findCharset(contentType.substring(index));
+					}
+				}
+				response.setMimeType(mimeType);
+				if (charset != null) {
+					response.setCharset(charset);
+				} else {
+					response.setCharset(Charset.defaultCharset().toString());
+				}
 			}
+			
 			response.setHeaderMap(responseHeaders);
 			response.setStatus(200);
 		}
+	}
+
+	private String findCharset(String contentType) {
+		StringBuilder charset = new StringBuilder();
+		for (int i = contentType.indexOf("=") + 1; i < contentType.length(); i++) {
+			if (contentType.charAt(i) != '\"') {
+				if (contentType.charAt(i) == ';') {
+					return charset.toString();
+				}
+				charset.append(contentType.charAt(i));
+			}
+		}
+		if (charset.length() != 0) {
+			return charset.toString();
+		}
+		return null;
 	}
 
 	@Override
