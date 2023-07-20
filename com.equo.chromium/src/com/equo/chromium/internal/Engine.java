@@ -1,16 +1,19 @@
 package com.equo.chromium.internal;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.CodeSource;
 import java.util.ArrayList;
@@ -84,12 +87,32 @@ public class Engine {
 			throw new RuntimeException("Missing binaries for Equo Chromium Browser.");
 		boolean checkGtkInit = checkGtkInit();
 		String[] args = getChromiumArgs(libsPath, Boolean.getBoolean("chromium.init_threads"), checkGtkInit);
+		setupCrashReporter();
 		if (!CefApp.startup(args)) {
 			if (checkGtkInit) {
 				throw new RuntimeException("To run Chromium on Wayland, set env var GDK_BACKEND=x11 or call ChromiumBrowser.earlyInit() before creating a window");
 			}
 			throw new RuntimeException("Failed to load binaries for Equo Chromium Browser.");
 		}
+	}
+
+	private static void setupCrashReporter() {
+		File crashReportConfig = Paths.get(libsPath.toString(), "crash_reporter.cfg").toFile();
+		File crashReportDisabledConfig = Paths.get(libsPath.toString(), "crash_reporter_disabled.cfg").toFile();
+		if (isCrashReportedEnabled()) {
+			if (!crashReportConfig.exists() && crashReportDisabledConfig.exists()) {
+				crashReportDisabledConfig.renameTo(crashReportConfig);
+			}
+		} else {
+			if (crashReportConfig.exists()) {
+				crashReportConfig.renameTo(crashReportDisabledConfig);
+			}
+		}
+	}
+
+	private static boolean isCrashReportedEnabled() {
+		return System.getProperty("chromium.enable_crash_reporter") == null
+				|| Boolean.getBoolean("chromium.enable_crash_reporter");
 	}
 
 	private static boolean checkGtkInit() {
@@ -320,6 +343,9 @@ public class Engine {
 		if (vmArg != null) {
 			String[] lines = vmArg.replace("\\;", "\\#$").split(";");
 			Arrays.stream(lines).map(line -> line.replace("\\#$", ";")).forEach(l -> args.add(l));
+		}
+		if (isCrashReportedEnabled()) {
+			args.add("--enable-crash-reporter");
 		}
 		if (OS.isLinux()) {
 			args.add("--disable-gpu-compositing");
