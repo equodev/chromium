@@ -46,10 +46,10 @@ public class DelegatingCefResourceHandler implements CefResourceHandler {
 		Map<String, String> responseHeaders = new HashMap<String, String>();
 		response.getHeaderMap(responseHeaders);
 		responseData = schemeHandler.getResponseData(responseHeaders);
-		if (responseData == null) {
-			response.setStatus(404);
-		} else {
-			String contentType = responseHeaders.get("Content-Type");
+		String userStatusCodeStringify = responseHeaders.remove("X-Status-Code");
+		String contentType = responseHeaders.get("Content-Type");
+		int statusCode = parseStatusCode(responseData, userStatusCodeStringify);
+		if (statusCode != 404) {
 			if (contentType != null) {
 				String mimeType = contentType;
 				String charset = null;
@@ -70,8 +70,32 @@ public class DelegatingCefResourceHandler implements CefResourceHandler {
 			}
 			
 			response.setHeaderMap(responseHeaders);
-			response.setStatus(200);
 		}
+		response.setStatus(statusCode);
+	}
+
+	private Integer parseStatusCode(InputStream responseData, String userStatusCodeStringify) {
+		if (userStatusCodeStringify != null) {
+			try {
+				Integer userStatusCode = Integer.valueOf(userStatusCodeStringify);
+				if (userStatusCode != null) {
+					if (userStatusCode > 99 && userStatusCode < 600) {
+						return userStatusCode;
+					}
+				}
+			} catch (Exception e) {
+				return 500;
+			}
+		}
+		// It is mandatory check first for responseData because both can be null at the
+		// same time. In that cases, its necessary check for responseData first
+		if (responseData == null) {
+			return 404;
+		}
+		if (userStatusCodeStringify == null) {
+			return 200;
+		}
+		return 404;
 	}
 
 	private String findCharset(String contentType) {

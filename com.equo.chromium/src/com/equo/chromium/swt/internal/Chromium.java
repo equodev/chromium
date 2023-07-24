@@ -158,6 +158,7 @@ import com.github.cliftonlabs.json_simple.Jsoner;
 @SuppressWarnings("restriction")
 final class Chromium extends WebBrowser {
 	private static final String DATA_TEXT_URL = "data:text/html";
+	private static final String ABOUT_BLANK = "about:blank";
 	private static final String DATA_TEXT_BASE64_URL = DATA_TEXT_URL + ";base64,";
 	private static final int MAX_PROGRESS = 100;
 	private static String setTextUrl = "";
@@ -525,7 +526,7 @@ final class Chromium extends WebBrowser {
 		}
 
 		Net.config();
-		cefBrowser = (CefBrowserSwt) clientHandler.createBrowser(this.url == null ? "about:blank" : this.url, false,
+		cefBrowser = (CefBrowserSwt) clientHandler.createBrowser(this.url == null ? ABOUT_BLANK : this.url, false,
 				false, extraApi().createRequestContext());
 		cefBrowser.createImmediately(chromium);
 	}
@@ -721,7 +722,7 @@ final class Chromium extends WebBrowser {
 //				debugPrint("load url after created");
 //				doSetUrlPost(browser, url, postData, headers);
 //			}
-//			else if (!"about:blank".equals(this.url)) {
+//			else if (!ABOUT_BLANK.equals(this.url)) {
 //				enableProgress.complete(true);
 //			}
 		syncExec(() -> cefBrowser.resize());
@@ -991,7 +992,7 @@ final class Chromium extends WebBrowser {
 	private void onAddressChange(CefFrame frame, String url) {
 		if (isDisposed()) return;
 
-		if (allowTurboLink() && !"about:blank".equals(url)) {
+		if (allowTurboLink() && !ABOUT_BLANK.equals(url)) {
 			// Filter changed event when there was no changing event.
 			if (!changedCache.containsKey(url)) {
 				return;
@@ -2837,13 +2838,15 @@ final class Chromium extends WebBrowser {
 	public String getUrl() {
 		if (cefBrowser == null) {
 			if (this.url == null) {
-				return "about:blank";
+				return ABOUT_BLANK;
 			}
 			return getPlainUrl(this.url);
 		}
 		String cefurl = cefBrowser.getURL();
 		if (cefurl == null)
 			cefurl = getPlainUrl(this.url);
+		if (cefurl != null && cefurl.startsWith("file:") && cefurl.contains(getBrowserTempFolder().toString()))
+			return ABOUT_BLANK;
 		return cefurl;
 	}
 
