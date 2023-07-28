@@ -204,10 +204,11 @@ final class Chromium extends WebBrowser {
 	private ControlAdapter fullscreenListener = null;
 	private ResizeListener resize;
 	private boolean inEvalBlocking = false;
+	FindDialog findDialog = null;
 
 	Chromium() {
 	}
-	
+
 	public void addOpenWindowListener (OpenWindowListener listener) {
 		OpenWindowListener[] newOpenWindowListeners = new OpenWindowListener[openWindowListeners.length + 1];
 		System.arraycopy(openWindowListeners, 0, newOpenWindowListeners, 0, openWindowListeners.length);
@@ -436,9 +437,11 @@ final class Chromium extends WebBrowser {
 			chromium.addKeyListener(new KeyAdapter() {
 				@Override
 				public void keyPressed(KeyEvent e) {
-					if (((e.stateMask & SWT.CTRL) == SWT.CTRL) && (e.keyCode == 'f') && !FindDialog.isOpen()) {
-						FindDialog findDialog = new FindDialog(extraApi(), chromium.getShell());
-						findDialog.open();
+					if (((e.stateMask & SWT.CTRL) == SWT.CTRL) && (e.keyCode == 'f')) {
+						if (findDialog == null || (findDialog != null && !findDialog.isOpen())) {
+							findDialog = new FindDialog(extraApi, chromium.getShell());
+							findDialog.open();
+						}
 					}
 				}
 			});
