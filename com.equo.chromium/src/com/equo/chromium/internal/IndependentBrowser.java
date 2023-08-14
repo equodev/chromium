@@ -443,7 +443,10 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 		getBrowser().setCloseAllowed();
 		getBrowser().setReference(null);
 		getBrowser().close(true);
-		clientHandler.dispose();
+		CefClient client = getBrowser().getClient();
+		if ( client != null) {
+			client.dispose();
+		}
 		unSubscribeAll();
 		executor.shutdown();
 		return true;
