@@ -4,11 +4,15 @@ import java.util.concurrent.ExecutionException;
 
 import org.cef.CefApp;
 import org.cef.CefAppStandalone;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefBrowserWl;
 import org.cef.browser.CefMessageRouter;
 import org.cef.misc.Rectangle;
 
+import com.equo.chromium.ChromiumBrowser;
 import com.equo.chromium.internal.Engine.BrowserType;
 import com.equo.chromium.swt.internal.AbstractEval;
 import com.equo.chromium.swt.internal.EvalSimpleImpl;
@@ -22,7 +26,7 @@ public final class Windowless extends IndependentBrowser {
 	}
 
 	public Windowless(String url, Rectangle window) {
-		Engine.initCEF(BrowserType.STANDALONE);
+		Engine.initCEF(getBrowserType());
 		createClient();
 		setBrowser(getClientHandler().createBrowser(url, true, false, createRequestContext()));
 		CefBrowser browser = getBrowser();
@@ -67,4 +71,27 @@ public final class Windowless extends IndependentBrowser {
 		return super.close();
 	}
 
+
+	private static BrowserType getBrowserType() {
+		if (Boolean.getBoolean("chromium.force_windowless_swt")) {
+			return BrowserType.SWT;
+		}
+		if (Engine.browserTypeInitialized != null) {
+			return null;
+		}
+		try {
+			Class<?> clazz = Class.forName("org.eclipse.swt.widgets.Display", false,
+					ChromiumBrowser.class.getClassLoader());
+			Method findDisplay = clazz.getDeclaredMethod("findDisplay", Thread.class);
+			for (Thread thread : Thread.getAllStackTraces().keySet()) {
+				if (findDisplay.invoke(null, thread) != null) {
+					return BrowserType.SWT;
+				}
+			}
+		} catch (ClassNotFoundException | SecurityException | IllegalArgumentException
+				| IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+
+		}
+		return BrowserType.STANDALONE;
+	}
 }
