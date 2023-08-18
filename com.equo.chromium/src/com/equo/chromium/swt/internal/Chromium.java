@@ -3114,7 +3114,7 @@ final class Chromium extends WebBrowser {
 
 		@Override
 		public boolean close() {
-			return Chromium.this.close();
+			return super.close();
 		}
 
 		@Override

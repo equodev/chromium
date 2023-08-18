@@ -67,6 +67,8 @@ public class Engine {
 		SWING
 	}
 
+	static BrowserType browserTypeInitialized = null;
+
 	private static void loadLib() {
 		if (OS.isLinux()) {
 			multiThreaded = Boolean.getBoolean("chromium.multi_threaded_message_loop");
@@ -200,6 +202,7 @@ public class Engine {
 	static void initCEF(BrowserType browserType) {
 		synchronized (Engine.class) {
 			if (app == null) {
+				browserTypeInitialized = browserType;
 				CefSettings settings = new CefSettings();
 				try {
 					settings.remote_debugging_port = Integer

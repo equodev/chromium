@@ -17,6 +17,8 @@ import org.cef.browser.CefBrowserSwing;
 import org.cef.misc.Rectangle;
 
 import com.equo.chromium.internal.Engine;
+import com.equo.chromium.internal.Engine.BrowserType;
+import com.equo.chromium.internal.IndependentBrowser;
 import com.equo.chromium.internal.PopupBrowser;
 import com.equo.chromium.internal.Standalone;
 import com.equo.chromium.internal.SwingBrowser;
@@ -64,7 +66,9 @@ public interface ChromiumBrowser {
 
 	/**
 	 * @param url The url that will be loaded in the browser.
-	 * @return Returns a new Windowless browser instance.
+	 * @return Returns a new Windowless browser instance. If instance of
+	 *         org.eclipse.swt.widgets.Display exists, returns SWT Windowless
+	 *         browser or Standalone Windowless browser otherwise.
 	 */
 	static ChromiumBrowser windowless(String url) {
 		return new Windowless(url);
@@ -76,7 +80,9 @@ public interface ChromiumBrowser {
 	 * @param y the y coordinate of the origin of the window
 	 * @param width the width of the window
 	 * @param height the height of the window
-	 * @return Returns a new Windowless browser instance.
+	 * @return Returns a new Windowless browser instance. If instance of
+	 *         org.eclipse.swt.widgets.Display exists, returns SWT Windowless
+	 *         browser or Standalone Windowless browser otherwise.
 	 */
 	static ChromiumBrowser windowless(String url, int x, int y, int width, int height) {
 		return new Windowless(url, new Rectangle(x, y, width, height));
@@ -85,8 +91,11 @@ public interface ChromiumBrowser {
 	/**
 	 * @param url The url that will be loaded in the browser.
 	 * @return Returns a new Standalone browser instance.
+	 * @throws UnsupportedOperationException if another type of toolkit has been
+	 *                                       initialized previously.
 	 */
 	static ChromiumBrowser standalone(String url) {
+		IndependentBrowser.checkToolkit(BrowserType.STANDALONE);
 		return new Standalone(url);
 	}
 
@@ -97,8 +106,11 @@ public interface ChromiumBrowser {
 	 * @param width the width of the window
 	 * @param height the height of the window
 	 * @return Returns a new Standalone browser instance.
+	 * @throws UnsupportedOperationException if another type of toolkit has been
+	 *                                       initialized previously.
 	 */
 	static ChromiumBrowser standalone(String url, int x, int y, int width, int height) {
+		IndependentBrowser.checkToolkit(BrowserType.STANDALONE);
 		return standalone(url, new Rectangle(x, y, width, height));
 	}
 
@@ -106,8 +118,11 @@ public interface ChromiumBrowser {
 	 * @param url    The url that will be loaded in the browser.
 	 * @param window Specifies the dimensions that the window will have.
 	 * @return Returns a new Standalone browser instance.
+	 * @throws UnsupportedOperationException if another type of toolkit has been
+	 *                                       initialized previously.
 	 */
 	static ChromiumBrowser standalone(String url, Rectangle window) {
+		IndependentBrowser.checkToolkit(BrowserType.STANDALONE);
 		return new Standalone(url, window);
 	}
 
@@ -116,16 +131,22 @@ public interface ChromiumBrowser {
 	 * @param layout    Where the window will be placed.
 	 * @param url       The url that will be loaded in the browser.
 	 * @return Returns a new Swing browser instance.
+	 * @throws UnsupportedOperationException if another type of toolkit has been
+	 *                                       initialized previously.
 	 */
 	static ChromiumBrowser swing(Object container, String layout, String url) {
+		IndependentBrowser.checkToolkit(BrowserType.SWING);
 		return new SwingBrowser(container, layout, url);
 	}
 
 	/**
 	 * @param url The url that will be loaded in the browser.
 	 * @return Returns a new Swing browser instance.
+	 * @throws UnsupportedOperationException if another type of toolkit has been
+	 *                                       initialized previously.
 	 */
 	static ChromiumBrowser swing(String url) {
+		IndependentBrowser.checkToolkit(BrowserType.SWING);
 		return new SwingBrowser(url);
 	}
 
@@ -133,8 +154,11 @@ public interface ChromiumBrowser {
 	 * @param composite The parent composite to contains the browser.
 	 * @param style     Composite style.
 	 * @return Returns a new Swt browser instance.
+	 * @throws UnsupportedOperationException if another type of toolkit has been
+	 *                                       initialized previously.
 	 */
 	static ChromiumBrowser swt(Object composite, int style) {
+		IndependentBrowser.checkToolkit(BrowserType.SWT);
 		return (ChromiumBrowser) new Browser(composite, style).getWebBrowser();
 	}
 

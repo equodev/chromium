@@ -44,6 +44,7 @@ import org.cef.misc.Rectangle;
 import org.cef.network.CefRequest.TransitionType;
 
 import com.equo.chromium.ChromiumBrowser;
+import com.equo.chromium.internal.Engine.BrowserType;
 import com.equo.chromium.swt.internal.spi.CommRouterHandler;
 import com.equo.chromium.swt.internal.spi.CommunicationManager;
 import com.equo.chromium.swt.internal.spi.ScriptExtension;
@@ -443,7 +444,10 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 		getBrowser().setCloseAllowed();
 		getBrowser().setReference(null);
 		getBrowser().close(true);
-		clientHandler.dispose();
+		CefClient client = getBrowser().getClient();
+		if ( client != null) {
+			client.dispose();
+		}
 		unSubscribeAll();
 		executor.shutdown();
 		return true;
@@ -627,5 +631,13 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 
 	public CompletableFuture<Boolean> printToPdf(String path) {
 		return printToPdf(path, null);
+	}
+
+	public static void checkToolkit(BrowserType browserType) {
+		if (Engine.browserTypeInitialized == null || browserType == Engine.browserTypeInitialized) {
+			return;
+		}
+		throw new UnsupportedOperationException("You cannot initialize such browsers, because browsers of type "
+				+ Engine.browserTypeInitialized + " are already initialized.");
 	}
 }
