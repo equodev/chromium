@@ -18,18 +18,20 @@ import com.equo.chromium.internal.Utils;
 public class SWTEngine {
 	
 	public static void initCef(AtomicBoolean closing, AtomicBoolean shuttingDown, Runnable shutdownRunnable) {
-		Display.getDefault().addListener(SWT.Close, e -> {
-			closing.set(true);
-		});
-		Display.getDefault().disposeExec(() -> {
-			if (shuttingDown.get()) {
-				// already shutdown
-				return;
-			}
-			if (!Utils.isMac() || !closing.get()) {
-				shuttingDown.set(true);
-				shutdownRunnable.run();
-			}
+		Display.getDefault().asyncExec(() -> {
+			Display.getDefault().addListener(SWT.Close, e -> {
+				closing.set(true);
+			});
+			Display.getDefault().disposeExec(() -> {
+				if (shuttingDown.get()) {
+					// already shutdown
+					return;
+				}
+				if (!Utils.isMac() || !closing.get()) {
+					shuttingDown.set(true);
+					shutdownRunnable.run();
+				}
+			});
 		});
 	}
 
