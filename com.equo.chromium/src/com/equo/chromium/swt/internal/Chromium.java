@@ -2211,7 +2211,7 @@ final class Chromium extends WebBrowser {
 			if (!browser.isPopup()) {
 				return getChromium(browser).onSetFocus(source);
 			}
-			return false;
+			return "win32".equals(SWT.getPlatform());
 		}
 
 		@Override
