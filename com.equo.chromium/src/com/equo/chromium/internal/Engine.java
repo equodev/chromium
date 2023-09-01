@@ -60,7 +60,7 @@ public class Engine {
 	public static final CompletableFuture<Boolean> ready = new CompletableFuture<>();
 	private static AtomicBoolean closing = new AtomicBoolean();
 	private static boolean multiThreaded;
-
+	
 	public static enum BrowserType {
 		SWT,
 		STANDALONE,
@@ -86,7 +86,7 @@ public class Engine {
 		if (!Files.exists(libsPath))
 			throw new RuntimeException("Missing binaries for Equo Chromium Browser.");
 		boolean checkGtkInit = checkGtkInit();
-		String[] args = getChromiumArgs(libsPath, Boolean.getBoolean("chromium.init_threads"), checkGtkInit);
+		String[] args = getChromiumArgs(libsPath, Boolean.getBoolean("chromium.init_threads"), checkGtkInit, null);
 		setupCrashReporter();
 		if (!CefApp.startup(args)) {
 			if (checkGtkInit) {
@@ -239,7 +239,7 @@ public class Engine {
 						? Boolean.getBoolean("chromium.external_message_pump")
 						: external_message_pump);
 
-				String[] args = getChromiumArgs(libsPath, false, false);
+				String[] args = getChromiumArgs(libsPath, false, false, browserType);
 
 				final SchemeHandlerManager schemeHandlerManager = SchemeHandlerManager.get();
 
@@ -338,7 +338,7 @@ public class Engine {
 		}
 	}
 
-	static String[] getChromiumArgs(Path libsPath, boolean addXInitThreads, boolean addGtkInitCheck) {
+	static String[] getChromiumArgs(Path libsPath, boolean addXInitThreads, boolean addGtkInitCheck, BrowserType browserType) {
 		List<String> args = new ArrayList<>();
 		String vmArg = System.getProperty("chromium.args", System.getProperty("swt.chromium.args"));
 		if (vmArg != null) {
@@ -354,9 +354,15 @@ public class Engine {
 				args.add("XInitThreads");
 			if (addGtkInitCheck)
 				args.add("GTKInitCheck");
+			if (isDarkTheme(browserType)) {
+				args.add("--force-dark-mode");
+			}
 		} else if (OS.isMacintosh()) {
 			args.add("--framework-dir-path=" + libsPath.resolve("Chromium Embedded Framework.framework"));
 			args.add("--main-bundle-path=" + libsPath.resolve("equochro Helper.app"));
+			if (isDarkTheme(browserType)) {
+				args.add("--force-dark-mode");
+			}
 		}
 		return args.toArray(new String[args.size()]);
 	}
@@ -412,6 +418,13 @@ public class Engine {
 					return true;
 				}
 			}
+		}
+		return false;
+	}
+	
+	private static boolean isDarkTheme(BrowserType browserType) {
+		if (browserType != null && BrowserType.SWT.equals(browserType)) {
+			return SWTEngine.isSystemDarkTheme();
 		}
 		return false;
 	}

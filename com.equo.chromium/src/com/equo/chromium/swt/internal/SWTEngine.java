@@ -1,5 +1,7 @@
 package com.equo.chromium.swt.internal;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -16,6 +18,7 @@ import org.eclipse.swt.widgets.Display;
 import com.equo.chromium.internal.Utils;
 
 public class SWTEngine {
+
 	
 	public static void initCef(AtomicBoolean closing, AtomicBoolean shuttingDown, Runnable shutdownRunnable) {
 		Display.getDefault().asyncExec(() -> {
@@ -61,6 +64,21 @@ public class SWTEngine {
 				}
 			}
 		});
+	}
+
+	public static boolean isSystemDarkTheme() {
+		boolean isDarkTheme = false;
+		try {
+			Class<?> systemThemeClass = Class.forName("org.eclipse.swt.widgets.Display");
+			// Method available since SWT 3.112
+			Method isSystemDarkThemeMethod = systemThemeClass.getMethod("isSystemDarkTheme");
+			if (isSystemDarkThemeMethod != null) {
+				isDarkTheme = (boolean) isSystemDarkThemeMethod.invoke(null);
+			}
+		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | ClassNotFoundException
+				| NoSuchMethodException | SecurityException e) {
+		}
+		return isDarkTheme;
 	}
 
 }
