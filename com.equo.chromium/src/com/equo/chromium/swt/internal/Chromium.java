@@ -237,6 +237,7 @@ final class Chromium extends WebBrowser {
 	private boolean inEvalBlocking = false;
 	private EvalFileImpl eval;
 	FindDialog findDialog = null;
+	private static boolean winSkipFocus = true;
 
 	Chromium() {
 	}
@@ -2247,7 +2248,8 @@ final class Chromium extends WebBrowser {
 
 	private boolean onSetFocus(FocusSource focusSource) {
 		if (isDisposed()) return true;
-		boolean chromiumFocusControl = "gtk".equals(SWT.getPlatform()) ? true : syncExec(() -> chromium.getDisplay().getFocusControl()) != chromium;
+		boolean chromiumFocusControl = "gtk".equals(SWT.getPlatform()) ? true
+				: syncExec(() -> chromium.getDisplay().getFocusControl()) != chromium;
 		if (ignoreFirstFocus && chromiumFocusControl && focusSource == FocusSource.FOCUS_SOURCE_NAVIGATION) {
 			debugPrint("ignoreFirstFocus");
 			ignoreFirstFocus = false;
@@ -2257,6 +2259,8 @@ final class Chromium extends WebBrowser {
 		if (syncExec(() -> isDisposed() ? true : chromium.isFocusControl())) {
 			if (focusListener != null)
 				focusListener.enabled = true;
+		} else if ("win32".equals(SWT.getPlatform()) && winSkipFocus) {
+			winSkipFocus = false;
 		} else {
 			if (focusListener != null && !"gtk".equals(SWT.getPlatform()))
 				focusListener.enabled = false;
