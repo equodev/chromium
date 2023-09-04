@@ -56,7 +56,7 @@ public class DelegatingCefResourceHandler implements CefResourceHandler {
 				int index = contentType.indexOf(";");
 				if (index != -1) {
 					mimeType = contentType.substring(0, index);
-					index = contentType.indexOf("charset=", index+1);
+					index = contentType.indexOf("charset=", index + 1);
 					if (index != -1) {
 						charset = findCharset(contentType.substring(index));
 					}
@@ -65,10 +65,13 @@ public class DelegatingCefResourceHandler implements CefResourceHandler {
 				if (charset != null) {
 					response.setCharset(charset);
 				} else {
-					response.setCharset(Charset.defaultCharset().toString());
+					Charset defaultCharset = schemeHandler.getDefaultCharset(mimeType);
+					if (defaultCharset != null) {
+						response.setCharset(defaultCharset.toString());
+					}
 				}
 			}
-			
+
 			response.setHeaderMap(responseHeaders);
 		}
 		response.setStatus(statusCode);
