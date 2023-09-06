@@ -260,7 +260,7 @@ public class Engine {
 						System.loadLibrary("jawt");
 					}
 					windowToolkit = new CefAppSwing();
-					settings.external_message_pump = false;
+					settings.external_message_pump = OS.isMacintosh();
 					settings.multi_threaded_message_loop = !OS.isMacintosh();
 					break;
 				default:
