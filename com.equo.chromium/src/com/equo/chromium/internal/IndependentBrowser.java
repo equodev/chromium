@@ -599,19 +599,20 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 		CompletableFuture<Boolean> result = new CompletableFuture<Boolean>();
 		CefPdfPrintSettings pdfPrintSettings = new CefPdfPrintSettings();
 		if (settings != null) {
-			pdfPrintSettings.header_footer_enabled = settings.header_footer_enabled;
-			pdfPrintSettings.header_footer_title = settings.header_footer_title;
-			pdfPrintSettings.header_footer_url = settings.header_footer_url;
+			pdfPrintSettings.display_header_footer = settings.display_header_footer;
+			pdfPrintSettings.footer_template = settings.footer_template;
+			pdfPrintSettings.header_template = settings.header_template;
 			pdfPrintSettings.landscape = settings.landscape;
-			pdfPrintSettings.backgrounds_enabled = settings.backgrounds_enabled;
-			if (settings.page_width >= 1000) {
-				pdfPrintSettings.page_width = settings.page_width;
+			pdfPrintSettings.print_background = settings.print_background;
+			pdfPrintSettings.page_ranges = settings.page_ranges;
+			if (settings.paper_width >= 1000) {
+				pdfPrintSettings.paper_width = settings.paper_width;
 			}
-			if (settings.page_height >= 1000) {
-				pdfPrintSettings.page_height = settings.page_height;
+			if (settings.paper_height >= 1000) {
+				pdfPrintSettings.paper_height = settings.paper_height;
 			}
-			pdfPrintSettings.selection_only = settings.selection_only;
-			pdfPrintSettings.scale_factor = settings.scale_factor;
+			pdfPrintSettings.prefer_css_page_size = settings.prefer_css_page_size;
+			pdfPrintSettings.scale = settings.scale;
 			pdfPrintSettings.margin_top = settings.margin_top;
 			pdfPrintSettings.margin_right = settings.margin_right;
 			pdfPrintSettings.margin_bottom = settings.margin_bottom;
