@@ -441,12 +441,15 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 
 	@Override
 	public boolean close() {
-		getBrowser().setCloseAllowed();
-		getBrowser().setReference(null);
-		getBrowser().close(true);
-		CefClient client = getBrowser().getClient();
-		if ( client != null) {
-			client.dispose();
+		CefBrowser browser = getBrowser();
+		if (browser != null) {
+			browser.setCloseAllowed();
+			browser.setReference(null);
+			browser.close(true);
+			CefClient client = browser.getClient();
+			if ( client != null) {
+				client.dispose();
+			}
 		}
 		unSubscribeAll();
 		executor.shutdown();
