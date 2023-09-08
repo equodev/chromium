@@ -1,7 +1,5 @@
 package com.equo.chromium.internal;
 
-
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import org.cef.browser.CefBrowser;
@@ -39,14 +37,15 @@ public final class Windowless extends IndependentBrowser {
 		try {
 			Class<?> clazz = Class.forName("org.eclipse.swt.widgets.Display", false,
 					ChromiumBrowser.class.getClassLoader());
-			Method findDisplay = clazz.getDeclaredMethod("findDisplay", Thread.class);
-			for (Thread thread : Thread.getAllStackTraces().keySet()) {
-				if (findDisplay.invoke(null, thread) != null) {
-					return BrowserType.SWT;
+			if (clazz != null) {
+				Method findDisplay = clazz.getDeclaredMethod("findDisplay", Thread.class);
+				for (Thread thread : Thread.getAllStackTraces().keySet()) {
+					if (findDisplay.invoke(null, thread) != null) {
+						return BrowserType.SWT;
+					}
 				}
 			}
-		} catch (ClassNotFoundException | SecurityException | IllegalArgumentException
-				| IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+		} catch (Throwable e) {
 
 		}
 		return BrowserType.STANDALONE;
