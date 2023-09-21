@@ -32,6 +32,7 @@ import org.cef.SystemBootstrap;
 import org.cef.SystemBootstrap.Loader;
 import org.cef.WindowingToolkit;
 import org.cef.browser.CefBrowser;
+import org.cef.callback.CefCommandLine;
 import org.cef.callback.CefSchemeRegistrar;
 import org.cef.handler.CefAppHandlerAdapter;
 
@@ -272,6 +273,15 @@ public class Engine {
 				CefApp.setWindowingToolkit(windowToolkit);
 
 				CefApp.addAppHandler(new CefAppHandlerAdapter(args) {
+					@Override
+					public void onBeforeCommandLineProcessing(String process_type, CefCommandLine command_line) {
+						super.onBeforeCommandLineProcessing(process_type, command_line);
+						if (settings.chrome_runtime) {
+							command_line.appendSwitchWithValue("browser-subprocess-path",
+									settings.browser_subprocess_path);
+						}
+					}
+
 					@Override
 					public void onRegisterCustomSchemes(CefSchemeRegistrar registrar) {
 						if (!registeredSchemeData.isEmpty()) {

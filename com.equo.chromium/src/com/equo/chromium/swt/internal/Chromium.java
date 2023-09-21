@@ -163,6 +163,7 @@ final class Chromium extends WebBrowser {
 	private static final int MAX_PROGRESS = 100;
 	private static String setTextUrl = "";
 	private static int GTK_VERSION = 0;
+	private static final boolean CHROME_RUNTIME = Boolean.getBoolean("chrome_runtime");
 
 	static {
 		setupCookies();
@@ -674,6 +675,9 @@ final class Chromium extends WebBrowser {
 			function.dispose(true);
 		}
 		functions.clear();
+		if (CHROME_RUNTIME) {
+			doDispose();
+		}
 		if (disposing == Dispose.FromBrowser) {
 			syncExec(() -> {
 				fireCloseListener();
@@ -706,19 +710,23 @@ final class Chromium extends WebBrowser {
 //			return false;
 //		}
 
-		if (disposing == Dispose.FromClose || disposing == Dispose.Unload || disposing == Dispose.UnloadClosed || disposing == Dispose.WaitIfClosed) {
+		doDispose();
+		debugPrint("AFTER DoClose");
+		return true;
+	}
+
+	private void doDispose() {
+		if (disposing == Dispose.FromClose || disposing == Dispose.Unload || disposing == Dispose.UnloadClosed
+				|| disposing == Dispose.WaitIfClosed) {
 			disposing = Dispose.DoIt;
-		}
-		else if (disposing == Dispose.No) {
+		} else if (disposing == Dispose.No) {
 			if (chromium != null) {
 				disposing = Dispose.FromBrowser;
 				asyncExec(chromium::dispose);
 			}
 		}
-		debugPrint("AFTER DoClose");
-		return true;
 	}
-	
+
 	private void onAfterCreated() {
 		if (isDisposed()) return;
 		
