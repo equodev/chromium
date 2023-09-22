@@ -1,6 +1,7 @@
 package com.equo.chromium.swt.internal;
 
 import static com.equo.chromium.internal.Engine.debug;
+import static org.cef.callback.CefMenuModel.MenuItemType.MENUITEMTYPE_SEPARATOR;
 
 import java.io.IOException;
 import java.net.HttpCookie;
@@ -1686,6 +1687,25 @@ final class Chromium extends WebBrowser {
 						chromium.getMenu().setVisible(true);
 					}
 				});
+			}
+		} else if (CHROME_RUNTIME) {
+			clearExtraMenuItem(model);
+		}
+	}
+
+	// This method removes extra items in the context menu when the chrome-runtime
+	// is enabled.
+	private void clearExtraMenuItem(CefMenuModel menu) {
+		for (int i = menu.getCount() - 1; i >= 0; i--) {
+			String label = menu.getLabelAt(i).toLowerCase();
+			if (label.contains("save") || label.contains("cast") || label.contains("qr") || label.contains("nspect")
+					|| label.contains("search google")) {
+				if (menu.hasAcceleratorAt(i)) {
+					menu.removeAcceleratorAt(i);
+				}
+				menu.removeAt(i);
+			} else if (menu.getTypeAt(i).equals(MENUITEMTYPE_SEPARATOR)) {
+				menu.removeAt(i);
 			}
 		}
 	}
