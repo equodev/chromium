@@ -23,6 +23,18 @@ public class CommRouterHandler extends CefMessageRouterHandlerAdapter {
 	private CommunicationManager commManager;
 	private ExecutorService threadPool;
 	private ExecutorService queueThread;
+	private static volatile CommRouterHandler INSTANCE;
+
+	public static CommRouterHandler getInstance(CommunicationManager commManager) {
+		if (INSTANCE == null) {
+			synchronized (CommRouterHandler.class) {
+				if (INSTANCE == null) {
+					INSTANCE = new CommRouterHandler(commManager);
+				}
+			}
+		}
+		return INSTANCE;
+	}
 
 	public CommRouterHandler(CommunicationManager commManager) {
 		this.commManager = commManager;
