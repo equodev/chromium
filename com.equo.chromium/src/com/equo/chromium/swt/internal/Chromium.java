@@ -578,7 +578,7 @@ final class Chromium extends WebBrowser {
 		CommunicationManager commManager = CommunicationManager.get();
 		if (commManager != null) {
 			CefMessageRouter commRouter = CommRouterHandler.createRouter();
-			commRouter.addHandler(new CommRouterHandler(commManager), true);
+			commRouter.addHandler(CommRouterHandler.getInstance(commManager), true);
 			clientHandler.addMessageRouter(commRouter);
 		}
 
