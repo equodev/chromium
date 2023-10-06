@@ -69,7 +69,6 @@ public class Engine {
 	}
 
 	static BrowserType browserTypeInitialized = null;
-
 	private static void loadLib() {
 		if (OS.isLinux()) {
 			multiThreaded = Boolean.getBoolean("chromium.multi_threaded_message_loop");
