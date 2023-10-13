@@ -340,11 +340,35 @@ public class Engine {
 					}
 				}
 				if (BrowserType.SWT.equals(browserType)) {
+					if (debug) {
+						printSystemProperties();
+					}
 					SWTEngine.initCef(closing, shuttingDown, () -> internalShutdown());
 				}
-
 			}
 		}
+	}
+
+	private static void printSystemProperties() {
+		System.out.println("------- Chromium system properties: -------");
+
+		String[] propertyNames = { "chromium.args", "chromium.cache_path", "chromium.custom_protocol", "chromium.debug",
+				"chromium.debug_port", "chromium.dialogs", "chromium.disable-download-progress",
+				"chromium.disable_script_extensions", "chromium.downloadLocationListener",
+				"chromium.enable_crash_reporter", "chromium.external_message_pump", "chromium.find_dialog",
+				"chromium.force_windowless_swt", "chromium.headless", "chromium.home", "chromium.init_threads",
+				"chromium.log_file", "chromium.multi_threaded_message_loop", "chromium.path",
+				"chromium.proxy_pac_script", "chromium.remote_debugging_port", "chromium.resize",
+				"chromium.setTextAsUrl", "chromium.ssl", "chromium.ssl.cert", "chromium.suspend_threads",
+				"chromium.turbolinks", "java.home", "java.specification.vendor", "java.vendor.version", "java.version",
+				"org.eclipse.swt.internal.deviceZoom", "org.eclipse.swt.internal.gtk.theme",
+				"org.eclipse.swt.internal.gtk.version", "os.arch", "os.name", "os.version", "osgi.ws", "sun.desktop",
+				"user.language" };
+
+		for (String propertyName : propertyNames) {
+			System.out.println(propertyName + "=" + System.getProperty(propertyName, ""));
+		}
+		System.out.println("--------- End Chromium properties ---------");
 	}
 
 	static String[] getChromiumArgs(Path libsPath, boolean addXInitThreads, boolean addGtkInitCheck, BrowserType browserType) {
