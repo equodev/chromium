@@ -260,6 +260,10 @@ public class CefApp extends CefAppHandlerAdapter {
         wt = w;
     }
 
+    public static WindowingToolkit getWindowingToolkit() {
+        return wt;
+    }
+
     /**
      * To shutdown the system, it's important to call the dispose method. Calling
      * this method closes all client instances with and all browser instances each

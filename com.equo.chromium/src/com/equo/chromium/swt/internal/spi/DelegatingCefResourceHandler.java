@@ -25,6 +25,8 @@ package com.equo.chromium.swt.internal.spi;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,6 +39,7 @@ import org.cef.network.CefResponse;
 
 public class DelegatingCefResourceHandler implements CefResourceHandler {
 	private InputStream responseData;
+	private Boolean processRequest;
 
 	private final SchemeHandler schemeHandler;
 
@@ -46,14 +49,19 @@ public class DelegatingCefResourceHandler implements CefResourceHandler {
 
 	@Override
 	public boolean processRequest(CefRequest request, CefCallback callback) {
-		Map<String, String> headers = new HashMap<String, String>();
-		request.getHeaderMap(headers);
-		boolean isRequestToProcess = schemeHandler.processRequest(request.getURL(), request.getMethod(), headers);
+		if (processRequest == null) {
+			Map<String, String> headers = new HashMap<String, String>();
+			request.getHeaderMap(headers);
+			boolean shouldProcessRequest = schemeHandler.processRequest(request.getURL(), request.getMethod(), headers);
+			processRequest = Boolean.valueOf(shouldProcessRequest);
+		}
 
-		if (isRequestToProcess) {
+		boolean shouldProcessRequest = processRequest.booleanValue();
+
+		if (shouldProcessRequest && callback != null) {
 			callback.Continue();
 		}
-		return isRequestToProcess;
+		return shouldProcessRequest;
 	}
 
 	@Override
@@ -61,16 +69,75 @@ public class DelegatingCefResourceHandler implements CefResourceHandler {
 		Map<String, String> responseHeaders = new HashMap<String, String>();
 		response.getHeaderMap(responseHeaders);
 		responseData = schemeHandler.getResponseData(responseHeaders);
-		if (responseData == null) {
-			response.setStatus(404);
-		} else {
-			String contentType = responseHeaders.remove("Content-Type");
+		String userStatusCodeStringify = responseHeaders.remove("X-Status-Code");
+		String contentType = responseHeaders.get("Content-Type");
+		int statusCode = parseStatusCode(responseData, userStatusCodeStringify);
+		if (statusCode != 404) {
 			if (contentType != null) {
-				response.setMimeType(contentType);
+				String mimeType = contentType;
+				String charset = null;
+				int index = contentType.indexOf(";");
+				if (index != -1) {
+					mimeType = contentType.substring(0, index);
+					index = contentType.indexOf("charset=", index + 1);
+					if (index != -1) {
+						charset = findCharset(contentType.substring(index));
+					}
+				}
+				response.setMimeType(mimeType);
+				if (charset != null) {
+					response.setCharset(charset);
+				} else {
+					Charset defaultCharset = schemeHandler.getDefaultCharset(mimeType);
+					if (defaultCharset != null) {
+						response.setCharset(defaultCharset.toString());
+					}
+				}
 			}
+
 			response.setHeaderMap(responseHeaders);
-			response.setStatus(200);
 		}
+		response.setStatus(statusCode);
+	}
+
+	private Integer parseStatusCode(InputStream responseData, String userStatusCodeStringify) {
+		if (userStatusCodeStringify != null) {
+			try {
+				Integer userStatusCode = Integer.valueOf(userStatusCodeStringify);
+				if (userStatusCode != null) {
+					if (userStatusCode > 99 && userStatusCode < 600) {
+						return userStatusCode;
+					}
+				}
+			} catch (Exception e) {
+				return 500;
+			}
+		}
+		// It is mandatory check first for responseData because both can be null at the
+		// same time. In that cases, its necessary check for responseData first
+		if (responseData == null) {
+			return 404;
+		}
+		if (userStatusCodeStringify == null) {
+			return 200;
+		}
+		return 404;
+	}
+
+	private String findCharset(String contentType) {
+		StringBuilder charset = new StringBuilder();
+		for (int i = contentType.indexOf("=") + 1; i < contentType.length(); i++) {
+			if (contentType.charAt(i) != '\"') {
+				if (contentType.charAt(i) == ';') {
+					return charset.toString();
+				}
+				charset.append(contentType.charAt(i));
+			}
+		}
+		if (charset.length() != 0) {
+			return charset.toString();
+		}
+		return null;
 	}
 
 	@Override

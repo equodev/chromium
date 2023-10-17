@@ -36,15 +36,20 @@ import java.util.concurrent.CompletableFuture;
 
 public class CefBrowserWl extends CefBrowser_N implements CefRenderHandler {
     private boolean hasFocus;
+    private Rectangle window = new Rectangle(0, 0, 1366, 768);
 
     private CefRenderHandler renderHandler = new CefRenderHandlerAdapter() {
         public Rectangle getViewRect(CefBrowser browser) {
-            return new Rectangle(0, 0, 1366, 768);
+            return window;
         };
     };
 
     public CefBrowserWl(CefClient client, String url, CefRequestContext context) {
         super(client, url, context, null, null);
+    }
+
+    public CefBrowserWl(CefClient client, String url, CefRequestContext context, CefBrowser_N parent, Point inspectAt) {
+        super(client, url, context, parent, inspectAt);
     }
 
     @Override
@@ -84,13 +89,13 @@ public class CefBrowserWl extends CefBrowser_N implements CefRenderHandler {
 
     @Override
     public <T> T getUIComponent() {
-        return null;
+    	throw new UnsupportedOperationException("Unsupported");
     }
 
     @Override
     protected CefBrowser_N createDevToolsBrowser(CefClient client, String url,
             CefRequestContext context, CefBrowser_N parent, Point inspectAt) {
-        return null;
+        return new CefBrowserWl(client, url, context, parent, inspectAt);
     }
 
     @Override
@@ -106,7 +111,7 @@ public class CefBrowserWl extends CefBrowser_N implements CefRenderHandler {
     }
     @Override
     public Rectangle getViewRect(CefBrowser browser) {
-        return new Rectangle(0, 0, 1366, 768);
+        return window;
     };
 
     @Override
@@ -141,4 +146,8 @@ public class CefBrowserWl extends CefBrowser_N implements CefRenderHandler {
 
     @Override
     public void updateDragCursor(CefBrowser browser, int operation) {}
+
+    public void setWindow(Rectangle window) {
+        this.window = window;
+    }
 }

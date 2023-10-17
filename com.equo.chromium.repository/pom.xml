@@ -1,14 +1,19 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<artifactId>com.equo.chromium.repository</artifactId>
-	<packaging>eclipse-repository</packaging>
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>com.equo.chromium.repository</artifactId>
+    <packaging>eclipse-repository</packaging>
 
-	<parent>
-		<groupId>com.equo</groupId>
-		<artifactId>chromium</artifactId>
-		<version>106.0.0-SNAPSHOT</version>
-	</parent>
+    <parent>
+        <groupId>com.equo</groupId>
+        <artifactId>chromium</artifactId>
+        <version>116.0.0-SNAPSHOT</version>
+    </parent>
+
+    <properties>
+        <jarsigner.verify.skip>true</jarsigner.verify.skip>
+        <jarsigner.sign.skip>true</jarsigner.sign.skip>
+    </properties>
 
     <build>
         <plugins>

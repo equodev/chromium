@@ -1,6 +1,6 @@
-# Equo Chromium Community Edition (**V106**)
+# Equo Chromium Community Edition (**V116**)
 
-The [Equo Chromium](https://www.equo.dev/chromium) Community widget is a cross platform browser that allows users to create and render modern web-based UIs inside a Java application. It can be used in standalone Java applications, Windowless, Swing(coming soon), SWT, or Eclipse RCP applications.
+The [Equo Chromium](https://www.equo.dev/chromium) Community widget is a cross platform browser that allows users to create and render modern web-based UIs inside a Java application. It can be used in standalone Java applications, Windowless, Swing, SWT, or Eclipse RCP applications.
 
 No more custom code for each platform, no more installations of specific libraries for Linux, no more problems in Windows with IE, no more platform-dependant and browser-specific issues at all. This is a truly **cross platform** browser that runs seamlessly in all operating systems and in embedded devices.
 
@@ -70,7 +70,7 @@ This repo uses GIT LFS, please install (https://git-lfs.github.com/) before clon
 
 [Equo Chromium](https://www.equo.dev/chromium) is dual-licensed under commercial and open source licenses (GPLv3). This repository is licensed under GPLv3. To get a commercial license and to not worry about the obligations associated with the GPLv3 license please contact the [Equo support team](https://www.equo.dev/request-a-demo).
 
-## [Release Notes](https://docs.equo.dev/chromium/ce-106.x/reference/release-notes.html)
+## [Release Notes](https://docs.equo.dev/chromium/ce-116.x/reference/release-notes.html)
 
 Release
 

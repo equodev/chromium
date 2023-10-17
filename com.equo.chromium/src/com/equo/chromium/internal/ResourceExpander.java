@@ -110,7 +110,7 @@ public class ResourceExpander {
 					}
 				}
 				for (String prop : props.stringPropertyNames()) {
-					if (!prop.toLowerCase().contains("version")) {
+					if (prop.length() == 2) { // XX keys only
 						String propValue = props.getProperty(prop);
 						findResource(extractPath, propValue, replace);
 					}

@@ -11,7 +11,6 @@ import org.cef.callback.CefCallback;
 import org.cef.handler.CefLoadHandler.ErrorCode;
 import org.cef.misc.BoolRef;
 import org.cef.network.CefRequest;
-import org.cef.network.CefURLRequest;
 
 /**
  * An abstract adapter class for receiving browser request events.
@@ -41,12 +40,6 @@ public abstract class CefRequestHandlerAdapter implements CefRequestHandler {
     @Override
     public boolean getAuthCredentials(CefBrowser browser, String origin_url, boolean isProxy,
             String host, int port, String realm, String scheme, CefAuthCallback callback) {
-        return false;
-    }
-
-    @Override
-    public boolean onQuotaRequest(
-            CefBrowser browser, String origin_url, long new_size, CefCallback callback) {
         return false;
     }
 

@@ -45,34 +45,58 @@ public class CommRouterHandler extends CefMessageRouterHandlerAdapter {
 
 	private CommunicationManager commManager;
 	private ExecutorService threadPool;
+	private ExecutorService queueThread;
+	private static volatile CommRouterHandler INSTANCE;
+
+	public static CommRouterHandler getInstance(CommunicationManager commManager) {
+		if (INSTANCE == null) {
+			synchronized (CommRouterHandler.class) {
+				if (INSTANCE == null) {
+					INSTANCE = new CommRouterHandler(commManager);
+				}
+			}
+		}
+		return INSTANCE;
+	}
 
 	public CommRouterHandler(CommunicationManager commManager) {
 		this.commManager = commManager;
-		this.threadPool = Executors.newCachedThreadPool(new NonDaemonThreadFactory());
+		this.threadPool = Executors.newCachedThreadPool(new DaemonThreadFactory());
+		this.queueThread = Executors.newSingleThreadExecutor(new DaemonThreadFactory());
+	}
+
+	private void handleRequest(String request, CefQueryCallback callback) {
+		try {
+			Optional<String> response = this.commManager.receiveMessage(request);
+			if (response.isPresent()) {
+				callback.success(response.get());
+			}
+		} catch (CommMessageError e) {
+			callback.failure(e.getErrorCode(), e.getLocalizedMessage());
+		}
 	}
 
 	@Override
 	public boolean onQuery(CefBrowser browser, CefFrame frame, long queryId, String request, boolean persistent,
 			CefQueryCallback callback) {
-		threadPool.execute(() -> {
-			try {
-				Optional<String> response = this.commManager.receiveMessage(request);
-				if (response.isPresent()) {
-					callback.success(response.get());
-				}
-			} catch (CommMessageError e) {
-				callback.failure(e.getErrorCode(), e.getLocalizedMessage());
-			}
-		});
+		if (request.startsWith("&-")) {
+			queueThread.execute(() -> {
+				handleRequest(request.substring(2), callback);
+			});
+		} else {
+			threadPool.execute(() -> {
+				handleRequest(request, callback);
+			});
+		}
 		return true;
 	}
 
-	private static class NonDaemonThreadFactory implements ThreadFactory {
+	private static class DaemonThreadFactory implements ThreadFactory {
 		private final AtomicInteger threadNumber = new AtomicInteger(1);
 		private final ThreadGroup group;
 		private final String namePrefix;
 
-		NonDaemonThreadFactory() {
+		DaemonThreadFactory() {
 			SecurityManager s = System.getSecurityManager();
 			group = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
 			namePrefix = "comm-pool-thread-";

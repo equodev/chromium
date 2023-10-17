@@ -77,7 +77,7 @@ public class Net {
 			String base64PacFile = base64Encode(pacFileContent);
 
 			setPreference("pac_script", "data:application/x-javascript-config;base64," + base64PacFile);
-		} else {
+		} else if ("false".equals(System.getProperty("java.net.useSystemProxies", ""))) {
 			setPreference("direct", "");
 		}
 	}

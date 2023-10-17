@@ -105,8 +105,10 @@ public abstract class AbstractEval {
 		finallyExec += " persistent: true });\n";
 
 		String eval = getEvalFunction(id, script, finallyExec);
-		awaitCondition(Display.getCurrent(), created, true);
-		function.accept(eval, url);
+		created.thenRun(() -> {
+			CefApp.getInstance().doMessageLoopWork(-1);
+			function.accept(eval, url);
+		});
 		awaitCondition(Display.getCurrent(), evalResult, false);
 
 		router.removeHandler(handler);
@@ -114,11 +116,13 @@ public abstract class AbstractEval {
 	}
 
 	protected void awaitCondition(Display display, CompletableFuture<?> condition, boolean doMessageLoopWork) {
-		while (!condition.isDone() && !display.isDisposed()) {
-			if (doMessageLoopWork)
-				CefApp.getInstance().doMessageLoopWork(-1);
-			if (!display.readAndDispatch())
-				display.sleep();
+		if (display != null) {
+			while (!condition.isDone() && !display.isDisposed()) {
+				if (doMessageLoopWork)
+					CefApp.getInstance().doMessageLoopWork(-1);
+				if (!display.readAndDispatch())
+					display.sleep();
+			}
 		}
 	}
 

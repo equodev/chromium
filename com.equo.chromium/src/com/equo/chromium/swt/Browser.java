@@ -47,6 +47,10 @@ public class Browser extends Composite {
 
 	static final String NO_INPUT_METHOD = "org.eclipse.swt.internal.gtk.noInputMethod"; //$NON-NLS-1$
 
+	public Browser(Object composite, int style) {
+		this((Composite)composite, style);
+	}
+
 	public Browser(Composite parent, int style) {
 		super (checkParent (parent), style);
 		

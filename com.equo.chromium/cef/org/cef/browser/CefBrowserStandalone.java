@@ -46,6 +46,10 @@ public class CefBrowserStandalone extends CefBrowser_N {
         super(client, url, context, null, null);
     }
 
+    public CefBrowserStandalone(CefClient client, String url, CefRequestContext context, CefBrowser_N parent, Point inspectAt) {
+		super(client, url, context, parent, inspectAt);
+	}
+
     @Override
     public CompletableFuture<Object> createScreenshot(boolean nativeResolution) {
         throw new UnsupportedOperationException("Unsupported");
@@ -90,13 +94,13 @@ public class CefBrowserStandalone extends CefBrowser_N {
 
     @Override
     public <T> T getUIComponent() {
-        return null;
+        throw new UnsupportedOperationException("Unsupported");
     }
 
     @Override
     protected CefBrowser_N createDevToolsBrowser(CefClient client, String url,
             CefRequestContext context, CefBrowser_N parent, Point inspectAt) {
-        return null;
+        return new CefBrowserStandalone(client, url, context, this, inspectAt);
     }
 
     @Override

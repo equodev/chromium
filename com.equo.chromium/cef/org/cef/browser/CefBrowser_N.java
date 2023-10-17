@@ -40,6 +40,7 @@ abstract class CefBrowser_N extends CefNativeAdapter implements CefBrowser {
     private boolean closeAllowed_ = false;
     private volatile boolean isClosed_ = false;
     private volatile boolean isClosing_ = false;
+    private Object reference;
 
     protected CefBrowser_N(CefClient client, String url, CefRequestContext context,
             CefBrowser_N parent, Point inspectAt) {
@@ -762,6 +763,15 @@ abstract class CefBrowser_N extends CefNativeAdapter implements CefBrowser {
         } catch (UnsatisfiedLinkError ule) {
             ule.printStackTrace();
         }
+    }
+
+    public void setReference(Object reference) {
+        this.reference = reference;
+    }
+
+
+    public Object getReference() {
+        return this.reference;
     }
 
     private final native boolean N_CreateBrowser(CefClientHandler clientHandler, long windowHandle,

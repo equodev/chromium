@@ -6,7 +6,6 @@ package org.cef.handler;
 
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;
-import org.cef.handler.CefResourceRequestHandler;
 import org.cef.misc.BoolRef;
 import org.cef.network.CefRequest;
 

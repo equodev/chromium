@@ -4,6 +4,8 @@
 
 package org.cef.browser;
 
+import org.cef.callback.CefStringVisitor;
+
 /**
  * Interface representing a frame.
  */
@@ -108,4 +110,25 @@ public interface CefFrame {
      * Execute select all in this frame.
      */
     public void selectAll();
+
+    /**
+     * Save this frame's HTML source to a temporary file and open it in the default
+     * text viewing application. This method can only be called from the browser
+     * process.
+     */
+    public void viewSource();
+
+    /**
+     * Retrieve this frame's HTML source as a string sent to the specified visitor.
+     * 
+     * @param visitor
+     */
+    public void getSource(CefStringVisitor visitor);
+
+    /**
+     * Retrieve this frame's display text as a string sent to the specified visitor
+     * 
+     * @param visitor
+     */
+    public void getText(CefStringVisitor visitor);
 }

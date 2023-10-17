@@ -3,11 +3,11 @@ Bundle-ManifestVersion: 2
 Bundle-ActivationPolicy: lazy
 Bundle-Name: Chromium SWT Browser
 Bundle-SymbolicName: com.equo.chromium
-Bundle-Version: 106.0.0.qualifier
+Bundle-Version: 116.0.0.qualifier
 Bundle-Vendor: Equo
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Require-Bundle: org.eclipse.swt;resolution:=optional
 Service-Component: OSGI-INF/*.xml
-Export-Package: com.equo.chromium.swt,
- com.equo.chromium
+Export-Package: com.equo.chromium,
+ com.equo.chromium.swt,
+ com.equo.chromium.utils
 Automatic-Module-Name: com.equo.chromium

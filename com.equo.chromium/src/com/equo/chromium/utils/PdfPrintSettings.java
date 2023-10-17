@@ -1,13 +1,32 @@
-// Copyright (c) 2017 The Chromium Embedded Framework Authors. All rights
-// reserved. Use of this source code is governed by a BSD-style license that
-// can be found in the LICENSE file.
+/****************************************************************************
+**
+** Copyright (C) 2022 Equo
+**
+** This file is part of Equo Chromium.
+**
+** Commercial License Usage
+** Licensees holding valid commercial Equo licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Equo. For licensing terms
+** and conditions see https://www.equo.dev/terms.
+**
+** GNU General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3 as published by the Free Software
+** Foundation. Please review the following
+** information to ensure the GNU General Public License requirements will
+** be met: https://www.gnu.org/licenses/gpl-3.0.html.
+**
+****************************************************************************/
 
-package org.cef.misc;
+
+package com.equo.chromium.utils;
 
 /**
  * PDF print settings for browser.printToPDF()
  */
-public class CefPdfPrintSettings {
+public class PdfPrintSettings {
     public enum MarginType {
         // Default margins.
         DEFAULT,
@@ -104,27 +123,4 @@ public class CefPdfPrintSettings {
      * |header_template|.
      */
     public String footer_template;
-
-    public CefPdfPrintSettings() {}
-
-    @Override
-    public CefPdfPrintSettings clone() {
-        CefPdfPrintSettings tmp = new CefPdfPrintSettings();
-        tmp.landscape = this.landscape;
-        tmp.print_background = this.print_background;
-        tmp.scale = this.scale;
-        tmp.paper_width = this.paper_width;
-        tmp.paper_height = this.paper_height;
-        tmp.prefer_css_page_size = this.prefer_css_page_size;
-        tmp.margin_type = this.margin_type;
-        tmp.margin_top = this.margin_top;
-        tmp.margin_bottom = this.margin_bottom;
-        tmp.margin_right = this.margin_right;
-        tmp.margin_left = this.margin_left;
-        tmp.page_ranges = this.page_ranges;
-        tmp.display_header_footer = this.display_header_footer;
-        tmp.header_template = this.header_template;
-        tmp.footer_template = this.footer_template;
-        return tmp;
-    }
 }

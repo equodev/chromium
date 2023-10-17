@@ -21,20 +21,28 @@
 ****************************************************************************/
 
 
-package com.equo.chromium.swt.internal.spi;
+package com.equo.chromium.utils;
 
-import java.io.InputStream;
-import java.nio.charset.Charset;
-import java.util.Map;
+public enum EventType {
+	onLoadingStateChange,
+	onLoadStart,
+	onLoadError,
+	onLoadEnd,
 
-public interface SchemeHandler {
+	onZoomChanged,
+	onAfterCreated,
 
-	public boolean processRequest(String url, String method, Map<String, String> headers);
+	onConsoleMessage,
 
-	default public Charset getDefaultCharset(String mimeType) {
-		return Charset.defaultCharset();
-	}
+	onClipboardWriteText,
+	onClipboardReadText,
+
+	onFullScreenEntered,
+	onFullScreenExited,
 	
-	public InputStream getResponseData(Map<String, String> responseHeaders);
+	onFindResult,
+
+	onOpenFile,
+	onCancelOpenFile,
 
 }

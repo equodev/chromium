@@ -6,7 +6,6 @@ package org.cef.handler;
 
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;
-import org.cef.callback.CefCallback;
 import org.cef.misc.BoolRef;
 import org.cef.misc.StringRef;
 import org.cef.network.CefRequest;
@@ -33,6 +32,12 @@ public abstract class CefResourceRequestHandlerAdapter implements CefResourceReq
     @Override
     public CefResourceHandler getResourceHandler(
             CefBrowser browser, CefFrame frame, CefRequest request) {
+        return null;
+    }
+
+    @Override
+    public CefResponseFilter getResourceResponseFilter(
+            CefBrowser browser, CefFrame frame, CefRequest request, CefResponse response) {
         return null;
     }
 

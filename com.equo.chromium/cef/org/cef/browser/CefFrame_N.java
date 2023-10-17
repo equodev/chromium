@@ -5,6 +5,7 @@
 package org.cef.browser;
 
 import org.cef.callback.CefNativeAdapter;
+import org.cef.callback.CefStringVisitor;
 
 /**
  * This class represents all methods which are connected to the
@@ -166,6 +167,33 @@ class CefFrame_N extends CefNativeAdapter implements CefFrame {
         }
     }
 
+    @Override
+    public void viewSource() {
+        try {
+            N_ViewSource(getNativeRef(null));
+        } catch (UnsatisfiedLinkError ule) {
+            ule.printStackTrace();
+        }
+    }
+
+    @Override
+    public void getSource(CefStringVisitor visitor) {
+        try {
+            N_GetSource(getNativeRef(null), visitor);
+        } catch (UnsatisfiedLinkError ule) {
+            ule.printStackTrace();
+        }
+    }
+
+    @Override
+    public void getText(CefStringVisitor visitor) {
+        try {
+            N_GetText(getNativeRef(null), visitor);
+        } catch (UnsatisfiedLinkError ule) {
+            ule.printStackTrace();
+        }
+    }
+
     private final native void N_Dispose(long self);
     private final native long N_GetIdentifier(long self);
     private final native String N_GetURL(long self);
@@ -182,4 +210,7 @@ class CefFrame_N extends CefNativeAdapter implements CefFrame {
     private final native void N_Paste(long self);
     private final native void N_Delete(long self);
     private final native void N_SelectAll(long self);
+    private final native void N_ViewSource(long self);
+    private final native void N_GetSource(long self, CefStringVisitor visitor);
+    private final native void N_GetText(long self, CefStringVisitor visitor);
 }

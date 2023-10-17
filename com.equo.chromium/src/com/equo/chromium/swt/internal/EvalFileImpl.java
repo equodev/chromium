@@ -23,95 +23,175 @@
 
 package com.equo.chromium.swt.internal;
 
+import static com.equo.chromium.internal.Engine.debug;
+
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystems;
+import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardWatchEventKinds;
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchService;
 import java.util.Random;
+import java.util.Stack;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
+import org.cef.CefApp;
 import org.cef.browser.CefBrowser;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.SWTException;
 import org.eclipse.swt.widgets.Display;
 
+import com.equo.chromium.swt.BrowserFunction;
+
 public class EvalFileImpl extends AbstractEval {
+	private static enum MsgType {
+		BfCall(5), BfRet(1), BfRetEx(3), Eval(2);
+
+		private String type;
+
+		MsgType(int type) {
+			this.type = String.valueOf(type);
+		}
+
+		String str() {
+			return type;
+		}
+	}
 	private static final String EVAL_FILE_NAME = "equochromium";
 	private CefBrowser cefBrowser;
+	private Chromium chromium;
+	private RandomAccessFile raf;
+	private Stack<CompletableFuture<Object>> received = new Stack<CompletableFuture<Object>>();
+	private String id;
 
-	public EvalFileImpl(CefBrowser cefBrowser) {
+	public EvalFileImpl(Chromium chromium, CefBrowser cefBrowser) {
+		this.chromium = chromium;
 		this.cefBrowser = cefBrowser;
+		id = Integer.toString(new Random().nextInt());
 	}
 
 	@Override
 	public Object eval(String script, CompletableFuture<Boolean> created) throws InterruptedException, ExecutionException {
-		String id = Integer.toString(new Random().nextInt());
 		Display display = Display.getCurrent();
 		String eval = getEvalFunction(id, script, "return req;");
-		final File file = createTmpFile();
 
-		CompletableFuture<Object> received = new CompletableFuture<>();
-		try {
-			WatchService ws = FileSystems.getDefault().newWatchService();
-			Paths.get(file.getParent()).register(ws, StandardWatchEventKinds.ENTRY_MODIFY);
-			awaitCondition(display, created, true);
-			startFileWatcher(display, file, received, ws, id);
-			cefBrowser.sendEvalMessage(file.getAbsolutePath(), eval);
-
-			awaitCondition(display, received, true);
-		} catch (IOException e) {
-			new SWTException(e.getMessage());
+		CompletableFuture<Object> received = this.received.push(new CompletableFuture<>());
+		if (this.received.size() == 1) {
+			created.thenRun(() -> {
+				try {
+					CefApp.getInstance().doMessageLoopWork(-1);
+					final File file = createTmpFile();
+					startFileWatcher(display, file, id);
+					cefBrowser.sendEvalMessage(file.getAbsolutePath(), eval);
+				} catch (IOException e) {
+					finish(display, null, new SWTException(e.getMessage()));
+				}
+			});
+		} else { // Eval
+			writeEvalMessage(eval);
 		}
+
+		awaitCondition(display, received, true);
 
 		return received.get();
 	}
 
-	private void startFileWatcher(Display display, final File file, CompletableFuture<Object> received,
-			WatchService ws, String id) {
+	protected void writeEvalMessage(String eval) {
+		String encodeEval = Chromium.encodeType(eval);
+		try {
+			raf.writeBytes(MsgType.Eval.str()); // Eval
+			raf.writeBytes("\n"+encodeEval+"\n");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void startFileWatcher(Display display, final File file, String id) {
 		Thread t = new Thread(() -> {
 			long timeOut = System.currentTimeMillis() + 60000;
-			try {
-				WatchKey key = ws.take();
-				while (!received.isDone()) {
-					for (WatchEvent<?> event : key.pollEvents()) {
-						if (StandardWatchEventKinds.ENTRY_MODIFY.equals(event.kind())
-								&& file.getName().equals(event.context().toString())) {
-							String evalContext = new String(Files.readAllBytes(Paths.get(file.getAbsolutePath())));
-							file.delete();
-							Object[] decodeType = ((Object[]) decodeType(evalContext, SWT.ERROR_INVALID_RETURN_VALUE));
-							if (!id.equals(decodeType[0]))
-								return;
-							finish(display, received, ws, decodeType[1]);
+			try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
+				this.raf = raf;
+				while (!received.isEmpty()) {
+					long offset = raf.getFilePointer();
+					String type = raf.readLine();
+					if (type != null) {
+						String line = raf.readLine();
+						if (line == null) {
+							raf.seek(offset);
+							continue;
 						}
+						try {
+							Object[] payload = ((Object[]) decodeType(line, type.equals(MsgType.BfCall.str()) ? SWT.ERROR_INVALID_ARGUMENT : SWT.ERROR_INVALID_RETURN_VALUE));
+							if (payload.length == 3) { // BF call
+								Integer index = Integer.valueOf((String) payload[1]);
+								String token = (String) payload[0];
+								Object[] args = (Object[]) payload[2];
+								BrowserFunction browserFunction = chromium.functions.get(index);
+								if (browserFunction != null && browserFunction.token.equals(token)) {
+									debug("eval calling function: "+browserFunction.getName());
+									Chromium.asyncExec(() -> {
+										Object ret = null;
+										try {
+											ret = browserFunction.function(args);
+											String encodeType = Chromium.encodeType(ret);
+											raf.writeBytes(MsgType.BfRet.str()); // BF ret
+											raf.writeBytes("\n"+encodeType+"\n");
+										} catch(Throwable e) {
+											try {
+												raf.writeBytes(MsgType.BfRetEx.str()); // BF ret
+												raf.writeBytes("\n"+e.toString()+"\n");
+											} catch (IOException e1) {
+												e1.printStackTrace();
+											}
+										}
+									});
+								}
+							}
+							else if (payload.length == 2) { // Eval return
+								if (id.equals(payload[0])) {
+									finish(display, file, payload[1]);
+								}
+							}
+						} catch (SWTException e1) {
+							if (type.equals(MsgType.BfCall.str()) && e1.code == SWT.ERROR_INVALID_ARGUMENT) {
+								raf.writeBytes(MsgType.BfRetEx.str()); // BF ret
+								raf.writeBytes("\n"+e1.toString()+"\n");
+							} else {
+								finish(display, file, e1);
+							}
+						}
+					} else {
+						Thread.sleep(30);
 					}
 					if (System.currentTimeMillis() > timeOut) {
-						finish(display, received, ws, new SWTException("Evaluate timeout exception"));
+						finish(display, file, new SWTException("Evaluate timeout exception"));
 					}
 				}
 			} catch (Throwable throwable) {
-				finish(display, received, ws, throwable);
+				finish(display, file, throwable);
+			} finally {
+				this.raf = null;
+				if (file.exists())
+					file.delete();
 			}
 		}, "eval");
 		t.setDaemon(true);
 		t.start();
 	}
 
-	private void finish(Display display, CompletableFuture<Object> received, WatchService ws, Object decodeType) {
-		received.complete(decodeType);
-		display.wake();
-		try {
-			ws.close();
-		} catch (IOException e) {}
+	private void finish(Display display, File file, Object decodeType) {
+		if (file != null)
+			file.delete();
+		if (decodeType instanceof SWTException)
+			received.pop().completeExceptionally((SWTException)decodeType);
+		else
+			received.pop().complete(decodeType);
+		if (display != null) 
+			display.wake();
 	}
 
-	private File createTmpFile() {
+	private File createTmpFile() throws IOException {
 		Path dir = Paths.get(System.getProperty("java.io.tmpdir"), EVAL_FILE_NAME);
 		try {
 			Files.createDirectory(dir);
@@ -119,12 +199,7 @@ public class EvalFileImpl extends AbstractEval {
 			//Directory already exists;
 		}
 
-		try {
-			File file = Files.createTempFile(dir, "eval", null).toFile();
-			return file;
-		} catch (IOException e) {
-			new SWTException(e.getMessage());
-		}
-		return null;
+		File file = Files.createTempFile(dir, "eval", null).toFile();
+		return file;
 	}
 }

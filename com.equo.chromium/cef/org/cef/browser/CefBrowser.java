@@ -403,4 +403,16 @@ public interface CefBrowser {
      * @param eval complete function to evaluate using a file impl.
      */
     public void sendEvalMessage(String file, String eval);
+
+    /**
+     * Add reference implementation for current browser instance
+     * @param reference
+     */
+    public void setReference(Object reference);
+
+    /**
+     * 
+     * @return reference implementation for current browser instance
+     */
+    public Object getReference();
 }

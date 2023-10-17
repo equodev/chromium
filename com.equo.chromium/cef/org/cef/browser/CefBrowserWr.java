@@ -4,12 +4,6 @@
 
 package org.cef.browser;
 
-import org.cef.CefClient;
-import org.cef.OS;
-import org.cef.handler.CefWindowHandler;
-import org.cef.handler.CefWindowHandlerAdapter;
-import org.cef.misc.Point;
-
 import java.awt.BorderLayout;
 import java.awt.Canvas;
 import java.awt.Component;
@@ -39,6 +33,12 @@ import javax.swing.MenuSelectionManager;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.ToolTipManager;
+
+import org.cef.CefClient;
+import org.cef.OS;
+import org.cef.handler.CefWindowHandler;
+import org.cef.handler.CefWindowHandlerAdapter;
+import org.cef.misc.Point;
 
 /**
  * This class represents a windowed rendered browser.
@@ -260,7 +260,9 @@ class CefBrowserWr extends CefBrowserSwing {
         component_.addFocusListener(new FocusListener() {
             @Override
             public void focusLost(FocusEvent e) {
-                setFocus(false);
+                if (!OS.isLinux()) {
+                    setFocus(false);
+                }
             }
 
             @Override

@@ -111,6 +111,11 @@ public class CefSettings {
     public boolean windowless_rendering_enabled = true;
 
     /**
+     * Enable Chrome runtime
+     */
+    public boolean chrome_runtime = Boolean.getBoolean("chrome_runtime");
+
+    /**
      * Set to true to disable configuration of browser process features using
      * standard CEF and Chromium command-line arguments. Configuration can still
      * be specified using CEF data structures or via the
@@ -276,6 +281,7 @@ public class CefSettings {
         if (background_color != null) tmp.background_color = background_color.clone();
         tmp.cookieable_schemes_list = cookieable_schemes_list;
         tmp.cookieable_schemes_exclude_defaults = cookieable_schemes_exclude_defaults;
+        tmp.chrome_runtime = chrome_runtime;
         return tmp;
     }
 }

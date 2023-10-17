@@ -4,8 +4,6 @@
 
 package org.cef.callback;
 
-import org.cef.browser.CefBrowser;
-
 import java.util.Vector;
 
 /**

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" immediate="true" name="com.equo.chromium.swt.internal.SetTextResourceHandler">
+  <implementation class="com.equo.chromium.swt.internal.SetTextResourceHandler"/>
+  <reference bind="setMiddlewareService" cardinality="1..1" interface="com.equo.middleware.api.IMiddlewareService" name="IMiddlewareService" policy="static" unbind="unsetMiddlewareService"/>
+</scr:component>

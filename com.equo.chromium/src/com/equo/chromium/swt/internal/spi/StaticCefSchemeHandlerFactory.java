@@ -44,7 +44,10 @@ public class StaticCefSchemeHandlerFactory implements CefSchemeHandlerFactory {
 		SchemeHandler schemeHandler = schemeHandlerManager.getSchemeHandler(schemeData.getScheme(),
 				schemeData.getDomain());
 		if (schemeHandler != null) {
-			return new DelegatingCefResourceHandler(schemeHandler);
+			CefResourceHandler handler = new DelegatingCefResourceHandler(schemeHandler);
+			if (handler.processRequest(request, null)) {
+				return handler;
+			}
 		}
 		return null;
 	}

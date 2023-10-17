@@ -21,20 +21,21 @@
 ****************************************************************************/
 
 
-package com.equo.chromium.swt.internal.spi;
+package com.equo.chromium.utils;
 
-import java.io.InputStream;
-import java.nio.charset.Charset;
 import java.util.Map;
 
-public interface SchemeHandler {
+public class EventAction implements Runnable {
+	protected Map<String,Object> mapData;
 
-	public boolean processRequest(String url, String method, Map<String, String> headers);
-
-	default public Charset getDefaultCharset(String mimeType) {
-		return Charset.defaultCharset();
+	public EventAction setJsonData(Map<String,Object> mapData) {
+		this.mapData = mapData;
+		return this;
 	}
-	
-	public InputStream getResponseData(Map<String, String> responseHeaders);
+
+	@Override
+	public void run() {
+
+	}
 
 }

@@ -103,6 +103,13 @@ public abstract class CefClientHandler implements CefNative {
     abstract protected CefDragHandler getDragHandler();
 
     /**
+     * Return the handler for find result events.
+     * This method is a callback method and is called by
+     * the native code.
+     */
+    abstract protected CefFindHandler getFindHandler();
+
+    /**
      * Return the handler for focus events.
      * This method is a callback method and is called by
      * the native code.
@@ -215,6 +222,14 @@ public abstract class CefClientHandler implements CefNative {
         }
     }
 
+    protected void removeFindHandler(CefFindHandler h) {
+        try {
+            N_removeFindHandler(h);
+        } catch (UnsatisfiedLinkError err) {
+            err.printStackTrace();
+        }
+    }
+
     protected void removeFocusHandler(CefFocusHandler h) {
         try {
             N_removeFocusHandler(h);
@@ -303,6 +318,7 @@ public abstract class CefClientHandler implements CefNative {
     private final native void N_removeDisplayHandler(CefDisplayHandler h);
     private final native void N_removeDownloadHandler(CefDisplayHandler h);
     private final native void N_removeDragHandler(CefDragHandler h);
+    private final native void N_removeFindHandler(CefFindHandler h);
     private final native void N_removeFocusHandler(CefFocusHandler h);
     private final native void N_removeJSDialogHandler(CefJSDialogHandler h);
     private final native void N_removeKeyboardHandler(CefKeyboardHandler h);

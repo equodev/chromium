@@ -2,6 +2,7 @@ package org.cef;
 
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefBrowserStandalone;
+import org.cef.browser.CefBrowserWl;
 import org.cef.browser.CefRequestContext;
 
 public class CefClientStandalone extends CefClient {
@@ -11,22 +12,22 @@ public class CefClientStandalone extends CefClient {
     public CefBrowser createBrowser(String url, boolean isOffscreenRendered, boolean isTransparent,
             CefRequestContext context) {
         creating = true;
+        if (isOffscreenRendered) {
+            return new CefBrowserWl(this, url, context);
+        }
         return new CefBrowserStandalone(this, url, context);
     }
 
     @Override
     public void onBeforeClose(CefBrowser browser) {
         super.onBeforeClose(browser);
-        if (!isDisposed_ && getAllBrowser().length == 0 && !creating) {
-            dispose();
-        }
-        new Thread(() -> {
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException e) {
+        if (CefApp.getInstance().getAllClients().size() > 1 || isDisposed_) {
+            if (!isDisposed_ && getAllBrowser().length == 0 && creating) {
+                dispose();
             }
-            System.exit(0);
-        }).start();
+            return;
+        }
+        CefApp.getInstance().quitMessageLoop();
     }
 
     public boolean isDisposed() {

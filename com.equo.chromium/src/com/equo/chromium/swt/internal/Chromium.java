@@ -24,7 +24,9 @@
 package com.equo.chromium.swt.internal;
 
 import static com.equo.chromium.internal.Engine.debug;
+import static org.cef.callback.CefMenuModel.MenuItemType.MENUITEMTYPE_SEPARATOR;
 
+import java.io.IOException;
 import java.net.HttpCookie;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -32,6 +34,8 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -73,6 +77,7 @@ import org.cef.callback.CefDownloadItemCallback;
 import org.cef.callback.CefFileDialogCallback;
 import org.cef.callback.CefJSDialogCallback;
 import org.cef.callback.CefMenuModel;
+import org.cef.callback.CefMenuModel.MenuId;
 import org.cef.callback.CefQueryCallback;
 import org.cef.callback.CefStringVisitor;
 import org.cef.handler.CefContextMenuHandlerAdapter;
@@ -91,6 +96,7 @@ import org.cef.handler.CefLifeSpanHandlerAdapter;
 import org.cef.handler.CefLoadHandler.ErrorCode;
 import org.cef.handler.CefLoadHandlerAdapter;
 import org.cef.handler.CefMessageRouterHandlerAdapter;
+import org.cef.handler.CefPrintHandlerAdapter;
 import org.cef.handler.CefRequestHandlerAdapter;
 import org.cef.handler.CefResourceHandler;
 import org.cef.handler.CefResourceHandlerAdapter;
@@ -150,6 +156,8 @@ import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Monitor;
 import org.eclipse.swt.widgets.ProgressBar;
@@ -173,11 +181,43 @@ import com.github.cliftonlabs.json_simple.Jsoner;
 
 @SuppressWarnings("restriction")
 final class Chromium extends WebBrowser {
-	private static final String DATA_TEXT_URL = "data:text/html;base64,";
+	private static final String DATA_TEXT_URL = "data:text/html";
+	private static final String ABOUT_BLANK = "about:blank";
+	private static final String DATA_TEXT_BASE64_URL = DATA_TEXT_URL + ";base64,";
 	private static final int MAX_PROGRESS = 100;
-	
+	private static String setTextUrl = "";
+	private static int GTK_VERSION = 0;
+	private static final boolean CHROME_RUNTIME = Boolean.getBoolean("chrome_runtime");
+
 	static {
 		setupCookies();
+		try {
+			if ("gtk".equals(SWT.getPlatform())) {				
+				GTK_VERSION = getGtkVersion();
+			}
+		} catch (ReflectiveOperationException e) {
+		}
+	}
+	
+	static int getGtkVersion() throws ReflectiveOperationException {
+		String swtGtk3 = System.getenv().get("SWT_GTK3");
+		if (swtGtk3 != null && "0".equals(swtGtk3)) {
+			return 2;
+		}
+
+		Class<?> gtkClass = null;
+		String major = null;
+		try {
+			gtkClass = Class.forName("org.eclipse.swt.internal.gtk.GTK");
+			major = "gtk_get_major_version";
+		} catch (ClassNotFoundException e) {
+			try {
+				gtkClass = Class.forName("org.eclipse.swt.internal.gtk.OS");
+				major = "gtk_major_version";
+			} catch (ClassNotFoundException e1) {
+			}
+		}
+		return (int) gtkClass.getDeclaredMethod(major).invoke(null);
 	}
 	
 	private static CefClientSwt clientHandler;
@@ -193,7 +233,7 @@ final class Chromium extends WebBrowser {
 	private static DownloadHandler downloadHandler;
 	private static CefMessageRouter router;
 	
-	Browser chromium;
+	Composite chromium;
 	OpenWindowListener[] openWindowListeners = new OpenWindowListener[0];
 	private CefFocusListener focusListener;
 	private String url;
@@ -220,10 +260,13 @@ final class Chromium extends WebBrowser {
 	private ControlAdapter fullscreenListener = null;
 	private ResizeListener resize;
 	private boolean inEvalBlocking = false;
+	private EvalFileImpl eval;
+	FindDialog findDialog = null;
+	private static boolean winSkipFocus = true;
 
 	Chromium() {
 	}
-	
+
 	public void addOpenWindowListener (OpenWindowListener listener) {
 		OpenWindowListener[] newOpenWindowListeners = new OpenWindowListener[openWindowListeners.length + 1];
 		System.arraycopy(openWindowListeners, 0, newOpenWindowListeners, 0, openWindowListeners.length);
@@ -251,7 +294,8 @@ final class Chromium extends WebBrowser {
 		openWindowListeners = newOpenWindowListeners;
 	}
 	
-	public void setBrowser (Browser browser) {
+	@Override
+	public void setBrowser (Composite browser) {
 		super.setBrowser(browser);
 		this.chromium = browser;
 	}
@@ -318,12 +362,12 @@ final class Chromium extends WebBrowser {
 						break;
 					}
 					Object payload = AbstractEval.decodeType(encoded, SWT.ERROR_INVALID_ARGUMENT);
-					if (payload.getClass().isArray() && ((Object[])payload).length >= 2) {
+					if (payload.getClass().isArray() && ((Object[])payload).length >= 3) {
 						String token = (String) ((Object[])payload)[0];
-						Object[] args = (Object[]) ((Object[])payload)[1];
+						Object[] args = (Object[]) ((Object[])payload)[2];
 						BrowserFunction browserFunction = functions.get(index);
 						if (browserFunction != null && browserFunction.token.equals(token)) {
-							if (((Object[])payload).length == 3) {
+							if (((Object[])payload).length == 4) {
 								debug("processRequest return function result: "+browserFunction.getName());
 								synchronized (browserFunction) {
 									if (resp.length > 0)
@@ -451,9 +495,11 @@ final class Chromium extends WebBrowser {
 			chromium.addKeyListener(new KeyAdapter() {
 				@Override
 				public void keyPressed(KeyEvent e) {
-					if (((e.stateMask & SWT.CTRL) == SWT.CTRL) && (e.keyCode == 'f') && !FindDialog.isOpen()) {
-						FindDialog findDialog = new FindDialog(extraApi(), chromium.getShell());
-						findDialog.open();
+					if (((e.stateMask & SWT.CTRL) == SWT.CTRL) && (e.keyCode == 'f')) {
+						if (findDialog == null || (findDialog != null && !findDialog.isOpen())) {
+							findDialog = new FindDialog(extraApi, chromium.getShell());
+							findDialog.open();
+						}
 					}
 				}
 			});
@@ -509,7 +555,7 @@ final class Chromium extends WebBrowser {
 		}
 
 		Net.config();
-		cefBrowser = (CefBrowserSwt) clientHandler.createBrowser(this.url == null ? "about:blank" : this.url, false,
+		cefBrowser = (CefBrowserSwt) clientHandler.createBrowser(this.url == null ? ABOUT_BLANK : this.url, false,
 				false, extraApi().createRequestContext());
 		cefBrowser.createImmediately(chromium);
 	}
@@ -550,11 +596,12 @@ final class Chromium extends WebBrowser {
 		setJsdialogHandler();
 		setContextMenuHandler();
 		setDownloadHandler();
+		setPrintHandler();
 
 		CommunicationManager commManager = CommunicationManager.get();
 		if (commManager != null) {
 			CefMessageRouter commRouter = CommRouterHandler.createRouter();
-			commRouter.addHandler(new CommRouterHandler(commManager), true);
+			commRouter.addHandler(CommRouterHandler.getInstance(commManager), true);
 			clientHandler.addMessageRouter(commRouter);
 		}
 
@@ -585,11 +632,19 @@ final class Chromium extends WebBrowser {
 		CefBrowser cefBrowser = browser;
 		if (cefBrowser.isPopup()) {
 			cefBrowser = getTopParentPopup(browser);
-			//Popup not contains parent
-			if (cefBrowser == null) return null;
+			// Popup not contains parent
+			if (cefBrowser == null)
+				return null;
 		}
-		Browser composite = (Browser) ((CefBrowserSwt) cefBrowser).getComposite();
-		ExtraApi webBrowser = (ExtraApi) composite.getWebBrowser();
+		Composite composite = ((CefBrowserSwt) cefBrowser).getComposite();
+		ExtraApi webBrowser = null;
+		if (composite instanceof Browser) {
+			Browser chromiumBrowser = (Browser) composite;
+			webBrowser = (ExtraApi) chromiumBrowser.getWebBrowser();
+		} else {
+			org.eclipse.swt.browser.Browser swtBrowser = (org.eclipse.swt.browser.Browser) composite;
+			webBrowser = (ExtraApi) swtBrowser.getWebBrowser();
+		}
 		return webBrowser.getChromium();
 	}
 
@@ -629,7 +684,10 @@ final class Chromium extends WebBrowser {
 		@Override
 		public boolean onBeforePopup(CefBrowser browser, CefFrame frame, String target_url, String target_frame_name, String popupFeatures) {
 			debug("onBeforePopup", browser);
-			if (!browser.isPopup()) {
+			if ("_external".equals(target_frame_name)) {
+				return Program.launch(target_url);
+			}
+			else if (!browser.isPopup()) {
 				return getChromium(browser).onBeforePopup(target_url, target_frame_name, popupFeatures);
 			}
 			return false;
@@ -637,14 +695,21 @@ final class Chromium extends WebBrowser {
 	};
 
 	private void onBeforeClose() {
-		syncExec(() -> fireCloseListener());
 		for (BrowserFunction function : new ArrayList<>(functions.values())) {
 			function.dispose(true);
 		}
 		functions.clear();
-		if (disposing == Dispose.FromBrowser) {
-			syncExec(() -> chromium.dispose());
+		if (CHROME_RUNTIME) {
+			doDispose();
 		}
+		if (disposing == Dispose.FromBrowser) {
+			syncExec(() -> {
+				fireCloseListener();
+				chromium.dispose();
+			});
+		}
+		
+		deleteTempFolder();
 
 		this.chromium = null;
 		debugPrint("closed");
@@ -669,19 +734,23 @@ final class Chromium extends WebBrowser {
 //			return false;
 //		}
 
-		if (disposing == Dispose.FromClose || disposing == Dispose.Unload || disposing == Dispose.UnloadClosed || disposing == Dispose.WaitIfClosed) {
+		doDispose();
+		debugPrint("AFTER DoClose");
+		return true;
+	}
+
+	private void doDispose() {
+		if (disposing == Dispose.FromClose || disposing == Dispose.Unload || disposing == Dispose.UnloadClosed
+				|| disposing == Dispose.WaitIfClosed) {
 			disposing = Dispose.DoIt;
-		}
-		else if (disposing == Dispose.No) {
+		} else if (disposing == Dispose.No) {
 			if (chromium != null) {
 				disposing = Dispose.FromBrowser;
 				asyncExec(chromium::dispose);
 			}
 		}
-		debugPrint("AFTER DoClose");
-		return true;
 	}
-	
+
 	private void onAfterCreated() {
 		if (isDisposed()) return;
 		
@@ -689,7 +758,7 @@ final class Chromium extends WebBrowser {
 //				debugPrint("load url after created");
 //				doSetUrlPost(browser, url, postData, headers);
 //			}
-//			else if (!"about:blank".equals(this.url)) {
+//			else if (!ABOUT_BLANK.equals(this.url)) {
 //				enableProgress.complete(true);
 //			}
 		syncExec(() -> cefBrowser.resize());
@@ -959,7 +1028,7 @@ final class Chromium extends WebBrowser {
 	private void onAddressChange(CefFrame frame, String url) {
 		if (isDisposed()) return;
 
-		if (allowTurboLink() && !"about:blank".equals(url)) {
+		if (allowTurboLink() && !ABOUT_BLANK.equals(url)) {
 			// Filter changed event when there was no changing event.
 			if (!changedCache.containsKey(url)) {
 				return;
@@ -1133,7 +1202,7 @@ final class Chromium extends WebBrowser {
 			} else {
 				String requestUrl = request.getURL();
 				if (!requestUrl.startsWith("http") && !requestUrl.startsWith("data") && !requestUrl.startsWith("file")
-						&& !requestUrl.startsWith("chrome") && !requestUrl.startsWith("about")) {
+						&& !requestUrl.startsWith("chrome") && !requestUrl.startsWith("about") && !requestUrl.startsWith("devtools")) {
 					if (shouldAllowProtocol(requestUrl, browser)) {
 						return new CefResourceRequestHandlerAdapter() {
 							@Override
@@ -1168,12 +1237,14 @@ final class Chromium extends WebBrowser {
 		private boolean containsTurbolinkHeader(CefRequest request) {
 			Map<String, String> headers = new HashMap<String, String>();
 			request.getHeaderMap(headers);
+			Map<String, String> headersLowerCase = headers.keySet().stream()
+					.collect(Collectors.toMap(key -> key.toLowerCase(), key -> headers.get(key)));
 			String[] turbolinkHeaders = System.getProperty("chromium.turbolinks", "").split(";");
 			for (String turbolinkHeader : turbolinkHeaders) {
 				if (turbolinkHeader.contains("=")) {
-					String hKey = turbolinkHeader.split("=")[0];
+					String hKey = turbolinkHeader.split("=")[0].toLowerCase();
 					String hValue = turbolinkHeader.split("=")[1];
-					if (headers.containsKey(hKey) && headers.get(hKey).equals(hValue)) {
+					if (headersLowerCase.containsKey(hKey) && headersLowerCase.get(hKey).equals(hValue)) {
 						return true;
 					}
 				}
@@ -1596,23 +1667,149 @@ final class Chromium extends WebBrowser {
 		contextMenuHandler = new ContextMenuHandler();
 		clientHandler.addContextMenuHandler(contextMenuHandler);
 	}
-	
+
 	static class ContextMenuHandler extends CefContextMenuHandlerAdapter {
-		public void onBeforeContextMenu(CefBrowser browser, CefFrame frame, CefContextMenuParams params, CefMenuModel model) {
+		@Override
+		public void onBeforeContextMenu(CefBrowser browser, CefFrame frame, CefContextMenuParams params,
+				CefMenuModel model) {
 			debug("onBeforeContextMenu", browser);
 			if (!browser.isPopup()) {
 				getChromium(browser).onBeforeContextMenu(model);
 			}
 		};
-	}
-	
-	private void onBeforeContextMenu(CefMenuModel model) {
-		syncExec(() -> {
-			if (chromium.getMenu() != null) {
-				model.clear();
-				chromium.getMenu().setVisible(true);
+
+		@Override
+		public boolean onContextMenuCommand(CefBrowser browser, CefFrame frame, CefContextMenuParams params,
+				int commandId, int eventFlags) {
+			debug("onContextMenuCommand", browser);
+			if (!browser.isPopup()) {
+				return getChromium(browser).onContextMenuCommand(params, commandId);
 			}
-		});
+			return false;
+		}
+	}
+
+	private void onBeforeContextMenu(CefMenuModel model) {
+		boolean hasMenu = syncExec(() -> chromium.getMenu() != null);
+
+		if (hasMenu) {
+			model.clear();
+			boolean isGTK = "gtk".equals(SWT.getPlatform());
+			if (isGTK && GTK_VERSION == 2) {
+				int commandIdCounter = MenuId.MENU_ID_USER_FIRST;
+				syncExec(() -> {
+					copyMenu(chromium.getMenu(), model, commandIdCounter);
+				});
+			} else {
+				asyncExec(() -> {
+					if (isGTK) {
+						Display.getDefault().timerExec(200, () -> {
+							chromium.getMenu().setVisible(true);
+						});
+					} else {
+						chromium.getMenu().setVisible(true);
+					}
+				});
+			}
+		} else if (CHROME_RUNTIME) {
+			clearExtraMenuItem(model);
+		}
+	}
+
+	// This method removes extra items in the context menu when the chrome-runtime
+	// is enabled.
+	private void clearExtraMenuItem(CefMenuModel menu) {
+		for (int i = menu.getCount() - 1; i >= 0; i--) {
+			String label = menu.getLabelAt(i).toLowerCase();
+			if (label.contains("save") || label.contains("cast") || label.contains("qr") || label.contains("nspect")
+					|| label.contains("search google")) {
+				if (menu.hasAcceleratorAt(i)) {
+					menu.removeAcceleratorAt(i);
+				}
+				menu.removeAt(i);
+			} else if (menu.getTypeAt(i).equals(MENUITEMTYPE_SEPARATOR)) {
+				menu.removeAt(i);
+			}
+		}
+	}
+
+	public boolean onContextMenuCommand(CefContextMenuParams params, int commandId) {
+		if (GTK_VERSION == 2) {
+			AtomicBoolean ab = new AtomicBoolean();
+			syncExec(() -> {
+				Menu menu = chromium.getMenu();
+				if (menu != null) {
+					ab.set(handleMenuEvent(menu, commandId, params));
+				}
+			});
+			return ab.get();
+		} else {
+			return false;
+		}
+	}
+
+	private boolean handleMenuEvent(Menu menu, int commandId, CefContextMenuParams params) {
+		for (MenuItem menuItem : menu.getItems()) {
+			boolean wasHandled = false;
+			if (menuItem.getMenu() != null) {
+				wasHandled = handleMenuEvent(menuItem.getMenu(), commandId, params);
+			}
+			if (!wasHandled) {
+				int myCommandId = (int) menuItem.getData("commandId");
+				if (commandId == myCommandId) {
+					Listener[] listeners = menuItem.getListeners(SWT.Selection);
+
+					Event event = new Event();
+					event.display = menuItem.getDisplay();
+					event.data = menuItem.getData();
+					event.item = menuItem;
+					event.widget = menuItem;
+					event.type = SWT.Selection;
+					event.y = params.getYCoord();
+					event.x = params.getXCoord();
+
+					for (Listener listener : listeners) {
+						listener.handleEvent(event);
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	public static CefMenuModel copyMenu(Menu originalMenu, CefMenuModel copiedMenu, int commandIdCounter) {
+		for (MenuItem menuItem : originalMenu.getItems()) {
+			commandIdCounter++;
+			menuItem.setData("commandId", commandIdCounter);
+			int style = menuItem.getStyle();
+			String label = menuItem.getText();
+			boolean enabled = menuItem.isEnabled();
+			boolean checked = menuItem.getSelection();
+
+			if ((style & SWT.CHECK) != 0) {
+				copiedMenu.addCheckItem(commandIdCounter, label);
+				copiedMenu.setEnabledAt(commandIdCounter, enabled);
+				copiedMenu.setChecked(commandIdCounter, checked);
+			} else if ((style & SWT.PUSH) != 0) {
+				copiedMenu.addItem(commandIdCounter, label);
+			} else if ((style & SWT.RADIO) != 0) {
+				copiedMenu.addRadioItem(commandIdCounter, label, 0);
+				copiedMenu.setEnabledAt(commandIdCounter, enabled);
+				copiedMenu.setChecked(commandIdCounter, checked);
+			} else if ((style & SWT.CASCADE) != 0) {
+				Menu subMenu = menuItem.getMenu();
+				if (subMenu != null) {
+					CefMenuModel subMenuModel = copiedMenu.addSubMenu(commandIdCounter, label);
+					copyMenu(subMenu, subMenuModel, commandIdCounter);
+				}
+			} else if ((style & SWT.SEPARATOR) != 0) {
+				copiedMenu.addSeparator();
+			}
+			copiedMenu.setEnabledAt(commandIdCounter, enabled);
+			copiedMenu.setVisible(commandIdCounter, true);
+		}
+		return copiedMenu;
 	}
 
 	private static void setDownloadHandler() {
@@ -1636,7 +1833,11 @@ final class Chromium extends WebBrowser {
 			Chromium.onDownloadUpdated(browser.getIdentifier(), downloadItem, callback);
 		}
 	}
-	
+
+	private static void setPrintHandler() {
+		clientHandler.addPrintHandler(new  CefPrintHandlerAdapter() { });
+	}
+
 	private void onBeforeDownload(CefDownloadItem download_item, String suggested_name, CefBeforeDownloadCallback callback) {
 		String name = suggested_name;
 
@@ -2062,7 +2263,7 @@ final class Chromium extends WebBrowser {
 			if (!browser.isPopup()) {
 				return getChromium(browser).onSetFocus(source);
 			}
-			return false;
+			return "win32".equals(SWT.getPlatform());
 		}
 
 		@Override
@@ -2098,7 +2299,8 @@ final class Chromium extends WebBrowser {
 
 	private boolean onSetFocus(FocusSource focusSource) {
 		if (isDisposed()) return true;
-		boolean chromiumFocusControl = "gtk".equals(SWT.getPlatform()) ? true : syncExec(() -> chromium.getDisplay().getFocusControl()) != chromium;
+		boolean chromiumFocusControl = "gtk".equals(SWT.getPlatform()) ? true
+				: syncExec(() -> chromium.getDisplay().getFocusControl()) != chromium;
 		if (ignoreFirstFocus && chromiumFocusControl && focusSource == FocusSource.FOCUS_SOURCE_NAVIGATION) {
 			debugPrint("ignoreFirstFocus");
 			ignoreFirstFocus = false;
@@ -2108,6 +2310,8 @@ final class Chromium extends WebBrowser {
 		if (syncExec(() -> isDisposed() ? true : chromium.isFocusControl())) {
 			if (focusListener != null)
 				focusListener.enabled = true;
+		} else if ("win32".equals(SWT.getPlatform()) && winSkipFocus) {
+			winSkipFocus = false;
 		} else {
 			if (focusListener != null && !"gtk".equals(SWT.getPlatform()))
 				focusListener.enabled = false;
@@ -2260,6 +2464,25 @@ final class Chromium extends WebBrowser {
 			resize.remove();
 		}
 	}
+	
+	private void deleteTempFolder() {
+		Path tempFilesToDelete = getBrowserTempFolder();
+		if (!Files.exists(tempFilesToDelete)) {
+			return;
+		}
+		try {
+			// sorted is necessary to delete files first
+			Files.walk(tempFilesToDelete).sorted((path1, path2) -> -path1.compareTo(path2)).forEach(t -> {
+				try {
+					Files.deleteIfExists(t);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			});
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	private static void setupCookies() {
 		WebBrowser.NativeClearSessions = () -> {
@@ -2322,6 +2545,10 @@ final class Chromium extends WebBrowser {
 				break;
 			}
 		};
+		if (NativePendingCookies != null) {
+			SetPendingCookies(NativePendingCookies);
+			NativePendingCookies = null;
+		}
 		WebBrowser.NativeGetCookie = () -> {
 			AtomicBoolean cookieVisited = new AtomicBoolean();
 			CefCookieVisitor visitor = new CefCookieVisitor() {
@@ -2350,7 +2577,7 @@ final class Chromium extends WebBrowser {
 					throw new SWTException("Failed to get cookies");
 				}
 				long end = System.currentTimeMillis()+250;
-				Display display = Display.getCurrent();
+				Display display = Display.getCurrent() == null ? Display.getDefault() : Display.getCurrent();
 				while (!cookieVisited.get() && !display.isDisposed() && System.currentTimeMillis() < end) {
 //					debug("in cookie loop");
 					if (!display.readAndDispatch()) {
@@ -2594,11 +2821,16 @@ final class Chromium extends WebBrowser {
 		}
 		checkBrowser();
 		AbstractEval eval = null;
+		boolean destroy = false;
 		try {
 			if (!functionsResourceHandler.isEmpty() && functionsResourceHandler.peek().inFunction) {
 				eval = new EvalBrowserFunctionImpl(router, functionsResourceHandler.peek());
 			} else if (inEvalBlocking) {
-				eval = new EvalFileImpl(cefBrowser);
+				if (this.eval == null) {
+					this.eval = new EvalFileImpl(this, cefBrowser);
+					destroy = true;
+				}
+				eval = this.eval;
 			} else {
 				eval = new EvalSimpleImpl(cefBrowser, router, getPlainUrl(url));
 			}
@@ -2607,10 +2839,13 @@ final class Chromium extends WebBrowser {
 			throw new SWTException("Script that was evaluated failed");
 		} catch (ExecutionException e) {
 			throw (SWTException) e.getCause();
+		} finally {
+			if (destroy)
+				this.eval = null;
 		}
 	}
 
-	private String encodeType(Object ret) {
+	static String encodeType(Object ret) {
 		try {
 			return Jsoner.serialize(ret);
 		} catch(IllegalArgumentException e) {
@@ -2661,13 +2896,15 @@ final class Chromium extends WebBrowser {
 	public String getUrl() {
 		if (cefBrowser == null) {
 			if (this.url == null) {
-				return "about:blank";
+				return ABOUT_BLANK;
 			}
 			return getPlainUrl(this.url);
 		}
 		String cefurl = cefBrowser.getURL();
 		if (cefurl == null)
 			cefurl = getPlainUrl(this.url);
+		if (cefurl != null && cefurl.startsWith("file:") && cefurl.contains(getBrowserTempFolder().toString()))
+			return ABOUT_BLANK;
 		return cefurl;
 	}
 
@@ -2696,6 +2933,7 @@ final class Chromium extends WebBrowser {
 		if (extraApi == null) {
 			extraApi = new ExtraApi();
 		}
+		extraApi.setCreated();
 		return extraApi;
 	}
 
@@ -2706,16 +2944,56 @@ final class Chromium extends WebBrowser {
 			cefBrowser.reload();
 		}
 	}
+	
+	public Path getBrowserTempFolder() {
+		String tempPath = System.getProperty("java.io.tmpdir");
+		String id = "chromium" + "-" + this.hashCode();
+		return Paths.get(tempPath, id);
+	}
 
 	@Override
 	public boolean setText(String html, boolean trusted) {
-		String texturl = DATA_TEXT_URL + Base64.getEncoder().encodeToString(html.getBytes());
-		return setUrl(texturl, null, null);
+		String texturl = Base64.getEncoder().encodeToString(html.getBytes());
+		String setTextNewUrl = System.getProperty("chromium.setTextAsUrl", "");
+		if (!setTextNewUrl.isEmpty()) {
+			if (!setTextUrl.isEmpty() && !setTextUrl.equals(setTextNewUrl)) {
+				SetTextResourceHandler.unregisterScheme(setTextUrl);
+			}
+			if (setTextNewUrl.startsWith("file:")) {
+				try {
+					Path browserTempFolder = getBrowserTempFolder();
+					if (!Files.exists(browserTempFolder)) {
+						Files.createDirectory(browserTempFolder);
+					}
+					Path file = Files.createTempFile(browserTempFolder, "tempfile", ".html");
+					Files.write(file, html.getBytes(StandardCharsets.UTF_8.toString()));
+					file.toFile().deleteOnExit();
+					setTextUrl = file.toAbsolutePath().toUri().toString();
+					setUrl(setTextUrl, null, null);
+				} catch (IOException e) {
+					e.printStackTrace();
+					setUrl(DATA_TEXT_BASE64_URL + texturl, null, null);
+				}
+			} else {
+				if (!setTextUrl.equals(setTextNewUrl)) 
+					SetTextResourceHandler.configureScheme(setTextNewUrl);
+				setTextUrl = setTextNewUrl;
+				setUrl(setTextUrl + "/__text__", null,
+						new String[] { "dataText:" + texturl, "chromium:setText" });
+			}
+			return true;
+		}
+		return setUrl(DATA_TEXT_BASE64_URL + texturl, null, null);
 	}
-	
-	private static String getPlainUrl(String url) {
-		if (url != null && url.startsWith(DATA_TEXT_URL)) {
-			return url.substring(0, DATA_TEXT_URL.length()-8);
+
+	private String getPlainUrl(String url) {
+		if (url != null && url.startsWith(DATA_TEXT_BASE64_URL)) {
+			return DATA_TEXT_URL;
+		}
+		String setTextNewUrl = System.getProperty("chromium.setTextAsUrl", "");
+		if (!setTextNewUrl.isEmpty() && url != null && url.startsWith("file:")
+				&& url.contains(getBrowserTempFolder().toString())) {
+			return DATA_TEXT_URL;
 		}
 		return url;
 	}
@@ -2777,7 +3055,7 @@ final class Chromium extends WebBrowser {
 		return chromium == null || chromium.isDisposed();
 	}
 
-	void syncExec(Runnable run) {
+	static void syncExec(Runnable run) {
 		if (Display.getCurrent() != null) {
 			run.run();
 		} else {
@@ -2890,13 +3168,35 @@ final class Chromium extends WebBrowser {
 		}
 
 		@Override
-		public Object evaluate(String script) {
-			return Chromium.this.evaluate(script);
+		public boolean close() {
+			return super.close();
 		}
 
 		@Override
-		public boolean close() {
-			return Chromium.this.close();
+		public Object getUIComponent() {
+			return Chromium.this.cefBrowser.getComposite();
+		}
+
+		@Override
+		public boolean setText(String html) {
+			return Chromium.this.setText(html, true);
+		}
+
+		public void setCreated() {
+			if (eventActionOfAfterCreated != null && !isCreated().isDone()) {
+				Map<String, Object> mapData = new HashMap<>();
+				mapData.put("chromium_instance", (ChromiumBrowser)this);
+				eventActionOfAfterCreated.setJsonData(mapData);
+				eventActionOfAfterCreated.run();
+			}
+			isCreated().complete(true);
+		}
+		
+		@Override
+		public void showDevTools() {
+			created.thenRun(()-> {
+				getBrowser().getDevTools().createImmediately();
+			});
 		}
 	}
 	
@@ -2916,7 +3216,7 @@ final class Chromium extends WebBrowser {
 						else {
 							Transfer transfer = TextTransfer.getInstance();
 							cb.setContents(new Object[] { request }, new Transfer[] { transfer });
-						}	
+						}
 						callback.success(request);
 					} catch (Exception e) {
 						e.printStackTrace();

@@ -7,16 +7,12 @@ package org.cef.browser.mac;
 import org.cef.browser.CefBrowserWindow;
 
 import java.awt.Component;
-//import java.awt.peer.ComponentPeer;
-
-//import sun.awt.AWTAccessor;
-//import sun.lwawt.LWComponentPeer;
-//import sun.lwawt.PlatformWindow;
-//import sun.lwawt.macosx.CFRetainedResource;
-//import sun.lwawt.macosx.CPlatformWindow;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 
 public class CefBrowserWindowMac implements CefBrowserWindow {
-    @Override
     public long getWindowHandle(Component comp) {
         final long[] result = new long[1];
         while (comp != null) {
@@ -24,22 +20,59 @@ public class CefBrowserWindowMac implements CefBrowserWindow {
                 comp = comp.getParent();
                 continue;
             }
-//            ComponentPeer peer = AWTAccessor.getComponentAccessor().getPeer(comp);
-//            if (peer instanceof LWComponentPeer) {
-//                @SuppressWarnings("rawtypes")
-//                PlatformWindow pWindow = ((LWComponentPeer) peer).getPlatformWindow();
-//                if (pWindow instanceof CPlatformWindow) {
-//                    ((CPlatformWindow) pWindow).execute(new CFRetainedResource.CFNativeAction() {
-//                        @Override
-//                        public void run(long l) {
-//                            result[0] = l;
-//                        }
-//                    });
-//                    break;
-//                }
-//            }
+            try {
+                Class<?> accessor = Class.forName("sun.awt.AWTAccessor");
+                Object componentAccessor =
+                        accessor.getMethod("getComponentAccessor").invoke(accessor);
+                Method getPeer = componentAccessor.getClass().getMethod("getPeer", Component.class);
+                getPeer.setAccessible(true);
+                Object peer = getPeer.invoke(componentAccessor, comp);
+                if (isInstance(peer, "sun.lwawt.LWComponentPeer")) {
+                    Object componentPeerInst =
+                            Class.forName("sun.lwawt.LWComponentPeer").cast(peer);
+                    Method getPlatformWindow =
+                            componentPeerInst.getClass().getMethod("getPlatformWindow");
+                    getPlatformWindow.setAccessible(true);
+                    Object pWindow = getPlatformWindow.invoke(componentPeerInst);
+                    if (isInstance(pWindow, "sun.lwawt.macosx.CPlatformWindow")) {
+                        Class<?> nativeActionClass =
+                                Class.forName("sun.lwawt.macosx.CFRetainedResource$CFNativeAction");
+                        InvocationHandler ih = new InvocationHandler() {
+                            @Override
+                            public Object invoke(Object proxy, Method method, Object[] args)
+                                    throws Throwable {
+                                if ("run".equals(method.getName())) {
+                                    result[0] = (long) args[0];
+                                }
+                                return null;
+                            }
+                        };
+                        Object nativeActionInst =
+                                Proxy.newProxyInstance(nativeActionClass.getClassLoader(),
+                                        new Class[] {nativeActionClass}, ih);
+                        Object platformWindowInst =
+                                Class.forName("sun.lwawt.macosx.CPlatformWindow").cast(pWindow);
+                        Method execute = platformWindowInst.getClass().getMethod(
+                                "execute", nativeActionClass);
+                        execute.setAccessible(true);
+                        execute.invoke(platformWindowInst, nativeActionInst);
+                        break;
+                    }
+                }
+            } catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException
+                    | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+                e.printStackTrace();
+            }
             comp = comp.getParent();
         }
         return result[0];
+    }
+
+    private static boolean isInstance(Object instance, String clss) {
+        try {
+            return Class.forName(clss).isInstance(instance);
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 }

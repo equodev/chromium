@@ -21,20 +21,32 @@
 ****************************************************************************/
 
 
-package com.equo.chromium.swt.internal.spi;
+package com.equo.chromium.internal;
 
-import java.io.InputStream;
-import java.nio.charset.Charset;
-import java.util.Map;
+import org.cef.browser.CefBrowser;
 
-public interface SchemeHandler {
+public class PopupBrowser extends IndependentBrowser {
+    
+    public PopupBrowser (CefBrowser browser) {
+        setBrowser(browser);
+        getBrowser().setReference(this);
+    }
 
-	public boolean processRequest(String url, String method, Map<String, String> headers);
-
-	default public Charset getDefaultCharset(String mimeType) {
-		return Charset.defaultCharset();
-	}
-	
-	public InputStream getResponseData(Map<String, String> responseHeaders);
-
+    @Override
+    public Object getUIComponent() {
+        throw new UnsupportedOperationException();
+    }
+    
+    @Override
+    public boolean close() {
+        getBrowser().setCloseAllowed();
+        getBrowser().close(true);
+        unSubscribeAll();
+        return true;
+    }
+    
+    @Override
+    public void showDevTools() {
+        throw new UnsupportedOperationException();
+    }
 }

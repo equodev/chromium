@@ -38,14 +38,14 @@ import org.eclipse.swt.browser.StatusTextListener;
 import org.eclipse.swt.browser.TitleListener;
 import org.eclipse.swt.browser.VisibilityWindowListener;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Event;
 
-import com.equo.chromium.swt.Browser;
 import com.equo.chromium.swt.BrowserFunction;
 import com.equo.chromium.swt.OpenWindowListener;
 
 public abstract class WebBrowser {
-	Browser browser;
+	Control browser;
 	Map<Integer, BrowserFunction> functions = new HashMap<> ();
 	AuthenticationListener[] authenticationListeners = new AuthenticationListener[0];
 	CloseWindowListener[] closeWindowListeners = new CloseWindowListener[0];
@@ -641,7 +641,7 @@ boolean sendKeyEvent (Event event) {
 	return doit;
 }
 
-public void setBrowser (Browser browser) {
+public void setBrowser (Composite browser) {
 	this.browser = browser;
 }
 

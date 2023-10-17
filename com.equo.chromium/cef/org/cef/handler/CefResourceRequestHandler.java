@@ -6,7 +6,6 @@ package org.cef.handler;
 
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;
-import org.cef.callback.CefCallback;
 import org.cef.misc.BoolRef;
 import org.cef.misc.StringRef;
 import org.cef.network.CefRequest;
@@ -61,6 +60,25 @@ public interface CefResourceRequestHandler {
      * @return A CefResourceHandler instance or null.
      */
     CefResourceHandler getResourceHandler(CefBrowser browser, CefFrame frame, CefRequest request);
+
+    /**
+     *  Called on the IO thread to optionally filter resource response content.
+     *  The |browser| and |frame| values represent the source of the request, and
+     *  may be NULL for requests originating from service workers or
+     *  CefURLRequest. |request| and |response| represent the request and response
+     *  respectively and cannot be modified in this callback.
+     *
+     * @param browser The corresponding browser.
+     * @param frame The frame generating the event. Instance only valid within the scope of this
+     *         method.
+     * @param request The request itself. Cannot be modified in this callback. Instance only valid
+     *         within the scope of this method.
+     * @param response The response that resulted in the redirect. Cannot be modified in this
+     *         callback. Instance only valid within the scope of this method.
+     * @return A CefResponseFilter instance or null.
+     */
+    CefResponseFilter getResourceResponseFilter(
+            CefBrowser browser, CefFrame frame, CefRequest request, CefResponse response);
 
     /**
      * Called on the IO thread when a resource load is redirected. The |browser| and |frame| values

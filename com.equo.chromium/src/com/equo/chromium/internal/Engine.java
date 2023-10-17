@@ -23,6 +23,7 @@
 
 package com.equo.chromium.internal;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -45,6 +46,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.cef.CefApp;
 import org.cef.CefAppStandalone;
+import org.cef.CefAppSwing;
 import org.cef.CefAppSwt;
 import org.cef.CefClient;
 import org.cef.CefSettings;
@@ -53,6 +55,7 @@ import org.cef.SystemBootstrap;
 import org.cef.SystemBootstrap.Loader;
 import org.cef.WindowingToolkit;
 import org.cef.browser.CefBrowser;
+import org.cef.callback.CefCommandLine;
 import org.cef.callback.CefSchemeRegistrar;
 import org.cef.handler.CefAppHandlerAdapter;
 
@@ -67,7 +70,7 @@ public class Engine {
 	static {
 		loadLib();
 	}
-	private static final String CEFVERSION = "5249";
+	private static final String CEFVERSION = "5845";
 	private static final String SUBDIR = "chromium-" + CEFVERSION;
 	private static final String SCHEME_FILE = "file"; //$NON-NLS-1$
 	private static Path libsPath;
@@ -81,10 +84,18 @@ public class Engine {
 	public static final CompletableFuture<Boolean> ready = new CompletableFuture<>();
 	private static AtomicBoolean closing = new AtomicBoolean();
 	private static boolean multiThreaded;
+	
+	public static enum BrowserType {
+		SWT,
+		STANDALONE,
+		SWING
+	}
+
+	static BrowserType browserTypeInitialized = null;
 
 	private static void loadLib() {
 		if (OS.isLinux()) {
-			multiThreaded = System.getProperty("chromium.multi_threaded_message_loop") != null ? Boolean.getBoolean("chromium.multi_threaded_message_loop") : false;
+			multiThreaded = Boolean.getBoolean("chromium.multi_threaded_message_loop");
 			if (multiThreaded && Boolean.valueOf(System.getProperty("chromium.debug", "false")))
 				System.out.println("J: multi_threaded_message_loop enabled");
 		}
@@ -99,13 +110,33 @@ public class Engine {
 		if (!Files.exists(libsPath))
 			throw new RuntimeException("Missing binaries for Equo Chromium Browser.");
 		boolean checkGtkInit = checkGtkInit();
-		String[] args = getChromiumArgs(libsPath, Boolean.getBoolean("chromium.init_threads"), checkGtkInit);
+		String[] args = getChromiumArgs(libsPath, Boolean.getBoolean("chromium.init_threads"), checkGtkInit, null);
+		setupCrashReporter();
 		if (!CefApp.startup(args)) {
 			if (checkGtkInit) {
 				throw new RuntimeException("To run Chromium on Wayland, set env var GDK_BACKEND=x11 or call ChromiumBrowser.earlyInit() before creating a window");
 			}
 			throw new RuntimeException("Failed to load binaries for Equo Chromium Browser.");
 		}
+	}
+
+	private static void setupCrashReporter() {
+		File crashReportConfig = Paths.get(libsPath.toString(), "crash_reporter.cfg").toFile();
+		File crashReportDisabledConfig = Paths.get(libsPath.toString(), "crash_reporter_disabled.cfg").toFile();
+		if (isCrashReportedEnabled()) {
+			if (!crashReportConfig.exists() && crashReportDisabledConfig.exists()) {
+				crashReportDisabledConfig.renameTo(crashReportConfig);
+			}
+		} else {
+			if (crashReportConfig.exists()) {
+				crashReportConfig.renameTo(crashReportDisabledConfig);
+			}
+		}
+	}
+
+	private static boolean isCrashReportedEnabled() {
+		return System.getProperty("chromium.enable_crash_reporter") == null
+				|| Boolean.getBoolean("chromium.enable_crash_reporter");
 	}
 
 	private static boolean checkGtkInit() {
@@ -189,22 +220,24 @@ public class Engine {
 	}
 
 	public static void initCEF() {
-		initCEF(false);
+		initCEF(BrowserType.SWT);
 	}
 
-	static void initCEF(boolean standalone) {
+	static void initCEF(BrowserType browserType) {
 		synchronized (Engine.class) {
 			if (app == null) {
+				browserTypeInitialized = browserType;
 				CefSettings settings = new CefSettings();
 				try {
 					settings.remote_debugging_port = Integer
-							.parseInt(System.getProperty("chromium.remote_debugging_port", "0"));
+							.parseInt(System.getProperty("chromium.debug_port",
+								System.getProperty("chromium.remote_debugging_port", "0")));
 				} catch (NumberFormatException e) {
 				}
 				Path data = Paths.get(System.getProperty("chromium.home", System.getProperty("user.home")), ".equo");
 				String cache = data.resolve("cefcache").toAbsolutePath().toString();
 				settings.cache_path = System.getProperty("chromium.cache_path", cache);
-				settings.log_file = data.resolve("cef.log").toString();
+				settings.log_file = System.getProperty("chromium.log_file", data.resolve("cef.log").toString());
 				settings.log_severity = debug ? CefSettings.LogSeverity.LOGSEVERITY_INFO
 						: CefSettings.LogSeverity.LOGSEVERITY_DISABLE;
 
@@ -230,7 +263,7 @@ public class Engine {
 						? Boolean.getBoolean("chromium.external_message_pump")
 						: external_message_pump);
 
-				String[] args = getChromiumArgs(libsPath, false, false);
+				String[] args = getChromiumArgs(libsPath, false, false, browserType);
 
 				final SchemeHandlerManager schemeHandlerManager = SchemeHandlerManager.get();
 
@@ -240,18 +273,38 @@ public class Engine {
 					registeredSchemeData = Collections.emptyList();
 				}
 
-				int loopTime = (!settings.external_message_pump && !registeredSchemeData.isEmpty()) ? 1000 / 180 : WindowingToolkit.DEFAULT_LOOP_TIME;
 				WindowingToolkit windowToolkit = null;
-				if (standalone) {
+				switch (browserType) {
+				case STANDALONE:
 					windowToolkit = new CefAppStandalone();
-					settings.multi_threaded_message_loop = false;
 					settings.external_message_pump = false;
-				} else {
+					break;
+				case SWING:
+					if (OS.isLinux()) {
+						System.loadLibrary("jawt");
+					}
+					windowToolkit = new CefAppSwing();
+					settings.external_message_pump = OS.isMacintosh();
+					settings.multi_threaded_message_loop = !OS.isMacintosh();
+					break;
+				default:
+					int loopTime = (!settings.external_message_pump && !registeredSchemeData.isEmpty()) ? 1000 / 180 : WindowingToolkit.DEFAULT_LOOP_TIME;
 					windowToolkit = new CefAppSwt(loopTime, settings.external_message_pump);
+					break;
 				}
+
 				CefApp.setWindowingToolkit(windowToolkit);
 
 				CefApp.addAppHandler(new CefAppHandlerAdapter(args) {
+					@Override
+					public void onBeforeCommandLineProcessing(String process_type, CefCommandLine command_line) {
+						super.onBeforeCommandLineProcessing(process_type, command_line);
+						if (settings.chrome_runtime) {
+							command_line.appendSwitchWithValue("browser-subprocess-path",
+									settings.browser_subprocess_path);
+						}
+					}
+
 					@Override
 					public void onRegisterCustomSchemes(CefSchemeRegistrar registrar) {
 						if (!registeredSchemeData.isEmpty()) {
@@ -282,7 +335,7 @@ public class Engine {
 												: new StaticCefSchemeHandlerFactory(schemeHandlerManager, schemeData));
 							}
 						}
-						if (!standalone) {
+						if (BrowserType.SWT.equals(browserType)) {
 							SWTEngine.onContextInitialized(app);
 						}
 						ready.complete(true);
@@ -310,7 +363,7 @@ public class Engine {
 						throw e;
 					}
 				}
-				if (!standalone) {
+				if (BrowserType.SWT.equals(browserType)) {
 					SWTEngine.initCef(closing, shuttingDown, () -> internalShutdown());
 				}
 
@@ -318,12 +371,15 @@ public class Engine {
 		}
 	}
 
-	static String[] getChromiumArgs(Path libsPath, boolean addXInitThreads, boolean addGtkInitCheck) {
+	static String[] getChromiumArgs(Path libsPath, boolean addXInitThreads, boolean addGtkInitCheck, BrowserType browserType) {
 		List<String> args = new ArrayList<>();
 		String vmArg = System.getProperty("chromium.args", System.getProperty("swt.chromium.args"));
 		if (vmArg != null) {
 			String[] lines = vmArg.replace("\\;", "\\#$").split(";");
 			Arrays.stream(lines).map(line -> line.replace("\\#$", ";")).forEach(l -> args.add(l));
+		}
+		if (isCrashReportedEnabled()) {
+			args.add("--enable-crash-reporter");
 		}
 		if (OS.isLinux()) {
 			args.add("--disable-gpu-compositing");
@@ -331,9 +387,15 @@ public class Engine {
 				args.add("XInitThreads");
 			if (addGtkInitCheck)
 				args.add("GTKInitCheck");
+			if (isDarkTheme(browserType)) {
+				args.add("--force-dark-mode");
+			}
 		} else if (OS.isMacintosh()) {
 			args.add("--framework-dir-path=" + libsPath.resolve("Chromium Embedded Framework.framework"));
 			args.add("--main-bundle-path=" + libsPath.resolve("equochro Helper.app"));
+			if (isDarkTheme(browserType)) {
+				args.add("--force-dark-mode");
+			}
 		}
 		return args.toArray(new String[args.size()]);
 	}
@@ -352,6 +414,10 @@ public class Engine {
 
 	public static void startCefLoop() {
 		app.runMessageLoop();
+	}
+
+	public static void quitCefLoop() {
+		app.quitMessageLoop();
 	}
 
 	private static String getArch() {
@@ -385,6 +451,13 @@ public class Engine {
 					return true;
 				}
 			}
+		}
+		return false;
+	}
+	
+	private static boolean isDarkTheme(BrowserType browserType) {
+		if (browserType != null && BrowserType.SWT.equals(browserType)) {
+			return SWTEngine.isSystemDarkTheme();
 		}
 		return false;
 	}

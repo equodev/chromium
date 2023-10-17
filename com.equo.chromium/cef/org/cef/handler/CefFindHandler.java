@@ -21,20 +21,27 @@
 ****************************************************************************/
 
 
-package com.equo.chromium.swt.internal.spi;
+package org.cef.handler;
 
-import java.io.InputStream;
-import java.nio.charset.Charset;
-import java.util.Map;
+import org.cef.browser.CefBrowser;
+import org.cef.misc.Rectangle;
 
-public interface SchemeHandler {
-
-	public boolean processRequest(String url, String method, Map<String, String> headers);
-
-	default public Charset getDefaultCharset(String mimeType) {
-		return Charset.defaultCharset();
-	}
-	
-	public InputStream getResponseData(Map<String, String> responseHeaders);
-
+public interface CefFindHandler {
+    /**
+     * Called to report find results returned by CefBrowserHost::Find(). |identifer|
+     * is the identifier passed to Find(), |count| is the number of matches
+     * currently identified, |selectionRect| is the location of where the match was
+     * found (in window coordinates), |activeMatchOrdinal| is the current position
+     * in the search results, and |finalUpdate| is true if this is the last find
+     * notification.
+     *
+     * @param browser
+     * @param identifier
+     * @param selectionRect
+     * @param count
+     * @param activeMatchOrdinal
+     * @param finalUpdate
+     */
+    public void onFindResult(CefBrowser browser, int identifier, int count, Rectangle selectionRect,
+            int activeMatchOrdinal, boolean finalUpdate);
 }

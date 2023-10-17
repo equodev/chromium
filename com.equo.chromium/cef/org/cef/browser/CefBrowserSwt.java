@@ -71,17 +71,24 @@ public class CefBrowserSwt extends CefBrowser_N {
     private CefWindowHandler windowHandler = new CefWindowHandlerAdapter() {
         public Rectangle getRect(CefBrowser browser) {
             Rectangle rectangle = new Rectangle(0, 0, 0, 0);
-            composite.getDisplay().syncExec(() -> {
-                Point size = getChromiumSize();
-                rectangle.setBounds(0, 0, size.x, size.y);
-                setCurrentSize();
-            });
+            if (composite != null) {
+                composite.getDisplay().syncExec(() -> {
+                    Point size = getChromiumSize();
+                    rectangle.setBounds(0, 0, size.x, size.y);
+                    setCurrentSize();
+                });
+            }
             return rectangle;
         };
     };
 
     public CefBrowserSwt(CefClient client, String url, CefRequestContext context) {
         super(client, url, context, null, null);
+    }
+
+    public CefBrowserSwt(CefClient client, String url, CefRequestContext context, CefBrowser_N parent,
+        Point inspectAt) {
+        super(client, url, context, parent, inspectAt);
     }
 
     @Override
@@ -195,7 +202,7 @@ public class CefBrowserSwt extends CefBrowser_N {
     @Override
     protected CefBrowser_N createDevToolsBrowser(CefClient client, String url,
             CefRequestContext context, CefBrowser_N parent, Point inspectAt) {
-        return null;
+        return new CefBrowserSwt(client, url, context, parent, inspectAt);
     }
 
     @Override
@@ -210,7 +217,9 @@ public class CefBrowserSwt extends CefBrowser_N {
         }
         if (autoScaleUp != null) {
             try {
-                return new Point((int)autoScaleUp.invoke(null, size.x), (int)autoScaleUp.invoke(null, size.y));
+                Point scaled = new Point((int)autoScaleUp.invoke(null, size.x), (int)autoScaleUp.invoke(null, size.y));
+                if (scaled.x > size.x || scaled.y > size.y)
+                    size = scaled;
             } catch (IllegalAccessException | IllegalArgumentException
                     | InvocationTargetException e) {
             }

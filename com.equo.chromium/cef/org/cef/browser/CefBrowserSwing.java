@@ -4,14 +4,14 @@
 
 package org.cef.browser;
 
-import org.cef.CefClient;
-import org.cef.misc.Point;
-
 import java.awt.Component;
 import java.awt.Window;
 import java.awt.event.WindowEvent;
 
 import javax.swing.SwingUtilities;
+
+import org.cef.CefClient;
+import org.cef.misc.Point;
 
 /**
  * This class represents all methods which are connected to the
@@ -48,4 +48,8 @@ public abstract class CefBrowserSwing extends CefBrowser_N {
         return true;
     }
 
+    @Override
+    public void close(boolean force) {
+        super.close(force);
+    }
 }

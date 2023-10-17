@@ -7,8 +7,6 @@ package org.cef.network;
 import org.cef.callback.CefCompletionCallback;
 import org.cef.callback.CefCookieVisitor;
 
-import java.util.Vector;
-
 /**
  * Class used for managing cookies. The methods of this class may be called on any thread unless
  * otherwise indicated.

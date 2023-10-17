@@ -29,6 +29,8 @@ import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.SWTException;
 import org.eclipse.swt.graphics.Device;
 import org.eclipse.swt.widgets.Display;
 
@@ -36,7 +38,7 @@ public class CefAppSwt implements WindowingToolkit {
 
 	private Timer timer;
 	private Runnable loop;
-	private Display display =  Display.getDefault();
+	private Display display = Display.getDefault();
 	private boolean enabled = true;
 	private boolean external_message_pump;
 	private int loopTime;
@@ -49,7 +51,13 @@ public class CefAppSwt implements WindowingToolkit {
 
 	public CefAppSwt(int loopTime, boolean external_message_pump) {
 		this.loopTime = loopTime;
-		this.external_message_pump = external_message_pump;
+
+		// Workaround timerExec replace by asyncExec in eclipseRCPTT
+		if (System.getProperty("q7id") != null) {
+			this.external_message_pump = false;
+		} else {
+			this.external_message_pump = external_message_pump;
+		}
 	}
 
 	public CefAppSwt(boolean external_message_pump) {
@@ -106,7 +114,13 @@ public class CefAppSwt implements WindowingToolkit {
 				@Override
 				public void run() {
 					if (!display.isDisposed())
-						display.syncExec(run);
+						try {
+							display.syncExec(run);
+						} catch (SWTException e) {
+							if (e.code != SWT.ERROR_DEVICE_DISPOSED) {
+								throw e;
+							}
+						}
 				}
 			};
 			timer.scheduleAtFixedRate(task, ms, ms);
@@ -123,7 +137,7 @@ public class CefAppSwt implements WindowingToolkit {
 	}
 
 	public void toggle() {
-		enabled  = !enabled;
+		enabled = !enabled;
 	}
 
 	@Override
