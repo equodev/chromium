@@ -460,8 +460,11 @@ final class Chromium extends WebBrowser {
 				paintListener = null;
 			}
 		};
-		if (Boolean.getBoolean("chromium.headless")) {
+		String isHeadless = System.getProperty("chromium.headless", "");
+		if ("true".equals(isHeadless)) {
 			chromium.getDisplay().timerExec(10, () -> {if (paintListener != null) paintListener.paintControl(null);});
+		} else if ("immediately".equals(isHeadless)) {
+			if (paintListener != null) paintListener.paintControl(null);
 		} else {
 			chromium.addPaintListener(paintListener);
 		}
