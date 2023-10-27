@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -396,6 +397,11 @@ public class Engine {
 			if (isDarkTheme(browserType)) {
 				args.add("--force-dark-mode");
 			}
+		} else if (OS.isWindows()) {
+			String langFlag = addFlagWithSystemLanguage();
+			if(!checkIfLangFlagExists(args) && !langFlag.isEmpty()) {
+				args.add(langFlag);
+			}
 		}
 		return args.toArray(new String[args.size()]);
 	}
@@ -460,5 +466,29 @@ public class Engine {
 			return SWTEngine.isSystemDarkTheme();
 		}
 		return false;
+	}
+	
+	private static boolean checkIfLangFlagExists(List<String> args) {
+		for (String str : args) {
+			if (str.contains("--lang")) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	private static String addFlagWithSystemLanguage() {
+		ArrayList<String> suportedLanguages = new ArrayList<String>();
+		ArrayList<String> suportedLanguagesWithCountry = new ArrayList<String>();
+		Collections.addAll(suportedLanguages, "af", "am", "ar", "bg", "bn", "ca", "cs", "da", "de", "el", "es", "et", "fa", "fi", "fil", "fr", "gu", "he", "hi", "hr", "hu", "id", "it", "ja", "kn", "ko", "lt", "lt", "ml", "mr", "ms", "nb", "nl", "pl", "ro", "ru", "sk", "sl", "sr", "sv", "sw", "ta", "te", "th", "tr", "uk", "ur", "vi");
+		Collections.addAll(suportedLanguagesWithCountry, "en-GB", "en-US", "es-419", "pt-BR", "pt-PT", "zh-CN", "zh-TW");
+		Locale currentLocale = Locale.getDefault();
+		if (suportedLanguages.contains(currentLocale.getLanguage())) {
+			return "--lang=" + currentLocale.getLanguage();
+		} else if (suportedLanguagesWithCountry.contains(currentLocale.getLanguage() + "-" + currentLocale.getCountry())) {
+			return "--lang=" + currentLocale.getLanguage() + "-" + currentLocale.getCountry();
+		} else {			
+			return "";
+		}
 	}
 }
