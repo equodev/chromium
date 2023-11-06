@@ -2997,7 +2997,7 @@ final class Chromium extends WebBrowser {
 	private void doSetUrl(String url, String postData, String[] headers) {
 		loaded = new CompletableFuture<>();
 		Net.config();
-		if (postData == null && headers == null) {
+		if ((postData == null && headers == null) || url.startsWith("file:")) {
 			cefBrowser.loadURL(url);
 		} else {
 			CefRequest request = CefRequest.create();
