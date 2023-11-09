@@ -538,7 +538,13 @@ final class Chromium extends WebBrowser {
 
 	@SuppressWarnings("deprecation")
 	private static void createClienthandler() {
-		boolean suspend = "win32".equals(SWT.getPlatform()) ? false : "true".equalsIgnoreCase(System.getProperty("chromium.suspend_threads", "true"));
+		String[] versionElements = System.getProperty("java.version").split("\\.");
+		int javaVersion = 0;
+		try {
+			javaVersion = Integer.parseInt(versionElements[0]);
+		} catch (Exception e) {
+		}
+		boolean suspend = "win32".equals(SWT.getPlatform()) || javaVersion >= 20 ? false : "true".equalsIgnoreCase(System.getProperty("chromium.suspend_threads", "true"));
 		Thread main = null;
 		Thread[] threads = null;
 		int threadsCount = 0;
