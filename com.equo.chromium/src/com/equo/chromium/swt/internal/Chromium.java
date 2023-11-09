@@ -1745,7 +1745,9 @@ final class Chromium extends WebBrowser {
 					event.x = params.getXCoord();
 
 					for (Listener listener : listeners) {
-						listener.handleEvent(event);
+						asyncExec(() -> {
+							listener.handleEvent(event);
+						});
 						return true;
 					}
 				}
