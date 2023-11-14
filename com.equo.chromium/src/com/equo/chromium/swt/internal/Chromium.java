@@ -659,13 +659,13 @@ final class Chromium extends WebBrowser {
 		}
 		
 		@Override
-		public boolean onBeforePopup(CefBrowser browser, CefFrame frame, String target_url, String target_frame_name, String popupFeatures) {
+		public boolean onBeforePopup(CefBrowser browser, CefFrame frame, String target_url, String target_frame_name) {
 			debug("onBeforePopup", browser);
 			if ("_external".equals(target_frame_name)) {
 				return Program.launch(target_url);
 			}
 			else if (!browser.isPopup()) {
-				return getChromium(browser).onBeforePopup(target_url, target_frame_name, popupFeatures);
+				return getChromium(browser).onBeforePopup(target_url, target_frame_name);
 			}
 			return false;
 		}
@@ -769,7 +769,7 @@ final class Chromium extends WebBrowser {
 		}
 	}
 
-	private boolean onBeforePopup(String target_url, String target_frame_name, String popupFeatures) {
+	private boolean onBeforePopup(String target_url, String target_frame_name) {
 		if (isDisposed())
 			return true;
 		WindowEvent event = new WindowEvent(chromium);
@@ -777,10 +777,10 @@ final class Chromium extends WebBrowser {
 		event.display = chromium.getDisplay ();
 		event.widget = chromium;
 		event.required = false;
-		event.addressBar = popupFeatures.charAt(0) == '1';
-		event.menuBar = popupFeatures.charAt(1) == '1';
-		event.statusBar = popupFeatures.charAt(2) == '1';
-		event.toolBar = popupFeatures.charAt(0) == '1';
+		event.addressBar = true;
+		event.menuBar = true;
+		event.statusBar = true;
+		event.toolBar = true;
 //			int x = popupFeatures.xSet == 1 ? popupFeatures.x : 0 ;
 //			int y = popupFeatures.ySet == 1 ? popupFeatures.y : 0 ;
 //			event.location = popupFeatures.xSet == 1 || popupFeatures.ySet == 1 ? new Point(x, y) : null;
