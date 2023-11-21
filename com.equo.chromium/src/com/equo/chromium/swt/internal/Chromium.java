@@ -113,8 +113,6 @@ import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
-import org.eclipse.swt.events.PaintEvent;
-import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
@@ -224,7 +222,6 @@ final class Chromium extends WebBrowser {
 	private Dispose disposing = Dispose.No;
 	private boolean hasFocus;
 	private boolean ignoreFirstFocus = true;
-	private PaintListener paintListener;
 	private Listener traverseListener;
 	private WindowEvent isPopup;
 	private ExtraApi extraApi;
@@ -449,22 +446,7 @@ final class Chromium extends WebBrowser {
 		Engine.initCEF();
 //		debugPrint("initCef Done");
 		chromium.setBackground(parent.getDisplay().getSystemColor(SWT.COLOR_WHITE));
-		paintListener = new PaintListener() {
-			@Override
-			public void paintControl(PaintEvent e) {
-				debugPrint("paintControl");
-				if (chromium == null || chromium.isDisposed()) return;
-				if (!Boolean.getBoolean("chromium.headless"))
-					chromium.removePaintListener(this);
-				createBrowser();
-				paintListener = null;
-			}
-		};
-		if (Boolean.getBoolean("chromium.headless")) {
-			chromium.getDisplay().timerExec(10, () -> {if (paintListener != null) paintListener.paintControl(null);});
-		} else {
-			chromium.addPaintListener(paintListener);
-		}
+		createBrowser();
 		if ("image".equals(System.getProperty("chromium.resize", "live"))) {
 			resize = new ResizeListener();
 		}
@@ -2789,12 +2771,7 @@ final class Chromium extends WebBrowser {
 			return null;
 		}
 		if (cefBrowser == null) {
-			if (paintListener != null) {
-				if (!Boolean.getBoolean("chromium.headless"))
-					chromium.removePaintListener(paintListener);
-				paintListener = null;
 				createBrowser();
-			}
 		}
 		checkBrowser();
 		AbstractEval eval = null;
