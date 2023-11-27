@@ -2976,7 +2976,7 @@ final class Chromium extends WebBrowser {
 		}
 		String setTextNewUrl = System.getProperty("chromium.setTextAsUrl", "");
 		if (!setTextNewUrl.isEmpty() && url != null && url.startsWith("file:")
-				&& url.contains(getBrowserTempFolder().toString())) {
+				&& url.contains(getBrowserTempFolder().toAbsolutePath().toUri().toString())) {
 			return DATA_TEXT_URL;
 		}
 		return url;
