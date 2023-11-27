@@ -2887,7 +2887,7 @@ final class Chromium extends WebBrowser {
 		String cefurl = cefBrowser.getURL();
 		if (cefurl == null)
 			cefurl = getPlainUrl(this.url);
-		if (cefurl != null && cefurl.startsWith("file:") && cefurl.contains(getBrowserTempFolder().toString()))
+		if (cefurl != null && cefurl.startsWith("file:") && cefurl.contains(getBrowserTempFolder().toUri().toString()))
 			return ABOUT_BLANK;
 		return cefurl;
 	}
@@ -2952,7 +2952,7 @@ final class Chromium extends WebBrowser {
 					Path file = Files.createTempFile(browserTempFolder, "tempfile", ".html");
 					Files.write(file, html.getBytes(StandardCharsets.UTF_8.toString()));
 					file.toFile().deleteOnExit();
-					setTextUrl = file.toAbsolutePath().toUri().toString();
+					setTextUrl = file.toUri().toString();
 					setUrl(setTextUrl, null, null);
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -2976,7 +2976,7 @@ final class Chromium extends WebBrowser {
 		}
 		String setTextNewUrl = System.getProperty("chromium.setTextAsUrl", "");
 		if (!setTextNewUrl.isEmpty() && url != null && url.startsWith("file:")
-				&& url.contains(getBrowserTempFolder().toAbsolutePath().toUri().toString())) {
+				&& url.contains(getBrowserTempFolder().toUri().toString())) {
 			return DATA_TEXT_URL;
 		}
 		return url;
