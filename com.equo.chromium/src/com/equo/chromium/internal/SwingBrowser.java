@@ -156,7 +156,7 @@ public class SwingBrowser extends IndependentBrowser {
 						}
 						Map<String, Object> mapData = new HashMap<>();
 						mapData.put("text", request);
-						notifySubscribers(EventType.onClipboardWriteText, mapData);
+						getSubscriber().notifySubscribers(EventType.onClipboardWriteText, mapData);
 						callback.success(request);
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -177,7 +177,7 @@ public class SwingBrowser extends IndependentBrowser {
 						String text = (String) transferable.getTransferData(DataFlavor.stringFlavor);
 						Map<String, Object> mapData = new HashMap<>();
 						mapData.put("text", text);
-						notifySubscribers(EventType.onClipboardReadText, mapData);
+						getSubscriber().notifySubscribers(EventType.onClipboardReadText, mapData);
 						callback.success(text);
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -276,10 +276,10 @@ public class SwingBrowser extends IndependentBrowser {
 				filterIndex.set(
 						(filterIndex.get() < 0 || filterIndex.get() >= acceptFiltersArray.length) ? selectedAcceptFilter
 								: filterIndex.get());
-				((IndependentBrowser)browser.getReference()).notifySubscribers(EventType.onOpenFile);
+				((IndependentBrowser)browser.getReference()).getSubscriber().notifySubscribers(EventType.onOpenFile);
 				callback.Continue(filterIndex.get(), filePaths);
 			} else {
-				((IndependentBrowser)browser.getReference()).notifySubscribers(EventType.onCancelOpenFile);
+				((IndependentBrowser)browser.getReference()).getSubscriber().notifySubscribers(EventType.onCancelOpenFile);
 				callback.Cancel();
 			}
 			return true;
