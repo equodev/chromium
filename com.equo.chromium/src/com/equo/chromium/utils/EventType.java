@@ -22,4 +22,7 @@ public enum EventType {
 	onOpenFile,
 	onCancelOpenFile,
 
+	onNavigationStart,
+	onNavigationFinished,
+
 }

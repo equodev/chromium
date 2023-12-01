@@ -142,6 +142,7 @@ import org.eclipse.swt.widgets.Widget;
 
 import com.equo.chromium.ChromiumBrowser;
 import com.equo.chromium.internal.Engine;
+import com.equo.chromium.internal.Subscriber;
 import com.equo.chromium.internal.IndependentBrowser;
 import com.equo.chromium.swt.Browser;
 import com.equo.chromium.swt.BrowserFunction;
@@ -150,6 +151,7 @@ import com.equo.chromium.swt.WindowEvent;
 import com.equo.chromium.swt.internal.spi.CommRouterHandler;
 import com.equo.chromium.swt.internal.spi.CommunicationManager;
 import com.equo.chromium.swt.internal.spi.ScriptExtension;
+import com.equo.chromium.utils.EventAction;
 import com.github.cliftonlabs.json_simple.Jsoner;
 
 @SuppressWarnings("restriction")
@@ -165,7 +167,7 @@ final class Chromium extends WebBrowser {
 	static {
 		setupCookies();
 		try {
-			if ("gtk".equals(SWT.getPlatform())) {				
+			if ("gtk".equals(SWT.getPlatform())) {
 				GTK_VERSION = getGtkVersion();
 			}
 		} catch (ReflectiveOperationException e) {
@@ -642,6 +644,7 @@ final class Chromium extends WebBrowser {
 			debug("onAfterCreated", browser);
 			if (!browser.isPopup()) {
 				getChromium(browser).onAfterCreated();
+				((ExtraApi) getChromium(browser).getWebBrowser()).getSubscriber().onAfterCreatedNotify(browser);
 			}
 		}
 		
@@ -827,6 +830,24 @@ final class Chromium extends WebBrowser {
 //			debug("onLoadingStateChange", browser);
 			if (!browser.isPopup()) {
 				getChromium(browser).on_loading_state_change(isLoading, canGoBack, canGoForward);
+				((ExtraApi) getChromium(browser).getWebBrowser()).getSubscriber().onLoadingStateChangeNotify(isLoading,
+						browser.getURL());
+			}
+		}
+
+		@Override
+		public void onLoadEnd(CefBrowser browser, CefFrame frame, int httpStatusCode) {
+			if (!browser.isPopup()) {
+				((ExtraApi) getChromium(browser).getWebBrowser()).getSubscriber().onLoadEndNotify(frame);
+			}
+		}
+
+		@Override
+		public void onLoadError(CefBrowser browser, CefFrame frame, ErrorCode errorCode, String errorText,
+				String failedUrl) {
+			if (!browser.isPopup()) {
+				((ExtraApi) getChromium(browser).getWebBrowser()).getSubscriber()
+						.onLoadErrorNotify(errorCode.getCode());
 			}
 		}
 	}
@@ -949,6 +970,8 @@ final class Chromium extends WebBrowser {
 			debug("onAddressChange", browser);
 			if (!browser.isPopup()) {
 				getChromium(browser).onAddressChange(frame, url);
+				((ExtraApi) getChromium(browser).getWebBrowser()).getSubscriber()
+						.onAddressChangeNotify(browser.isLoading(), url);
 			}
 		}
 
@@ -1145,6 +1168,7 @@ final class Chromium extends WebBrowser {
 				boolean is_redirect) {
 //			debug("onBeforeBrowse", browser);
 			if (!browser.isPopup()) {
+				((ExtraApi) getChromium(browser).getWebBrowser()).getSubscriber().onBeforeBrowseNotify();
 				return getChromium(browser).onBeforeBrowse(frame, request);
 			}
 			return false;
@@ -1676,6 +1700,9 @@ final class Chromium extends WebBrowser {
 
 		if (hasMenu) {
 			model.clear();
+			if (Boolean.getBoolean("chromium.hide_context_menu")) {
+				return;
+			}
 			boolean isGTK = "gtk".equals(SWT.getPlatform());
 			if (isGTK && GTK_VERSION == 2) {
 				int commandIdCounter = MenuId.MENU_ID_USER_FIRST;
@@ -3142,8 +3169,13 @@ final class Chromium extends WebBrowser {
 		}
 
 		@Override
-		public void executeJavacript(String script) {
+		public void executeJavaScript(String script) {
 			execute(script);
+		}
+
+		@Override
+		public void executeJavacript(String script) {
+			executeJavaScript(script);
 		}
 
 		@Override
@@ -3167,15 +3199,16 @@ final class Chromium extends WebBrowser {
 		}
 
 		public void setCreated() {
-			if (eventActionOfAfterCreated != null && !isCreated().isDone()) {
+			EventAction eventAction = Subscriber.getEventActionOfAfterCreated();
+			if (eventAction != null && !isCreated().isDone()) {
 				Map<String, Object> mapData = new HashMap<>();
 				mapData.put("chromium_instance", (ChromiumBrowser)this);
-				eventActionOfAfterCreated.setJsonData(mapData);
-				eventActionOfAfterCreated.run();
+				eventAction.setJsonData(mapData);
+				eventAction.run();
 			}
 			isCreated().complete(true);
 		}
-		
+
 		@Override
 		public void showDevTools() {
 			created.thenRun(()-> {

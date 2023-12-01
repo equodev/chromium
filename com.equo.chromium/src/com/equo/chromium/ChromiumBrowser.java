@@ -213,6 +213,13 @@ public interface ChromiumBrowser {
 	 * 
 	 * @param script Script to be executed in the browser.
 	 */
+	public void executeJavaScript(String script);
+
+	/**
+	 * @deprecated Use executeJavaScript(String) instead.
+	 * @param script Script to be executed in the browser.
+	 */
+	@Deprecated
 	public void executeJavacript(String script);
 
 	/**
