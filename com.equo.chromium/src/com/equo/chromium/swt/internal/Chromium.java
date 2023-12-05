@@ -2754,8 +2754,8 @@ final class Chromium extends WebBrowser {
 	private ExtraApi extraApi() {
 		if (extraApi == null) {
 			extraApi = new ExtraApi();
+			extraApi.setCreated();
 		}
-		extraApi.setCreated();
 		return extraApi;
 	}
 
