@@ -111,6 +111,7 @@ import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
@@ -446,7 +447,12 @@ final class Chromium extends WebBrowser {
 	public void create(Composite parent, int style) {
 		Engine.initCEF();
 //		debugPrint("initCef Done");
-		chromium.setBackground(parent.getDisplay().getSystemColor(SWT.COLOR_WHITE));
+		if (CefBrowserSwt.isDarkMode()) {
+			Display device = Display.getCurrent();
+			chromium.setBackground(new Color(device, 32, 33, 36, 255));
+		} else {
+			chromium.setBackground(parent.getDisplay().getSystemColor(SWT.COLOR_WHITE));
+		}
 		paintListener = new PaintListener() {
 			@Override
 			public void paintControl(PaintEvent e) {

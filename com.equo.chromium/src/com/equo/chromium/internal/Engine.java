@@ -34,6 +34,7 @@ import org.cef.SystemBootstrap.Loader;
 import org.cef.WindowingToolkit;
 import org.cef.browser.CefBrowser;
 import org.cef.callback.CefCommandLine;
+import org.cef.browser.CefBrowserSwt;
 import org.cef.callback.CefSchemeRegistrar;
 import org.cef.handler.CefAppHandlerAdapter;
 
@@ -62,6 +63,8 @@ public class Engine {
 	public static final CompletableFuture<Boolean> ready = new CompletableFuture<>();
 	private static AtomicBoolean closing = new AtomicBoolean();
 	private static boolean multiThreaded;
+	
+	public static boolean setDarkModeBackground = false;
 	
 	public static enum BrowserType {
 		SWT,
@@ -242,6 +245,10 @@ public class Engine {
 
 				String[] args = getChromiumArgs(libsPath, false, false, browserType);
 
+				if (isDarkTheme(browserType, Arrays.asList(args))) {
+					CefBrowserSwt.setDarkMode(true);
+				}
+
 				final SchemeHandlerManager schemeHandlerManager = SchemeHandlerManager.get();
 
 				if (schemeHandlerManager != null) {
@@ -388,18 +395,18 @@ public class Engine {
 				args.add("XInitThreads");
 			if (addGtkInitCheck)
 				args.add("GTKInitCheck");
-			if (isDarkTheme(browserType)) {
+			if (isDarkTheme(browserType, args)) {
 				args.add("--force-dark-mode");
 			}
 		} else if (OS.isMacintosh()) {
 			args.add("--framework-dir-path=" + libsPath.resolve("Chromium Embedded Framework.framework"));
 			args.add("--main-bundle-path=" + libsPath.resolve("equochro Helper.app"));
-			if (isDarkTheme(browserType)) {
+			if (isDarkTheme(browserType, args)) {
 				args.add("--force-dark-mode");
 			}
 		} else if (OS.isWindows()) {
 			String langFlag = addFlagWithSystemLanguage();
-			if(!checkIfLangFlagExists(args) && !langFlag.isEmpty()) {
+			if(!checkIfFlagExists(args, "--lang") && !langFlag.isEmpty()) {
 				args.add(langFlag);
 			}
 		}
@@ -461,16 +468,18 @@ public class Engine {
 		return false;
 	}
 	
-	private static boolean isDarkTheme(BrowserType browserType) {
+	private static boolean isDarkTheme(BrowserType browserType, List<String> args) {
 		if (browserType != null && BrowserType.SWT.equals(browserType)) {
-			return SWTEngine.isSystemDarkTheme();
+			boolean flagExists = checkIfFlagExists(args, "--force-dark-mode");
+			setDarkModeBackground = flagExists ? true : SWTEngine.isSystemDarkTheme();
+			return setDarkModeBackground;
 		}
 		return false;
 	}
 	
-	private static boolean checkIfLangFlagExists(List<String> args) {
+	private static boolean checkIfFlagExists(List<String> args, String flag) {
 		for (String str : args) {
-			if (str.contains("--lang")) {
+			if (str.contains(flag)) {
 				return true;
 			}
 		}
