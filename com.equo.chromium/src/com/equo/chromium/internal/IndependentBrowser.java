@@ -344,7 +344,7 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 			}
 		};
 		JsonObject jsonMessage = new JsonObject();
-		jsonMessage.put("id", 0);
+		jsonMessage.put("id", messageId++);
 		jsonMessage.put("method", "Page.captureScreenshot");
 		JsonObject clip = new JsonObject();
 		if (width > 0 && height > 0) {

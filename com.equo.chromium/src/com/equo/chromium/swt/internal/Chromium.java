@@ -28,6 +28,8 @@ import java.util.Vector;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -55,7 +57,6 @@ import org.cef.callback.CefFileDialogCallback;
 import org.cef.callback.CefJSDialogCallback;
 import org.cef.callback.CefMenuModel;
 import org.cef.callback.CefMenuModel.MenuId;
-import org.cef.callback.CefQueryCallback;
 import org.cef.callback.CefStringVisitor;
 import org.cef.handler.CefContextMenuHandlerAdapter;
 import org.cef.handler.CefDialogHandler;
@@ -1595,7 +1596,7 @@ final class Chromium extends WebBrowser {
 			boolean r = open == SWT.OK || open == SWT.YES ? true : false;
 			debug("JS Dialog Closed with "+r);
 			if(browser != null && !isPopup) {
-				if (disposing == Dispose.Unload && !r)
+				if ((disposing == Dispose.Unload || disposing == Dispose.WaitIfClosed) && !r)
 					disposing = Dispose.UnloadCancel;
 				asyncExec(() -> {
 					callback.Continue(r, default_prompt_text);
@@ -1643,8 +1644,9 @@ final class Chromium extends WebBrowser {
 		if (f != null) {
 			f.thenAccept(close);
 			chromium.setData("chromium.dialogs", null);
-			while (!f.isDone()) {
-				if (!chromium.getDisplay().readAndDispatch()) chromium.getDisplay().sleep();
+			Display display = chromium.getDisplay();
+			while (!f.isDone() && !display.isDisposed()) {
+				if (!display.readAndDispatch()) display.sleep();
 			}
 		}
 	}
@@ -1655,12 +1657,12 @@ final class Chromium extends WebBrowser {
 			disposing = Dispose.UnloadClosed;
 		}
 	}
-	
+
 	private boolean onBeforeUnloadDialog(String message_text, boolean is_reload, CefJSDialogCallback callback) {
 		debug("on_before_unload_dialog disposing: " + disposing);
 		if (disposing == Dispose.FromClose) {
 			disposing = Dispose.Unload;
-		}	
+		}
 		if (useSwtDialogs()) {
 			openJsDialog(false, JSDialogType.JSDIALOGTYPE_CONFIRM, "Are you sure you want to leave this page?", message_text, null, null, callback);
 			if (disposing == Dispose.Unload) {
@@ -2535,6 +2537,7 @@ final class Chromium extends WebBrowser {
 						}
 					};
 					WebBrowser.CookieResult = globalManager.visitAllCookies(visitor);
+					globalManager.flushStore(null);
 				}
 			});
 		};
@@ -2584,27 +2587,23 @@ final class Chromium extends WebBrowser {
 					return true;
 				}
 			};
-			for (int i = 0; i < 2; i++) {
-				CefCookieManager globalManager = CefCookieManager.getGlobalManager();
-				if (globalManager == null) {
-					throw new SWTException("Failed to get cookies, cookie manager not ready");
-				}
-				boolean result = globalManager.visitUrlCookies(WebBrowser.CookieUrl, true, visitor);
-				if (!result) {
-					throw new SWTException("Failed to get cookies");
-				}
-				long end = System.currentTimeMillis()+250;
-				Display display = Display.getCurrent() == null ? Display.getDefault() : Display.getCurrent();
-				while (!cookieVisited.get() && !display.isDisposed() && System.currentTimeMillis() < end) {
-//					debug("in cookie loop");
-					if (!display.readAndDispatch()) {
-						display.sleep();
-					}
-				}
-//				debug("end cookie loop");
-				if (cookieVisited.get())
-					return;
+			CefCookieManager globalManager = CefCookieManager.getGlobalManager();
+			if (globalManager == null) {
+				throw new SWTException("Failed to get cookies, cookie manager not ready");
 			}
+			boolean result = globalManager.visitUrlCookies(WebBrowser.CookieUrl, true, visitor);
+			if (!result) {
+				throw new SWTException("Failed to get cookies");
+			}
+			long end = System.currentTimeMillis()+50;
+			Display display = Display.getCurrent() == null ? Display.getDefault() : Display.getCurrent();
+			while (!cookieVisited.get() && !display.isDisposed() && System.currentTimeMillis() < end) {
+//				debug("in cookie loop");
+				if (!display.readAndDispatch() && !CefApp.getInstance().getAllClients().isEmpty()) {
+					display.sleep();
+				}
+			}
+//			debug("end cookie loop");
 		};
 	}
 
@@ -2892,8 +2891,10 @@ final class Chromium extends WebBrowser {
 					}
 				}
 			};
-			cefBrowser.getSource(visitor);
-			
+			created.thenRun(()-> {
+				cefBrowser.getSource(visitor);
+			});
+
 			Display display = chromium.getDisplay();
 			while (!textVisited.isDone() && !display.isDisposed()) {
 				debug("in text loop");
@@ -2902,8 +2903,8 @@ final class Chromium extends WebBrowser {
 				}
 			}
 			try {
-				return textVisited.get();
-			} catch (InterruptedException | ExecutionException e) {
+				return textVisited.get(5, TimeUnit.SECONDS);
+			} catch (InterruptedException | ExecutionException | TimeoutException e) {
 			}
 		}
 		return "";
