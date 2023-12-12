@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -33,6 +34,7 @@ import org.cef.SystemBootstrap.Loader;
 import org.cef.WindowingToolkit;
 import org.cef.browser.CefBrowser;
 import org.cef.callback.CefCommandLine;
+import org.cef.browser.CefBrowserSwt;
 import org.cef.callback.CefSchemeRegistrar;
 import org.cef.handler.CefAppHandlerAdapter;
 
@@ -62,6 +64,8 @@ public class Engine {
 	private static AtomicBoolean closing = new AtomicBoolean();
 	private static boolean multiThreaded;
 	
+	public static boolean setDarkModeBackground = false;
+	
 	public static enum BrowserType {
 		SWT,
 		STANDALONE,
@@ -69,7 +73,6 @@ public class Engine {
 	}
 
 	static BrowserType browserTypeInitialized = null;
-
 	private static void loadLib() {
 		if (OS.isLinux()) {
 			multiThreaded = Boolean.getBoolean("chromium.multi_threaded_message_loop");
@@ -242,6 +245,10 @@ public class Engine {
 
 				String[] args = getChromiumArgs(libsPath, false, false, browserType);
 
+				if (isDarkTheme(browserType, Arrays.asList(args))) {
+					CefBrowserSwt.setDarkMode(true);
+				}
+
 				final SchemeHandlerManager schemeHandlerManager = SchemeHandlerManager.get();
 
 				if (schemeHandlerManager != null) {
@@ -341,11 +348,35 @@ public class Engine {
 					}
 				}
 				if (BrowserType.SWT.equals(browserType)) {
+					if (debug) {
+						printSystemProperties();
+					}
 					SWTEngine.initCef(closing, shuttingDown, () -> internalShutdown());
 				}
-
 			}
 		}
+	}
+
+	private static void printSystemProperties() {
+		System.out.println("------- Chromium system properties: -------");
+
+		String[] propertyNames = { "chromium.args", "chromium.cache_path", "chromium.custom_protocol", "chromium.debug",
+				"chromium.debug_port", "chromium.dialogs", "chromium.disable-download-progress",
+				"chromium.disable_script_extensions", "chromium.downloadLocationListener",
+				"chromium.enable_crash_reporter", "chromium.external_message_pump", "chromium.find_dialog",
+				"chromium.force_windowless_swt", "chromium.headless", "chromium.home", "chromium.init_threads",
+				"chromium.log_file", "chromium.multi_threaded_message_loop", "chromium.path",
+				"chromium.proxy_pac_script", "chromium.remote_debugging_port", "chromium.resize",
+				"chromium.setTextAsUrl", "chromium.ssl", "chromium.ssl.cert", "chromium.suspend_threads",
+				"chromium.turbolinks", "java.home", "java.specification.vendor", "java.vendor.version", "java.version",
+				"org.eclipse.swt.internal.deviceZoom", "org.eclipse.swt.internal.gtk.theme",
+				"org.eclipse.swt.internal.gtk.version", "os.arch", "os.name", "os.version", "osgi.ws", "sun.desktop",
+				"user.language" };
+
+		for (String propertyName : propertyNames) {
+			System.out.println(propertyName + "=" + System.getProperty(propertyName, ""));
+		}
+		System.out.println("--------- End Chromium properties ---------");
 	}
 
 	static String[] getChromiumArgs(Path libsPath, boolean addXInitThreads, boolean addGtkInitCheck, BrowserType browserType) {
@@ -364,14 +395,19 @@ public class Engine {
 				args.add("XInitThreads");
 			if (addGtkInitCheck)
 				args.add("GTKInitCheck");
-			if (isDarkTheme(browserType)) {
+			if (isDarkTheme(browserType, args)) {
 				args.add("--force-dark-mode");
 			}
 		} else if (OS.isMacintosh()) {
 			args.add("--framework-dir-path=" + libsPath.resolve("Chromium Embedded Framework.framework"));
 			args.add("--main-bundle-path=" + libsPath.resolve("equochro Helper.app"));
-			if (isDarkTheme(browserType)) {
+			if (isDarkTheme(browserType, args)) {
 				args.add("--force-dark-mode");
+			}
+		} else if (OS.isWindows()) {
+			String langFlag = addFlagWithSystemLanguage();
+			if(!checkIfFlagExists(args, "--lang") && !langFlag.isEmpty()) {
+				args.add(langFlag);
 			}
 		}
 		return args.toArray(new String[args.size()]);
@@ -432,10 +468,36 @@ public class Engine {
 		return false;
 	}
 	
-	private static boolean isDarkTheme(BrowserType browserType) {
+	private static boolean isDarkTheme(BrowserType browserType, List<String> args) {
 		if (browserType != null && BrowserType.SWT.equals(browserType)) {
-			return SWTEngine.isSystemDarkTheme();
+			boolean flagExists = checkIfFlagExists(args, "--force-dark-mode");
+			setDarkModeBackground = flagExists ? true : SWTEngine.isSystemDarkTheme();
+			return setDarkModeBackground;
 		}
 		return false;
+	}
+	
+	private static boolean checkIfFlagExists(List<String> args, String flag) {
+		for (String str : args) {
+			if (str.contains(flag)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	private static String addFlagWithSystemLanguage() {
+		ArrayList<String> suportedLanguages = new ArrayList<String>();
+		ArrayList<String> suportedLanguagesWithCountry = new ArrayList<String>();
+		Collections.addAll(suportedLanguages, "af", "am", "ar", "bg", "bn", "ca", "cs", "da", "de", "el", "es", "et", "fa", "fi", "fil", "fr", "gu", "he", "hi", "hr", "hu", "id", "it", "ja", "kn", "ko", "lt", "lt", "ml", "mr", "ms", "nb", "nl", "pl", "ro", "ru", "sk", "sl", "sr", "sv", "sw", "ta", "te", "th", "tr", "uk", "ur", "vi");
+		Collections.addAll(suportedLanguagesWithCountry, "en-GB", "en-US", "es-419", "pt-BR", "pt-PT", "zh-CN", "zh-TW");
+		Locale currentLocale = Locale.getDefault();
+		if (suportedLanguages.contains(currentLocale.getLanguage())) {
+			return "--lang=" + currentLocale.getLanguage();
+		} else if (suportedLanguagesWithCountry.contains(currentLocale.getLanguage() + "-" + currentLocale.getCountry())) {
+			return "--lang=" + currentLocale.getLanguage() + "-" + currentLocale.getCountry();
+		} else {			
+			return "";
+		}
 	}
 }

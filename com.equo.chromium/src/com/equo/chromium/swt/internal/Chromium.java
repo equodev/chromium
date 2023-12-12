@@ -28,6 +28,8 @@ import java.util.Vector;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -55,7 +57,6 @@ import org.cef.callback.CefFileDialogCallback;
 import org.cef.callback.CefJSDialogCallback;
 import org.cef.callback.CefMenuModel;
 import org.cef.callback.CefMenuModel.MenuId;
-import org.cef.callback.CefQueryCallback;
 import org.cef.callback.CefStringVisitor;
 import org.cef.handler.CefContextMenuHandlerAdapter;
 import org.cef.handler.CefDialogHandler;
@@ -72,7 +73,6 @@ import org.cef.handler.CefKeyboardHandlerAdapter;
 import org.cef.handler.CefLifeSpanHandlerAdapter;
 import org.cef.handler.CefLoadHandler.ErrorCode;
 import org.cef.handler.CefLoadHandlerAdapter;
-import org.cef.handler.CefMessageRouterHandlerAdapter;
 import org.cef.handler.CefPrintHandlerAdapter;
 import org.cef.handler.CefRequestHandlerAdapter;
 import org.cef.handler.CefResourceHandler;
@@ -103,9 +103,6 @@ import org.eclipse.swt.browser.TitleEvent;
 import org.eclipse.swt.browser.TitleListener;
 import org.eclipse.swt.browser.VisibilityWindowListener;
 import org.eclipse.swt.custom.CTabFolder;
-import org.eclipse.swt.dnd.Clipboard;
-import org.eclipse.swt.dnd.TextTransfer;
-import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.ControlAdapter;
 import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.ControlListener;
@@ -113,6 +110,7 @@ import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
@@ -144,6 +142,7 @@ import org.eclipse.swt.widgets.Widget;
 
 import com.equo.chromium.ChromiumBrowser;
 import com.equo.chromium.internal.Engine;
+import com.equo.chromium.internal.Subscriber;
 import com.equo.chromium.internal.IndependentBrowser;
 import com.equo.chromium.swt.Browser;
 import com.equo.chromium.swt.BrowserFunction;
@@ -152,6 +151,7 @@ import com.equo.chromium.swt.WindowEvent;
 import com.equo.chromium.swt.internal.spi.CommRouterHandler;
 import com.equo.chromium.swt.internal.spi.CommunicationManager;
 import com.equo.chromium.swt.internal.spi.ScriptExtension;
+import com.equo.chromium.utils.EventAction;
 import com.github.cliftonlabs.json_simple.Jsoner;
 
 @SuppressWarnings("restriction")
@@ -167,7 +167,7 @@ final class Chromium extends WebBrowser {
 	static {
 		setupCookies();
 		try {
-			if ("gtk".equals(SWT.getPlatform())) {				
+			if ("gtk".equals(SWT.getPlatform())) {
 				GTK_VERSION = getGtkVersion();
 			}
 		} catch (ReflectiveOperationException e) {
@@ -207,7 +207,7 @@ final class Chromium extends WebBrowser {
 	private static ContextMenuHandler contextMenuHandler;
 	private static DownloadHandler downloadHandler;
 	private static CefMessageRouter router;
-	
+
 	Composite chromium;
 	OpenWindowListener[] openWindowListeners = new OpenWindowListener[0];
 	private CefFocusListener focusListener;
@@ -445,7 +445,12 @@ final class Chromium extends WebBrowser {
 	public void create(Composite parent, int style) {
 		Engine.initCEF();
 //		debugPrint("initCef Done");
-		chromium.setBackground(parent.getDisplay().getSystemColor(SWT.COLOR_WHITE));
+		if (CefBrowserSwt.isDarkMode()) {
+			Display device = Display.getCurrent();
+			chromium.setBackground(new Color(device, 32, 33, 36, 255));
+		} else {
+			chromium.setBackground(parent.getDisplay().getSystemColor(SWT.COLOR_WHITE));
+		}
 		createBrowser();
 		if ("image".equals(System.getProperty("chromium.resize", "live"))) {
 			resize = new ResizeListener();
@@ -521,7 +526,13 @@ final class Chromium extends WebBrowser {
 
 	@SuppressWarnings("deprecation")
 	private static void createClienthandler() {
-		boolean suspend = "win32".equals(SWT.getPlatform()) ? false : "true".equalsIgnoreCase(System.getProperty("chromium.suspend_threads", "true"));
+		String[] versionElements = System.getProperty("java.version").split("\\.");
+		int javaVersion = 0;
+		try {
+			javaVersion = Integer.parseInt(versionElements[0]);
+		} catch (Exception e) {
+		}
+		boolean suspend = "win32".equals(SWT.getPlatform()) || javaVersion >= 20 ? false : "true".equalsIgnoreCase(System.getProperty("chromium.suspend_threads", "true"));
 		Thread main = null;
 		Thread[] threads = null;
 		int threadsCount = 0;
@@ -560,7 +571,7 @@ final class Chromium extends WebBrowser {
 		CommunicationManager commManager = CommunicationManager.get();
 		if (commManager != null) {
 			CefMessageRouter commRouter = CommRouterHandler.createRouter();
-			commRouter.addHandler(CommRouterHandler.getInstance(commManager), true);
+			commRouter.addHandler(new CommRouterHandler(commManager), true);
 			clientHandler.addMessageRouter(commRouter);
 		}
 
@@ -576,7 +587,7 @@ final class Chromium extends WebBrowser {
 		router = AbstractEval.createRouter();
 		clientHandler.addMessageRouter(router);
 
-		createClipboardRouters();
+		com.equo.chromium.swt.internal.Clipboard.createClipboardRouters(clientHandler);
 	}
 
 	private static CefBrowser getTopParentPopup(CefBrowser browser) {
@@ -619,6 +630,7 @@ final class Chromium extends WebBrowser {
 			debug("onAfterCreated", browser);
 			if (!browser.isPopup()) {
 				getChromium(browser).onAfterCreated();
+				((ExtraApi) getChromium(browser).getWebBrowser()).getSubscriber().onAfterCreatedNotify(browser);
 			}
 		}
 		
@@ -804,6 +816,24 @@ final class Chromium extends WebBrowser {
 //			debug("onLoadingStateChange", browser);
 			if (!browser.isPopup()) {
 				getChromium(browser).on_loading_state_change(isLoading, canGoBack, canGoForward);
+				((ExtraApi) getChromium(browser).getWebBrowser()).getSubscriber().onLoadingStateChangeNotify(isLoading,
+						browser.getURL());
+			}
+		}
+
+		@Override
+		public void onLoadEnd(CefBrowser browser, CefFrame frame, int httpStatusCode) {
+			if (!browser.isPopup()) {
+				((ExtraApi) getChromium(browser).getWebBrowser()).getSubscriber().onLoadEndNotify(frame);
+			}
+		}
+
+		@Override
+		public void onLoadError(CefBrowser browser, CefFrame frame, ErrorCode errorCode, String errorText,
+				String failedUrl) {
+			if (!browser.isPopup()) {
+				((ExtraApi) getChromium(browser).getWebBrowser()).getSubscriber()
+						.onLoadErrorNotify(errorCode.getCode());
 			}
 		}
 	}
@@ -926,6 +956,8 @@ final class Chromium extends WebBrowser {
 			debug("onAddressChange", browser);
 			if (!browser.isPopup()) {
 				getChromium(browser).onAddressChange(frame, url);
+				((ExtraApi) getChromium(browser).getWebBrowser()).getSubscriber()
+						.onAddressChangeNotify(browser.isLoading(), url);
 			}
 		}
 
@@ -1122,6 +1154,7 @@ final class Chromium extends WebBrowser {
 				boolean is_redirect) {
 //			debug("onBeforeBrowse", browser);
 			if (!browser.isPopup()) {
+				((ExtraApi) getChromium(browser).getWebBrowser()).getSubscriber().onBeforeBrowseNotify();
 				return getChromium(browser).onBeforeBrowse(frame, request);
 			}
 			return false;
@@ -1542,7 +1575,7 @@ final class Chromium extends WebBrowser {
 			boolean r = open == SWT.OK || open == SWT.YES ? true : false;
 			debug("JS Dialog Closed with "+r);
 			if(browser != null && !isPopup) {
-				if (disposing == Dispose.Unload && !r)
+				if ((disposing == Dispose.Unload || disposing == Dispose.WaitIfClosed) && !r)
 					disposing = Dispose.UnloadCancel;
 				asyncExec(() -> {
 					callback.Continue(r, default_prompt_text);
@@ -1590,8 +1623,9 @@ final class Chromium extends WebBrowser {
 		if (f != null) {
 			f.thenAccept(close);
 			chromium.setData("chromium.dialogs", null);
-			while (!f.isDone()) {
-				if (!chromium.getDisplay().readAndDispatch()) chromium.getDisplay().sleep();
+			Display display = chromium.getDisplay();
+			while (!f.isDone() && !display.isDisposed()) {
+				if (!display.readAndDispatch()) display.sleep();
 			}
 		}
 	}
@@ -1602,12 +1636,12 @@ final class Chromium extends WebBrowser {
 			disposing = Dispose.UnloadClosed;
 		}
 	}
-	
+
 	private boolean onBeforeUnloadDialog(String message_text, boolean is_reload, CefJSDialogCallback callback) {
 		debug("on_before_unload_dialog disposing: " + disposing);
 		if (disposing == Dispose.FromClose) {
 			disposing = Dispose.Unload;
-		}	
+		}
 		if (useSwtDialogs()) {
 			openJsDialog(false, JSDialogType.JSDIALOGTYPE_CONFIRM, "Are you sure you want to leave this page?", message_text, null, null, callback);
 			if (disposing == Dispose.Unload) {
@@ -1653,6 +1687,9 @@ final class Chromium extends WebBrowser {
 
 		if (hasMenu) {
 			model.clear();
+			if (Boolean.getBoolean("chromium.hide_context_menu")) {
+				return;
+			}
 			boolean isGTK = "gtk".equals(SWT.getPlatform());
 			if (isGTK && GTK_VERSION == 2) {
 				int commandIdCounter = MenuId.MENU_ID_USER_FIRST;
@@ -1728,7 +1765,9 @@ final class Chromium extends WebBrowser {
 					event.x = params.getXCoord();
 
 					for (Listener listener : listeners) {
-						listener.handleEvent(event);
+						asyncExec(() -> {
+							listener.handleEvent(event);
+						});
 						return true;
 					}
 				}
@@ -2477,6 +2516,7 @@ final class Chromium extends WebBrowser {
 						}
 					};
 					WebBrowser.CookieResult = globalManager.visitAllCookies(visitor);
+					globalManager.flushStore(null);
 				}
 			});
 		};
@@ -2526,27 +2566,23 @@ final class Chromium extends WebBrowser {
 					return true;
 				}
 			};
-			for (int i = 0; i < 2; i++) {
-				CefCookieManager globalManager = CefCookieManager.getGlobalManager();
-				if (globalManager == null) {
-					throw new SWTException("Failed to get cookies, cookie manager not ready");
-				}
-				boolean result = globalManager.visitUrlCookies(WebBrowser.CookieUrl, true, visitor);
-				if (!result) {
-					throw new SWTException("Failed to get cookies");
-				}
-				long end = System.currentTimeMillis()+250;
-				Display display = Display.getCurrent() == null ? Display.getDefault() : Display.getCurrent();
-				while (!cookieVisited.get() && !display.isDisposed() && System.currentTimeMillis() < end) {
-//					debug("in cookie loop");
-					if (!display.readAndDispatch()) {
-						display.sleep();
-					}
-				}
-//				debug("end cookie loop");
-				if (cookieVisited.get())
-					return;
+			CefCookieManager globalManager = CefCookieManager.getGlobalManager();
+			if (globalManager == null) {
+				throw new SWTException("Failed to get cookies, cookie manager not ready");
 			}
+			boolean result = globalManager.visitUrlCookies(WebBrowser.CookieUrl, true, visitor);
+			if (!result) {
+				throw new SWTException("Failed to get cookies");
+			}
+			long end = System.currentTimeMillis()+50;
+			Display display = Display.getCurrent() == null ? Display.getDefault() : Display.getCurrent();
+			while (!cookieVisited.get() && !display.isDisposed() && System.currentTimeMillis() < end) {
+//				debug("in cookie loop");
+				if (!display.readAndDispatch() && !CefApp.getInstance().getAllClients().isEmpty()) {
+					display.sleep();
+				}
+			}
+//			debug("end cookie loop");
 		};
 	}
 
@@ -2829,8 +2865,10 @@ final class Chromium extends WebBrowser {
 					}
 				}
 			};
-			cefBrowser.getSource(visitor);
-			
+			created.thenRun(()-> {
+				cefBrowser.getSource(visitor);
+			});
+
 			Display display = chromium.getDisplay();
 			while (!textVisited.isDone() && !display.isDisposed()) {
 				debug("in text loop");
@@ -2839,8 +2877,8 @@ final class Chromium extends WebBrowser {
 				}
 			}
 			try {
-				return textVisited.get();
-			} catch (InterruptedException | ExecutionException e) {
+				return textVisited.get(5, TimeUnit.SECONDS);
+			} catch (InterruptedException | ExecutionException | TimeoutException e) {
 			}
 		}
 		return "";
@@ -2857,7 +2895,7 @@ final class Chromium extends WebBrowser {
 		String cefurl = cefBrowser.getURL();
 		if (cefurl == null)
 			cefurl = getPlainUrl(this.url);
-		if (cefurl != null && cefurl.startsWith("file:") && cefurl.contains(getBrowserTempFolder().toString()))
+		if (cefurl != null && cefurl.startsWith("file:") && cefurl.contains(getBrowserTempFolder().toUri().toString()))
 			return ABOUT_BLANK;
 		return cefurl;
 	}
@@ -2886,8 +2924,8 @@ final class Chromium extends WebBrowser {
 	private ExtraApi extraApi() {
 		if (extraApi == null) {
 			extraApi = new ExtraApi();
+			extraApi.setCreated();
 		}
-		extraApi.setCreated();
 		return extraApi;
 	}
 
@@ -2922,7 +2960,7 @@ final class Chromium extends WebBrowser {
 					Path file = Files.createTempFile(browserTempFolder, "tempfile", ".html");
 					Files.write(file, html.getBytes(StandardCharsets.UTF_8.toString()));
 					file.toFile().deleteOnExit();
-					setTextUrl = file.toAbsolutePath().toUri().toString();
+					setTextUrl = file.toUri().toString();
 					setUrl(setTextUrl, null, null);
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -2946,7 +2984,7 @@ final class Chromium extends WebBrowser {
 		}
 		String setTextNewUrl = System.getProperty("chromium.setTextAsUrl", "");
 		if (!setTextNewUrl.isEmpty() && url != null && url.startsWith("file:")
-				&& url.contains(getBrowserTempFolder().toString())) {
+				&& url.contains(getBrowserTempFolder().toUri().toString())) {
 			return DATA_TEXT_URL;
 		}
 		return url;
@@ -2975,7 +3013,7 @@ final class Chromium extends WebBrowser {
 	private void doSetUrl(String url, String postData, String[] headers) {
 		loaded = new CompletableFuture<>();
 		Net.config();
-		if (postData == null && headers == null) {
+		if ((postData == null && headers == null) || url.startsWith("file:")) {
 			cefBrowser.loadURL(url);
 		} else {
 			CefRequest request = CefRequest.create();
@@ -3112,8 +3150,13 @@ final class Chromium extends WebBrowser {
 		}
 
 		@Override
-		public void executeJavacript(String script) {
+		public void executeJavaScript(String script) {
 			execute(script);
+		}
+
+		@Override
+		public void executeJavacript(String script) {
+			executeJavaScript(script);
 		}
 
 		@Override
@@ -3137,15 +3180,16 @@ final class Chromium extends WebBrowser {
 		}
 
 		public void setCreated() {
-			if (eventActionOfAfterCreated != null && !isCreated().isDone()) {
+			EventAction eventAction = Subscriber.getEventActionOfAfterCreated();
+			if (eventAction != null && !isCreated().isDone()) {
 				Map<String, Object> mapData = new HashMap<>();
 				mapData.put("chromium_instance", (ChromiumBrowser)this);
-				eventActionOfAfterCreated.setJsonData(mapData);
-				eventActionOfAfterCreated.run();
+				eventAction.setJsonData(mapData);
+				eventAction.run();
 			}
 			isCreated().complete(true);
 		}
-		
+
 		@Override
 		public void showDevTools() {
 			created.thenRun(()-> {
@@ -3153,56 +3197,4 @@ final class Chromium extends WebBrowser {
 			});
 		}
 	}
-	
-	private static void createClipboardRouters() {
-		CefMessageRouter writeText = CefMessageRouter.create(new CefMessageRouterConfig("__writeText", "__writeTextCancel"));
-		CefMessageRouter readText = CefMessageRouter.create(new CefMessageRouterConfig("__readText", "__readTextCancel"));
-		CefMessageRouterHandlerAdapter writeTextHandler = new CefMessageRouterHandlerAdapter() {
-			@Override
-			public boolean onQuery(CefBrowser browser, CefFrame frame, long queryId, String request, boolean persistent, CefQueryCallback callback) {
-				Display display = Display.getDefault();
-				asyncExec(() -> {
-					final Clipboard cb = new Clipboard(display);
-					try {
-						if (request == null || request.isEmpty()) {
-							cb.clearContents();
-						}
-						else {
-							Transfer transfer = TextTransfer.getInstance();
-							cb.setContents(new Object[] { request }, new Transfer[] { transfer });
-						}
-						callback.success(request);
-					} catch (Exception e) {
-						e.printStackTrace();
-						callback.failure(0, e.getMessage());
-					}
-					cb.dispose();
-				});	
-				return true;
-			}
-		};
-		CefMessageRouterHandlerAdapter readTextHandler = new CefMessageRouterHandlerAdapter() {
-			@Override
-			public boolean onQuery(CefBrowser browser, CefFrame frame, long queryId, String request, boolean persistent, CefQueryCallback callback) {
-				Display display = Display.getDefault();
-				asyncExec(() -> {
-					final Clipboard cb = new Clipboard(display);
-					TextTransfer transfer = TextTransfer.getInstance();
-					try {
-						String text = (String) cb.getContents(transfer);
-						callback.success(text);
-					} catch (Exception e) {
-						e.printStackTrace();
-						callback.failure(0, e.getMessage());
-					}
-					cb.dispose();
-				});	
-				return true;	
-			}
-		};
-		writeText.addHandler(writeTextHandler, true);
-		readText.addHandler(readTextHandler, true);
-		clientHandler.addMessageRouter(writeText);
-		clientHandler.addMessageRouter(readText);
-	};
 }
