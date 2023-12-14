@@ -555,12 +555,8 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 			pdfPrintSettings.landscape = settings.landscape;
 			pdfPrintSettings.print_background = settings.print_background;
 			pdfPrintSettings.page_ranges = settings.page_ranges;
-			if (settings.paper_width >= 1000) {
-				pdfPrintSettings.paper_width = settings.paper_width;
-			}
-			if (settings.paper_height >= 1000) {
-				pdfPrintSettings.paper_height = settings.paper_height;
-			}
+			pdfPrintSettings.paper_width = settings.paper_width;
+			pdfPrintSettings.paper_height = settings.paper_height;
 			pdfPrintSettings.prefer_css_page_size = settings.prefer_css_page_size;
 			pdfPrintSettings.scale = settings.scale;
 			pdfPrintSettings.margin_top = settings.margin_top;
@@ -568,7 +564,7 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 			pdfPrintSettings.margin_bottom = settings.margin_bottom;
 			pdfPrintSettings.margin_left = settings.margin_left;
 			if (settings.margin_type != null) {
-				pdfPrintSettings.margin_type = CefPdfPrintSettings.MarginType.valueOf(settings.margin_type.name());;
+				pdfPrintSettings.margin_type = CefPdfPrintSettings.MarginType.valueOf(settings.margin_type.name());
 			}
 		}
 
