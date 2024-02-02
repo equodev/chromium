@@ -18,6 +18,11 @@ import org.eclipse.swt.widgets.Display;
 
 import com.equo.chromium.swt.internal.WebBrowser;
 
+/**
+ * Instances of this class implement the browser user interface. This class
+ * replaces org.eclipse.swt.browser.Browser to use the Equo Chromium browser.
+ *
+ */
 public class Browser extends Composite {
 	WebBrowser webBrowser;
 	int userStyle;
@@ -589,6 +594,26 @@ public class Browser extends Composite {
 		return webBrowser.jsEnabledOnNextPage;
 	}
 
+	/**
+	 * Returns the receiver's style information.
+	 * <p>
+	 * Note that the value which is returned by this method <em>may
+	 * not match</em> the value which was provided to the constructor
+	 * when the receiver was created. This can occur when the underlying
+	 * operating system does not support a particular combination of
+	 * requested styles. For example, if the platform widget used to
+	 * implement a particular SWT widget always has scroll bars, the
+	 * result of calling this method would always have the
+	 * <code>SWT.H_SCROLL</code> and <code>SWT.V_SCROLL</code> bits set.
+	 * </p>
+	 *
+	 * @return the style bits
+	 *
+	 * @exception SWTException <ul>
+	 *    <li>ERROR_WIDGET_DISPOSED - if the receiver has been disposed</li>
+	 *    <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread that created the receiver</li>
+	 * </ul>
+	 */
 	@Override
 	public int getStyle () {
 		/*
@@ -658,6 +683,17 @@ public class Browser extends Composite {
 		return webBrowser.isBackEnabled ();
 	}
 
+	/**
+	 * Returns <code>true</code> if the receiver has the user-interface
+	 * focus, and <code>false</code> otherwise.
+	 *
+	 * @return the receiver's focus state
+	 *
+	 * @exception SWTException <ul>
+	 *    <li>ERROR_WIDGET_DISPOSED - if the receiver has been disposed</li>
+	 *    <li>ERROR_THREAD_INVALID_ACCESS - if not called from the thread that created the receiver</li>
+	 * </ul>
+	 */
 	@Override
 	public boolean isFocusControl () {
 		checkWidget();
@@ -1051,12 +1087,36 @@ public class Browser extends Composite {
 		webBrowser.stop ();
 	}
 
-
+	/**
+	 * Disposes of the operating system resources associated with the receiver and
+	 * all its descendants. After this method has been invoked, the receiver and all
+	 * descendants will answer <code>true</code> when sent the message
+	 * <code>isDisposed()</code>. Any internal connections between the widgets in
+	 * the tree will have been removed to facilitate garbage collection. This method
+	 * does nothing if the widget is already disposed.
+	 * <p>
+	 * NOTE: This method is not called recursively on the descendants of the
+	 * receiver. This means that, widget implementers can not detect when a widget
+	 * is being disposed of by re-implementing this method, but should instead
+	 * listen for the <code>Dispose</code> event.
+	 * </p>
+	 *
+	 * @exception SWTException
+	 *                         <ul>
+	 *                         <li>ERROR_THREAD_INVALID_ACCESS - if not called from
+	 *                         the thread that created the receiver</li>
+	 *                         </ul>
+	 */
 	@Override
 	public void dispose() {
 		super.dispose();
 	}
-	
+
+	/**
+	 * Gets a ChromiumBrowser API instance for the current browser.
+	 * 
+	 * @return Returns a ChromiumBrowser API instance for the current browser.
+	 */
 	public Object getWebBrowser () {
 		return webBrowser.getWebBrowser ();
 	}

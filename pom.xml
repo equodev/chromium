@@ -191,5 +191,35 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>generate-javadoc</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>3.3.0</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <sourceFileIncludes>
+                                <include>**/com/equo/chromium/ChromiumBrowser.java</include>
+                                <include>**/com/equo/chromium/utils/PdfPrintSettings.java</include>
+                                <include>**/com/equo/chromium/swt/*.java</include>
+                            </sourceFileIncludes>
+                            <show>public</show>
+                            <source>8</source>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>
