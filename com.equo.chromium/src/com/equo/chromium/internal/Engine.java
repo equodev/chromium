@@ -90,7 +90,7 @@ public class Engine {
 		if (!Files.exists(libsPath))
 			throw new RuntimeException("Missing binaries for Equo Chromium Browser.");
 		boolean checkGtkInit = checkGtkInit();
-		String[] args = getChromiumArgs(libsPath, Boolean.getBoolean("chromium.init_threads"), checkGtkInit, null);
+		String[] args = getChromiumArgs(libsPath, Boolean.getBoolean("chromium.init_threads"), checkGtkInit, false, null);
 		setupCrashReporter();
 		if (!CefApp.startup(args)) {
 			if (checkGtkInit) {
@@ -243,7 +243,7 @@ public class Engine {
 						? Boolean.getBoolean("chromium.external_message_pump")
 						: external_message_pump);
 
-				String[] args = getChromiumArgs(libsPath, false, false, browserType);
+				String[] args = getChromiumArgs(libsPath, false, false, settings.remote_debugging_port > 0, browserType);
 
 				if (isDarkTheme(browserType, Arrays.asList(args))) {
 					CefBrowserSwt.setDarkMode(true);
@@ -379,12 +379,16 @@ public class Engine {
 		System.out.println("--------- End Chromium properties ---------");
 	}
 
-	static String[] getChromiumArgs(Path libsPath, boolean addXInitThreads, boolean addGtkInitCheck, BrowserType browserType) {
+	static String[] getChromiumArgs(Path libsPath, boolean addXInitThreads, boolean addGtkInitCheck,
+			boolean addRemoteAllowOrigins, BrowserType browserType) {
 		List<String> args = new ArrayList<>();
 		String vmArg = System.getProperty("chromium.args", System.getProperty("swt.chromium.args"));
 		if (vmArg != null) {
 			String[] lines = vmArg.replace("\\;", "\\#$").split(";");
 			Arrays.stream(lines).map(line -> line.replace("\\#$", ";")).forEach(l -> args.add(l));
+		}
+		if (addRemoteAllowOrigins) {
+			args.add("-remote-allow-origins=*");
 		}
 		if (isCrashReportedEnabled()) {
 			args.add("--enable-crash-reporter");
