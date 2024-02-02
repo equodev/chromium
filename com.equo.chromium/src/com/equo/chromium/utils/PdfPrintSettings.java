@@ -4,84 +4,127 @@ package com.equo.chromium.utils;
  * PDF print settings for browser.printToPDF()
  */
 public class PdfPrintSettings {
-    public enum MarginType {
-        // Default margins.
-        DEFAULT,
+	/**
+	 * Types of margins to be used.
+	 *
+	 */
+	public enum MarginType {
+		/**
+		 * Default margins.
+		 */
+		DEFAULT,
 
-        // No margins
-        NONE,
+		/**
+		 * No margins.
+		 */
+		NONE,
 
-        // Minimum margins.
-        MINIMUM,
+		/**
+		 * Minimum margins.
+		 */
+		MINIMUM,
 
-        // Custom margins using the values from CefPdfPrintSettings
-        CUSTOM
-    }
+		/**
+		 * Custom margins using the values from CefPdfPrintSettings.
+		 */
+		CUSTOM
+	}
 
-    /**
-     * Set to true to print headers and footers or false to not print
-     * headers and footers.
-     */
-    public boolean header_footer_enabled;
+	/**
+	 * Set to true to print headers and footers or false to not print headers and
+	 * footers.
+	 */
+	public boolean header_footer_enabled;
 
-    /**
-     * Page title to display in the header. Only used if header_footer_enabled
-     * is set to true.
-     */
-    public String header_footer_title;
+	/**
+	 * Page title to display in the header. Only used if header_footer_enabled is
+	 * set to true.
+	 */
+	public String header_footer_title;
 
-    /**
-     * URL to display in the footer. Only used if header_footer_enabled is set
-     * to true.
-     */
-    public String header_footer_url;
+	/**
+	 * URL to display in the footer. Only used if header_footer_enabled is set to
+	 * true.
+	 */
+	public String header_footer_url;
 
-    /**
-     * Set to true for landscape mode or false for portrait mode.
-     */
-    public boolean landscape;
+	/**
+	 * Set to true for landscape mode or false for portrait mode.
+	 */
+	public boolean landscape;
 
-    /**
-     * Set to true to print background graphics or false to not print
-     * background graphics.
-     */
-    public boolean backgrounds_enabled;
+	/**
+	 * Set to true to print background graphics or false to not print background
+	 * graphics.
+	 */
+	public boolean backgrounds_enabled;
 
-    /**
-     * Output page size in microns (1 millimeter = 1000 microns). If either of these
-     * values is less than or equal to zero then the default paper size will be
-     * used as returned by the print_handler.  A4 is 210 x 297 mm which would
-     * be 210000 x 297000 microns.  US Letter is 215.9 x 279.4 mm which would
-     * be 215900 x 279400 microns.
-     */
-    public int page_width;
-    public int page_height;
+	/**
+	 * Specifies the width of the output page in microns (1 millimeter = 1000
+	 * microns). If either of these values is less than or equal to zero then the
+	 * default paper size will be used as returned by the print_handler. A4 is 210 x
+	 * 297 mm which would be 210000 x 297000 microns. US Letter is 215.9 x 279.4 mm
+	 * which would be 215900 x 279400 microns.
+	 */
+	public int page_width;
 
-    /**
-     * Set to true to print the selection only or false to print all.
-     */
-    public boolean selection_only;
+	/**
+	 * Specifies the height of the output page in microns (1 millimeter = 1000
+	 * microns). If either of these values is less than or equal to zero then the
+	 * default paper size will be used as returned by the print_handler. A4 is 210 x
+	 * 297 mm which would be 210000 x 297000 microns. US Letter is 215.9 x 279.4 mm
+	 * which would be 215900 x 279400 microns.
+	 */
+	public int page_height;
 
-    /**
-     * The percentage to scale the PDF by before printing (e.g. 50 is 50%).
-     * If this value is less than or equal to zero the default value of 100
-     * will be used.
-     */
-    public int scale_factor;
+	/**
+	 * Set to true to print the selection only or false to print all.
+	 */
+	public boolean selection_only;
 
-    /**
-     * Margins in points. Only used if |margin_type| is set to
-     * PDF_PRINT_MARGIN_CUSTOM.
-     */
-    public int margin_top;
-    public int margin_right;
-    public int margin_bottom;
-    public int margin_left;
+	/**
+	 * The percentage to scale the PDF by before printing (e.g. 50 is 50%). If this
+	 * value is less than or equal to zero the default value of 100 will be used.
+	 */
+	public int scale_factor;
 
-    /**
-     * Margin type.
-     */
-    public MarginType margin_type;
+	/**
+	 * Specifies the top margin.
+	 * 
+	 * Margins in points. Only used if |margin_type| is set to
+	 * PDF_PRINT_MARGIN_CUSTOM.
+	 */
+	public int margin_top;
 
-    public PdfPrintSettings() {}
+	/**
+	 * Specifies the right margin.
+	 * 
+	 * Margins in points. Only used if |margin_type| is set to
+	 * PDF_PRINT_MARGIN_CUSTOM.
+	 */
+	public int margin_right;
+
+	/**
+	 * Specifies the bottom margin.
+	 * 
+	 * Margins in points. Only used if |margin_type| is set to
+	 * PDF_PRINT_MARGIN_CUSTOM.
+	 */
+	public int margin_bottom;
+
+	/**
+	 * Specifies the left margin.
+	 * 
+	 * Margins in points. Only used if |margin_type| is set to
+	 * PDF_PRINT_MARGIN_CUSTOM.
+	 */
+	public int margin_left;
+
+	/**
+	 * Specifies the type of margin to use.
+	 */
+	public MarginType margin_type;
+
+	public PdfPrintSettings() {
+	}
 }
