@@ -216,6 +216,7 @@
                             </sourceFileIncludes>
                             <show>public</show>
                             <source>8</source>
+                            <doclint>none</doclint>
                         </configuration>
                     </plugin>
                 </plugins>
