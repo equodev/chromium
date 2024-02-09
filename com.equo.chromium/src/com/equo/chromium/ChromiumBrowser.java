@@ -227,6 +227,7 @@ public interface ChromiumBrowser {
 	}
 
 	/**
+	/**
 	 * Delete cookies matching the url and name regex patterns. Negation patterns
 	 * can be used to exclude cookies from deletion.
 	 * 
@@ -234,6 +235,7 @@ public interface ChromiumBrowser {
 	 *                    empty matches nothing.
 	 * @param namePattern The pattern for the matching cookie name case. Null
 	 *                    matches all, empty matches nothing.
+	 * @return Returns true if cookies were cleared and false otherwise.
 	 * 
 	 * @since 116.0.1
 	 */
