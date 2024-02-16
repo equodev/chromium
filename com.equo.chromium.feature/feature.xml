@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
       id="com.equo.chromium.feature"
-      label="Chromium SWT Browser Feature"
+      label="Chromium Browser Feature"
       version="116.0.0.qualifier"
       provider-name="Equo"
       os="linux,macosx,win32"
@@ -9,7 +9,7 @@
       arch="x86_64,x86,aarch64">
 
    <description url="https://www.equo.dev">
-      Chromium SWT Browser
+      Chromium Browser
    </description>
 
    <copyright url="https://equo.dev/">
