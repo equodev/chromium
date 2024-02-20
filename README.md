@@ -1,6 +1,6 @@
 # Equo Chromium Community Edition (**V116**)
 
-The [Equo Chromium](https://www.equo.dev/chromium) Community widget is a cross platform browser that allows users to create and render modern web-based UIs inside a Java application. It can be used in standalone Java applications, Windowless, Swing, SWT, or Eclipse RCP applications.
+The [Equo Chromium](https://www.equo.dev/chromium) Community Edition widget is a cross platform browser that allows users to create and render modern web-based UIs inside a Java application. It can be used in standalone Java applications, Windowless mode, Swing, SWT, or Eclipse RCP applications.
 
 No more custom code for each platform, no more installations of specific libraries for Linux, no more problems in Windows with IE, no more platform-dependant and browser-specific issues at all. This is a truly **cross platform** browser that runs seamlessly in all operating systems and in embedded devices.
 
@@ -8,7 +8,7 @@ It is based on and uses the CEF Framework (https://bitbucket.org/chromiumembedde
 
 ## Usage
 
-To use the Equo Chromium Community widget add the following import sentence to your Java classes:
+To use the Equo Chromium Community Edition widget add the following import sentence to your Java classes:
 
 
 ```java
@@ -34,7 +34,7 @@ Complete Sample projects can be found [here](https://github.com/equoplatform/chr
 
 ## Distribution
 
-The Equo Chromium Browser is provided as ready-to-use P2, MVN and OSGi repositories, which contains:
+The Equo Chromium Browser is provided as ready-to-use P2, MVN and OSGi repositories, which contain:
 
 - a Chromium bundle
 - a Chromium native library per platform fragments
@@ -54,7 +54,7 @@ https://docs.equo.dev/main/getting-started/introduction.html
 
 ## Contributing
 
-Thanks you to all the people who are contributing to Equo Chromium! Please, read our [Contributors Guide](docs/CONTRIBUTING.md) if you want to contribute to this project.
+Thank you to all the people who are contributing to Equo Chromium! Please, read our [Contributors Guide](docs/CONTRIBUTING.md) if you want to contribute to this project.
 
 By contributing you agree to our [Code of Conduct](docs/CODE_OF_CONDUCT.md)'s terms.
 
@@ -70,9 +70,9 @@ This repo uses GIT LFS, please install (https://git-lfs.github.com/) before clon
 
 [Equo Chromium](https://www.equo.dev/chromium) is dual-licensed under commercial and open source licenses (GPLv3). This repository is licensed under GPLv3. To get a commercial license and to not worry about the obligations associated with the GPLv3 license please contact the [Equo support team](https://www.equo.dev/request-a-demo).
 
-## [Release Notes](https://docs.equo.dev/chromium/ce-116.x/reference/release-notes.html)
+## Release Notes
 
-Release
+All the release notes for the Equo Chromium browser can be found [here](https://docs.equo.dev/chromium/116.x-ce/reference/release-notes.html).
 
 ## Support
 
