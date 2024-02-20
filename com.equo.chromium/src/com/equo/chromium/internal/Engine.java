@@ -33,8 +33,8 @@ import org.cef.SystemBootstrap;
 import org.cef.SystemBootstrap.Loader;
 import org.cef.WindowingToolkit;
 import org.cef.browser.CefBrowser;
-import org.cef.callback.CefCommandLine;
 import org.cef.browser.CefBrowserSwt;
+import org.cef.callback.CefCommandLine;
 import org.cef.callback.CefSchemeRegistrar;
 import org.cef.handler.CefAppHandlerAdapter;
 
@@ -63,16 +63,15 @@ public class Engine {
 	public static final CompletableFuture<Boolean> ready = new CompletableFuture<>();
 	private static AtomicBoolean closing = new AtomicBoolean();
 	private static boolean multiThreaded;
-	
+
 	public static boolean setDarkModeBackground = false;
-	
+
 	public static enum BrowserType {
-		SWT,
-		STANDALONE,
-		SWING
+		SWT, STANDALONE, SWING, HEADLESS
 	}
 
 	static BrowserType browserTypeInitialized = null;
+
 	private static void loadLib() {
 		if (OS.isLinux()) {
 			multiThreaded = Boolean.getBoolean("chromium.multi_threaded_message_loop");
@@ -259,6 +258,7 @@ public class Engine {
 
 				WindowingToolkit windowToolkit = null;
 				switch (browserType) {
+				case HEADLESS:
 				case STANDALONE:
 					windowToolkit = new CefAppStandalone();
 					settings.external_message_pump = false;
@@ -397,6 +397,10 @@ public class Engine {
 				args.add("GTKInitCheck");
 			if (isDarkTheme(browserType, args)) {
 				args.add("--force-dark-mode");
+			}
+			if (browserType == BrowserType.HEADLESS) {
+				args.add("--ozone-platform=headless");
+				args.add("--disable-gpu");
 			}
 		} else if (OS.isMacintosh()) {
 			args.add("--framework-dir-path=" + libsPath.resolve("Chromium Embedded Framework.framework"));
