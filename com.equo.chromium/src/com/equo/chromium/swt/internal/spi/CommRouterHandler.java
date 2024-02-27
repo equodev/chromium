@@ -60,7 +60,7 @@ public class CommRouterHandler extends CefMessageRouterHandlerAdapter {
 		private final String namePrefix;
 
 		DaemonThreadFactory() {
-			SecurityManager s = System.getSecurityManager();
+			java.lang.SecurityManager s = System.getSecurityManager();
 			group = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
 			namePrefix = "comm-pool-thread-";
 		}

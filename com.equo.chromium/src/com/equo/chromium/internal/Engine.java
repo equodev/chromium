@@ -33,8 +33,8 @@ import org.cef.SystemBootstrap;
 import org.cef.SystemBootstrap.Loader;
 import org.cef.WindowingToolkit;
 import org.cef.browser.CefBrowser;
-import org.cef.callback.CefCommandLine;
 import org.cef.browser.CefBrowserSwt;
+import org.cef.callback.CefCommandLine;
 import org.cef.callback.CefSchemeRegistrar;
 import org.cef.handler.CefAppHandlerAdapter;
 
@@ -43,6 +43,7 @@ import com.equo.chromium.swt.internal.spi.DynamicCefSchemeHandlerFactory;
 import com.equo.chromium.swt.internal.spi.SchemeDomainPair;
 import com.equo.chromium.swt.internal.spi.SchemeHandler;
 import com.equo.chromium.swt.internal.spi.SchemeHandlerManager;
+import com.equo.chromium.swt.internal.spi.SecurityManager;
 import com.equo.chromium.swt.internal.spi.StaticCefSchemeHandlerFactory;
 
 public class Engine {
@@ -297,6 +298,12 @@ public class Engine {
 								registrar.addCustomScheme(scheme, true, false, false, true, true, false, true);
 							}
 						}
+					}
+					
+					@SuppressWarnings("unused")
+					public boolean enableSecurity() {
+						SecurityManager securityManager = SecurityManager.get();
+						return securityManager != null && securityManager.isEnabled();
 					}
 
 					@Override
