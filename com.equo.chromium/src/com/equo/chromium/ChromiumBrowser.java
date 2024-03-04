@@ -31,6 +31,9 @@ import com.equo.chromium.utils.PdfPrintSettings;
  * It provides the methods for the creation of the different types of browsers
  * SWT, Swing, Standalone, Windowless as well as the complementary methods for
  * their management.
+ * 
+ * All methods of this interface can be called from any thread unless otherwise
+ * indicated by the specific method.
  */
 public interface ChromiumBrowser {
 
@@ -350,6 +353,8 @@ public interface ChromiumBrowser {
 	/**
 	 * Capture screenshot from browser.
 	 * 
+	 * This method cannot be called from the main thread.
+	 * 
 	 * @return CompletableFuture<byte[]> which will contain Base64 encoded PNG image
 	 *         data.
 	 * 
@@ -359,6 +364,8 @@ public interface ChromiumBrowser {
 
 	/**
 	 * Capture screenshots of a specific area.
+	 * 
+	 * This method cannot be called from the main thread.
 	 * 
 	 * @param x      The x coordinate of the origin of the window.
 	 * @param y      The y coordinate of the origin of the window.
