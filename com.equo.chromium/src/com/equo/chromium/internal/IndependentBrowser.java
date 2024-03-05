@@ -43,6 +43,7 @@ import org.cef.misc.Rectangle;
 import org.cef.network.CefRequest.TransitionType;
 
 import com.equo.chromium.ChromiumBrowser;
+import com.equo.chromium.Storage;
 import com.equo.chromium.internal.Engine.BrowserType;
 import com.equo.chromium.swt.internal.spi.CommRouterHandler;
 import com.equo.chromium.swt.internal.spi.CommunicationManager;
@@ -50,6 +51,7 @@ import com.equo.chromium.swt.internal.spi.ScriptExtension;
 import com.equo.chromium.utils.EventAction;
 import com.equo.chromium.utils.EventType;
 import com.equo.chromium.utils.PdfPrintSettings;
+import com.equo.chromium.utils.StorageType;
 import com.github.cliftonlabs.json_simple.JsonException;
 import com.github.cliftonlabs.json_simple.JsonObject;
 import com.github.cliftonlabs.json_simple.Jsoner;
@@ -63,6 +65,8 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 	private List<ConsoleListener> consoleListeners = new ArrayList<ConsoleListener>();
 	private String lastSearch = null;
 	private static final String DATA_TEXT_URL = "data:text/html;base64,";
+	private Storage localStorage;
+	private Storage sessionStorage;
 	private static ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
 		Thread thread = new Thread(r, "chromium-MessageRoute");
 		thread.setDaemon(true);
@@ -472,11 +476,11 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 				@Override
 				public void onDevToolsMethodResult(CefBrowser cefBrowser, int messageId, boolean success, String result,
 						int resultSize) {
+					debugPrint("onDevToolsMethodResult: " +result);
+					if (id != messageId) {
+						return;
+					}
 					try {
-						debugPrint("onDevToolsMethodResult: " +result);
-						if (id != messageId) {
-							return;
-						}
 						JsonObject json = (JsonObject) Jsoner.deserialize(result);
 						messageResult.complete(wanted == null || wanted.isEmpty() ? json : json.get(wanted));
 					} catch (JsonException e) {
@@ -589,5 +593,27 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 		}
 		throw new UnsupportedOperationException("You cannot initialize such browsers, because browsers of type "
 				+ Engine.browserTypeInitialized + " are already initialized.");
+	}
+
+	public Storage getLocalStorage() {
+		if (localStorage == null) {
+			synchronized (Storage.class) {
+				if (localStorage == null) {
+					localStorage = new Storage(this, StorageType.LOCAL);
+				}
+			}
+		}
+		return localStorage;
+	}
+
+	public Storage getSessionStorage() {
+		if (sessionStorage == null) {
+			synchronized (Storage.class) {
+				if (sessionStorage == null) {
+					sessionStorage = new Storage(this, StorageType.SESSION);
+				}
+			}
+		}
+		return sessionStorage;
 	}
 }

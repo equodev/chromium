@@ -528,4 +528,18 @@ public interface ChromiumBrowser {
 	 * @since 116.0.1
 	 */
 	public CompletableFuture<Boolean> printToPdf(String path);
+
+	/**
+	 * Returns an instance of LocalStorage.
+	 * 
+	 * @since 116.0.5
+	 */
+	public Storage getLocalStorage();
+
+	/**
+	 * Returns an instance of SessionStorage.
+	 * 
+	 * @since 116.0.5
+	 */
+	public Storage getSessionStorage();
 }
