@@ -31,9 +31,7 @@ public final class Windowless extends IndependentBrowser {
 		if (Boolean.getBoolean("chromium.force_windowless_swt")) {
 			return BrowserType.SWT;
 		}
-		if (Engine.browserTypeInitialized != null) {
-			return null;
-		}
+
 		try {
 			Class<?> clazz = Class.forName("org.eclipse.swt.widgets.Display", false,
 					ChromiumBrowser.class.getClassLoader());
@@ -46,8 +44,8 @@ public final class Windowless extends IndependentBrowser {
 				}
 			}
 		} catch (Throwable e) {
-
 		}
-		return BrowserType.STANDALONE;
+
+		return BrowserType.HEADLESS;
 	}
 }
