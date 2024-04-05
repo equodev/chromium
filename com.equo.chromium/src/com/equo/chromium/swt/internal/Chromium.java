@@ -306,10 +306,12 @@ final class Chromium extends WebBrowser {
 	public void destroyFunction (BrowserFunction function) {
 		checkBrowser();
 		deregisterFunction(function);
-		clientHandler.removeMessageRouter(function.router);
-		function.router.dispose();
+		if (function.router != null) {
+			clientHandler.removeMessageRouter(function.router);
+			function.router.dispose();
+		}
 	}
-	
+
 	class FunctionsResourceHandler extends CefResourceHandlerAdapter {
 		private byte[] resp = new byte[0];
 		private Throwable ex;
@@ -1041,8 +1043,10 @@ final class Chromium extends WebBrowser {
 		boolean crossOrigin = true;
 		if (crossOrigin) {
 			for (BrowserFunction current : functions.values()) {
-				getClientHandler().removeMessageRouter(current.router);
-				getClientHandler().addMessageRouter(current.router);
+				if (current.router != null) {
+					getClientHandler().removeMessageRouter(current.router);
+					getClientHandler().addMessageRouter(current.router);
+				}
 			}
 		}
 		asyncExec(() -> {
