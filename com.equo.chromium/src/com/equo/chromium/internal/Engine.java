@@ -347,10 +347,10 @@ public class Engine {
 						throw e;
 					}
 				}
+				if (debug) {
+					printSystemProperties();
+				}
 				if (BrowserType.SWT.equals(browserType)) {
-					if (debug) {
-						printSystemProperties();
-					}
 					SWTEngine.initCef(closing, shuttingDown, () -> internalShutdown());
 				}
 			}
