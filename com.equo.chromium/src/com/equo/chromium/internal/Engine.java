@@ -354,10 +354,10 @@ public class Engine {
 						throw e;
 					}
 				}
+				if (debug) {
+					printSystemProperties();
+				}
 				if (BrowserType.SWT.equals(browserType)) {
-					if (debug) {
-						printSystemProperties();
-					}
 					SWTEngine.initCef(closing, shuttingDown, () -> internalShutdown());
 				}
 			}
@@ -485,8 +485,9 @@ public class Engine {
 	
 	private static boolean isDarkTheme(BrowserType browserType, List<String> args) {
 		if (browserType != null && BrowserType.SWT.equals(browserType)) {
-			boolean flagExists = checkIfFlagExists(args, "--force-dark-mode");
-			setDarkModeBackground = flagExists ? true : SWTEngine.isSystemDarkTheme();
+			boolean ignoreDarkMode = checkIfFlagExists(args, "--ignore-dark-mode");
+			boolean forceDarkMode = checkIfFlagExists(args, "--force-dark-mode");
+			setDarkModeBackground = ignoreDarkMode ? false : forceDarkMode ? true : SWTEngine.isSystemDarkTheme();
 			return setDarkModeBackground;
 		}
 		return false;
