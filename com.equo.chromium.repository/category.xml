@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <site>
-   <feature url="features/com.equo.chromium.feature_117.0.0.qualifier.jar" id="com.equo.chromium.feature" version="117.0.0.qualifier">
+   <feature url="features/com.equo.chromium.feature_118.0.0.qualifier.jar" id="com.equo.chromium.feature" version="118.0.0.qualifier">
       <category name="com.equo.chromium"/>
    </feature>
-   <feature id="com.equo.chromium.feature.source" version="117.0.0.qualifier">
+   <feature id="com.equo.chromium.feature.source" version="118.0.0.qualifier">
       <category name="com.equo.chromium.source"/>
    </feature>
    <category-def name="com.equo.chromium" label="Equo Chromium Browser"/>
