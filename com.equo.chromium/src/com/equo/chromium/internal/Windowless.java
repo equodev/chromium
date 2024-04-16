@@ -18,7 +18,7 @@ public final class Windowless extends IndependentBrowser {
 	public Windowless(String url, Rectangle window) {
 		Engine.initCEF(getBrowserType());
 		createClient();
-		setBrowser(getClientHandler().createBrowser(url, true, false, createRequestContext()));
+		setBrowser(getClientHandler().createBrowser(url, true, false, createRequestContext(), null));
 		CefBrowser browser = getBrowser();
 		browser.setReference(this);
 		browser.createImmediately();

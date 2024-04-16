@@ -334,8 +334,7 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 		CompletableFuture<byte[]> screenshotResult = new CompletableFuture<>();
 		new CefDevToolsMessageObserverAdapter(getBrowser()) {
 			@Override
-			public void onDevToolsMethodResult(CefBrowser cefBrowser, int messageId, boolean success, String result,
-					int resultSize) {
+			public void onDevToolsMethodResult(CefBrowser cefBrowser, int messageId, boolean success, String result) {
 				try {
 					JsonObject json = (JsonObject) Jsoner.deserialize(result);
 					screenshotResult.complete(
@@ -474,8 +473,7 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 			int id = messageId++;
 			new CefDevToolsMessageObserverAdapter(getBrowser()) {
 				@Override
-				public void onDevToolsMethodResult(CefBrowser cefBrowser, int messageId, boolean success, String result,
-						int resultSize) {
+				public void onDevToolsMethodResult(CefBrowser cefBrowser, int messageId, boolean success, String result) {
 					debugPrint("onDevToolsMethodResult: " +result);
 					if (id != messageId) {
 						return;

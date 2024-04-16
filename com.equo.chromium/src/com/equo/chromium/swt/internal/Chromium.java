@@ -520,7 +520,7 @@ final class Chromium extends WebBrowser {
 
 		Net.config();
 		cefBrowser = (CefBrowserSwt) clientHandler.createBrowser(this.url == null ? ABOUT_BLANK : this.url, false,
-				false, extraApi().createRequestContext());
+				false, extraApi().createRequestContext(), null);
 		cefBrowser.createImmediately(chromium);
 	}
 
