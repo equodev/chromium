@@ -474,8 +474,7 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 			int id = messageId++;
 			new CefDevToolsMessageObserverAdapter(getBrowser()) {
 				@Override
-				public void onDevToolsMethodResult(CefBrowser cefBrowser, int messageId, boolean success, String result,
-						int resultSize) {
+				public void onDevToolsMethodResult(CefBrowser cefBrowser, int messageId, boolean success, String result, int resultSize) {
 					debugPrint("onDevToolsMethodResult: " +result);
 					if (id != messageId) {
 						return;

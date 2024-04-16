@@ -9,7 +9,7 @@ public final class Standalone extends IndependentBrowser {
 	private void init(String url) {
 		Engine.initCEF(Engine.BrowserType.STANDALONE);
 		createClient();
-		setBrowser(getClientHandler().createBrowser(url, false, false, createRequestContext()));
+		setBrowser(getClientHandler().createBrowser(url, false, false, createRequestContext(), null));
 		getBrowser().setReference(this);
 	}
 
