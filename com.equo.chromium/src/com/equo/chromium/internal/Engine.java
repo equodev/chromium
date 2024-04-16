@@ -2,6 +2,7 @@ package com.equo.chromium.internal;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -19,8 +20,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.cef.CefApp;
 import org.cef.CefAppStandalone;
@@ -349,12 +353,68 @@ public class Engine {
 				}
 				if (debug) {
 					printSystemProperties();
+					printVersions();
 				}
 				if (BrowserType.SWT.equals(browserType)) {
 					SWTEngine.initCef(closing, shuttingDown, () -> internalShutdown());
 				}
 			}
 		}
+	}
+
+	private static void printVersions() {
+		String engineClass = "com.equo.chromium.internal.Engine";
+		System.out.println("chromium.cef version=" + getPropertiesFromResource("/" + SUBDIR + "/chromium.properties",
+				Arrays.asList("version"), "com.equo.chromium.ChromiumFragment").get(0));
+
+		List<String> cefPatchAndVersion = getPropertiesFromResource("/version.properties",
+				Arrays.asList("cefPatch", "cefVersion"), engineClass);
+		if (cefPatchAndVersion.size() == 2) {
+			System.out.println("cef patch=" + cefPatchAndVersion.get(0));
+			System.out.println("cef version=" + cefPatchAndVersion.get(1));
+		}
+
+		List<String> chromiumSwtVersion = getPropertiesFromResource("/META-INF/MANIFEST.MF", Arrays.asList("Bundle-Version"),
+				engineClass);
+
+		if (!chromiumSwtVersion.isEmpty()) {
+			System.out.println("chromium.swt version=" + chromiumSwtVersion.get(0));
+		} else {
+			Pattern pattern = Pattern.compile(".*com\\.equo\\.chromium_(.*?)\\.jar.*");
+			chromiumSwtVersion = getPropertiesFromResource("/META-INF/MANIFEST.MF", Arrays.asList("Class-Path"), engineClass);
+			if (!chromiumSwtVersion.isEmpty()) {
+				Matcher matcher = pattern.matcher(chromiumSwtVersion.get(0));
+				if (matcher.find()) {
+					System.out.println("chromium.swt version=" + matcher.group(1));
+				}
+			}
+		}
+	}
+
+	private static List<String> getPropertiesFromResource(String resourcePath, List<String> keys, String className) {
+		List<String> properties = new ArrayList<>();
+		Class<?> clazz = null;
+		try {
+			clazz = Class.forName(className);
+
+			URL url = clazz.getResource(resourcePath);
+
+			if (url != null) {
+				try (InputStream is = url.openStream()) {
+					Properties props = new Properties();
+					props.load(is);
+					keys.forEach(key -> {
+						String value = props.getProperty(key);
+						if (value != null) {
+							properties.add(value);
+						}
+					});
+				}
+			}
+		} catch (IOException | ClassNotFoundException e) {
+			System.err.println("Error getting resource: " + resourcePath);
+		}
+		return properties;
 	}
 
 	private static void printSystemProperties() {
