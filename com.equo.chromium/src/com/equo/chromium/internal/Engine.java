@@ -18,13 +18,12 @@ import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.cef.CefApp;
 import org.cef.CefAppStandalone;
@@ -353,7 +352,11 @@ public class Engine {
 				}
 				if (debug) {
 					printSystemProperties();
-					printVersions();
+					try {
+						printVersions();
+					} catch (Throwable e) {
+						System.err.println("Error printing properties");
+					}
 				}
 				if (BrowserType.SWT.equals(browserType)) {
 					SWTEngine.initCef(closing, shuttingDown, () -> internalShutdown());
@@ -363,58 +366,45 @@ public class Engine {
 	}
 
 	private static void printVersions() {
-		String engineClass = "com.equo.chromium.internal.Engine";
-		System.out.println("chromium.cef version=" + getPropertiesFromResource("/" + SUBDIR + "/chromium.properties",
-				Arrays.asList("version"), "com.equo.chromium.ChromiumFragment").get(0));
+		Properties chromiumProperties = getPropertiesFromResource(SUBDIR + "/chromium.properties");
+		System.out.println("chromium.cef version=" + chromiumProperties.getProperty("version", ""));
 
-		List<String> cefPatchAndVersion = getPropertiesFromResource("/version.properties",
-				Arrays.asList("cefPatch", "cefVersion"), engineClass);
-		if (cefPatchAndVersion.size() == 2) {
-			System.out.println("cef patch=" + cefPatchAndVersion.get(0));
-			System.out.println("cef version=" + cefPatchAndVersion.get(1));
-		}
+		Properties versionProperties = getPropertiesFromResource("version.properties");
+		System.out.println("cef patch=" + versionProperties.getProperty("cefPatch", ""));
+		System.out.println("cef version=" + versionProperties.getProperty("cefVersion", ""));
 
-		List<String> chromiumSwtVersion = getPropertiesFromResource("/META-INF/MANIFEST.MF", Arrays.asList("Bundle-Version"),
-				engineClass);
-
-		if (!chromiumSwtVersion.isEmpty()) {
-			System.out.println("chromium.swt version=" + chromiumSwtVersion.get(0));
-		} else {
-			Pattern pattern = Pattern.compile(".*com\\.equo\\.chromium_(.*?)\\.jar.*");
-			chromiumSwtVersion = getPropertiesFromResource("/META-INF/MANIFEST.MF", Arrays.asList("Class-Path"), engineClass);
-			if (!chromiumSwtVersion.isEmpty()) {
-				Matcher matcher = pattern.matcher(chromiumSwtVersion.get(0));
-				if (matcher.find()) {
-					System.out.println("chromium.swt version=" + matcher.group(1));
-				}
-			}
-		}
+		Properties manifest = getPropertiesFromResource("META-INF/MANIFEST.MF");
+		System.out.println("chromium.swt version=" + manifest.getProperty("Bundle-Version", ""));
 	}
 
-	private static List<String> getPropertiesFromResource(String resourcePath, List<String> keys, String className) {
-		List<String> properties = new ArrayList<>();
-		Class<?> clazz = null;
+	private static Properties getPropertiesFromResource(String resourcePath) {
+		Properties props = new Properties();
+
+		ClassLoader classLoader = Engine.class.getClassLoader();
+		Enumeration<URL> resources = null;
 		try {
-			clazz = Class.forName(className);
+			resources = classLoader.getResources(resourcePath);
+		} catch (IOException e) {
+			return props;
+		}
 
-			URL url = clazz.getResource(resourcePath);
-
-			if (url != null) {
-				try (InputStream is = url.openStream()) {
-					Properties props = new Properties();
-					props.load(is);
-					keys.forEach(key -> {
-						String value = props.getProperty(key);
-						if (value != null) {
-							properties.add(value);
-						}
-					});
+		int count = 0;
+		while (resources.hasMoreElements()) {
+			URL url = resources.nextElement();
+			if (count >= 1) {
+				CodeSource codeSource = Engine.class.getProtectionDomain().getCodeSource();
+				if (codeSource == null || !url.toString().contains(codeSource.getLocation().toString())) {
+					continue;
 				}
 			}
-		} catch (IOException | ClassNotFoundException e) {
-			System.err.println("Error getting resource: " + resourcePath);
+			try (InputStream is = url.openStream()) {
+				props.load(is);
+			} catch (IOException e) {
+				System.err.println("Error getting resource: " + resourcePath);
+			}
+			count++;
 		}
-		return properties;
+		return props;
 	}
 
 	private static void printSystemProperties() {
