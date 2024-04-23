@@ -95,7 +95,7 @@ public class Subscriber {
 	public void onLoadEndNotify(CefFrame frame) {
 		CefFrame parentFrame = frame.getParent();
 		final boolean isMain = frame.isMain();
-		final long parentId = parentFrame != null ? parentFrame.getIdentifier() : 0;
+		final String parentId = parentFrame != null ? parentFrame.getIdentifier() : "0";
 		frame.getSource(new CefStringVisitor() {
 			@Override
 			public void visit(String source) {

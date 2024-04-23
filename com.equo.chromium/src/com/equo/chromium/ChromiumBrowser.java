@@ -43,7 +43,7 @@ public interface ChromiumBrowser {
 	 * 
 	 * @return Returns all active browsers.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	static Collection<ChromiumBrowser> getAllBrowsers() {
 		Collection<ChromiumBrowser> browsers = new ArrayList<ChromiumBrowser>();
@@ -85,7 +85,7 @@ public interface ChromiumBrowser {
 	 *         org.eclipse.swt.widgets.Display exists, returns SWT Windowless
 	 *         browser or Standalone Windowless browser otherwise.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	static ChromiumBrowser windowless(String url) {
 		return new Windowless(url);
@@ -103,7 +103,7 @@ public interface ChromiumBrowser {
 	 *         org.eclipse.swt.widgets.Display exists, returns SWT Windowless
 	 *         browser or Standalone Windowless browser otherwise.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	static ChromiumBrowser windowless(String url, int x, int y, int width, int height) {
 		return new Windowless(url, new Rectangle(x, y, width, height));
@@ -117,7 +117,7 @@ public interface ChromiumBrowser {
 	 * @throws UnsupportedOperationException if another type of toolkit has been
 	 *                                       initialized previously.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	static ChromiumBrowser standalone(String url) {
 		IndependentBrowser.checkToolkit(BrowserType.STANDALONE);
@@ -136,7 +136,7 @@ public interface ChromiumBrowser {
 	 * @throws UnsupportedOperationException if another type of toolkit has been
 	 *                                       initialized previously.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	static ChromiumBrowser standalone(String url, int x, int y, int width, int height) {
 		IndependentBrowser.checkToolkit(BrowserType.STANDALONE);
@@ -152,7 +152,7 @@ public interface ChromiumBrowser {
 	 * @throws UnsupportedOperationException if another type of toolkit has been
 	 *                                       initialized previously.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	static ChromiumBrowser standalone(String url, Rectangle window) {
 		IndependentBrowser.checkToolkit(BrowserType.STANDALONE);
@@ -169,7 +169,7 @@ public interface ChromiumBrowser {
 	 * @throws UnsupportedOperationException if another type of toolkit has been
 	 *                                       initialized previously.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	static ChromiumBrowser swing(Object container, String layout, String url) {
 		IndependentBrowser.checkToolkit(BrowserType.SWING);
@@ -184,7 +184,7 @@ public interface ChromiumBrowser {
 	 * @throws UnsupportedOperationException if another type of toolkit has been
 	 *                                       initialized previously.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	static ChromiumBrowser swing(String url) {
 		IndependentBrowser.checkToolkit(BrowserType.SWING);
@@ -200,7 +200,7 @@ public interface ChromiumBrowser {
 	 * @throws UnsupportedOperationException if another type of toolkit has been
 	 *                                       initialized previously.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	static ChromiumBrowser swt(Object composite, int style) {
 		IndependentBrowser.checkToolkit(BrowserType.SWT);
@@ -211,7 +211,7 @@ public interface ChromiumBrowser {
 	 * Early load and initialize the Equo Chromium engine and libraries. Usually not
 	 * required.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public static void earlyInit() throws ClassNotFoundException {
 		Class.forName("com.equo.chromium.internal.Engine");
@@ -220,7 +220,7 @@ public interface ChromiumBrowser {
 	/**
 	 * Start the CEF event loop when creating in Standalone and Windowless browsers.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public static void startBrowsers() {
 		String multiThread = System.getProperty("chromium.multi_threaded_message_loop", "");
@@ -240,7 +240,7 @@ public interface ChromiumBrowser {
 	 *                    matches all, empty matches nothing.
 	 * @return Returns true if cookies were cleared and false otherwise.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	static boolean clearCookies(String urlPattern, String namePattern) {
 		return WebBrowser.clearCookie(urlPattern, namePattern);
@@ -252,7 +252,7 @@ public interface ChromiumBrowser {
 	 * @param url The url that will be loaded in the browser.
 	 * @return Returns true if the url was loaded and false otherwise.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	boolean setUrl(String url);
 
@@ -262,14 +262,14 @@ public interface ChromiumBrowser {
 	 * @param html The html that will be loaded in the browser.
 	 * @return Returns true if the html was loaded and false otherwise.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	boolean setText(String html);
 
 	/**
 	 * @return Returns true if the browser will be closed and false otherwise.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	boolean close();
 
@@ -278,7 +278,7 @@ public interface ChromiumBrowser {
 	 * 
 	 * @param script Script to be executed in the browser.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public void executeJavaScript(String script);
 
@@ -287,7 +287,7 @@ public interface ChromiumBrowser {
 	 *             window. Use executeJavaScript(String) instead.
 	 * @param script Script to be executed in the browser.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	@Deprecated
 	public void executeJavacript(String script);
@@ -300,7 +300,7 @@ public interface ChromiumBrowser {
 	 *                  document.
 	 * @param matchCase indicates whether the search should be case-sensitive.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public void find(String search, boolean forward, boolean matchCase);
 
@@ -310,7 +310,7 @@ public interface ChromiumBrowser {
 	 * 
 	 * @param zoomLevel The zoom level to the specified value.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public void zoom(double zoomLevel);
 
@@ -319,7 +319,7 @@ public interface ChromiumBrowser {
 	 * 
 	 * @return Returns the current zoom level.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public double getZoom();
 
@@ -328,7 +328,7 @@ public interface ChromiumBrowser {
 	 *
 	 * @param listener The console listener to add.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public void addConsoleListener(ConsoleListener listener);
 
@@ -337,7 +337,7 @@ public interface ChromiumBrowser {
 	 *
 	 * @param listener The console listener to remove.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public void removeConsoleListener(ConsoleListener listener);
 
@@ -346,7 +346,7 @@ public interface ChromiumBrowser {
 	 * 
 	 * @return Returns the status error list of how the process ended.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	List<Object> getErrors();
 
@@ -358,7 +358,7 @@ public interface ChromiumBrowser {
 	 * @return CompletableFuture<byte[]> which will contain Base64 encoded PNG image
 	 *         data.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public CompletableFuture<byte[]> captureScreenshot();
 
@@ -375,7 +375,7 @@ public interface ChromiumBrowser {
 	 * @return CompletableFuture<byte[]> which will contain Base64 encoded PNG image
 	 *         data.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public CompletableFuture<byte[]> captureScreenshot(int x, int y, int width, int height, int scale);
 
@@ -392,7 +392,7 @@ public interface ChromiumBrowser {
 	 * 
 	 * @param enable
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public void ignoreCertificateErrors(boolean enable);
 
@@ -415,7 +415,7 @@ public interface ChromiumBrowser {
 	 * @return Returns the Composite or Component UI object, depending on the
 	 *         current toolkit.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public Object getUIComponent();
 
@@ -424,21 +424,21 @@ public interface ChromiumBrowser {
 	 * 
 	 * @return Returns true if the browser is loading a page or false otherwise.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public boolean isLoading();
 
 	/**
 	 * Loads the previous location in the back-forward list.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public void goBack();
 
 	/**
 	 * Loads the next location in the back-forward list.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public void goForward();
 
@@ -449,7 +449,7 @@ public interface ChromiumBrowser {
 	 * @return Returns true if the previous location can be loaded and false
 	 *         otherwise.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public boolean canGoBack();
 
@@ -459,14 +459,14 @@ public interface ChromiumBrowser {
 	 * 
 	 * @return Returns true if the next location can be loaded and false otherwise.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public boolean canGoForward();
 
 	/**
 	 * Reloads the currently loaded web page.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public void reload();
 
@@ -474,7 +474,7 @@ public interface ChromiumBrowser {
 	 * Cancels any pending navigation or download operation and stops any dynamic
 	 * page elements, such as background sounds and animations.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public void stop();
 
@@ -483,7 +483,7 @@ public interface ChromiumBrowser {
 	 * 
 	 * @return Returns a source text in the browser.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public CompletableFuture<String> text();
 
@@ -492,7 +492,7 @@ public interface ChromiumBrowser {
 	 * 
 	 * @return Returns the current url.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public String getUrl();
 
@@ -502,14 +502,14 @@ public interface ChromiumBrowser {
 	 * @return a CompletableFuture<Boolean> that will be completed with a boolean
 	 *         value indicating whether the browser has been created
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public CompletableFuture<Boolean> isCreated();
 
 	/**
 	 * Opens a new browser with the DevTools view of the current browser instance.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public void showDevTools();
 
@@ -522,7 +522,7 @@ public interface ChromiumBrowser {
 	 * @param settings The PDF print settings to use. If
 	 *                                         null then defaults will be used.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public CompletableFuture<Boolean> printToPdf(String path, PdfPrintSettings settings);
 
@@ -532,21 +532,21 @@ public interface ChromiumBrowser {
 	 * @param path The path of the file to write to (will be overwritten if it
 	 *             already exists). Cannot be null.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public CompletableFuture<Boolean> printToPdf(String path);
 
 	/**
 	 * Returns an instance of LocalStorage.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public Storage getLocalStorage();
 
 	/**
 	 * Returns an instance of SessionStorage.
 	 * 
-	 * @since 121.0.0
+	 * @since 122.0.0
 	 */
 	public Storage getSessionStorage();
 }
