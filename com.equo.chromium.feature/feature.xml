@@ -2,7 +2,7 @@
 <feature
       id="com.equo.chromium.feature"
       label="Chromium Browser Feature"
-      version="123.0.0.qualifier"
+      version="124.0.0.qualifier"
       provider-name="Equo"
       os="linux,macosx,win32"
       ws="cocoa,gtk,win32"
