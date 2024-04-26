@@ -1143,7 +1143,8 @@ final class Chromium extends WebBrowser {
 		private static final String FUNCTION_HOST = "functions";
 
 		@Override
-		public void onRenderProcessTerminated(CefBrowser browser, TerminationStatus status) {
+		public void onRenderProcessTerminated(CefBrowser browser, TerminationStatus status, int errorCode,
+				String errorString) {
 			if (!browser.isPopup()) {
 				getChromium(browser).extraApi().error(status);
 			}
