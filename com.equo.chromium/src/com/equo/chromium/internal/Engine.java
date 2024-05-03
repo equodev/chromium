@@ -358,12 +358,14 @@ public class Engine {
 					}
 				}
 				if (debug) {
+					System.out.println("------- Chromium properties: -------");
 					printSystemProperties();
 					try {
 						printVersions();
 					} catch (Throwable e) {
 						System.err.println("Error printing properties");
 					}
+					System.out.println("--------- End Chromium properties ---------");
 				}
 				if (BrowserType.SWT.equals(browserType)) {
 					SWTEngine.initCef(closing, shuttingDown, () -> internalShutdown());
@@ -415,8 +417,6 @@ public class Engine {
 	}
 
 	private static void printSystemProperties() {
-		System.out.println("------- Chromium system properties: -------");
-
 		String[] propertyNames = { "chromium.args", "chromium.cache_path", "chromium.custom_protocol", "chromium.debug",
 				"chromium.debug_port", "chromium.dialogs", "chromium.disable-download-progress",
 				"chromium.disable_script_extensions", "chromium.downloadLocationListener",
@@ -433,7 +433,6 @@ public class Engine {
 		for (String propertyName : propertyNames) {
 			System.out.println(propertyName + "=" + System.getProperty(propertyName, ""));
 		}
-		System.out.println("--------- End Chromium properties ---------");
 	}
 
 	static String[] getChromiumArgs(Path libsPath, boolean addXInitThreads, boolean addGtkInitCheck,
