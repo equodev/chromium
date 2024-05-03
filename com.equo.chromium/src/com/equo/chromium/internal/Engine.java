@@ -2,6 +2,7 @@ package com.equo.chromium.internal;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -17,8 +18,10 @@ import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
+import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -356,12 +359,59 @@ public class Engine {
 				}
 				if (debug) {
 					printSystemProperties();
+					try {
+						printVersions();
+					} catch (Throwable e) {
+						System.err.println("Error printing properties");
+					}
 				}
 				if (BrowserType.SWT.equals(browserType)) {
 					SWTEngine.initCef(closing, shuttingDown, () -> internalShutdown());
 				}
 			}
 		}
+	}
+
+	private static void printVersions() {
+		Properties chromiumProperties = getPropertiesFromResource(SUBDIR + "/chromium.properties");
+		System.out.println("chromium.cef version=" + chromiumProperties.getProperty("version", ""));
+
+		Properties versionProperties = getPropertiesFromResource("version.properties");
+		System.out.println("cef patch=" + versionProperties.getProperty("cefPatch", ""));
+		System.out.println("cef version=" + versionProperties.getProperty("cefVersion", ""));
+
+		Properties manifest = getPropertiesFromResource("META-INF/MANIFEST.MF");
+		System.out.println("chromium.swt version=" + manifest.getProperty("Bundle-Version", ""));
+	}
+
+	private static Properties getPropertiesFromResource(String resourcePath) {
+		Properties props = new Properties();
+
+		ClassLoader classLoader = Engine.class.getClassLoader();
+		Enumeration<URL> resources = null;
+		try {
+			resources = classLoader.getResources(resourcePath);
+		} catch (IOException e) {
+			return props;
+		}
+
+		int count = 0;
+		while (resources.hasMoreElements()) {
+			URL url = resources.nextElement();
+			if (count >= 1) {
+				CodeSource codeSource = Engine.class.getProtectionDomain().getCodeSource();
+				if (codeSource == null || !url.toString().contains(codeSource.getLocation().toString())) {
+					continue;
+				}
+			}
+			try (InputStream is = url.openStream()) {
+				props.load(is);
+			} catch (IOException e) {
+				System.err.println("Error getting resource: " + resourcePath);
+			}
+			count++;
+		}
+		return props;
 	}
 
 	private static void printSystemProperties() {
