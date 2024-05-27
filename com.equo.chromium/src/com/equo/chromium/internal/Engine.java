@@ -531,17 +531,19 @@ public class Engine {
 		}
 		return false;
 	}
-	
+
 	private static boolean isDarkTheme(BrowserType browserType, List<String> args) {
 		if (browserType != null && BrowserType.SWT.equals(browserType)) {
 			boolean ignoreDarkMode = checkIfFlagExists(args, "--ignore-dark-mode");
 			boolean forceDarkMode = checkIfFlagExists(args, "--force-dark-mode");
-			setDarkModeBackground = ignoreDarkMode ? false : forceDarkMode ? true : SWTEngine.isSystemDarkTheme();
+			boolean forceLightMode = checkIfFlagExists(args, "--force-light-mode");
+			setDarkModeBackground = (ignoreDarkMode || forceLightMode) ? false
+					: forceDarkMode ? true : SWTEngine.isSystemDarkTheme();
 			return setDarkModeBackground;
 		}
 		return false;
 	}
-	
+
 	private static boolean checkIfFlagExists(List<String> args, String flag) {
 		for (String str : args) {
 			if (str.contains(flag)) {
