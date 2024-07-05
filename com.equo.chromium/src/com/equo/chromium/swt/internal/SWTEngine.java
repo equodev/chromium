@@ -80,5 +80,9 @@ public class SWTEngine {
 		}
 		return isDarkTheme;
 	}
+	
+	public static int getSWTVersion() {
+		return SWT.getVersion();
+	}
 
 }

@@ -361,7 +361,7 @@ public class Engine {
 					System.out.println("------- Chromium properties: -------");
 					printSystemProperties();
 					try {
-						printVersions();
+						printVersions(browserType);
 					} catch (Throwable e) {
 						System.err.println("Error printing properties");
 					}
@@ -374,7 +374,7 @@ public class Engine {
 		}
 	}
 
-	private static void printVersions() {
+	private static void printVersions(BrowserType browserType) {
 		Properties chromiumProperties = getPropertiesFromResource(SUBDIR + "/chromium.properties");
 		System.out.println("chromium.cef version=" + chromiumProperties.getProperty("version", ""));
 
@@ -384,6 +384,10 @@ public class Engine {
 
 		Properties manifest = getPropertiesFromResource("META-INF/MANIFEST.MF");
 		System.out.println("chromium.swt version=" + manifest.getProperty("Bundle-Version", ""));
+
+		if (BrowserType.SWT.equals(browserType)) {
+			System.out.println("SWT version=" + SWTEngine.getSWTVersion());
+		}
 	}
 
 	private static Properties getPropertiesFromResource(String resourcePath) {
