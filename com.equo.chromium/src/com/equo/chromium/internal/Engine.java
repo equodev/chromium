@@ -43,6 +43,7 @@ import org.cef.handler.CefAppHandlerAdapter;
 
 import com.equo.chromium.swt.internal.SWTEngine;
 import com.equo.chromium.swt.internal.spi.DynamicCefSchemeHandlerFactory;
+import com.equo.chromium.swt.internal.spi.MiddlewareResourceRequestHandler;
 import com.equo.chromium.swt.internal.spi.SchemeDomainPair;
 import com.equo.chromium.swt.internal.spi.SchemeHandler;
 import com.equo.chromium.swt.internal.spi.SchemeHandlerManager;
@@ -61,7 +62,7 @@ public class Engine {
 	public static final boolean debug = Boolean.valueOf(System.getProperty("chromium.debug", "false"));
 
 	private static AtomicBoolean shuttingDown = new AtomicBoolean();
-	private static List<SchemeDomainPair> registeredSchemeData;
+	public static MiddlewareResourceRequestHandler middlewareResourceRequestHandler;
 
 	private static CefApp app;
 	public static final CompletableFuture<Boolean> ready = new CompletableFuture<>();
@@ -254,8 +255,10 @@ public class Engine {
 
 				final SchemeHandlerManager schemeHandlerManager = SchemeHandlerManager.get();
 
+				List<SchemeDomainPair> registeredSchemeData;
 				if (schemeHandlerManager != null) {
 					registeredSchemeData = schemeHandlerManager.getRegisteredSchemes();
+					middlewareResourceRequestHandler = new MiddlewareResourceRequestHandler(schemeHandlerManager, registeredSchemeData);
 				} else {
 					registeredSchemeData = Collections.emptyList();
 				}
@@ -522,18 +525,6 @@ public class Engine {
 			System.out.println(System.currentTimeMillis() / 1000 + ":J" + identifier + ":"
 					+ Thread.currentThread().getName() + ":" + log);
 		}
-	}
-
-	public static boolean isRegisteredProtocol(String url) {
-		if (registeredSchemeData != null) {
-			for (SchemeDomainPair schemeDomain : registeredSchemeData) {
-				String scheme = schemeDomain.getScheme();
-				if (url.startsWith(scheme)) {
-					return true;
-				}
-			}
-		}
-		return false;
 	}
 
 	private static boolean isDarkTheme(BrowserType browserType, List<String> args) {

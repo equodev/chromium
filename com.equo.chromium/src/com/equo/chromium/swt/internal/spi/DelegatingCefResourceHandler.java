@@ -29,7 +29,7 @@ public class DelegatingCefResourceHandler implements CefResourceHandler {
 			SchemeHandlerRequest schemeHandlerRequest = new SchemeHandlerRequest(request, frame);
 			boolean shouldProcessRequest = schemeHandler.processRequest(schemeHandlerRequest);
 			processRequest = Boolean.valueOf(shouldProcessRequest);
-		} catch (NoSuchMethodError t) {
+		} catch (NoSuchMethodError | AbstractMethodError t) {
 		}
 	}
 

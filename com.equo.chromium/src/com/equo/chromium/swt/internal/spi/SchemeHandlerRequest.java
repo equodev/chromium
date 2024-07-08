@@ -25,8 +25,16 @@ public class SchemeHandlerRequest {
 		return url;
 	}
 
+	public void setURL(String url) {
+		this.url = url;
+	}
+
 	public String getMethod() {
 		return method;
+	}
+
+	public void setMethod(String method) {
+		this.method = method;
 	}
 
 	public Map<String, String> getHeaders() {
