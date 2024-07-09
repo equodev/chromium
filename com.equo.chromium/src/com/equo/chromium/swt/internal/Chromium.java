@@ -142,14 +142,15 @@ import org.eclipse.swt.widgets.Widget;
 
 import com.equo.chromium.ChromiumBrowser;
 import com.equo.chromium.internal.Engine;
-import com.equo.chromium.internal.Subscriber;
 import com.equo.chromium.internal.IndependentBrowser;
+import com.equo.chromium.internal.Subscriber;
 import com.equo.chromium.swt.Browser;
 import com.equo.chromium.swt.BrowserFunction;
 import com.equo.chromium.swt.OpenWindowListener;
 import com.equo.chromium.swt.WindowEvent;
 import com.equo.chromium.swt.internal.spi.CommRouterHandler;
 import com.equo.chromium.swt.internal.spi.CommunicationManager;
+import com.equo.chromium.swt.internal.spi.MiddlewareResourceRequestHandler;
 import com.equo.chromium.swt.internal.spi.ScriptExtension;
 import com.equo.chromium.utils.EventAction;
 import com.github.cliftonlabs.json_simple.Jsoner;
@@ -306,10 +307,12 @@ final class Chromium extends WebBrowser {
 	public void destroyFunction (BrowserFunction function) {
 		checkBrowser();
 		deregisterFunction(function);
-		clientHandler.removeMessageRouter(function.router);
-		function.router.dispose();
+		if (function.router != null) {
+			clientHandler.removeMessageRouter(function.router);
+			function.router.dispose();
+		}
 	}
-	
+
 	class FunctionsResourceHandler extends CefResourceHandlerAdapter {
 		private byte[] resp = new byte[0];
 		private Throwable ex;
@@ -1041,8 +1044,10 @@ final class Chromium extends WebBrowser {
 		boolean crossOrigin = true;
 		if (crossOrigin) {
 			for (BrowserFunction current : functions.values()) {
-				getClientHandler().removeMessageRouter(current.router);
-				getClientHandler().addMessageRouter(current.router);
+				if (current.router != null) {
+					getClientHandler().removeMessageRouter(current.router);
+					getClientHandler().addMessageRouter(current.router);
+				}
 			}
 		}
 		asyncExec(() -> {
@@ -1190,29 +1195,30 @@ final class Chromium extends WebBrowser {
 			boolean isCustomProtocol = false;
 			if (isFunction(browser, request)) {
 				return null;
-			} else if (Engine.isRegisteredProtocol(request.getURL())) {
-				return null;
-			} else {
-				String requestUrl = request.getURL();
-				if (!requestUrl.startsWith("http") && !requestUrl.startsWith("data") && !requestUrl.startsWith("file")
-						&& !requestUrl.startsWith("chrome") && !requestUrl.startsWith("about") && !requestUrl.startsWith("devtools")) {
-					if (shouldAllowProtocol(requestUrl, browser)) {
-						return new CefResourceRequestHandlerAdapter() {
-							@Override
-							public boolean onBeforeResourceLoad(CefBrowser browser, CefFrame frame, CefRequest request) {
-								return false;
-							}
-							@Override
-							public void onProtocolExecution(CefBrowser browser, CefFrame frame, CefRequest request,
-									BoolRef allowOsExecution) {
-								debug("onProtocolExecution: " + request.getURL(), browser);
-								browser.stopLoad();
-								Program.launch(requestUrl);
-							}
-						};
-					} else {
-						isCustomProtocol = true;
-					}
+			}
+			String requestUrl = request.getURL();
+			if (Engine.middlewareResourceRequestHandler != null
+					&& Engine.middlewareResourceRequestHandler.shouldHandleRequest(requestUrl)) {
+				return Engine.middlewareResourceRequestHandler;
+			}
+			if (!requestUrl.startsWith("http") && !requestUrl.startsWith("data") && !requestUrl.startsWith("file")
+					&& !requestUrl.startsWith("chrome") && !requestUrl.startsWith("about") && !requestUrl.startsWith("devtools")) {
+				if (shouldAllowProtocol(requestUrl, browser)) {
+					return new CefResourceRequestHandlerAdapter() {
+						@Override
+						public boolean onBeforeResourceLoad(CefBrowser browser, CefFrame frame, CefRequest request) {
+							return false;
+						}
+						@Override
+						public void onProtocolExecution(CefBrowser browser, CefFrame frame, CefRequest request,
+								BoolRef allowOsExecution) {
+							debug("onProtocolExecution: " + request.getURL(), browser);
+							browser.stopLoad();
+							Program.launch(requestUrl);
+						}
+					};
+				} else {
+					isCustomProtocol = true;
 				}
 			}
 

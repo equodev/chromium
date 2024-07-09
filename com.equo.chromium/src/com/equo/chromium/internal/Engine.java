@@ -2,6 +2,7 @@ package com.equo.chromium.internal;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -17,8 +18,10 @@ import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
+import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -40,6 +43,7 @@ import org.cef.handler.CefAppHandlerAdapter;
 
 import com.equo.chromium.swt.internal.SWTEngine;
 import com.equo.chromium.swt.internal.spi.DynamicCefSchemeHandlerFactory;
+import com.equo.chromium.swt.internal.spi.MiddlewareResourceRequestHandler;
 import com.equo.chromium.swt.internal.spi.SchemeDomainPair;
 import com.equo.chromium.swt.internal.spi.SchemeHandler;
 import com.equo.chromium.swt.internal.spi.SchemeHandlerManager;
@@ -58,7 +62,7 @@ public class Engine {
 	public static final boolean debug = Boolean.valueOf(System.getProperty("chromium.debug", "false"));
 
 	private static AtomicBoolean shuttingDown = new AtomicBoolean();
-	private static List<SchemeDomainPair> registeredSchemeData;
+	public static MiddlewareResourceRequestHandler middlewareResourceRequestHandler;
 
 	private static CefApp app;
 	public static final CompletableFuture<Boolean> ready = new CompletableFuture<>();
@@ -251,8 +255,10 @@ public class Engine {
 
 				final SchemeHandlerManager schemeHandlerManager = SchemeHandlerManager.get();
 
+				List<SchemeDomainPair> registeredSchemeData;
 				if (schemeHandlerManager != null) {
 					registeredSchemeData = schemeHandlerManager.getRegisteredSchemes();
+					middlewareResourceRequestHandler = new MiddlewareResourceRequestHandler(schemeHandlerManager, registeredSchemeData);
 				} else {
 					registeredSchemeData = Collections.emptyList();
 				}
@@ -354,19 +360,70 @@ public class Engine {
 						throw e;
 					}
 				}
-				if (BrowserType.SWT.equals(browserType)) {
-					if (debug) {
-						printSystemProperties();
+				if (debug) {
+					System.out.println("------- Chromium properties: -------");
+					printSystemProperties();
+					try {
+						printVersions(browserType);
+					} catch (Throwable e) {
+						System.err.println("Error printing properties");
 					}
+					System.out.println("--------- End Chromium properties ---------");
+				}
+				if (BrowserType.SWT.equals(browserType)) {
 					SWTEngine.initCef(closing, shuttingDown, () -> internalShutdown());
 				}
 			}
 		}
 	}
 
-	private static void printSystemProperties() {
-		System.out.println("------- Chromium system properties: -------");
+	private static void printVersions(BrowserType browserType) {
+		Properties chromiumProperties = getPropertiesFromResource(SUBDIR + "/chromium.properties");
+		System.out.println("chromium.cef version=" + chromiumProperties.getProperty("version", ""));
 
+		Properties versionProperties = getPropertiesFromResource("version.properties");
+		System.out.println("cef patch=" + versionProperties.getProperty("cefPatch", ""));
+		System.out.println("cef version=" + versionProperties.getProperty("cefVersion", ""));
+
+		Properties manifest = getPropertiesFromResource("META-INF/MANIFEST.MF");
+		System.out.println("chromium.swt version=" + manifest.getProperty("Bundle-Version", ""));
+
+		if (BrowserType.SWT.equals(browserType)) {
+			System.out.println("SWT version=" + SWTEngine.getSWTVersion());
+		}
+	}
+
+	private static Properties getPropertiesFromResource(String resourcePath) {
+		Properties props = new Properties();
+
+		ClassLoader classLoader = Engine.class.getClassLoader();
+		Enumeration<URL> resources = null;
+		try {
+			resources = classLoader.getResources(resourcePath);
+		} catch (IOException e) {
+			return props;
+		}
+
+		int count = 0;
+		while (resources.hasMoreElements()) {
+			URL url = resources.nextElement();
+			if (count >= 1) {
+				CodeSource codeSource = Engine.class.getProtectionDomain().getCodeSource();
+				if (codeSource == null || !url.toString().contains(codeSource.getLocation().toString())) {
+					continue;
+				}
+			}
+			try (InputStream is = url.openStream()) {
+				props.load(is);
+			} catch (IOException e) {
+				System.err.println("Error getting resource: " + resourcePath);
+			}
+			count++;
+		}
+		return props;
+	}
+
+	private static void printSystemProperties() {
 		String[] propertyNames = { "chromium.args", "chromium.cache_path", "chromium.custom_protocol", "chromium.debug",
 				"chromium.debug_port", "chromium.dialogs", "chromium.disable-download-progress",
 				"chromium.disable_script_extensions", "chromium.downloadLocationListener",
@@ -383,7 +440,6 @@ public class Engine {
 		for (String propertyName : propertyNames) {
 			System.out.println(propertyName + "=" + System.getProperty(propertyName, ""));
 		}
-		System.out.println("--------- End Chromium properties ---------");
 	}
 
 	static String[] getChromiumArgs(Path libsPath, boolean addXInitThreads, boolean addGtkInitCheck,
@@ -471,27 +527,18 @@ public class Engine {
 		}
 	}
 
-	public static boolean isRegisteredProtocol(String url) {
-		if (registeredSchemeData != null) {
-			for (SchemeDomainPair schemeDomain : registeredSchemeData) {
-				String scheme = schemeDomain.getScheme();
-				if (url.startsWith(scheme)) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-	
 	private static boolean isDarkTheme(BrowserType browserType, List<String> args) {
 		if (browserType != null && BrowserType.SWT.equals(browserType)) {
-			boolean flagExists = checkIfFlagExists(args, "--force-dark-mode");
-			setDarkModeBackground = flagExists ? true : SWTEngine.isSystemDarkTheme();
+			boolean ignoreDarkMode = checkIfFlagExists(args, "--ignore-dark-mode");
+			boolean forceDarkMode = checkIfFlagExists(args, "--force-dark-mode");
+			boolean forceLightMode = checkIfFlagExists(args, "--force-light-mode");
+			setDarkModeBackground = (ignoreDarkMode || forceLightMode) ? false
+					: forceDarkMode ? true : SWTEngine.isSystemDarkTheme();
 			return setDarkModeBackground;
 		}
 		return false;
 	}
-	
+
 	private static boolean checkIfFlagExists(List<String> args, String flag) {
 		for (String str : args) {
 			if (str.contains(flag)) {

@@ -31,6 +31,9 @@ public final class Windowless extends IndependentBrowser {
 		if (Boolean.getBoolean("chromium.force_windowless_swt")) {
 			return BrowserType.SWT;
 		}
+		if (Boolean.getBoolean("chromium.force_windowless_headless")) {
+			return BrowserType.HEADLESS;
+		}
 
 		try {
 			Class<?> clazz = Class.forName("org.eclipse.swt.widgets.Display", false,

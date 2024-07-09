@@ -10,6 +10,10 @@ public interface SchemeHandlerManager {
 
 	public SchemeHandler getSchemeHandler(String scheme, String domain);
 
+	public RequestFilter getRequestFilter(String scheme, String domain);
+
+	public boolean shouldHandleRequest(String url);
+
 	public static SchemeHandlerManager get() {
 		ServiceLoader<SchemeHandlerManager> serviceLoader = ServiceLoader.load(SchemeHandlerManager.class,
 				SchemeHandlerManager.class.getClassLoader());

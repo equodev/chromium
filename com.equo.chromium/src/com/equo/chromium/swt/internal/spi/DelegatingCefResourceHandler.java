@@ -3,10 +3,10 @@ package com.equo.chromium.swt.internal.spi;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.cef.browser.CefFrame;
 import org.cef.callback.CefCallback;
 import org.cef.handler.CefResourceHandler;
 import org.cef.misc.IntRef;
@@ -22,6 +22,15 @@ public class DelegatingCefResourceHandler implements CefResourceHandler {
 
 	public DelegatingCefResourceHandler(SchemeHandler schemeHandler) {
 		this.schemeHandler = schemeHandler;
+	}
+
+	public void processRequest(CefRequest request, CefFrame frame) {
+		try {
+			SchemeHandlerRequest schemeHandlerRequest = new SchemeHandlerRequest(request, frame);
+			boolean shouldProcessRequest = schemeHandler.processRequest(schemeHandlerRequest);
+			processRequest = Boolean.valueOf(shouldProcessRequest);
+		} catch (NoSuchMethodError | AbstractMethodError t) {
+		}
 	}
 
 	@Override
