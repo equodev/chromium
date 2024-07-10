@@ -26,6 +26,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.cef.CefApp;
+import org.cef.CefApp.CefAppState;
 import org.cef.CefAppStandalone;
 import org.cef.CefAppSwing;
 import org.cef.CefAppSwt;
@@ -492,8 +493,45 @@ public class Engine {
 		app = null;
 	}
 
+	@SuppressWarnings("deprecation")
 	public static <T extends CefClient> T createClient() {
-		return app.createClient();
+		boolean suspend = CefApp.getState() != CefAppState.NEW || "win32".equals(Utils.getOS()) || getJavaVersion() >= 20 ? false : "true".equalsIgnoreCase(System.getProperty("chromium.suspend_threads", "true"));
+		Thread main = null;
+		Thread[] threads = null;
+		int threadsCount = 0;
+		if (suspend) {
+			main = Thread.currentThread();
+			threads = new Thread[Thread.activeCount()*2];
+			threadsCount = Thread.enumerate(threads);
+			for (int i=0; i<threadsCount; i++) {
+				Thread t = threads[i];
+				if (t != main) {
+					t.suspend();
+				}
+			}
+		}
+
+		T client = app.createClient();
+	
+		if (suspend) {
+			for (int i=0; i<threadsCount; i++) {
+				Thread t = threads[i];
+				if (t != main) {
+					t.resume();
+				}
+			}
+		}
+		return client;
+	}
+
+	protected static int getJavaVersion() {
+		String[] versionElements = System.getProperty("java.version").split("\\.");
+		int javaVersion = 0;
+		try {
+			javaVersion = Integer.parseInt(versionElements[0]);
+		} catch (Exception e) {
+		}
+		return javaVersion;
 	}
 
 	public static void startCefLoop() {
