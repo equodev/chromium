@@ -527,38 +527,8 @@ final class Chromium extends WebBrowser {
 		cefBrowser.createImmediately(chromium);
 	}
 
-	@SuppressWarnings("deprecation")
 	private static void createClienthandler() {
-		String[] versionElements = System.getProperty("java.version").split("\\.");
-		int javaVersion = 0;
-		try {
-			javaVersion = Integer.parseInt(versionElements[0]);
-		} catch (Exception e) {
-		}
-		boolean suspend = "win32".equals(SWT.getPlatform()) || javaVersion >= 20 ? false : "true".equalsIgnoreCase(System.getProperty("chromium.suspend_threads", "true"));
-		Thread main = null;
-		Thread[] threads = null;
-		int threadsCount = 0;
-		if (suspend) {
-			main = Thread.currentThread();
-			threads = new Thread[Thread.activeCount()*2];
-			threadsCount = Thread.enumerate(threads);
-			for (int i=0; i<threadsCount; i++) {
-				Thread t = threads[i];
-				if (t != main) {
-					t.suspend();
-				}
-			}
-		}
 		clientHandler = Engine.createClient();
-		if (suspend) {
-			for (int i=0; i<threadsCount; i++) {
-				Thread t = threads[i];
-				if (t != main) {
-					t.resume();
-				}
-			}
-		}
 		setFocusHandler();
 		setKeyboardHandler();
 		setLifeSpanHandler();
