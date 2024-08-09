@@ -24,7 +24,6 @@ import java.util.Locale;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.cef.CefApp;
 import org.cef.CefApp.CefAppState;
 import org.cef.CefAppStandalone;
@@ -74,6 +73,10 @@ public class Engine {
 
 	public static enum BrowserType {
 		SWT, STANDALONE, SWING, HEADLESS
+	}
+	
+	public static enum Theme {
+		DARK, LIGHT, DEFAULT
 	}
 
 	static BrowserType browserTypeInitialized = null;
@@ -250,7 +253,7 @@ public class Engine {
 
 				String[] args = getChromiumArgs(libsPath, false, false, settings.remote_debugging_port > 0, browserType);
 
-				if (isDarkTheme(browserType, Arrays.asList(args))) {
+				if (getTheme(browserType, Arrays.asList(args)) == Theme.DARK) {
 					CefBrowserSwt.setDarkMode(true);
 				}
 
@@ -449,7 +452,7 @@ public class Engine {
 		String vmArg = System.getProperty("chromium.args", System.getProperty("swt.chromium.args"));
 		if (vmArg != null) {
 			String[] lines = vmArg.replace("\\;", "\\#$").split(";");
-			Arrays.stream(lines).map(line -> line.replace("\\#$", ";")).forEach(l -> args.add(l));
+			Arrays.stream(lines).map(line -> line.replace("\\#$", ";")).filter(s -> !s.isEmpty()).forEach(l -> args.add(l));
 		}
 		if (addRemoteAllowOrigins) {
 			args.add("-remote-allow-origins=*");
@@ -457,14 +460,17 @@ public class Engine {
 		if (isCrashReportedEnabled()) {
 			args.add("--enable-crash-reporter");
 		}
+		Theme theme = getTheme(browserType, args);
 		if (OS.isLinux()) {
 			args.add("--disable-gpu-compositing");
 			if (addXInitThreads)
 				args.add("XInitThreads");
 			if (addGtkInitCheck)
 				args.add("GTKInitCheck");
-			if (isDarkTheme(browserType, args)) {
-				args.add("--force-dark-mode");
+			if (theme == Theme.DARK) {
+				addIfNotRepeated(args, "--force-dark-mode");
+			} else if (theme == Theme.LIGHT) {
+				addIfNotRepeated(args, "--force-light-mode");
 			}
 			if (browserType == BrowserType.HEADLESS) {
 				args.add("--ozone-platform=headless");
@@ -473,8 +479,10 @@ public class Engine {
 		} else if (OS.isMacintosh()) {
 			args.add("--framework-dir-path=" + libsPath.resolve("Chromium Embedded Framework.framework"));
 			args.add("--main-bundle-path=" + libsPath.resolve("equochro Helper.app"));
-			if (isDarkTheme(browserType, args)) {
-				args.add("--force-dark-mode");
+			if (theme == Theme.DARK) {
+				addIfNotRepeated(args, "--force-dark-mode");
+			} else if (theme == Theme.LIGHT) {
+				addIfNotRepeated(args, "--force-light-mode");
 			}
 		} else if (OS.isWindows()) {
 			String langFlag = addFlagWithSystemLanguage();
@@ -483,6 +491,13 @@ public class Engine {
 			}
 		}
 		return args.toArray(new String[args.size()]);
+	}
+
+
+	private static void addIfNotRepeated(List<String> args, String flag) {
+		if (!args.contains(flag)) {
+			args.add(flag);
+		}
 	}
 
 	private static void internalShutdown() {
@@ -565,16 +580,14 @@ public class Engine {
 		}
 	}
 
-	private static boolean isDarkTheme(BrowserType browserType, List<String> args) {
-		if (browserType != null && BrowserType.SWT.equals(browserType)) {
-			boolean ignoreDarkMode = checkIfFlagExists(args, "--ignore-dark-mode");
-			boolean forceDarkMode = checkIfFlagExists(args, "--force-dark-mode");
-			boolean forceLightMode = checkIfFlagExists(args, "--force-light-mode");
-			setDarkModeBackground = (ignoreDarkMode || forceLightMode) ? false
-					: forceDarkMode ? true : SWTEngine.isSystemDarkTheme();
-			return setDarkModeBackground;
+	private static Theme getTheme(BrowserType browserType, List<String> args) {
+		if (checkIfFlagExists(args, "--ignore-dark-mode") || checkIfFlagExists(args, "--force-light-mode")) {
+			return Theme.LIGHT;
 		}
-		return false;
+		if (checkIfFlagExists(args, "--force-dark-mode") || (BrowserType.SWT.equals(browserType) && SWTEngine.isSystemDarkTheme())) {
+			return Theme.DARK;
+		}
+		return Theme.DEFAULT;
 	}
 
 	private static boolean checkIfFlagExists(List<String> args, String flag) {

@@ -67,20 +67,27 @@ public class SWTEngine {
 	}
 
 	public static boolean isSystemDarkTheme() {
-		boolean isDarkTheme = false;
-		try {
-			Class<?> systemThemeClass = Class.forName("org.eclipse.swt.widgets.Display");
-			// Method available since SWT 3.112
-			Method isSystemDarkThemeMethod = systemThemeClass.getMethod("isSystemDarkTheme");
-			if (isSystemDarkThemeMethod != null) {
-				isDarkTheme = (boolean) isSystemDarkThemeMethod.invoke(null);
+		String swtDark = System.getProperty("chromium.swt_dark");
+		if (swtDark == null) {
+			boolean isDarkTheme = false;
+			try {
+				Class<?> systemThemeClass = Class.forName("org.eclipse.swt.widgets.Display");
+				// Method available since SWT 3.112
+				Method isSystemDarkThemeMethod = systemThemeClass.getMethod("isSystemDarkTheme");
+				if (isSystemDarkThemeMethod != null) {
+					isDarkTheme = (boolean) isSystemDarkThemeMethod.invoke(null);
+				}
+			} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | ClassNotFoundException
+					| NoSuchMethodException | SecurityException e) {
 			}
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | ClassNotFoundException
-				| NoSuchMethodException | SecurityException e) {
+			return isDarkTheme;
+		} else if (Boolean.parseBoolean(swtDark)) {
+			return true;
+		} else {
+			return false;
 		}
-		return isDarkTheme;
 	}
-	
+
 	public static int getSWTVersion() {
 		return SWT.getVersion();
 	}
