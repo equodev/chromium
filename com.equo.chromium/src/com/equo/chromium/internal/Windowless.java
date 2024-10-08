@@ -16,7 +16,7 @@ public final class Windowless extends IndependentBrowser {
 	}
 
 	public Windowless(String url, Rectangle window) {
-		Engine.initCEF(getBrowserType());
+		Engine.initCEF(Engine.getBrowserType());
 		createClient();
 		setBrowser(getClientHandler().createBrowser(url, true, false, createRequestContext(), null));
 		CefBrowser browser = getBrowser();
@@ -25,30 +25,5 @@ public final class Windowless extends IndependentBrowser {
 		if (window != null && browser instanceof CefBrowserWl) {
 			((CefBrowserWl) browser).setWindow(window);
 		}
-	}
-
-	private static BrowserType getBrowserType() {
-		if (Boolean.getBoolean("chromium.force_windowless_swt")) {
-			return BrowserType.SWT;
-		}
-		if (Boolean.getBoolean("chromium.force_windowless_headless")) {
-			return BrowserType.HEADLESS;
-		}
-
-		try {
-			Class<?> clazz = Class.forName("org.eclipse.swt.widgets.Display", false,
-					ChromiumBrowser.class.getClassLoader());
-			if (clazz != null) {
-				Method findDisplay = clazz.getDeclaredMethod("findDisplay", Thread.class);
-				for (Thread thread : Thread.getAllStackTraces().keySet()) {
-					if (findDisplay.invoke(null, thread) != null) {
-						return BrowserType.SWT;
-					}
-				}
-			}
-		} catch (Throwable e) {
-		}
-
-		return BrowserType.HEADLESS;
 	}
 }

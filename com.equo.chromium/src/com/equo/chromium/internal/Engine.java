@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -131,8 +132,30 @@ public class Engine {
 			return false;
 		String backend = System.getenv("GDK_BACKEND");
 		String session = System.getenv("XDG_SESSION_TYPE");
-		boolean checkGtkInit = "wayland".equals(session) && !"x11".equals(backend);
-		return checkGtkInit;
+		return "wayland".equals(session) && !"x11".equals(backend) && BrowserType.HEADLESS != getBrowserType();
+	}
+
+	static BrowserType getBrowserType() {
+		if (Boolean.getBoolean("chromium.force_windowless_swt")) {
+			return BrowserType.SWT;
+		}
+		if (Boolean.getBoolean("chromium.force_windowless_headless")) {
+			return BrowserType.HEADLESS;
+		}
+		try {
+			Class<?> clazz = Class.forName("org.eclipse.swt.widgets.Display", false,
+					Engine.class.getClassLoader());
+			if (clazz != null) {
+				Method findDisplay = clazz.getDeclaredMethod("findDisplay", Thread.class);
+				for (Thread thread : Thread.getAllStackTraces().keySet()) {
+					if (findDisplay.invoke(null, thread) != null) {
+						return BrowserType.SWT;
+					}
+				}
+			}
+		} catch (Throwable e) {
+		}
+		return BrowserType.HEADLESS;
 	}
 
 	private static Path findLibsPath() {
@@ -431,11 +454,12 @@ public class Engine {
 				"chromium.debug_port", "chromium.dialogs", "chromium.disable-download-progress",
 				"chromium.disable_close_windowless_before_dispose", "chromium.disable_script_extensions",
 				"chromium.downloadLocationListener", "chromium.enable_crash_reporter", "chromium.external_message_pump",
-				"chromium.find_dialog", "chromium.force_windowless_swt", "chromium.headless", "chromium.home",
-				"chromium.init_threads", "chromium.log_file", "chromium.multi_threaded_message_loop", "chromium.path",
-				"chromium.proxy_pac_script", "chromium.remote_debugging_port", "chromium.resize",
-				"chromium.setTextAsUrl", "chromium.ssl", "chromium.ssl.cert", "chromium.suspend_threads",
-				"chromium.turbolinks", "java.home", "java.specification.vendor", "java.vendor.version", "java.version",
+				"chromium.find_dialog", "chromium.force_windowless_headless", "chromium.force_windowless_swt",
+				"chromium.headless", "chromium.home", "chromium.init_threads", "chromium.log_file",
+				"chromium.multi_threaded_message_loop", "chromium.path", "chromium.proxy_pac_script",
+				"chromium.remote_debugging_port", "chromium.resize", "chromium.setTextAsUrl", "chromium.ssl",
+				"chromium.ssl.cert", "chromium.suspend_threads", "chromium.turbolinks", "java.home",
+				"java.specification.vendor", "java.vendor.version", "java.version",
 				"org.eclipse.swt.internal.deviceZoom", "org.eclipse.swt.internal.gtk.theme",
 				"org.eclipse.swt.internal.gtk.version", "os.arch", "os.name", "os.version", "osgi.ws", "sun.desktop",
 				"user.language" };
