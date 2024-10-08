@@ -211,6 +211,7 @@
                         <configuration>
                             <sourceFileIncludes>
                                 <include>**/com/equo/chromium/ChromiumBrowser.java</include>
+                                <include>**/com/equo/chromium/CompatibleWithHost.java</include>
                                 <include>**/com/equo/chromium/utils/PdfPrintSettings.java</include>
                                 <include>**/com/equo/chromium/swt/*.java</include>
                             </sourceFileIncludes>

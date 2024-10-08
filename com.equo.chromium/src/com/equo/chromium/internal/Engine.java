@@ -158,7 +158,7 @@ public class Engine {
 		return BrowserType.HEADLESS;
 	}
 
-	private static Path findLibsPath() {
+	public static Path findLibsPath() {
 		String chromiumPath = System.getProperty("chromium.path", "");
 		if (!chromiumPath.isEmpty() && Files.exists(Paths.get(chromiumPath, SUBDIR).toAbsolutePath()))
 			return Paths.get(chromiumPath).toAbsolutePath().normalize();
@@ -209,7 +209,7 @@ public class Engine {
 	 * @return A URI representing the given URL
 	 * @throws UnsupportedEncodingException 
 	 */
-	private static URI toURI(URL url) throws URISyntaxException, UnsupportedEncodingException {
+	public static URI toURI(URL url) throws URISyntaxException, UnsupportedEncodingException {
 		// URL behaves differently across platforms so for file: URLs we parse from
 		// string form
 		if (SCHEME_FILE.equals(url.getProtocol())) {
@@ -405,7 +405,8 @@ public class Engine {
 
 	private static void printVersions(BrowserType browserType) {
 		Properties chromiumProperties = getPropertiesFromResource(SUBDIR + "/chromium.properties");
-		System.out.println("chromium.cef version=" + chromiumProperties.getProperty("version", ""));
+		System.out.println("chromium.cef version="
+				+ chromiumProperties.getProperty("version", System.getProperty("chromium.cef version", "")));
 
 		Properties versionProperties = getPropertiesFromResource("version.properties");
 		System.out.println("cef patch=" + versionProperties.getProperty("cefPatch", ""));
@@ -419,7 +420,7 @@ public class Engine {
 		}
 	}
 
-	private static Properties getPropertiesFromResource(String resourcePath) {
+	public static Properties getPropertiesFromResource(String resourcePath) {
 		Properties props = new Properties();
 
 		ClassLoader classLoader = Engine.class.getClassLoader();
@@ -449,7 +450,7 @@ public class Engine {
 		return props;
 	}
 
-	private static void printSystemProperties() {
+	public static String[] getPropertyNames() {
 		String[] propertyNames = { "chromium.args", "chromium.cache_path", "chromium.custom_protocol", "chromium.debug",
 				"chromium.debug_port", "chromium.dialogs", "chromium.disable-download-progress",
 				"chromium.disable_close_windowless_before_dispose", "chromium.disable_script_extensions",
@@ -463,8 +464,12 @@ public class Engine {
 				"org.eclipse.swt.internal.deviceZoom", "org.eclipse.swt.internal.gtk.theme",
 				"org.eclipse.swt.internal.gtk.version", "os.arch", "os.name", "os.version", "osgi.ws", "sun.desktop",
 				"user.language" };
+		return propertyNames;
+	}
 
-		for (String propertyName : propertyNames) {
+	private static void printSystemProperties() {
+
+		for (String propertyName : getPropertyNames()) {
 			System.out.println(propertyName + "=" + System.getProperty(propertyName, ""));
 		}
 	}
