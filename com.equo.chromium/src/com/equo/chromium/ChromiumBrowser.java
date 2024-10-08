@@ -11,14 +11,15 @@ import org.cef.CefApp.CefAppState;
 import org.cef.CefClient;
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefBrowserStandalone;
+import org.cef.browser.CefBrowserSwing;
 import org.cef.browser.CefBrowserSwt;
 import org.cef.browser.CefBrowserWl;
-import org.cef.browser.CefBrowserSwing;
 import org.cef.misc.Rectangle;
 
 import com.equo.chromium.internal.Engine;
 import com.equo.chromium.internal.Engine.BrowserType;
 import com.equo.chromium.internal.IndependentBrowser;
+import com.equo.chromium.internal.CompatibleWithHostImpl;
 import com.equo.chromium.internal.PopupBrowser;
 import com.equo.chromium.internal.Standalone;
 import com.equo.chromium.internal.SwingBrowser;
@@ -107,6 +108,17 @@ public interface ChromiumBrowser {
 	 */
 	static ChromiumBrowser windowless(String url, int x, int y, int width, int height) {
 		return new Windowless(url, new Rectangle(x, y, width, height));
+	}
+
+	/**
+	 * Create a CompatibleWithHost constructor. This allows automatic checking of
+	 * all necessary requirements for the specified toolkit, by default windowless
+	 * using the specified default java system properties.
+	 * 
+	 * @since 116.0.20
+	 */
+	static CompatibleWithHost compatibleWithHost() {
+		return new CompatibleWithHostImpl();
 	}
 
 	/**
