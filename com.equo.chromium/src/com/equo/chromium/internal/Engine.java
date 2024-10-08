@@ -54,7 +54,7 @@ public class Engine {
 	static {
 		loadLib();
 	}
-	private static final String CEFVERSION = "6367";
+	public static final String CEFVERSION = "6367";
 	private static final String SUBDIR = "chromium-" + CEFVERSION;
 	private static final String SCHEME_FILE = "file"; //$NON-NLS-1$
 	private static Path libsPath;
