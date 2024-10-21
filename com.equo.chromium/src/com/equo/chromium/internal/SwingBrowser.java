@@ -86,9 +86,9 @@ public class SwingBrowser extends IndependentBrowser {
 		});
 		getClientHandler().addDownloadHandler(new CefDownloadHandlerAdapter() {
 			@Override
-			public void onBeforeDownload(CefBrowser browser, CefDownloadItem downloadItem, String suggestedName,
+			public boolean onBeforeDownload(CefBrowser browser, CefDownloadItem downloadItem, String suggestedName,
 					CefBeforeDownloadCallback callback) {
-				((SwingBrowser) getBrowser().getReference()).onBeforeDownload(browser, downloadItem, suggestedName,
+				return ((SwingBrowser) getBrowser().getReference()).onBeforeDownload(browser, downloadItem, suggestedName,
 						callback);
 			}
 		});
@@ -327,7 +327,7 @@ public class SwingBrowser extends IndependentBrowser {
 		return false;
 	}
 
-	private void onBeforeDownload(CefBrowser browser, CefDownloadItem download_item, String suggestedName,
+	private boolean onBeforeDownload(CefBrowser browser, CefDownloadItem download_item, String suggestedName,
 			CefBeforeDownloadCallback callback) {
 		if (OS.isLinux()) {
 			File[] files = openDialog(FileDialogMode.FILE_DIALOG_SAVE, null, null, null, null);
@@ -337,6 +337,7 @@ public class SwingBrowser extends IndependentBrowser {
 		} else {
 			callback.Continue("", true);
 		}
+		return true;
 	}
 
 	@Override

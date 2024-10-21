@@ -1794,11 +1794,12 @@ final class Chromium extends WebBrowser {
 	
 	static class DownloadHandler extends CefDownloadHandlerAdapter {
 		@Override
-		public void onBeforeDownload(CefBrowser browser, CefDownloadItem downloadItem, String suggestedName,
+		public boolean onBeforeDownload(CefBrowser browser, CefDownloadItem downloadItem, String suggestedName,
 				CefBeforeDownloadCallback callback) {
 			debug("onBeforeDownload", browser);
 			Chromium chm = getChromium(browser);
-			if (chm != null) chm.onBeforeDownload(downloadItem, suggestedName, callback);
+			if (chm != null) return chm.onBeforeDownload(downloadItem, suggestedName, callback);
+			return false;
 		}
 
 		@Override
@@ -1813,7 +1814,7 @@ final class Chromium extends WebBrowser {
 		clientHandler.addPrintHandler(new  CefPrintHandlerAdapter() { });
 	}
 
-	private void onBeforeDownload(CefDownloadItem download_item, String suggested_name, CefBeforeDownloadCallback callback) {
+	private boolean onBeforeDownload(CefDownloadItem download_item, String suggested_name, CefBeforeDownloadCallback callback) {
 		String name = suggested_name;
 
 		DownloadItem downloadItem = new DownloadItem(download_item);
@@ -1828,7 +1829,7 @@ final class Chromium extends WebBrowser {
 				listener.changing(event);
 			}
 			if (!event.doit) {
-				return;
+				return false;
 			}
 		}
 
@@ -1891,6 +1892,7 @@ final class Chromium extends WebBrowser {
 				callback.Continue("", true);
 			}
 		});
+		return true;
 	}
 
 	private Thread preventBlockUI() {
