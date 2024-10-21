@@ -11,12 +11,10 @@ import org.cef.CefApp;
 import org.cef.CefClient;
 import org.cef.CefClientSwt;
 import org.cef.browser.CefBrowser;
-import org.cef.browser.CefBrowserWl;
 import org.cef.browser.CefFrame;
 import org.cef.callback.CefSchemeHandlerFactory;
 import org.cef.handler.CefResourceHandler;
 import org.cef.network.CefRequest;
-import org.cef.OS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
 
@@ -32,6 +30,7 @@ public class SWTEngine {
 				closing.set(true);
 			});
 			Display.getDefault().disposeExec(() -> {
+				CefApp.getInstance().doMessageLoopWork(-1);
 				if (shuttingDown.get()) {
 					// already shutdown
 					return;
@@ -49,33 +48,37 @@ public class SWTEngine {
 
 	private static void closeWindowlessBrowsers() throws UnsatisfiedLinkError {
 		Set<CefClient> clients = CefApp.getInstance().getAllClients();
-		int allClients = clients.size();
-		int wlClientsSize = 0;
 		for (CefClient client : clients) {
-			if (client instanceof CefClientSwt) {
+			if (client instanceof CefClientSwt && ((CefClientSwt) client).isOffscreenRendered()) {
 				Object[] browsers = client.getAllBrowser();
-				if (browsers.length > 0 && browsers[0] instanceof CefBrowserWl) {
-					wlClientsSize ++;
+				if (browsers.length > 0) {
 					for (Object c : browsers) {
-						((ChromiumBrowser)((CefBrowser) c).getReference()).close();
+						ChromiumBrowser browserReference = (ChromiumBrowser) ((CefBrowser) c).getReference();
+						if (browserReference != null) {
+							browserReference.close();
+						}
 					}
 				}
 			}
 		}
-		awaitDisposeWindowless(wlClientsSize, allClients - wlClientsSize);
+		awaitDisposeWindowless();
 	}
 
-	private static void awaitDisposeWindowless(int wlClientsSize,int expectedClients) {
+	private static void awaitDisposeWindowless() {
 		long endTime = System.currentTimeMillis() + 3000;
-		while (wlClientsSize > 0 && (System.currentTimeMillis() < endTime)) {
+		boolean continueLoop = true;
+		while (continueLoop && (System.currentTimeMillis() < endTime)) {
 			try {
 				Thread.sleep(50);
 			} catch (InterruptedException e1) {
 				e1.printStackTrace();
 			}
 			CefApp.getInstance().doMessageLoopWork(-1);
-			if (expectedClients >= CefApp.getInstance().getClientsSize()) {
-				wlClientsSize = 0;
+			int clientSize = CefApp.getInstance().getClientsSize();
+			if (clientSize == 0
+					|| (clientSize == 1 && !((CefClientSwt) (CefApp.getInstance().getAllClients().iterator().next()))
+							.isOffscreenRendered())) {
+				continueLoop = false;
 			}
 		}
 	}
