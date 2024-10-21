@@ -26,6 +26,7 @@ import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.cef.CefApp;
+import org.cef.CefApp.CefAppState;
 import org.cef.CefAppStandalone;
 import org.cef.CefAppSwing;
 import org.cef.CefAppSwt;
@@ -340,7 +341,8 @@ public class Engine {
 
 					@Override
 					public void onScheduleMessagePumpWork(long delay_ms) {
-						if (shuttingDown.get()) {
+						if (shuttingDown.get() || (OS.isMacintosh() && browserType == BrowserType.SWING
+								&& CefApp.getState() == CefAppState.TERMINATED)) {
 							debug("Ignoring onScheduleMessagePumpWork due shuttingDown");
 							return;
 						}

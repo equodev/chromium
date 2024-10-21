@@ -22,7 +22,9 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.filechooser.FileFilter;
 
+import org.cef.CefApp;
 import org.cef.OS;
+import org.cef.CefApp.CefAppState;
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;
 import org.cef.browser.CefMessageRouter;
@@ -46,6 +48,12 @@ import com.equo.chromium.utils.EventType;
 
 public class SwingBrowser extends IndependentBrowser {
 	private boolean ignoreFirstFocus = true;
+	private CefMessageRouter writeText = null;
+	private CefMessageRouter readText = null;
+	private CefMessageRouterHandlerAdapter readTextHandler = null;
+	private CefMessageRouterHandlerAdapter writeTextHandler = null;
+	private WindowAdapter windowAdapter = null;
+	private Window parentWindow = null;
 
 	private void init(String url) {
 		Engine.initCEF(Engine.BrowserType.SWING);
@@ -108,17 +116,30 @@ public class SwingBrowser extends IndependentBrowser {
 		Container parentContainer = (Container) parent;
 		parentContainer.add((JPanel) getBrowser().getUIComponent(), layout);
 
-		// Close browser when window is closed
-		Window parentWindow = SwingUtilities.windowForComponent(parentContainer);
-		if (parentWindow != null) {
-			parentWindow.addWindowListener(new WindowAdapter() {
-				@Override
-				public void windowClosed(WindowEvent windowEvent) {
-					close();
-					parentWindow.removeWindowListener(this);
-				}
-			});
-		}
+		isCreated().thenRun(() -> {
+			// Close browser when window is closed
+			parentWindow = SwingUtilities.windowForComponent(parentContainer);
+			if (parentWindow != null) {
+				windowAdapter = new WindowAdapter() {
+					@Override
+					public void windowClosed(WindowEvent windowEvent) {
+						close();
+						if (OS.isMacintosh() && CefApp.getState() != CefAppState.TERMINATED) {
+							Window[] windows = Window.getWindows();
+							if (windows.length == 0 || (windows.length == 1 && !windows[0].isShowing())) {
+								CefApp ca =  CefApp.getInstance();
+								if (ca != null) {
+									ca.dispose();
+								}
+							}
+						}
+						if (parentWindow != null)
+							parentWindow.removeWindowListener(this);
+					}
+				};
+				parentWindow.addWindowListener(windowAdapter);
+			}
+		});
 	}
 
 	public SwingBrowser(String url) {
@@ -132,11 +153,11 @@ public class SwingBrowser extends IndependentBrowser {
 	}
 
 	private void createClipboardRouters() {
-		CefMessageRouter writeText = CefMessageRouter
+		writeText = CefMessageRouter
 				.create(new CefMessageRouterConfig("__writeText", "__writeTextCancel"));
-		CefMessageRouter readText = CefMessageRouter
+		readText = CefMessageRouter
 				.create(new CefMessageRouterConfig("__readText", "__readTextCancel"));
-		CefMessageRouterHandlerAdapter writeTextHandler = new CefMessageRouterHandlerAdapter() {
+		writeTextHandler = new CefMessageRouterHandlerAdapter() {
 			@Override
 			public boolean onQuery(CefBrowser browser, CefFrame frame, long queryId, String request, boolean persistent,
 					CefQueryCallback callback) {
@@ -161,7 +182,7 @@ public class SwingBrowser extends IndependentBrowser {
 				return true;
 			}
 		};
-		CefMessageRouterHandlerAdapter readTextHandler = new CefMessageRouterHandlerAdapter() {
+		readTextHandler = new CefMessageRouterHandlerAdapter() {
 			@Override
 			public boolean onQuery(CefBrowser browser, CefFrame frame, long queryId, String request, boolean persistent,
 					CefQueryCallback callback) {
@@ -316,5 +337,24 @@ public class SwingBrowser extends IndependentBrowser {
 		} else {
 			callback.Continue("", true);
 		}
+	}
+
+	@Override
+	protected void disposeInBrowser() {
+		if (writeText != null) {
+			writeText.removeHandler(writeTextHandler);
+			writeTextHandler = null;
+			writeText.dispose();
+		}
+		if (readText != null) {
+			readText.removeHandler(readTextHandler);
+			readTextHandler = null;
+			readText.dispose();
+		}
+		if (parentWindow != null && windowAdapter != null) {
+			parentWindow.removeWindowListener(windowAdapter);
+		}
+		parentWindow = null;
+		windowAdapter = null;
 	}
 }

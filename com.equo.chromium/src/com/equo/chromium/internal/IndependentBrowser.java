@@ -16,6 +16,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
 
+import org.cef.CefApp;
+import org.cef.CefApp.CefAppState;
 import org.cef.CefClient;
 import org.cef.CefSettings.LogSeverity;
 import org.cef.browser.CefBrowser;
@@ -67,11 +69,7 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 	private static final String DATA_TEXT_URL = "data:text/html;base64,";
 	private Storage localStorage;
 	private Storage sessionStorage;
-	private static ExecutorService executor = Executors.newSingleThreadExecutor(r -> {
-		Thread thread = new Thread(r, "chromium-MessageRoute");
-		thread.setDaemon(true);
-		return thread;
-	});
+	private static ExecutorService executor = null;
 	private int messageId = 0;
 	private volatile Subscriber subscriber = null;
 
@@ -84,6 +82,21 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 			}
 		}
 		return subscriber;
+	}
+
+	private ExecutorService getExecutor() {
+		if (executor == null) {
+			synchronized (IndependentBrowser.class) {
+				if (executor == null) {
+					executor = Executors.newSingleThreadExecutor(r -> {
+						Thread thread = new Thread(r, "chromium-MessageRoute");
+						thread.setDaemon(true);
+						return thread;
+					});
+				}
+			}
+		}
+		return executor;
 	}
 
 	@Override
@@ -109,6 +122,31 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 
 	protected void createClient() {
 		clientHandler = Engine.createClient();
+		clientHandler.setDisposeAction(() -> {
+			CefBrowser browser = getBrowser();
+			if (browser != null) {
+				browser.setReference(null);
+				disposeInBrowser();
+			}
+			clientHandler.removeLifeSpanHandler();
+			clientHandler.removeDisplayHandler();
+			clientHandler.removeRequestHandler();
+			clientHandler.removeLoadHandler();
+			clientHandler.removeFindHandler();
+			clientHandler.removePrintHandler();
+			clientHandler.removeDialogHandler();
+			clientHandler.removeFocusHandler();
+			clientHandler.removeDownloadHandler();
+			clientHandler.removeJSDialogHandler();
+			if (subscriber != null) {
+				subscriber.dispose();
+				subscriber = null;
+			}
+			if (executor != null && !getExecutor().isShutdown()) {
+				getExecutor().shutdown();
+				executor = null;
+			}
+		});
 		clientHandler.addLifeSpanHandler(new CefLifeSpanHandlerAdapter() {
 			@Override
 			public void onAfterCreated(CefBrowser browser) {
@@ -198,6 +236,10 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 			});
 		}
 	}
+
+	protected void disposeInBrowser() {
+
+	};
 
 	public static void subscribeOnAfterCreated(EventAction eventAction) {
 		Subscriber.subscribeOnAfterCreated(eventAction);
@@ -399,15 +441,12 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 			CefBrowser browser = getBrowser();
 			if (browser != null) {
 				browser.setCloseAllowed();
-				browser.setReference(null);
 				browser.close(true);
 				CefClient client = browser.getClient();
 				if ( client != null) {
 					client.dispose();
 				}
 			}
-			unSubscribeAll();
-			executor.shutdown();
 		});
 		return true;
 	}
@@ -530,7 +569,7 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 				public boolean onQuery(CefBrowser browser, CefFrame frame, long queryId, String request, boolean persistent,
 						CefQueryCallback callback) {
 					try {
-						executor.submit(() -> callback.success(result.apply(request)));
+						getExecutor().submit(() -> callback.success(result.apply(request)));
 						return true;
 					} catch (Exception e) {
 						e.printStackTrace();

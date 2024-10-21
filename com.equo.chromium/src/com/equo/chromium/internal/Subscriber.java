@@ -38,6 +38,11 @@ public class Subscriber {
 		_browser = browser;
 	}
 
+	public void dispose() {
+		_browser = null;
+		unSubscribeAll();
+	}
+
 	public static void subscribeOnAfterCreated(EventAction eventAction) {
 		eventActionOfAfterCreated = eventAction;
 	}
