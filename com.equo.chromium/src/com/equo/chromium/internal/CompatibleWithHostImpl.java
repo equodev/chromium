@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -168,6 +169,7 @@ public class CompatibleWithHostImpl implements CompatibleWithHost {
 		List<String> commandLine = generateCommandLine(libsPath);
 		addToFile(logFile, "- CommandLine to execute: " + commandLine + System.lineSeparator(), true);
 		ProcessBuilder processBuilder = new ProcessBuilder(commandLine);
+		addEnvVarsToFile();
 
 		try {
 			processBuilder.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
@@ -189,6 +191,20 @@ public class CompatibleWithHostImpl implements CompatibleWithHost {
 		}
 
 		return result;
+	}
+
+	private void addEnvVarsToFile() {
+		String[] envVars = {"LD_PRELOAD", "LD_LIBRARY_PATH", "GDK_BACKEND", "BREAKPAD_DUMP_LOCATION"};
+		addToFile(logFile, "--------- Environment Variables ---------", true);
+		for (String envVar : envVars) {
+			addToFile(logFile, envVar + "=" + getVarOrEmpty(envVar), true);
+		}
+		addToFile(logFile, "--------- Environment Variables ---------" + System.lineSeparator(), true);
+	}
+
+	private String getVarOrEmpty(String name) {
+		String envVar = System.getenv(name);
+		return envVar != null ? envVar : "";
 	}
 
 	private Path verifyRequiredLibraries(CompletableFuture<String> result) {
