@@ -1,5 +1,10 @@
 package com.equo.chromium.internal;
 
+import static com.equo.chromium.internal.ResourceExpander.CUSTOM_EXECUTABLE_NAME;
+import static com.equo.chromium.internal.ResourceExpander.DEFAULT_EXECUTABLE_NAME;
+import static com.equo.chromium.internal.ResourceExpander.createExecutableWithCustomName;
+import static com.equo.chromium.internal.ResourceExpander.isHelperExecutable;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -59,9 +64,7 @@ public class Engine {
 	private static final String SUBDIR = "chromium-" + CEFVERSION;
 	private static final String SCHEME_FILE = "file"; //$NON-NLS-1$
 	private static Path libsPath;
-
 	public static final boolean debug = Boolean.valueOf(System.getProperty("chromium.debug", "false"));
-
 	private static AtomicBoolean shuttingDown = new AtomicBoolean();
 	public static MiddlewareResourceRequestHandler middlewareResourceRequestHandler;
 
@@ -186,6 +189,10 @@ public class Engine {
 
 						@Override
 						public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+							if ((OS.isLinux() || OS.isWindows()) && isHelperExecutable(file)) {
+								Path path = createExecutableWithCustomName(file);
+								ResourceExpander.setExecutable(path.toFile());
+							}
 							ResourceExpander.setExecutable(file.toFile());
 							return super.visitFile(file, attrs);
 						}
@@ -254,17 +261,17 @@ public class Engine {
 
 				boolean external_message_pump = true;
 				if (OS.isMacintosh()) {
-					settings.browser_subprocess_path = libsPath.resolve("equochro Helper.app/Contents/MacOS/equochro Helper")
+					settings.browser_subprocess_path = libsPath.resolve(DEFAULT_EXECUTABLE_NAME + ".app/Contents/MacOS/" + CUSTOM_EXECUTABLE_NAME)
 							.toString();
 					settings.resources_dir_path = libsPath.resolve("Chromium Embedded Framework.framework")
 							.resolve("Resources").toString();
 				} else if (OS.isWindows()) {
-					settings.browser_subprocess_path = libsPath.resolve("equochro_helper.exe").toString();
+					settings.browser_subprocess_path = libsPath.resolve(CUSTOM_EXECUTABLE_NAME + ".exe").toString();
 					settings.resources_dir_path = libsPath.toString();
 					settings.locales_dir_path = libsPath.resolve("locales").toString();
 					settings.multi_threaded_message_loop = System.getProperty("chromium.multi_threaded_message_loop") != null ? Boolean.getBoolean("chromium.multi_threaded_message_loop") : false;
 				} else if (OS.isLinux()) {
-					settings.browser_subprocess_path = libsPath.resolve("equochro_helper").toString();
+					settings.browser_subprocess_path = libsPath.resolve(CUSTOM_EXECUTABLE_NAME).toString();
 					settings.resources_dir_path = libsPath.toString();
 					settings.locales_dir_path = libsPath.resolve("locales").toString();
 					settings.multi_threaded_message_loop = multiThreaded;
@@ -508,7 +515,7 @@ public class Engine {
 			}
 		} else if (OS.isMacintosh()) {
 			args.add("--framework-dir-path=" + libsPath.resolve("Chromium Embedded Framework.framework"));
-			args.add("--main-bundle-path=" + libsPath.resolve("equochro Helper.app"));
+			args.add("--main-bundle-path=" + libsPath.resolve(DEFAULT_EXECUTABLE_NAME + ".app"));
 			if (theme == Theme.DARK) {
 				addIfNotRepeated(args, "--force-dark-mode");
 			} else if (theme == Theme.LIGHT) {
