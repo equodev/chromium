@@ -36,7 +36,6 @@ import org.cef.callback.CefJSDialogCallback;
 import org.cef.callback.CefQueryCallback;
 import org.cef.handler.CefDialogHandler;
 import org.cef.handler.CefDialogHandler.FileDialogMode;
-import org.cef.handler.CefDownloadHandlerAdapter;
 import org.cef.handler.CefFocusHandlerAdapter;
 import org.cef.handler.CefJSDialogHandler.JSDialogType;
 import org.cef.handler.CefJSDialogHandlerAdapter;
@@ -79,17 +78,19 @@ public class SwingBrowser extends IndependentBrowser {
 		getClientHandler().addDialogHandler(new CefDialogHandler() {
 			@Override
 			public boolean onFileDialog(CefBrowser browser, FileDialogMode mode, String title, String defaultFilePath,
-					Vector<String> acceptFilters /*, int selectedAcceptFilter*/, CefFileDialogCallback callback) {
-				return SwingBrowser.onFileDialog(browser, mode, title, defaultFilePath, acceptFilters, /*selectedAcceptFilter*/ 0,
-						callback);
+					Vector<String> acceptFilters, Vector<String> acceptExtensions, Vector<String> acceptDescriptions,
+					CefFileDialogCallback callback) {
+				return SwingBrowser.onFileDialog(browser, mode, title, defaultFilePath, acceptFilters,
+						/* selectedAcceptFilter */ 0, callback);
 			}
 		});
-		getClientHandler().addDownloadHandler(new CefDownloadHandlerAdapter() {
+		getClientHandler().addDialogHandler(new CefDialogHandler() {
 			@Override
-			public boolean onBeforeDownload(CefBrowser browser, CefDownloadItem downloadItem, String suggestedName,
-					CefBeforeDownloadCallback callback) {
-				return ((SwingBrowser) getBrowser().getReference()).onBeforeDownload(browser, downloadItem, suggestedName,
-						callback);
+			public boolean onFileDialog(CefBrowser browser, FileDialogMode mode, String title, String defaultFilePath,
+					Vector<String> acceptFilters, Vector<String> acceptExtensions, Vector<String> acceptDescriptions,
+					CefFileDialogCallback callback) {
+				return SwingBrowser.onFileDialog(browser, mode, title, defaultFilePath, acceptFilters,
+						/* selectedAcceptFilter */ 0, callback);
 			}
 		});
 		getClientHandler().addJSDialogHandler(new CefJSDialogHandlerAdapter() {

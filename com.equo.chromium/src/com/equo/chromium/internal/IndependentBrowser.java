@@ -16,8 +16,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
 
-import org.cef.CefApp;
-import org.cef.CefApp.CefAppState;
 import org.cef.CefClient;
 import org.cef.CefSettings.LogSeverity;
 import org.cef.browser.CefBrowser;

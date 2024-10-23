@@ -150,7 +150,6 @@ import com.equo.chromium.swt.OpenWindowListener;
 import com.equo.chromium.swt.WindowEvent;
 import com.equo.chromium.swt.internal.spi.CommRouterHandler;
 import com.equo.chromium.swt.internal.spi.CommunicationManager;
-import com.equo.chromium.swt.internal.spi.MiddlewareResourceRequestHandler;
 import com.equo.chromium.swt.internal.spi.ScriptExtension;
 import com.equo.chromium.utils.EventAction;
 import com.github.cliftonlabs.json_simple.Jsoner;
@@ -853,7 +852,8 @@ final class Chromium extends WebBrowser {
 	static class DialogHandler implements CefDialogHandler {
 		@Override
 		public boolean onFileDialog(CefBrowser browser, FileDialogMode mode, String title, String defaultFilePath,
-				Vector<String> acceptFilters, CefFileDialogCallback callback) {
+				Vector<String> acceptFilters, Vector<String> acceptExtensions, Vector<String> acceptDescriptions,
+				CefFileDialogCallback callback) {
 			// debug("onFileDialog", browser);
 			Chromium ch = getChromium(browser);
 			if (ch != null) {
