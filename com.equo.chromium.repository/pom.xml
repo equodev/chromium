@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.equo</groupId>
         <artifactId>chromium</artifactId>
-        <version>127.0.0-SNAPSHOT</version>
+        <version>128.0.0-SNAPSHOT</version>
     </parent>
 
     <properties>

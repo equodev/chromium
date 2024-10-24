@@ -60,7 +60,7 @@ public class Engine {
 	static {
 		loadLib();
 	}
-	public static final String CEFVERSION = "6533";
+	public static final String CEFVERSION = "6613";
 	private static final String SUBDIR = "chromium-" + CEFVERSION;
 	private static final String SCHEME_FILE = "file"; //$NON-NLS-1$
 	private static Path libsPath;
@@ -324,7 +324,7 @@ public class Engine {
 					@Override
 					public void onBeforeCommandLineProcessing(String process_type, CefCommandLine command_line) {
 						super.onBeforeCommandLineProcessing(process_type, command_line);
-						if (settings.chrome_runtime) {
+						if (Boolean.getBoolean("chrome_runtime")) {
 							command_line.appendSwitchWithValue("browser-subprocess-path",
 									settings.browser_subprocess_path);
 						}
