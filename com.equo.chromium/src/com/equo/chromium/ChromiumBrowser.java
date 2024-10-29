@@ -259,6 +259,15 @@ public interface ChromiumBrowser {
 	}
 
 	/**
+	 * Checks if the browser has been closed.
+	 * 
+	 * @return Returns true if the browser was closed and false otherwise.
+	 * 
+	 * @since 124.0.9
+	 */
+	boolean isClosed();
+
+	/**
 	 * Sets the URL of the browser to the specified location.
 	 * 
 	 * @param url The url that will be loaded in the browser.
