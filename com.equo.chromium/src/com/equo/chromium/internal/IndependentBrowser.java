@@ -299,6 +299,11 @@ public abstract class IndependentBrowser implements ChromiumBrowser {
 	}
 
 	@Override
+	public boolean isClosed() {
+		return getBrowser().isClosedOrClosing();
+	}
+
+	@Override
 	public boolean setUrl(String url) {
 		created.thenRun(() -> {
 			browser.loadURL(url);
