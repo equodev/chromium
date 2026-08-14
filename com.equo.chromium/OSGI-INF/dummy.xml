@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.3.0" name="com.equo.chromium.swt.internal.osgi.DummyService">
+  <service>
+    <provide interface="com.equo.chromium.swt.internal.osgi.DummyService"/>
+  </service>
+  <implementation class="com.equo.chromium.swt.internal.osgi.DummyService"/>
+</scr:component>
